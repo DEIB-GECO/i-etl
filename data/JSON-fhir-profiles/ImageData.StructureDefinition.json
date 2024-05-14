@@ -1,0 +1,136 @@
+{
+  "resourceType": "StructureDefinition",
+  "url": "https://example.org/fhir/StructureDefinition/ImageData",
+  "name": "ImageData",
+  "status": "draft",
+  "fhirVersion": "5.0.0",
+  "kind": "resource",
+  "abstract": false,
+  "type": "ImagingStudy",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/ImagingStudy",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "ImagingStudy.extension",
+        "path": "ImagingStudy.extension",
+        "min": 2
+      },
+      {
+        "id": "ImagingStudy.extension:recordedBy",
+        "path": "ImagingStudy.extension",
+        "sliceName": "recordedBy",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "Extension",
+            "profile": [
+              "https://example.org/fhir/StructureDefinition/RecordedBy"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ImagingStudy.extension:recordedBy.value[x]",
+        "path": "ImagingStudy.extension.value[x]",
+        "min": 1
+      },
+      {
+        "id": "ImagingStudy.extension:fileUri",
+        "path": "ImagingStudy.extension",
+        "sliceName": "fileUri",
+        "min": 1,
+        "type": [
+          {
+            "code": "Extension",
+            "profile": [
+              "https://example.org/fhir/StructureDefinition/FileUri"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ImagingStudy.extension:fileUri.value[x]",
+        "path": "ImagingStudy.extension.value[x]",
+        "min": 1
+      },
+      {
+        "id": "ImagingStudy.identifier",
+        "path": "ImagingStudy.identifier",
+        "min": 1,
+        "max": "1"
+      },
+      {
+        "id": "ImagingStudy.modality",
+        "path": "ImagingStudy.modality",
+        "max": "0"
+      },
+      {
+        "id": "ImagingStudy.encounter",
+        "path": "ImagingStudy.encounter",
+        "max": "0"
+      },
+      {
+        "id": "ImagingStudy.basedOn",
+        "path": "ImagingStudy.basedOn",
+        "max": "0"
+      },
+      {
+        "id": "ImagingStudy.partOf",
+        "path": "ImagingStudy.partOf",
+        "max": "0"
+      },
+      {
+        "id": "ImagingStudy.referrer",
+        "path": "ImagingStudy.referrer",
+        "max": "0"
+      },
+      {
+        "id": "ImagingStudy.endpoint",
+        "path": "ImagingStudy.endpoint",
+        "max": "0"
+      },
+      {
+        "id": "ImagingStudy.numberOfSeries",
+        "path": "ImagingStudy.numberOfSeries",
+        "max": "0"
+      },
+      {
+        "id": "ImagingStudy.numberOfInstances",
+        "path": "ImagingStudy.numberOfInstances",
+        "max": "0"
+      },
+      {
+        "id": "ImagingStudy.procedure",
+        "path": "ImagingStudy.procedure",
+        "max": "0"
+      },
+      {
+        "id": "ImagingStudy.location",
+        "path": "ImagingStudy.location",
+        "max": "0"
+      },
+      {
+        "id": "ImagingStudy.reason",
+        "path": "ImagingStudy.reason",
+        "max": "0"
+      },
+      {
+        "id": "ImagingStudy.note",
+        "path": "ImagingStudy.note",
+        "max": "0"
+      },
+      {
+        "id": "ImagingStudy.description",
+        "path": "ImagingStudy.description",
+        "max": "0"
+      },
+      {
+        "id": "ImagingStudy.series",
+        "path": "ImagingStudy.series",
+        "max": "0"
+      }
+    ]
+  }
+}

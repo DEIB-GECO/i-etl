@@ -1,0 +1,36 @@
+dataset;name;description;vartype;details
+Clinical_Table.xlsx;MERGEHCIS;ID1;STR;Primary patient identifier
+Clinical_Table.xlsx;ID_STUDY;STUDYID;INT;Patient identifier for merging with internal data sources
+Clinical_Table.xlsx;INTERNAL_ID;LABID;STR;Patient identifier for merging with internal data sources
+Clinical_Table.xlsx;REDCAP_ID;REDCAP_ID;INT;Patient identifier for merging with internal data sources
+Clinical_Table.xlsx;CI;CI;STR;Patient identifier for merging with internal data sources
+Clinical_Table.xlsx;SEXO;SEX;STR;{M} Male\\{F} Female
+Clinical_Table.xlsx;FECHANACIMIENTO;Date of birth;DATE;
+Clinical_Table.xlsx;EDAD;Age;INT;
+Medications.xlsx;MERGEHCIS;ID1;STR;Primary patient identifier
+Medications.xlsx;VAR.MED;Medication;STR;{new} / {added} / {change}
+Medications.xlsx;MED;Medication;STR;
+Clinical_Table.xlsx;FECHA_BASAL;Basal Date;DATE;
+Clinical_Table.xlsx;PESO_B;Weight;INT;
+Clinical_Table.xlsx;ALTURA_B;Height;INT;
+Clinical_Table.xlsx;IMC_B;BMI;INT;
+Clinical_Table.xlsx;PRE.ART_B;Blood preasure;STR;
+Clinical_Table.xlsx;CBCL_B;CBC;STR;
+Clinical_Table.xlsx;TRF_B;Teacher's report form;STR;
+Clinical_Table.xlsx;YSR_B;Youth-self report;INT;Total score of the questionnaire evaluation results
+Clinical_Table.xlsx;CONPAD_B;CONNERS PARENTS;INT;Total score of the questionnaire evaluation results
+Clinical_Table.xlsx;CONPROF_B;CONNERS TEACHERS;INT;Total score of the questionnaire evaluation results
+Clinical_Table.xlsx;MDQ_B;Mood disorder questionnaire;INT;Total score of the questionnaire evaluation results
+Clinical_Table.xlsx;EEFP_B;Frankfurt-Pamplona scale of subjective experiences;INT;Total score of the questionnaire evaluation results
+Clinical_Table.xlsx;CGISI;CGI (Global Clinical Impression);INT;Total score of the questionnaire evaluation results
+Clinical_Table.xlsx;CGAS_B;CGAS (Global Assessment Scales);INT;Total score of the questionnaire evaluation results
+Clinical_Table.xlsx;CYBOCS_B;Children's Yale-Brown obsessive compulsive scale;INT;Total score of the questionnaire evaluation results
+Clinical_Table.xlsx;SIQ_B;Suicide Ideation Questionnaire;INT;Total score of the questionnaire evaluation results
+Clinical_Table.xlsx;BDIY_B;Beck questionnaire: Depression;INT;Total score of the questionnaire evaluation results
+Clinical_Table.xlsx;BAIY_B;Beck questionnaire: Anxiety;INT;Total score of the questionnaire evaluation results
+Clinical_Table.xlsx;DROGAS_B;Drug consumption ;Boolean;
+Clinical_Table.xlsx;ALCOHOL_B;Alcohol consumption ;Boolean;
+Clinical_Table.xlsx;PUTS_B;Premonitory Urge for Tics Scale;INT;Total score of the questionnaire evaluation results
+Clinical_Table.xlsx;ABC_B;Aberrant Behavior Checklist;INT;Total score of the questionnaire evaluation results
+Clinical_Table.xlsx;ID_EPIGE_B;Epigenetics ID;STR;Patient identifier for merging with epigenetic data
+Clinical_Table.xlsx;ID_GENETICS;GENETICS ID;STR;Patient identifier for merging with genetic data

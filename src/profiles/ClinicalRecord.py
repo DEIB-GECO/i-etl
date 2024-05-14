@@ -1,56 +1,62 @@
-class ClinicalRecord:
-	def __init__(
-					self,
-					id: long, 
-					instantiates: Examination, 
-					value: any, 
-					subject: Patient, 
-					recorded_by: Hospital, 
-					status: str, 
-					code: dict, 
-					issued: date):
-		"""
-		Create a new ClinicalRecord instance.
+from src.database.TableNames import TableNames
+from src.fhirDatatypes.CodeableConcept import CodeableConcept
+from src.fhirDatatypes.Reference import Reference
+from src.profiles.Examination import Examination
+from src.profiles.Hospital import Hospital
+from src.profiles.Patient import Patient
+from src.profiles.Resource import Resource
 
-		Parameters:
-			id (long): the unique ID to refer to that clinical record in the project.
-			instantiates (Examination): the Examination instance that record is refering to.
-			value (any): the value of what is examined in that clinical record.
-			subject (Patient): the Patient on which the clinical record has been measured.
-			recorded_by (Hospital): the Hospital in which the clinical record has been measured.
-			status (str): a value in [registered, preliminary, final, amended] depicting the current record status.
-			code (str): the Examination url.
-			issued (dateTime): when the clinical record has been measured.
-		"""
-		self.id = id
-		self.instantiates = instantiates
-		self.value = value
-		self.subject = subject
-		self.recorded_by = recorded_by
-		self.status = status
-		self.code = code
-		self.issued = issued
 
-	def get_id(self):
-		return self.id 
+class ClinicalRecord(Resource):
+    ID_COUNTER = 1
 
-	def get_instantiates(self):
-		return self.instantiates
+    def __init__(self, examination: Examination, status: str, code: CodeableConcept, subject: Patient,
+                 hospital: Hospital, value, issued, interpretation: str):
+        """
+        Create a new ClinicalRecord instance.
+        :param examination: the Examination instance that record is referring to.
+        :param status: a value in [registered, preliminary, final, amended] depicting the current record status.
+        :param code: a CodeableConcept TODO: what is code?
+        :param subject: the Patient on which the clinical record has been measured.
+        :param hospital: the Hospital in which the clinical record has been measured.
+        :param value: the value of what is examined in that clinical record.
+        :param issued: when the clinical record has been measured.
+        :param interpretation: a CodeableConcept to help understand whether the value is normal or not.
+        """
+        super().__init__()
+        self.url = ClinicalRecord.ID_COUNTER
+        self.instantiate = Reference(examination)
+        self.status = status
+        self.code = code
+        self.subject = Reference(subject)
+        self.recorded_by = Reference(hospital)
+        self.value = value
+        self.issued = issued
+        self.interpretation = interpretation
 
-	def get_value(self):
-		return self.value
+    def get_url(self):
+        return self.url
 
-	def get_subject(self):
-		return self.subject
+    def get_instantiate(self):
+        return self.instantiate
 
-	def get_recorded_by(self):
-		return self.recorded_by
+    def get_value(self):
+        return self.value
 
-	def get_status(self):
-		return self.status
+    def get_subject(self):
+        return self.subject
 
-	def get_code(self):
-		return self.code
+    def get_recorded_by(self):
+        return self.recorded_by
 
-	def get_issued(self):
-		return issued
+    def get_status(self):
+        return self.status
+
+    def get_code(self):
+        return self.code
+
+    def get_issued(self):
+        return self.issued
+
+    def get_resource_type(self):
+        return TableNames.CLINICAL_RECORD_TABLE_NAME

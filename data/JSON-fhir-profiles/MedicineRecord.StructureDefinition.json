@@ -1,0 +1,166 @@
+{
+  "resourceType": "StructureDefinition",
+  "url": "https://example.org/fhir/StructureDefinition/MedicineRecord",
+  "name": "MedicineRecord",
+  "status": "draft",
+  "fhirVersion": "5.0.0",
+  "kind": "resource",
+  "abstract": false,
+  "type": "MedicationDispense",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/MedicationDispense",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "MedicationDispense.extension",
+        "path": "MedicationDispense.extension",
+        "min": 1,
+        "max": "1"
+      },
+      {
+        "id": "MedicationDispense.extension:recordedBy",
+        "path": "MedicationDispense.extension",
+        "sliceName": "recordedBy",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "Extension",
+            "profile": [
+              "https://example.org/fhir/StructureDefinition/RecordedBy"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "MedicationDispense.extension:recordedBy.value[x]",
+        "path": "MedicationDispense.extension.value[x]",
+        "min": 1
+      },
+      {
+        "id": "MedicationDispense.basedOn",
+        "path": "MedicationDispense.basedOn",
+        "max": "0"
+      },
+      {
+        "id": "MedicationDispense.partOf",
+        "path": "MedicationDispense.partOf",
+        "max": "0"
+      },
+      {
+        "id": "MedicationDispense.notPerformedReason",
+        "path": "MedicationDispense.notPerformedReason",
+        "max": "0"
+      },
+      {
+        "id": "MedicationDispense.statusChanged",
+        "path": "MedicationDispense.statusChanged",
+        "max": "0"
+      },
+      {
+        "id": "MedicationDispense.medication",
+        "path": "MedicationDispense.medication",
+        "type": [
+          {
+            "code": "CodeableReference",
+            "targetProfile": [
+              "https://example.org/fhir/StructureDefinition/Medicine"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "MedicationDispense.subject",
+        "path": "MedicationDispense.subject",
+        "type": [
+          {
+            "code": "Reference",
+            "targetProfile": [
+              "https://example.org/fhir/StructureDefinition/Patient"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "MedicationDispense.encounter",
+        "path": "MedicationDispense.encounter",
+        "max": "0"
+      },
+      {
+        "id": "MedicationDispense.supportingInformation",
+        "path": "MedicationDispense.supportingInformation",
+        "max": "0"
+      },
+      {
+        "id": "MedicationDispense.performer",
+        "path": "MedicationDispense.performer",
+        "max": "0"
+      },
+      {
+        "id": "MedicationDispense.location",
+        "path": "MedicationDispense.location",
+        "max": "0"
+      },
+      {
+        "id": "MedicationDispense.authorizingPrescription",
+        "path": "MedicationDispense.authorizingPrescription",
+        "max": "0"
+      },
+      {
+        "id": "MedicationDispense.type",
+        "path": "MedicationDispense.type",
+        "max": "0"
+      },
+      {
+        "id": "MedicationDispense.daysSupply",
+        "path": "MedicationDispense.daysSupply",
+        "max": "0"
+      },
+      {
+        "id": "MedicationDispense.whenPrepared",
+        "path": "MedicationDispense.whenPrepared",
+        "max": "0"
+      },
+      {
+        "id": "MedicationDispense.whenHandedOver",
+        "path": "MedicationDispense.whenHandedOver",
+        "max": "0"
+      },
+      {
+        "id": "MedicationDispense.destination",
+        "path": "MedicationDispense.destination",
+        "max": "0"
+      },
+      {
+        "id": "MedicationDispense.receiver",
+        "path": "MedicationDispense.receiver",
+        "max": "0"
+      },
+      {
+        "id": "MedicationDispense.note",
+        "path": "MedicationDispense.note",
+        "max": "0"
+      },
+      {
+        "id": "MedicationDispense.renderedDosageInstruction",
+        "path": "MedicationDispense.renderedDosageInstruction",
+        "max": "0"
+      },
+      {
+        "id": "MedicationDispense.dosageInstruction",
+        "path": "MedicationDispense.dosageInstruction",
+        "max": "0"
+      },
+      {
+        "id": "MedicationDispense.substitution",
+        "path": "MedicationDispense.substitution",
+        "max": "0"
+      },
+      {
+        "id": "MedicationDispense.eventHistory",
+        "path": "MedicationDispense.eventHistory",
+        "max": "0"
+      }
+    ]
+  }
+}

@@ -1,0 +1,43 @@
+dataset;name;description;vartype;dimension;details;example
+Core_Table.xlsx;IMGGI ID;Patient ID;STR;;;RFZO 709
+Core_Table.xlsx;Diagnosis ;Diagnosis set according to genetic test;STR;;;Mitochondrial DNA depletion syndrome 7
+Core_Table.xlsx;Diagnosis code in ICD 10;Diagnosis code in ICD 10;STR;;;F83, R25.8
+Core_Table.xlsx;OMIM page for the diagnosis description/  diagnosis description elsvwhere;OMIM number ;STR;;;# 271245
+Core_Table.xlsx;DOB;Date of Birth;Date;;;30.06.2019.
+Core_Table.xlsx;Country of Birth;Country of Birth;STR;;;Serbia
+Core_Table.xlsx;GENDER ;Gender (F/M);STR;;{M} Male\\{F} Female;
+Core_Table.xlsx;AGE when sent for genetic testing;Age of the patient when the genetic test was done (y-years, m-months), relevant for diagnostics delay;STR;;;3y
+Core_Table.xlsx;Consanguineous offspring;Consanguinity;STR;;{Yes}\\{No};No
+Core_Table.xlsx;Other affected relatives;{Yes}/{No}/{Unknown}, and text: brother, sister,etc;STR;;;Unknown
+Core_Table.xlsx;Spontaneous abortions;{Yes}/{No}/{Unknown}. If yes, how many, type number.;STR;;;No
+Core_Table.xlsx;In vitro fertilization;{Yes}\\{No}\\{Unknown};STR;;;No
+Core_Table.xlsx;Indication for refferal: HPO descriptive ;Clinical symptoms, List of descriptive HPO;STR;;;Global developmental delay HP:0001263, Esodeviation 8 Convergent strabismus) HP:0020045, Hypotonia HP:0001252, Alien limb phenomenon HP:0032506, Abnormal involuntary eye movements HP:0012547, 
+Core_Table.xlsx;HPO data;List of HPO;STR;;;HP:0001263, HP:0020045, HP:0001252, HP:0032506, HP:0012547,
+Core_Table.xlsx;Age at Onset;The age group in which disease manifestations appear, Age when symptoms begin, (y-years, m-months);STR;;;7m
+Core_Table.xlsx;Intellectual disability ;;STR;;{Yes}\\{No};yes
+Core_Table.xlsx;IQ test or similar;IQ value, or similar;STR;;;IQ 60
+Core_Table.xlsx;Metabolic disease;;STR;;{Yes}\\{No}\\{Unknown};no
+Core_Table.xlsx;Measurements ;(for metabolic disease), measurements of biochemical analysis;STR;;;Urine metabolic screen - in expected range, urine organic acid test - in expected range
+Core_Table.xlsx;CT;Computed tomography;STR;;{Yes}\\{No}\\{NA}\\{Available in collaboration with clinical center};Yes
+Core_Table.xlsx;MR;Magnet resonance;STR;;{Yes}\\{No}\\{NA}\\{Available in collaboration with clinical center};Yes
+Core_Table.xlsx;EEG;Electroencephalogram;STR;;;NA
+Core_Table.xlsx;Clinical centre of refferal;Name of the Clinical center which sent patient for genetic testing;STR;;;IMD
+Core_Table.xlsx;Previous genetic testing - karyotype;{Yes}/{No}, and karyotype description;STR;;;Yes, 46XX
+Core_Table.xlsx;Previous genetic testing - microarray;{Yes}/{No}, and text microarray description;STR;;;No
+Core_Table.xlsx;Genetic test result;Genetic test result;STR;;{positive}\\{negative}\\{inconclusive};positive
+Core_Table.xlsx;Genetic test approach;;STR;;{CES}\\{WES}\\{WGS};CES
+Core_Table.xlsx;NGS platform;Illumina ({MiSeq}, {NextSeq550}, {NextSeq 2000}), MGI ({DNBSEQ G-400});STR;;;NextSeq
+Core_Table.xlsx;Chromosome;Chromosome number;STR;;;10
+Core_Table.xlsx;Gene;Name of the gene;STR;;;TWNK
+Core_Table.xlsx;Varijant(s);Number of detected variants in the gene;INT;;;2
+Core_Table.xlsx;Inheritance;Variant inheritance (AR, AD, XL);STR;;;AR
+Core_Table.xlsx;Zigosity;Zigosity in relation to another pathogenic variant in the same gene;STR;;;2xhet
+Core_Table.xlsx;Ref genome;Reference genome;STR;;;hg19
+Core_Table.xlsx;Transcript;Accession numbers for the transcritp (NCBI);STR;;;NM_021830.4
+Core_Table.xlsx;Variant name 1;variant description;STR;;;c.1103dup  p.(Ser369IlefsTer59)
+Core_Table.xlsx;Variant name 2 (if exists);variant description;STR;;;c.1852C>A p.(Pro618Thr)
+Core_Table.xlsx;Secondary/Incidental findings;If other genes not related to ID or metabolic disease were detected, type the name of that gene, otherwise type NO;STR;;;no
+Core_Table.xlsx;Transcript;Accession numbers for the transcritp (NCBI) - related to secondary/incidental findings;STR;;;/
+Core_Table.xlsx;Variant name 1;variant description - related to secondary/incidental findings;STR;;;/
+Core_Table.xlsx;Location of VCF (IMGGI server, External HD, etc) ;Where the data is kept/saved;STR;;;External hard No 3.
+Core_Table.xlsx;Comment, Other;comments and other;STR;;;

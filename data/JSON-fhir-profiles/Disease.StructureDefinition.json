@@ -1,0 +1,151 @@
+{
+  "resourceType": "StructureDefinition",
+  "url": "https://example.org/fhir/StructureDefinition/Disease",
+  "name": "Disease",
+  "status": "draft",
+  "fhirVersion": "5.0.0",
+  "kind": "resource",
+  "abstract": false,
+  "type": "ConditionDefinition",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/ConditionDefinition",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "ConditionDefinition.url",
+        "path": "ConditionDefinition.url",
+        "min": 1
+      },
+      {
+        "id": "ConditionDefinition.identifier",
+        "path": "ConditionDefinition.identifier",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.version",
+        "path": "ConditionDefinition.version",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.versionAlgorithm[x]",
+        "path": "ConditionDefinition.versionAlgorithm[x]",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.name",
+        "path": "ConditionDefinition.name",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.title",
+        "path": "ConditionDefinition.title",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.subtitle",
+        "path": "ConditionDefinition.subtitle",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.experimental",
+        "path": "ConditionDefinition.experimental",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.date",
+        "path": "ConditionDefinition.date",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.publisher",
+        "path": "ConditionDefinition.publisher",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.contact",
+        "path": "ConditionDefinition.contact",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.description",
+        "path": "ConditionDefinition.description",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.useContext",
+        "path": "ConditionDefinition.useContext",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.jurisdiction",
+        "path": "ConditionDefinition.jurisdiction",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.severity",
+        "path": "ConditionDefinition.severity",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.bodySite",
+        "path": "ConditionDefinition.bodySite",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.stage",
+        "path": "ConditionDefinition.stage",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.hasSeverity",
+        "path": "ConditionDefinition.hasSeverity",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.hasBodySite",
+        "path": "ConditionDefinition.hasBodySite",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.hasStage",
+        "path": "ConditionDefinition.hasStage",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.definition",
+        "path": "ConditionDefinition.definition",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.observation",
+        "path": "ConditionDefinition.observation",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.medication",
+        "path": "ConditionDefinition.medication",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.precondition",
+        "path": "ConditionDefinition.precondition",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.team",
+        "path": "ConditionDefinition.team",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.questionnaire",
+        "path": "ConditionDefinition.questionnaire",
+        "max": "0"
+      },
+      {
+        "id": "ConditionDefinition.plan",
+        "path": "ConditionDefinition.plan",
+        "max": "0"
+      }
+    ]
+  }
+}

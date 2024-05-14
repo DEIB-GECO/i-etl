@@ -1,0 +1,184 @@
+{
+  "resourceType": "StructureDefinition",
+  "url": "https://example.org/fhir/StructureDefinition/Examination",
+  "name": "Examination",
+  "status": "draft",
+  "fhirVersion": "5.0.0",
+  "kind": "resource",
+  "abstract": false,
+  "type": "ObservationDefinition",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/ObservationDefinition",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "ObservationDefinition.extension:examinationCategory",
+        "path": "ObservationDefinition.extension",
+        "sliceName": "examinationCategory",
+        "type": [
+          {
+            "code": "Extension",
+            "profile": [
+              "https://example.org/fhir/StructureDefinition/ExaminationCategory"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ObservationDefinition.url",
+        "path": "ObservationDefinition.url",
+        "min": 1
+      },
+      {
+        "id": "ObservationDefinition.identifier",
+        "path": "ObservationDefinition.identifier",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.version",
+        "path": "ObservationDefinition.version",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.versionAlgorithm[x]",
+        "path": "ObservationDefinition.versionAlgorithm[x]",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.name",
+        "path": "ObservationDefinition.name",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.title",
+        "path": "ObservationDefinition.title",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.experimental",
+        "path": "ObservationDefinition.experimental",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.date",
+        "path": "ObservationDefinition.date",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.publisher",
+        "path": "ObservationDefinition.publisher",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.contact",
+        "path": "ObservationDefinition.contact",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.description",
+        "path": "ObservationDefinition.description",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.useContext",
+        "path": "ObservationDefinition.useContext",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.jurisdiction",
+        "path": "ObservationDefinition.jurisdiction",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.purpose",
+        "path": "ObservationDefinition.purpose",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.copyright",
+        "path": "ObservationDefinition.copyright",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.copyrightLabel",
+        "path": "ObservationDefinition.copyrightLabel",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.approvalDate",
+        "path": "ObservationDefinition.approvalDate",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.lastReviewDate",
+        "path": "ObservationDefinition.lastReviewDate",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.effectivePeriod",
+        "path": "ObservationDefinition.effectivePeriod",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.derivedFromCanonical",
+        "path": "ObservationDefinition.derivedFromCanonical",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.derivedFromUri",
+        "path": "ObservationDefinition.derivedFromUri",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.subject",
+        "path": "ObservationDefinition.subject",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.performerType",
+        "path": "ObservationDefinition.performerType",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.method",
+        "path": "ObservationDefinition.method",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.specimen",
+        "path": "ObservationDefinition.specimen",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.device",
+        "path": "ObservationDefinition.device",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.preferredReportName",
+        "path": "ObservationDefinition.preferredReportName",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.permittedUnit",
+        "path": "ObservationDefinition.permittedUnit",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.qualifiedValue",
+        "path": "ObservationDefinition.qualifiedValue",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.hasMember",
+        "path": "ObservationDefinition.hasMember",
+        "max": "0"
+      },
+      {
+        "id": "ObservationDefinition.component",
+        "path": "ObservationDefinition.component",
+        "max": "0"
+      }
+    ]
+  }
+}
