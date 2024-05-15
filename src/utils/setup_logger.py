@@ -7,3 +7,5 @@ log = logging.getLogger()
 # do not allow PyMongo to print everything, 
 # only important messages (warning, error and fatal) wil be shown
 logging.getLogger("pymongo").setLevel(logging.WARNING)
+logging.getLogger("matplotlib").setLevel(logging.WARNING)
+logging.getLogger("PIL").setLevel(logging.WARNING)

@@ -4,6 +4,8 @@ from pymongo.collection import Collection
 import csv
 import json
 
+from src.database.TableNames import TableNames
+from src.profiles.Examination import Examination
 from src.utils.Utils import decorate_all_functions, check_types_before_func, check_types
 from src.utils.setup_logger import log
 
@@ -95,6 +97,92 @@ class Database:
     def create_unique_index(self, table_name: str, columns: dict):
         log.debug(self.db[table_name])
         self.db[table_name].create_index(columns, unique=True)
+
+    def get_min_value_of_phenotypic_record(self, examination_url: str):
+        return self.__get_min_max_value_of_examination_record(TableNames.PHENOTYPIC_RECORD_TABLE_NAME, examination_url, "min")
+
+    def get_min_value_of_clinical_record(self, examination_url: str):
+        return self.__get_min_max_value_of_examination_record(TableNames.CLINICAL_RECORD_TABLE_NAME, examination_url, "min")
+
+    def get_max_value_of_phenotypic_record(self, examination_url: str):
+        return self.__get_min_max_value_of_examination_record(TableNames.PHENOTYPIC_RECORD_TABLE_NAME, examination_url, "max")
+
+    def get_max_value_of_clinical_record(self, examination_url: str):
+        return self.__get_min_max_value_of_examination_record(TableNames.CLINICAL_RECORD_TABLE_NAME, examination_url, "max")
+
+    def __get_min_max_value_of_examination_record(self, table_name: str, examination_url: str, min_or_max: str):
+        if min_or_max == "min":
+            sort_order = 1
+        elif min_or_max == "max":
+            sort_order = -1
+        else:
+            log.warn("You asked for something else than min or max. This will be min by default.")
+
+        return self.db[table_name].aggregate([
+            {
+                "$match": {
+                    "instantiate.reference": examination_url
+                }
+            },
+            {
+                "$project": {
+                    "value": 1
+                }
+            },
+            {
+                "$sort": {
+                    "value": sort_order
+                }
+            }, {
+                "$limit": 1  # sort in ascending order and return the first value: this is the min
+            }
+        ])
+
+    def get_avg_value_of_phenotypic_record(self, examination_url: str):
+        return self.__get_avg_value_of_examination_record(TableNames.PHENOTYPIC_RECORD_TABLE_NAME, examination_url)
+
+    def __get_avg_value_of_examination_record(self, table_name: str, examination_url: str):
+        return self.db[table_name].aggregate([
+            {
+                "$match": {
+                    "instantiate.reference": examination_url
+                }
+            },
+            {
+                "$project": {
+                    "value": 1
+                }
+            },
+            {
+                "$group": {
+                    "_id": None,
+                    "avg_val": {
+                        "$avg": "$value"  # $avg: $<the field on which the avg is computed>
+                    }
+                }
+            }
+        ])
+
+    def get_value_distribution_of_examination(self, table_name: str, examination_url: str):
+        return self.db[table_name].aggregate([
+            {
+                "$match": {
+                    "instantiate.reference": examination_url
+                }
+            },
+            {
+                "$project": {
+                    "value": 1
+                }
+            }, {
+                "$group": {
+                    "_id": "$value",
+                    "total": {
+                        "$sum": 1
+                    }
+                }
+            }
+        ])
 
     def __str__(self) -> str:
         return "Database " + self.connection_string

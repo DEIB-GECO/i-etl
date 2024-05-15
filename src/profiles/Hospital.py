@@ -30,9 +30,9 @@ class Hospital(Resource):
 
 	def to_json(self):
 		json_hospital = {
-			"id": self.id,
-			"url": self.url,
-			"name": self.name
+			"id": str(self.id),
+			"url": str(self.url),
+			"name": str(self.name)
 		}
 		return json_hospital
 

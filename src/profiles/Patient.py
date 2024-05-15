@@ -27,10 +27,10 @@ class Patient(Resource):
 
     def to_json(self):
         json_patient = {
-            "id": self.id,
+            "id": str(self.id),
             "metadata": {
-                "csv_filepath": self.csv_filepath,
-                "csv_line": self.csv_line
+                "csv_filepath": str(self.csv_filepath),
+                "csv_line": str(self.csv_line)
             }
         }
 

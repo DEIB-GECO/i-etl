@@ -64,15 +64,15 @@ class ClinicalRecord(Resource):
 
     def to_json(self):
         json_clinical_record = {
-            "url": self.url,
+            "url": str(self.url),
             "instantiate": self.instantiate.to_json(),
-            "status": self.status,
+            "status": str(self.status),
             # "code": self.code.to_json(), # TODO Nelly: add this after understanding what is code about
             "subject": self.subject.to_json(),
             "recorded_by": self.recorded_by.to_json(),
-            "value": self.value,
-            "issued": self.issued,
-            "interpretation": self.interpretation
+            "value": str(self.value),
+            "issued": str(self.issued),
+            "interpretation": str(self.interpretation)
         }
 
         return json_clinical_record

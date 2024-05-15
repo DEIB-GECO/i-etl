@@ -12,8 +12,8 @@ class Coding:
 
     def to_json(self):
         json_coding = {
-            "system": self.system,
-            "code": self.code,
-            "display": self.display
+            "system": str(self.system),
+            "code": str(self.code),
+            "display": str(self.display)
         }
         return json_coding

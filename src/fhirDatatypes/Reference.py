@@ -16,8 +16,8 @@ class Reference:
 
     def to_json(self):
         json_reference = {
-            "reference": self.ref,
-            "type": self.type
+            "reference": str(self.ref),
+            "type": str(self.type)
         }
         return json_reference
 

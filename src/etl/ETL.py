@@ -15,13 +15,15 @@ from src.profiles.ExaminationCategory import ExaminationCategory
 from src.profiles.Hospital import Hospital
 from src.profiles.Patient import Patient
 from src.profiles.PhenotypicRecord import PhenotypicRecord
+from src.utils.DistributionPlot import DistributionPlot
 from src.utils.Utils import is_float
 from src.utils.setup_logger import log
 
 
 class ETL:
     def __init__(self, hospital_name, metadata_filepath: str, samples_filepath: str):
-        self.database = Database(database_name="better_database")
+        # self.database = Database(database_name="better_database")
+        self.database = Database()
         self.hospital_name = hospital_name
         self.hospital = self.__create_hospital()
         self.metadata_filepath = metadata_filepath
@@ -32,12 +34,20 @@ class ETL:
         self.phenotypic_records = []
         self.phenotypic_variables = {}
         self.mapping_colname_to_examination = {}
+        self.mapped_values = {}
 
     def run(self):
         # self.__create_db_indexes()
-        self.__load_phenotypic_variables()
-        self.__transform_data()
-        self.__insert_data()
+        # self.__load_phenotypic_variables()
+        # self.__transform_data()
+        # self.__insert_data()
+
+        # draw insights from the data
+        # cursor = self.database.get_min_value_of_phenotypic_record(TableNames.PHENOTYPIC_RECORD_TABLE_NAME, "76")
+        # cursor = self.database.get_avg_value_of_phenotypic_record(TableNames.PHENOTYPIC_RECORD_TABLE_NAME, "76")
+        cursor = self.database.get_value_distribution_of_examination(TableNames.PHENOTYPIC_RECORD_TABLE_NAME, "76")
+        plot = DistributionPlot(cursor, "7")  # do not print the cursor before, otherwise it would consume it
+        plot.draw()
 
     def __create_db_indexes(self):
         self.database.create_unique_index(table_name=TableNames.PATIENT_TABLE_NAME, columns={"metadata.csv_filepath": 1, "metadata.csv_line": 1})
@@ -101,6 +111,13 @@ class ETL:
 
         log.debug(self.metadata['name'])
 
+        # remove splaces in ontology names and codes
+        self.metadata["ontology"] = self.metadata["ontology"].apply(lambda x: str(x).replace(" ", ""))
+        self.metadata["ontology_code"] = self.metadata["ontology_code"].apply(lambda x: str(x).replace(" ", ""))
+        self.metadata["secondary_ontology"] = self.metadata["secondary_ontology"].apply(lambda x: str(x).replace(" ", ""))
+        self.metadata["secondary_ontology_code"] = self.metadata["secondary_ontology_code"].apply(lambda x: str(x).replace(" ", ""))
+        log.debug(self.metadata['ontology'])
+
     def __load_samples_file(self):
         assert os.path.exists(self.samples_filepath), "The provided samples file could not be found. Please check the filepath you specify when running this script."
 
@@ -133,9 +150,10 @@ class ETL:
                     if column_name in self.mapping_colname_to_examination:
                         # we know a code for this column, so we can register the value of that examination
                         associated_examination = self.mapping_colname_to_examination[column_name]
-                        # TODO Pietro: harmonize values,
+                        # TODO Pietro: harmonize values (upper-lower case, dates, etc)
                         #  we should use codes (JSON-styled by Boris) whenever we can
                         #  but for others we need normalization (WP6?)
+                        #  we could even clean more the data, e.g., do not allow "Italy" as ethnicity (caucasian, etc)
                         if associated_examination.get_category() == ExaminationCategory.PHENOTYPIC.name:
                             self.create_phenotypic_record(self.hospital, patient, associated_examination, value)
                         else:
@@ -173,7 +191,7 @@ class ETL:
         columns = self.samples.columns.values.tolist()
         for column in columns:
             code = self.__determine_code_from_metadata(column)
-            if code is not None:
+            if code is not None and code.codings != []:
                 status = "registered"
                 category = self.__determine_examination_category(code)
                 permitted_datatypes = []
@@ -191,24 +209,38 @@ class ETL:
     def __determine_code_from_metadata(self, column_name: str):
         rows = self.metadata.loc[self.metadata['name'] == column_name]
         if len(rows) == 1:
-            ontology = rows["ontology"].iloc[0]
-            code = rows["ontology_code"].iloc[0]
+            cc = CodeableConcept()
+            cc_tuple = self.create_code_from_metadata(rows, "ontology", "ontology_code", column_name)
+            if cc_tuple is not None:
+                cc.add_coding(cc_tuple)
+            cc_tuple = self.create_code_from_metadata(rows, "secondary_ontology", "secondary_ontology_code", column_name)
+            if cc_tuple is not None:
+                cc.add_coding(cc_tuple)
+            return cc
+        elif len(rows) == 0:
+            log.warn("Did not find the column '%s' in the metadata", column_name)
+            return None
+        else:
+            log.warn("Found several times the column '%s' in the metada", column_name)
+            return None
+
+    def create_code_from_metadata(self, rows, ontology_column: str, code_column: str, column_name: str):
+        ontology = rows[ontology_column].iloc[0]
+        if is_float(ontology) and math.isnan(float(ontology)):
+            # no ontology code has been provided for that variable name, let's skip it
+            return None
+        else:
+            code = rows[code_column].iloc[0]
             display = rows["name"].iloc[0]
-            if not is_float(rows["description"].iloc[0]) or (is_float(rows["description"].iloc[0]) and not math.isnan(float(rows["description"].iloc[0]))):
+            if not is_float(rows["description"].iloc[0]) or (
+                    is_float(rows["description"].iloc[0]) and not math.isnan(float(rows["description"].iloc[0]))):
                 # by default the display is the variable name
                 # if we also have a description, we append it to the display
                 # e.g., "BTD. human biotinidase activity."
                 display = display + ". " + str(rows["description"].iloc[0]) + "."
             log.info("Found exactly an ontology code for the column '%s', i.e., %s", column_name, code)
             cc_tuple = (str(ontology), str(code), str(display))
-            cc = CodeableConcept(cc_tuple)
-            return cc
-        elif len(rows) == 0:
-            log.warn("Found no ontology code for the column '%s'", column_name)
-            return None
-        else:
-            log.warn("Found several ontology code for the columns '%s'", column_name)
-            return None
+            return cc_tuple
 
     def __determine_examination_category(self, code: CodeableConcept):
         for coding in code.codings:

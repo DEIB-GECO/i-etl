@@ -24,8 +24,8 @@ class Disease(Resource):
 
 	def to_json(self):
 		json_disease = {
-			"url": self.url,
-			"status": self.status,
-			"code": self.code
+			"url": str(self.url),
+			"status": str(self.status),
+			"code": str(self.code)
 		}
 		return json_disease
