@@ -21,3 +21,11 @@ class Disease(Resource):
 
 	def get_resource_type(self):
 		return TableNames.DISEASE_TABLE_NAME
+
+	def to_json(self):
+		json_disease = {
+			"url": self.url,
+			"status": self.status,
+			"code": self.code
+		}
+		return json_disease

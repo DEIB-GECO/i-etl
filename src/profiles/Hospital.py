@@ -11,27 +11,30 @@ class Hospital(Resource):
 	def __init__(self, hospital_name: str):
 		super().__init__()
 		self.id = Hospital.ID_COUNTER
-		self.name = hospital_name
 		Hospital.ID_COUNTER = Hospital.ID_COUNTER + 1
+		self.url = "Hospital" + str(self.id)
+		self.name = hospital_name
 
-	def compute_unique_url(self):
-		return "%s/%d" % (TableNames.HOSPITAL_TABLE_NAME, self.id)
+	# TODO Nelly: do this for each resource
+	# def compute_unique_url(self):
+	# 	return "%s/%d" % (TableNames.HOSPITAL_TABLE_NAME, self.id)
 
 	def get_id(self):
 		return self.id
+
+	def get_url(self):
+		return self.url
 
 	def get_name(self):
 		return self.name
 
 	def to_json(self):
-		log.debug(json.dumps(self.__dict__))
-		return json.loads(json.dumps(self.__dict__))
+		json_hospital = {
+			"id": self.id,
+			"url": self.url,
+			"name": self.name
+		}
+		return json_hospital
 
 	def get_resource_type(self):
 		return TableNames.HOSPITAL_TABLE_NAME
-
-	def __str__(self):
-		return "Hospital named " + self.name + " and of ID " + str(self.id)
-
-	def __repr__(self):
-		return "Hospital('"+str(self.id)+", "+self.name+")"

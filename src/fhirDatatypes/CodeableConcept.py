@@ -6,24 +6,23 @@ from src.utils.setup_logger import log
 
 class CodeableConcept:
     def __init__(self, *kwargs):
-        self.text = None
+        self.text = ""
         self.codings = []
         # kwargs is expected to be a list of triplets <system, code, display>
-        print(kwargs)
-        # for k, v in kwargs.items():
-        #     log.debug("%s = %s", k, v)
-        #     self.codings.append(Coding(v))
+        log.debug(kwargs)
+        for triple in kwargs:
+            log.debug("%s", triple)
+            self.codings.append(Coding(triple))
 
-    def __repr__(self):
+    def to_json(self):
         json_cc = {
             "text": self.text,
-            "codings": [self.codings]
+            "codings": [coding.to_json() for coding in self.codings]
         }
-        return json.dumps(json_cc)
+        return json_cc
 
     def __str__(self):
-        json_cc = {
-            "text": self.text,
-            "codings": [self.codings]
-        }
-        return json.dumps(json_cc)
+        return json.dumps(self.to_json())
+
+    def __repr__(self):
+        return json.dumps(self.to_json())

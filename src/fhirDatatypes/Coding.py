@@ -1,5 +1,7 @@
 import json
 
+from src.utils.setup_logger import log
+
 
 class Coding:
     def __init__(self, triple: tuple):
@@ -8,18 +10,11 @@ class Coding:
         self.code = triple[1]
         self.display = triple[2]
 
-    def __repr__(self):
+    def to_json(self):
         json_coding = {
             "system": self.system,
             "code": self.code,
             "display": self.display
         }
-        return json.dumps(json_coding)
-
-    def __str__(self):
-        json_coding = {
-            "system": self.system,
-            "code": self.code,
-            "display": self.display
-        }
-        return json.dumps(json_coding)
+        log.debug(json_coding)
+        return json_coding

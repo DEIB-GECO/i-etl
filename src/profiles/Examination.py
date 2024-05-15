@@ -3,6 +3,7 @@ import json
 from src.database.TableNames import TableNames
 from src.fhirDatatypes.CodeableConcept import CodeableConcept
 from src.profiles.Resource import Resource
+from src.utils.setup_logger import log
 
 
 class Examination(Resource):
@@ -16,6 +17,7 @@ class Examination(Resource):
         assert category is not None, "The field 'category' is required for Examination, but no value was provided."
 
         self.url = Examination.ID_COUNTER
+        Examination.ID_COUNTER = Examination.ID_COUNTER + 1
         self.code = code
         self.status = status
         self.category = category
@@ -47,20 +49,12 @@ class Examination(Resource):
     def get_resource_type(self):
         return TableNames.EXAMINATION_TABLE_NAME
 
-    def __repr__(self):
+    def to_json(self):
         json_examination = {
-            "url": self.url,
-            "code": self.code,
-            "status": self.status,
-            "category": self.category
+            "url": str(self.url),
+            "code": self.code.to_json(),
+            "status": str(self.status),
+            "category": str(self.category)
         }
-        return json.dumps(json_examination)
-
-    def __str__(self):
-        json_examination = {
-            "url": self.url,
-            "code": self.code,
-            "status": self.status,
-            "category": self.category
-        }
-        return json.dumps(json_examination)
+        log.debug(json_examination)
+        return json_examination

@@ -3,6 +3,12 @@ from utils.setup_logger import log
 
 
 ####### Python utils #######
+def is_float(value) -> bool:
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
 
 def assert_type(given_type, expected_type):
     if given_type != expected_type:

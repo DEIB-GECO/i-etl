@@ -7,7 +7,7 @@ from src.profiles.Patient import Patient
 from src.profiles.Resource import Resource
 
 
-class ClinicalRecord(Resource):
+class PhenotypicRecord(Resource):
     ID_COUNTER = 1
 
     def __init__(self, examination: Examination, status: str, code: CodeableConcept, subject: Patient,
@@ -24,8 +24,8 @@ class ClinicalRecord(Resource):
         :param interpretation: a CodeableConcept to help understand whether the value is normal or not.
         """
         super().__init__()
-        self.url = ClinicalRecord.ID_COUNTER
-        ClinicalRecord.ID_COUNTER = ClinicalRecord.ID_COUNTER + 1
+        self.url = PhenotypicRecord.ID_COUNTER
+        PhenotypicRecord.ID_COUNTER = PhenotypicRecord.ID_COUNTER + 1
         self.instantiate = Reference(examination)
         self.status = status
         self.code = code
