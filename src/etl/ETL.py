@@ -34,10 +34,17 @@ class ETL:
         self.mapping_colname_to_examination = {}
 
     def run(self):
+        # self.__create_db_indexes()
         self.__load_phenotypic_variables()
-        self.__create_hospital()
         self.__transform_data()
         self.__insert_data()
+
+    def __create_db_indexes(self):
+        self.database.create_unique_index(TableNames.PATIENT_TABLE_NAME, {"metadata.csv_filepath": 1, "metadata.csv_line": 1})
+        self.database.create_unique_index(TableNames.HOSPITAL_TABLE_NAME, {"id": 1, "name": 1})
+        self.database.create_unique_index(TableNames.EXAMINATION_TABLE_NAME, {"code.codings.system": 1, "code.codings.code": 1})
+        self.database.create_unique_index(TableNames.CLINICAL_RECORD_TABLE_NAME, {"instantiate.reference": 1, "subject.reference": 1, "recorded_by.reference": 1, "value": 1, "issued": 1})
+        self.database.create_unique_index(TableNames.PHENOTYPIC_RECORD_TABLE_NAME, {"instantiate.reference": 1, "subject.reference": 1, "recorded_by.reference": 1, "value": 1, "issued": 1})
 
     def __load_phenotypic_variables(self):
         self.phenotypic_variables = json.load(open(os.path.join("data", "metadata", "phenotypic-variables.json")))
@@ -45,22 +52,16 @@ class ETL:
 
     def __create_hospital(self):
         new_hospital = Hospital(self.hospital_name)
-        log.debug(new_hospital)
-        log.debug(new_hospital.to_json())
         hospital_tuple = new_hospital.to_json()
-        log.debug(hospital_tuple)
 
         # check if this hospital has already been created
         # if so, do not create it again, and get its OD
         # otherwise, create it with a new ID
-        log.debug(new_hospital.get_name())
         filter_hospital_name = {}
         # filter_hospital_name = {
-        #     "hospital_name": new_hospital.get_hospital_name()
+        #     "name": new_hospital.get_name()
         # }
-        log.debug(filter_hospital_name)
         nb_hospitals_with_name = self.database.count_documents(TableNames.HOSPITAL_TABLE_NAME, filter_hospital_name)
-        log.debug(nb_hospitals_with_name)
         log.debug("Nb of hospitals with name '%s': %d", new_hospital.get_name(), nb_hospitals_with_name)
         if nb_hospitals_with_name == 0:
             # the hospital does not exist yet, we will create it
@@ -116,16 +117,11 @@ class ETL:
         log.debug(list(self.samples.columns))
 
     def __create_fair_samples(self):
-        log.debug("self.samples is of type %s", type(self.samples))
-        log.debug(self.mapping_colname_to_examination)
         for index, sample in self.samples.iterrows():
-            log.debug("sample type is: %s", type(sample))
             # create patients, one per sample, and add it to self.patients
             patient = self.__create_patient(sample)
             # create clinical and phenotypic records by associating observations to patients
-            log.debug(sample.items())
             for column_name, value in sample.items():
-                # log.debug("%s is of type %s", value, type(value))
                 if value is None or value == "" or (is_float(value) and math.isnan(float(value))):
                     # TODO Pietro: is it okay to skip NaN values?
                     # If not, we are losing one of the main advantages of No-SQL databases
@@ -135,9 +131,9 @@ class ETL:
                 else:
                     log.info("I'm registering value %s for column %s", value, column_name)
                     if column_name in self.mapping_colname_to_examination:
-                        log.debug("in if")
+                        # we know a code for this column, so we can register the value of that examination
                         associated_examination = self.mapping_colname_to_examination[column_name]
-                        if associated_examination.get_category == ExaminationCategory.PHENOTYPIC:
+                        if associated_examination.get_category() == ExaminationCategory.PHENOTYPIC.name:
                             self.create_phenotypic_record(self.hospital, patient, associated_examination, value)
                         else:
                             self.create_clinical_record(self.hospital, patient, associated_examination, value)
@@ -145,12 +141,10 @@ class ETL:
                         # Ideally, there will be no column left without a code
                         # So this should never happen
                         pass
-        log.debug(self.patients[0].to_json())
-        testrf = Reference(self.patients[0])
-        log.debug(testrf.to_json())
-        log.debug(self.patients[0])
+        # TODO Nelly: add unique constraints to avoid duplicates
         log.debug(self.patients)
         log.debug(self.clinical_records)
+        log.debug(self.phenotypic_records)
 
     def __create_patient(self, sample):
         # log.debug(sample)
@@ -170,16 +164,15 @@ class ETL:
         code = ""
         issued = ""
         interpretation = ""
-        self.clinical_records.append(PhenotypicRecord(associated_examination, status, code, patient, hospital, value, issued, interpretation))
+        self.phenotypic_records.append(PhenotypicRecord(associated_examination, status, code, patient, hospital, value, issued, interpretation))
 
     def __create_examinations(self):
-        #log.debug(sample)
         columns = self.samples.columns.values.tolist()
         for column in columns:
             code = self.__determine_code_from_metadata(column)
             if code is not None:
                 status = "registered"
-                category = self.__determine_examination_category(column)
+                category = self.__determine_examination_category(code)
                 permitted_datatypes = []
                 multiple_results_allowed = False
                 body_site = ""
@@ -193,7 +186,6 @@ class ETL:
         log.info(self.examinations)
 
     def __determine_code_from_metadata(self, column_name: str):
-        # log.debug(self.metadata)
         rows = self.metadata.loc[self.metadata['name'] == column_name]
         if len(rows) == 1:
             ontology = rows["ontology"].iloc[0]
@@ -202,7 +194,6 @@ class ETL:
             log.info("Found exactly an ontology code for the column '%s', i.e., %s", column_name, code)
             cc_tuple = (str(ontology), str(code), str(display))
             cc = CodeableConcept(cc_tuple)
-            log.debug(cc)
             return cc
         elif len(rows) == 0:
             log.warn("Found no ontology code for the column '%s'", column_name)
@@ -211,8 +202,10 @@ class ETL:
             log.warn("Found several ontology code for the columns '%s'", column_name)
             return None
 
-    def __determine_examination_category(self, column_name: str):
-        if column_name in self.phenotypic_variables:
-            return ExaminationCategory.PHENOTYPIC.name
-        else:
-            return ExaminationCategory.CLINICAL.name
+    def __determine_examination_category(self, code: CodeableConcept):
+        for coding in code.codings:
+            coding_full_name = coding.system + "/" + coding.code
+            if coding_full_name in self.phenotypic_variables:
+                return ExaminationCategory.PHENOTYPIC.name
+            else:
+                return ExaminationCategory.CLINICAL.name

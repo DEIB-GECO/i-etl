@@ -16,5 +16,4 @@ class Coding:
             "code": self.code,
             "display": self.display
         }
-        log.debug(json_coding)
         return json_coding

@@ -56,5 +56,4 @@ class Examination(Resource):
             "status": str(self.status),
             "category": str(self.category)
         }
-        log.debug(json_examination)
         return json_examination

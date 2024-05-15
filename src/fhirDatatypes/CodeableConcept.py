@@ -9,9 +9,7 @@ class CodeableConcept:
         self.text = ""
         self.codings = []
         # kwargs is expected to be a list of triplets <system, code, display>
-        log.debug(kwargs)
         for triple in kwargs:
-            log.debug("%s", triple)
             self.codings.append(Coding(triple))
 
     def to_json(self):

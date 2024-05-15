@@ -56,7 +56,11 @@ class Database:
         return self.db[table_name].insert_one(one_tuple).inserted_id
 
     def insert_many_tuples(self, table_name: str, tuples: list[dict]) -> list[int]:
-        return self.db[table_name].insert_many(tuples).inserted_ids
+        if len(tuples) == 0:
+            log.error("An insert operation has been request but not data was provided.")
+            pass
+        else:
+            return self.db[table_name].insert_many(tuples, ordered=False).inserted_ids
 
     def insert_tuples_from_csv(self, table_name: str, csv_path: str, delimiter: str, quotechar: str) -> None:
         log.debug("table_name is: %s", table_name)
@@ -87,6 +91,11 @@ class Database:
         log.debug("table_name is: %s", table_name)
         log.debug("filter_dict is: %s", filter_dict)
         return self.db[table_name].count_documents(filter_dict)
+
+    def create_unique_index(self, table_name: str, columns: dict):
+        log.debug(self.db[table_name])
+        self.db[table_name].create_index(columns, unique=True)
+
     def __str__(self) -> str:
         return "Database " + self.connection_string
 
