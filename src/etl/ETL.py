@@ -21,7 +21,7 @@ from src.utils.setup_logger import log
 
 class ETL:
     def __init__(self, hospital_name, metadata_filepath: str, samples_filepath: str):
-        self.database = Database()
+        self.database = Database(database_name="better_database")
         self.hospital_name = hospital_name
         self.hospital = self.__create_hospital()
         self.metadata_filepath = metadata_filepath
@@ -40,7 +40,7 @@ class ETL:
         self.__insert_data()
 
     def __create_db_indexes(self):
-        self.database.create_unique_index(TableNames.PATIENT_TABLE_NAME, {"metadata.csv_filepath": 1, "metadata.csv_line": 1})
+        self.database.create_unique_index(table_name=TableNames.PATIENT_TABLE_NAME, columns={"metadata.csv_filepath": 1, "metadata.csv_line": 1})
         self.database.create_unique_index(TableNames.HOSPITAL_TABLE_NAME, {"id": 1, "name": 1})
         self.database.create_unique_index(TableNames.EXAMINATION_TABLE_NAME, {"code.codings.system": 1, "code.codings.code": 1})
         self.database.create_unique_index(TableNames.CLINICAL_RECORD_TABLE_NAME, {"instantiate.reference": 1, "subject.reference": 1, "recorded_by.reference": 1, "value": 1, "issued": 1})
@@ -48,7 +48,7 @@ class ETL:
 
     def __load_phenotypic_variables(self):
         self.phenotypic_variables = json.load(open(os.path.join("data", "metadata", "phenotypic-variables.json")))
-        log.debug(self.phenotypic_variables)
+        log.debug("Nb of phenotypic variables: %s", len(self.phenotypic_variables))
 
     def __create_hospital(self):
         new_hospital = Hospital(self.hospital_name)
@@ -82,7 +82,7 @@ class ETL:
         self.__create_fair_samples()
 
     def __insert_data(self):
-        # self.database.insert_many_tuples(TableNames.PATIENT_TABLE_NAME, [patient.to_json() for patient in self.patients])
+        self.database.insert_many_tuples(TableNames.PATIENT_TABLE_NAME, [patient.to_json() for patient in self.patients])
         self.database.insert_many_tuples(TableNames.EXAMINATION_TABLE_NAME, [examination.to_json() for examination in self.examinations])
         self.database.insert_many_tuples(TableNames.CLINICAL_RECORD_TABLE_NAME, [clinical_record.to_json() for clinical_record in self.clinical_records])
         self.database.insert_many_tuples(TableNames.PHENOTYPIC_RECORD_TABLE_NAME, [phenotypic_record.to_json() for phenotypic_record in self.phenotypic_records])
@@ -129,10 +129,13 @@ class ETL:
                     # therefore w d not create a clinical or phenotypic record and skip this cell
                     pass
                 else:
-                    log.info("I'm registering value %s for column %s", value, column_name)
+                    # log.info("I'm registering value %s for column %s", value, column_name)
                     if column_name in self.mapping_colname_to_examination:
                         # we know a code for this column, so we can register the value of that examination
                         associated_examination = self.mapping_colname_to_examination[column_name]
+                        # TODO Pietro: harmonize values,
+                        #  we should use codes (JSON-styled by Boris) whenever we can
+                        #  but for others we need normalization (WP6?)
                         if associated_examination.get_category() == ExaminationCategory.PHENOTYPIC.name:
                             self.create_phenotypic_record(self.hospital, patient, associated_examination, value)
                         else:
@@ -142,9 +145,9 @@ class ETL:
                         # So this should never happen
                         pass
         # TODO Nelly: add unique constraints to avoid duplicates
-        log.debug(self.patients)
-        log.debug(self.clinical_records)
-        log.debug(self.phenotypic_records)
+        log.debug("Nb of patients: %s", len(self.patients))
+        log.debug("Nb of clinical records: %s", len(self.clinical_records))
+        log.debug("Nb of phenotypic records: %s", len(self.phenotypic_records))
 
     def __create_patient(self, sample):
         # log.debug(sample)
@@ -183,14 +186,19 @@ class ETL:
                 # This should never happen as all variables will end up to have a code
                 pass
 
-        log.info(self.examinations)
+        log.debug("Nb of examinations: %s", len(self.examinations))
 
     def __determine_code_from_metadata(self, column_name: str):
         rows = self.metadata.loc[self.metadata['name'] == column_name]
         if len(rows) == 1:
             ontology = rows["ontology"].iloc[0]
             code = rows["ontology_code"].iloc[0]
-            display = rows["description"].iloc[0]
+            display = rows["name"].iloc[0]
+            if not is_float(rows["description"].iloc[0]) or (is_float(rows["description"].iloc[0]) and not math.isnan(float(rows["description"].iloc[0]))):
+                # by default the display is the variable name
+                # if we also have a description, we append it to the display
+                # e.g., "BTD. human biotinidase activity."
+                display = display + ". " + str(rows["description"].iloc[0]) + "."
             log.info("Found exactly an ontology code for the column '%s', i.e., %s", column_name, code)
             cc_tuple = (str(ontology), str(code), str(display))
             cc = CodeableConcept(cc_tuple)
