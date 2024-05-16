@@ -15,7 +15,7 @@ class CodeableConcept:
     def to_json(self):
         json_cc = {
             "text": str(self.text),
-            "codings": [coding.to_json() for coding in self.codings]
+            "coding": [coding.to_json() for coding in self.codings]
         }
         return json_cc
 

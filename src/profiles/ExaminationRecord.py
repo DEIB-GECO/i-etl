@@ -3,8 +3,9 @@ from src.fhirDatatypes.CodeableConcept import CodeableConcept
 from src.fhirDatatypes.Reference import Reference
 from src.profiles.Examination import Examination
 from src.profiles.Hospital import Hospital
-from src.profiles.patient import Patient
+from src.profiles.Patient import Patient
 from src.profiles.Resource import Resource
+from src.utils.utils import build_url
 
 
 class ExaminationRecord(Resource):
@@ -24,8 +25,9 @@ class ExaminationRecord(Resource):
         :param interpretation: a CodeableConcept to help understand whether the value is normal or not.
         """
         super().__init__()
-        self.url = ExaminationRecord.ID_COUNTER
+        self.id = ExaminationRecord.ID_COUNTER
         ExaminationRecord.ID_COUNTER = ExaminationRecord.ID_COUNTER + 1
+        self.url = build_url(TableNames.EXAMINATION_RECORD_TABLE_NAME, self.id)
         self.instantiate = Reference(examination)
         self.status = status
         self.code = code
@@ -35,44 +37,24 @@ class ExaminationRecord(Resource):
         self.issued = issued
         self.interpretation = interpretation
 
-    def get_url(self):
+    def get_url(self) -> str:
         return self.url
 
-    def get_instantiate(self):
-        return self.instantiate
-
-    def get_value(self):
-        return self.value
-
-    def get_subject(self):
-        return self.subject
-
-    def get_recorded_by(self):
-        return self.recorded_by
-
-    def get_status(self):
-        return self.status
-
-    def get_code(self):
-        return self.code
-
-    def get_issued(self):
-        return self.issued
-
-    def get_resource_type(self):
+    def get_resource_type(self) -> str:
         return TableNames.EXAMINATION_RECORD_TABLE_NAME
 
     def to_json(self):
         json_clinical_record = {
-            "url": str(self.url),
+            "id": self.id,
+            "url": self.url,
             "instantiate": self.instantiate.to_json(),
-            "status": str(self.status),
+            "status": self.status,
             # "code": self.code.to_json(), # TODO Nelly: add this after understanding what is code about
             "subject": self.subject.to_json(),
             "recorded_by": self.recorded_by.to_json(),
-            "value": str(self.value),
-            "issued": str(self.issued),
-            "interpretation": str(self.interpretation)
+            "value": self.value,
+            "issued": self.issued,
+            "interpretation": self.interpretation
         }
 
         return json_clinical_record

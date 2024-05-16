@@ -1,6 +1,9 @@
 import matplotlib
 import numpy as np
 import pandas as pd
+from pymongo.command_cursor import CommandCursor
+
+from src.utils.utils import assert_type
 
 matplotlib.rcParams['backend'] = 'TkAgg'  # fix to avoid "Loaded backend macosx version unknown." error
 import matplotlib.pyplot as plt
@@ -10,7 +13,12 @@ from src.utils.setup_logger import log
 
 
 class DistributionPlot:
-    def __init__(self, cursor: Cursor, examination_name: str, y_label: str, vertical_y: bool):
+    def __init__(self, cursor: CommandCursor, examination_name: str, y_label: str, vertical_y: bool):
+        assert_type(variable=cursor, expected_type=CommandCursor, variable_name="cursor")
+        assert_type(variable=examination_name, expected_type=str, variable_name="examination_name")
+        assert_type(variable=y_label, expected_type=str, variable_name="y_label")
+        assert_type(variable=vertical_y, expected_type=bool, variable_name="vertical_y")
+
         self.cursor = cursor
         self.examination_name = examination_name
         self.y_label = y_label

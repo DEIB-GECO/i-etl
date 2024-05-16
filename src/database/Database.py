@@ -5,12 +5,9 @@ import csv
 import json
 
 from src.database.TableNames import TableNames
-from src.profiles.Examination import Examination
-from src.utils.utils import decorate_all_functions, check_types_before_func, check_types
 from src.utils.setup_logger import log
 
 
-#@decorate_all_functions(check_types_before_func)
 class Database:
     def __init__(self, connection_string="mongodb://localhost:27017/", database_name="my_db"):
         assert type(connection_string) is str
@@ -164,7 +161,7 @@ class Database:
         ])
 
     def get_value_distribution_of_examination(self, table_name: str, examination_url: str, limit: int, min_value: int):
-        return self.db[table_name].aggregate([
+        pipeline = [
             {
                 "$match": {
                     "instantiate.reference": examination_url
@@ -192,7 +189,9 @@ class Database:
                     "_id": 1,
                 }
             }
-        ]) #.collation({"locale": "en_US", "numericOrdering": "true"})
+        ]
+        log.debug(pipeline)
+        return self.db[table_name].aggregate(pipeline) #.collation({"locale": "en_US", "numericOrdering": "true"})
 
     def __str__(self) -> str:
         return "Database " + self.connection_string

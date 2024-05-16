@@ -1,8 +1,7 @@
-import json
-
 from src.database.TableNames import TableNames
 from src.profiles.Resource import Resource
 from src.utils.setup_logger import log
+from src.utils.utils import build_url
 
 
 class Hospital(Resource):
@@ -12,29 +11,19 @@ class Hospital(Resource):
 		super().__init__()
 		self.id = Hospital.ID_COUNTER
 		Hospital.ID_COUNTER = Hospital.ID_COUNTER + 1
-		self.url = "Hospital" + str(self.id)
+		self.url = build_url(TableNames.HOSPITAL_TABLE_NAME, self.id)
 		self.name = hospital_name
 
-	# TODO Nelly: do this for each resource
-	# def compute_unique_url(self):
-	# 	return "%s/%d" % (TableNames.HOSPITAL_TABLE_NAME, self.id)
-
-	def get_id(self):
-		return self.id
-
-	def get_url(self):
+	def get_url(self) -> str:
 		return self.url
 
-	def get_name(self):
-		return self.name
+	def get_resource_type(self) -> str:
+		return TableNames.HOSPITAL_TABLE_NAME
 
-	def to_json(self):
+	def to_json(self) -> dict:
 		json_hospital = {
-			"id": str(self.id),
-			"url": str(self.url),
-			"name": str(self.name)
+			"id": self.id,
+			"url": self.url,
+			"name": self.name
 		}
 		return json_hospital
-
-	def get_resource_type(self):
-		return TableNames.HOSPITAL_TABLE_NAME

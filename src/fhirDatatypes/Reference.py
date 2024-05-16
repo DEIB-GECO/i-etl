@@ -7,8 +7,7 @@ class Reference:
     def __init__(self, resource):
         """
         Create a new reference to another resource.
-        :param reference_url: the (unique) url assigned to the referred resource.
-        :param type: the resource type associated to the referred resource, e.g., Patient, Organization, etc.
+        :param resource:
         """
         super().__init__()
         self.ref = resource.get_url()
@@ -16,9 +15,10 @@ class Reference:
 
     def to_json(self):
         json_reference = {
-            "reference": str(self.ref),
-            "type": str(self.type)
+            "reference": self.ref,
+            "type": self.type
         }
+
         return json_reference
 
     def __str__(self):

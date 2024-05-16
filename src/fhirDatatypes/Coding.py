@@ -1,11 +1,13 @@
 import json
 
 from src.utils.setup_logger import log
+from src.utils.utils import assert_type
 
 
 class Coding:
     def __init__(self, triple: tuple):
-        assert type(triple) is tuple, "The 'triple' parameter should be like: <system: str, code: str, display: str>."
+        assert_type(triple, tuple, "triple")
+
         self.system = triple[0]
         self.code = triple[1]
         self.display = triple[2]
@@ -16,4 +18,11 @@ class Coding:
             "code": str(self.code),
             "display": str(self.display)
         }
+
         return json_coding
+
+    def __str__(self):
+        return json.dumps(self.to_json())
+
+    def __repr__(self):
+        return json.dumps(self.to_json())

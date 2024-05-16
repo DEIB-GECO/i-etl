@@ -1,34 +1,36 @@
 import math
 
-import pandas as pd
 import os
-import time
-
-from numpy import NaN
+import pandas as pd
+import re
 
 from src.database.Database import *
 from src.database.TableNames import TableNames
 from src.fhirDatatypes.CodeableConcept import CodeableConcept
-from src.fhirDatatypes.Reference import Reference
 from src.profiles.Examination import Examination
 from src.profiles.ExaminationCategory import ExaminationCategory
 from src.profiles.ExaminationRecord import ExaminationRecord
 from src.profiles.Hospital import Hospital
-from src.profiles.patient import Patient
+from src.profiles.Patient import Patient
 from src.utils.DistributionPlot import DistributionPlot
 from src.utils.TimeMeasurer import TimeMeasurer
-from src.utils.utils import is_float
+from src.utils.utils import build_url, is_not_nan
 from src.utils.setup_logger import log
 
 
 class ETL:
     def __init__(self, hospital_name, metadata_filepath: str, samples_filepath: str):
-        self.database = Database(database_name="better_database_9")
+        self.database = Database(database_name="better_database_18")
+        self.create_structures = True
+        self.transform_data = True
+        self.load_data = True
+        self.compute_plots = False
         # self.database = Database()
         self.hospital_name = hospital_name
         self.hospital = self.__create_hospital()
         self.metadata_filepath = metadata_filepath
         self.samples_filepath = samples_filepath
+        self.metadata = None
         self.patients = []
         self.examinations = []
         self.examination_records = []
@@ -42,44 +44,38 @@ class ETL:
         # 0. set filepaths as arguments
         # 1. set db name: better_project
         # 2. uncomment the three lines below
-        tm1 = TimeMeasurer()
-        tm1.start()
-        self.__load_phenotypic_variables()
-        tm1.stop()
-        log.debug("Load phenotypic variables in %d ms", tm1.get_measure())
-        tm1.reset_and_start()
-        self.__transform_data()
-        tm1.stop()
-        log.debug("Transform data in %d ms", tm1.get_measure())
-        tm1.reset_and_start()
-        self.__insert_data()
-        tm1.stop()
-        log.debug("Insert data in %d ms", tm1.get_measure())
+        if self.create_structures:
+            self.__load_metadata_file()
+            self.__load_samples_file()
+            self.__load_phenotypic_variables()
+            self.__compute_mapped_values()
 
-        #2. MongoDB compass
-        # Show the entry for Hospital
-        # Show first Patient
-        # Show structure of one Examination
-        # all examination records for patient 1: {"subject.reference": "Patient1"}
-        # examination "Ethnicity" for Patient 1: {"$and": [{"subject.reference": "Patient1"}, {"instantiate.reference": "77"}]}
+        if self.transform_data:
+            self.__transform_data()
 
-        # 3. comment the 3 lines above
-        # uncomment lines below
-        tm1.reset_and_start()
-        examination_number = "88"  # premature baby
-        cursor = self.database.get_value_distribution_of_examination(TableNames.EXAMINATION_RECORD_TABLE_NAME, examination_number, 5, -1)
-        plot = DistributionPlot(cursor, examination_number, "Premature Baby",False)  # do not print the cursor before, otherwise it would consume it
-        plot.draw()
-        tm1.stop()
-        log.debug("Get premature baby plot in %d ms", tm1.get_measure())
+        if self.load_data:
+            self.__insert_data()
 
-        tm1.reset_and_start()
-        examination_number = "77"  # ethnicity
-        cursor = self.database.get_value_distribution_of_examination(TableNames.EXAMINATION_RECORD_TABLE_NAME, examination_number, 5, 20)
-        plot = DistributionPlot(cursor, examination_number, "Ethnicity", True)  # do not print the cursor before, otherwise it would consume it
-        plot.draw()
-        tm1.stop()
-        log.debug("Get ethnicity plot in %d ms", tm1.get_measure())
+        # #2. MongoDB compass
+        # # Show the entry for Hospital
+        # # Show first Patient
+        # # Show structure of one Examination
+        # # all examination records for patient 1: {"subject.reference": "Patient1"}
+        # # examination "Ethnicity" for Patient 1: {"$and": [{"subject.reference": "Patient1"}, {"instantiate.reference": "77"}]}
+        #
+        # # 3. comment the 3 lines above
+        # # uncomment lines below
+        if self.compute_plots:
+            examination_url = build_url(TableNames.EXAMINATION_TABLE_NAME, 88)  # premature baby
+            log.debug(examination_url)
+            cursor = self.database.get_value_distribution_of_examination(TableNames.EXAMINATION_RECORD_TABLE_NAME, examination_url, 5, -1)
+            plot = DistributionPlot(cursor, examination_url, "Premature Baby", False)  # do not print the cursor before, otherwise it would consume it
+            plot.draw()
+
+            examination_url = build_url(TableNames.EXAMINATION_TABLE_NAME, 77)  # ethnicity
+            cursor = self.database.get_value_distribution_of_examination(TableNames.EXAMINATION_RECORD_TABLE_NAME, examination_url, 5, 20)
+            plot = DistributionPlot(cursor, examination_url, "Ethnicity", True)  # do not print the cursor before, otherwise it would consume it
+            plot.draw()
 
 
 
@@ -97,6 +93,17 @@ class ETL:
         self.phenotypic_variables = json.load(open(os.path.join("data", "metadata", "phenotypic-variables.json")))
         log.debug("Nb of phenotypic variables: %s", len(self.phenotypic_variables))
 
+    def __compute_mapped_values(self):
+        self.mapped_values = {}
+
+        for index, row in self.metadata.iterrows():
+            log.debug(row)
+            if is_not_nan(row["JSON_values"]):
+                log.debug(row["JSON_values"])
+                self.mapped_values[row["name"]] = json.loads(row["JSON_values"])
+
+        log.debug(self.mapped_values)
+
     def __create_hospital(self):
         new_hospital = Hospital(self.hospital_name)
         hospital_tuple = new_hospital.to_json()
@@ -109,22 +116,20 @@ class ETL:
         #     "name": new_hospital.get_name()
         # }
         nb_hospitals_with_name = self.database.count_documents(TableNames.HOSPITAL_TABLE_NAME, filter_hospital_name)
-        log.debug("Nb of hospitals with name '%s': %d", new_hospital.get_name(), nb_hospitals_with_name)
+        log.debug("Nb of hospitals with name '%s': %d", self.hospital_name, nb_hospitals_with_name)
         if nb_hospitals_with_name == 0:
             # the hospital does not exist yet, we will create it
-            log.info("No hospital labelled '%s' exists: creating it.", new_hospital.get_name())
+            log.info("No hospital labelled '%s' exists: creating it.", self.hospital_name)
             self.database.insert_one_tuple(TableNames.HOSPITAL_TABLE_NAME, hospital_tuple)
             return new_hospital
         elif nb_hospitals_with_name == 1:
             # the hospital already exists, no need to do something
-            log.info("One hospital labelled '%s' exists: retrieving it.", new_hospital.get_name())
+            log.info("One hospital labelled '%s' exists: retrieving it.", self.hospital_name)
             return new_hospital # TODO: return the hospital from the database
         else:
             raise ValueError("Several hospitals are labelled '%s': stopping here to avoid further problems.", new_hospital.get_hospital_name())
 
     def __transform_data(self):
-        self.__load_metadata_file()
-        self.__load_samples_file()
         self.__create_examinations()
         self.__create_fair_samples()
 
@@ -140,19 +145,37 @@ class ETL:
 
         self.metadata = pd.read_csv(self.metadata_filepath)
 
-        log.debug(self.metadata[0:10])
-
         # lower case all column names to avoid inconsistencies
         self.metadata['name'] = self.metadata['name'].apply(lambda x: x.lower())
 
-        log.debug(self.metadata['name'])
+        # remove spaces in ontology names and codes
+        self.metadata["ontology"] = self.metadata["ontology"].apply(lambda value: str(value).replace(" ", ""))
+        self.metadata["ontology_code"] = self.metadata["ontology_code"].apply(lambda value: str(value).replace(" ", ""))
+        self.metadata["secondary_ontology"] = self.metadata["secondary_ontology"].apply(lambda value: str(value).replace(" ", ""))
+        self.metadata["secondary_ontology_code"] = self.metadata["secondary_ontology_code"].apply(lambda value: str(value).replace(" ", ""))
 
-        # remove splaces in ontology names and codes
-        self.metadata["ontology"] = self.metadata["ontology"].apply(lambda x: str(x).replace(" ", ""))
-        self.metadata["ontology_code"] = self.metadata["ontology_code"].apply(lambda x: str(x).replace(" ", ""))
-        self.metadata["secondary_ontology"] = self.metadata["secondary_ontology"].apply(lambda x: str(x).replace(" ", ""))
-        self.metadata["secondary_ontology_code"] = self.metadata["secondary_ontology_code"].apply(lambda x: str(x).replace(" ", ""))
-        log.debug(self.metadata['ontology'])
+        # the non-NaN JSON_values values are of the form: "{...}, {...}, ..."
+        # thus, we need to
+        # 1. create an empty list
+        # 2. add each JSON dict of JSON_values in that list
+        # Note: we cannot simply add brackets around the dicts because it would add a string with the dicts in the list
+        # we cannot either use json.loads on row["JSON_values"] because it is not parsable (it lacks the brackets)
+        for index, row in self.metadata.iterrows():
+            if is_not_nan(row["JSON_values"]):
+                values_dicts = []
+                json_dicts = re.split('}, {', row["JSON_values"])
+                # json_dicts = re.split('(\W)', 'foo/bar spam\neggs')
+                log.debug(json_dicts)
+                for json_dict in json_dicts:
+                    log.debug(json_dict)
+                    if not json_dict.startswith("{"):
+                        json_dict = "{" + json_dict
+                    if not json_dict.endswith("}"):
+                        json_dict = json_dict + "}"
+                    log.debug(json_dict)
+                    values_dicts.append(json.loads(json_dict))
+                log.debug(values_dicts)
+                self.metadata.loc[index, "JSON_values"] = json.dumps(values_dicts) # set the new JSON values as a string
 
     def __load_samples_file(self):
         assert os.path.exists(self.samples_filepath), "The provided samples file could not be found. Please check the filepath you specify when running this script."
@@ -175,22 +198,24 @@ class ETL:
             patient = self.__create_patient(sample)
             # create clinical and phenotypic records by associating observations to patients
             for column_name, value in sample.items():
-                if value is None or value == "" or (is_float(value) and math.isnan(float(value))):
+                if value is None or value == "" or not is_not_nan(value):
                     # TODO Pietro: is it okay to skip NaN values?
                     # If not, we are losing one of the main advantages of No-SQL databases
                     # there is no value for that examination for the current patient
                     # therefore w d not create a clinical or phenotypic record and skip this cell
                     pass
                 else:
-                    # log.info("I'm registering value %s for column %s", value, column_name)
+                    log.info("I'm registering value %s for column %s", value, column_name)
                     if column_name in self.mapping_colname_to_examination:
+                        log.info("I know a code for column %s", column_name)
                         # we know a code for this column, so we can register the value of that examination
                         associated_examination = self.mapping_colname_to_examination[column_name]
                         # TODO Pietro: harmonize values (upper-lower case, dates, etc)
                         #  we should use codes (JSON-styled by Boris) whenever we can
                         #  but for others we need normalization (WP6?)
                         #  we could even clean more the data, e.g., do not allow "Italy" as ethnicity (caucasian, etc)
-                        self.create_examination_record(self.hospital, patient, associated_examination, value)
+                        fairified_value = self.__fairify_value(column_name=column_name, value=value)
+                        self.create_examination_record(self.hospital, patient, associated_examination, fairified_value)
                     else:
                         # Ideally, there will be no column left without a code
                         # So this should never happen
@@ -243,27 +268,26 @@ class ETL:
                 cc.add_coding(cc_tuple)
             return cc
         elif len(rows) == 0:
-            log.warn("Did not find the column '%s' in the metadata", column_name)
+            # log.warn("Did not find the column '%s' in the metadata", column_name)
             return None
         else:
-            log.warn("Found several times the column '%s' in the metada", column_name)
+            # log.warn("Found several times the column '%s' in the metada", column_name)
             return None
 
     def create_code_from_metadata(self, rows, ontology_column: str, code_column: str, column_name: str):
         ontology = rows[ontology_column].iloc[0]
-        if is_float(ontology) and math.isnan(float(ontology)):
+        if is_not_nan(ontology):
             # no ontology code has been provided for that variable name, let's skip it
             return None
         else:
             code = rows[code_column].iloc[0]
             display = rows["name"].iloc[0]
-            if not is_float(rows["description"].iloc[0]) or (
-                    is_float(rows["description"].iloc[0]) and not math.isnan(float(rows["description"].iloc[0]))):
+            if is_not_nan(rows["description"].iloc[0]):
                 # by default the display is the variable name
                 # if we also have a description, we append it to the display
                 # e.g., "BTD. human biotinidase activity."
                 display = display + ". " + str(rows["description"].iloc[0]) + "."
-            log.info("Found exactly an ontology code for the column '%s', i.e., %s", column_name, code)
+            # log.info("Found exactly an ontology code for the column '%s', i.e., %s", column_name, code)
             cc_tuple = (str(ontology), str(code), str(display))
             return cc_tuple
 
@@ -274,3 +298,12 @@ class ETL:
                 return ExaminationCategory.PHENOTYPIC.name
             else:
                 return ExaminationCategory.CLINICAL.name
+
+    def __fairify_value(self, column_name, value):
+        if column_name in self.mapped_values:
+            for mapping in self.mapped_values[column_name]:
+                if mapping['snomed_ct'] == value:
+                    log.debug(mapping['snomed_ct'])
+                    return mapping['snomed_ct']
+            return value  # no coded value for that value
+        return value  # no coded value for that value
