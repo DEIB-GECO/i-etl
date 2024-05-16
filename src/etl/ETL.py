@@ -2,6 +2,7 @@ import math
 
 import pandas as pd
 import os
+import time
 
 from numpy import NaN
 
@@ -9,52 +10,88 @@ from src.database.Database import *
 from src.database.TableNames import TableNames
 from src.fhirDatatypes.CodeableConcept import CodeableConcept
 from src.fhirDatatypes.Reference import Reference
-from src.profiles.ClinicalRecord import ClinicalRecord
 from src.profiles.Examination import Examination
 from src.profiles.ExaminationCategory import ExaminationCategory
+from src.profiles.ExaminationRecord import ExaminationRecord
 from src.profiles.Hospital import Hospital
-from src.profiles.Patient import Patient
-from src.profiles.PhenotypicRecord import PhenotypicRecord
+from src.profiles.patient import Patient
 from src.utils.DistributionPlot import DistributionPlot
-from src.utils.Utils import is_float
+from src.utils.TimeMeasurer import TimeMeasurer
+from src.utils.utils import is_float
 from src.utils.setup_logger import log
 
 
 class ETL:
     def __init__(self, hospital_name, metadata_filepath: str, samples_filepath: str):
-        # self.database = Database(database_name="better_database")
-        self.database = Database()
+        self.database = Database(database_name="better_database_9")
+        # self.database = Database()
         self.hospital_name = hospital_name
         self.hospital = self.__create_hospital()
         self.metadata_filepath = metadata_filepath
         self.samples_filepath = samples_filepath
         self.patients = []
         self.examinations = []
-        self.clinical_records = []
-        self.phenotypic_records = []
+        self.examination_records = []
         self.phenotypic_variables = {}
         self.mapping_colname_to_examination = {}
         self.mapped_values = {}
 
     def run(self):
         # self.__create_db_indexes()
-        # self.__load_phenotypic_variables()
-        # self.__transform_data()
-        # self.__insert_data()
 
-        # draw insights from the data
-        # cursor = self.database.get_min_value_of_phenotypic_record(TableNames.PHENOTYPIC_RECORD_TABLE_NAME, "76")
-        # cursor = self.database.get_avg_value_of_phenotypic_record(TableNames.PHENOTYPIC_RECORD_TABLE_NAME, "76")
-        cursor = self.database.get_value_distribution_of_examination(TableNames.PHENOTYPIC_RECORD_TABLE_NAME, "76")
-        plot = DistributionPlot(cursor, "7")  # do not print the cursor before, otherwise it would consume it
+        # 0. set filepaths as arguments
+        # 1. set db name: better_project
+        # 2. uncomment the three lines below
+        tm1 = TimeMeasurer()
+        tm1.start()
+        self.__load_phenotypic_variables()
+        tm1.stop()
+        log.debug("Load phenotypic variables in %d ms", tm1.get_measure())
+        tm1.reset_and_start()
+        self.__transform_data()
+        tm1.stop()
+        log.debug("Transform data in %d ms", tm1.get_measure())
+        tm1.reset_and_start()
+        self.__insert_data()
+        tm1.stop()
+        log.debug("Insert data in %d ms", tm1.get_measure())
+
+        #2. MongoDB compass
+        # Show the entry for Hospital
+        # Show first Patient
+        # Show structure of one Examination
+        # all examination records for patient 1: {"subject.reference": "Patient1"}
+        # examination "Ethnicity" for Patient 1: {"$and": [{"subject.reference": "Patient1"}, {"instantiate.reference": "77"}]}
+
+        # 3. comment the 3 lines above
+        # uncomment lines below
+        tm1.reset_and_start()
+        examination_number = "88"  # premature baby
+        cursor = self.database.get_value_distribution_of_examination(TableNames.EXAMINATION_RECORD_TABLE_NAME, examination_number, 5, -1)
+        plot = DistributionPlot(cursor, examination_number, "Premature Baby",False)  # do not print the cursor before, otherwise it would consume it
         plot.draw()
+        tm1.stop()
+        log.debug("Get premature baby plot in %d ms", tm1.get_measure())
+
+        tm1.reset_and_start()
+        examination_number = "77"  # ethnicity
+        cursor = self.database.get_value_distribution_of_examination(TableNames.EXAMINATION_RECORD_TABLE_NAME, examination_number, 5, 20)
+        plot = DistributionPlot(cursor, examination_number, "Ethnicity", True)  # do not print the cursor before, otherwise it would consume it
+        plot.draw()
+        tm1.stop()
+        log.debug("Get ethnicity plot in %d ms", tm1.get_measure())
+
+
+
+
+        # cursor = self.database.get_min_value_of_examination_record(TableNames.EXAMINATION_RECORD_TABLE_NAME, "76")
+        # cursor = self.database.get_avg_value_of_examination_record(TableNames.EXAMINATION_RECORD_TABLE_NAME, "76")
 
     def __create_db_indexes(self):
         self.database.create_unique_index(table_name=TableNames.PATIENT_TABLE_NAME, columns={"metadata.csv_filepath": 1, "metadata.csv_line": 1})
         self.database.create_unique_index(TableNames.HOSPITAL_TABLE_NAME, {"id": 1, "name": 1})
         self.database.create_unique_index(TableNames.EXAMINATION_TABLE_NAME, {"code.codings.system": 1, "code.codings.code": 1})
-        self.database.create_unique_index(TableNames.CLINICAL_RECORD_TABLE_NAME, {"instantiate.reference": 1, "subject.reference": 1, "recorded_by.reference": 1, "value": 1, "issued": 1})
-        self.database.create_unique_index(TableNames.PHENOTYPIC_RECORD_TABLE_NAME, {"instantiate.reference": 1, "subject.reference": 1, "recorded_by.reference": 1, "value": 1, "issued": 1})
+        self.database.create_unique_index(TableNames.EXAMINATION_RECORD_TABLE_NAME, {"instantiate.reference": 1, "subject.reference": 1, "recorded_by.reference": 1, "value": 1, "issued": 1})
 
     def __load_phenotypic_variables(self):
         self.phenotypic_variables = json.load(open(os.path.join("data", "metadata", "phenotypic-variables.json")))
@@ -94,8 +131,7 @@ class ETL:
     def __insert_data(self):
         self.database.insert_many_tuples(TableNames.PATIENT_TABLE_NAME, [patient.to_json() for patient in self.patients])
         self.database.insert_many_tuples(TableNames.EXAMINATION_TABLE_NAME, [examination.to_json() for examination in self.examinations])
-        self.database.insert_many_tuples(TableNames.CLINICAL_RECORD_TABLE_NAME, [clinical_record.to_json() for clinical_record in self.clinical_records])
-        self.database.insert_many_tuples(TableNames.PHENOTYPIC_RECORD_TABLE_NAME, [phenotypic_record.to_json() for phenotypic_record in self.phenotypic_records])
+        self.database.insert_many_tuples(TableNames.EXAMINATION_RECORD_TABLE_NAME, [examination_record.to_json() for examination_record in self.examination_records])
 
     def __load_metadata_file(self):
         assert os.path.exists(self.metadata_filepath), "The provided metadata file could not be found. Please check the filepath you specify when running this script."
@@ -154,18 +190,14 @@ class ETL:
                         #  we should use codes (JSON-styled by Boris) whenever we can
                         #  but for others we need normalization (WP6?)
                         #  we could even clean more the data, e.g., do not allow "Italy" as ethnicity (caucasian, etc)
-                        if associated_examination.get_category() == ExaminationCategory.PHENOTYPIC.name:
-                            self.create_phenotypic_record(self.hospital, patient, associated_examination, value)
-                        else:
-                            self.create_clinical_record(self.hospital, patient, associated_examination, value)
+                        self.create_examination_record(self.hospital, patient, associated_examination, value)
                     else:
                         # Ideally, there will be no column left without a code
                         # So this should never happen
                         pass
         # TODO Nelly: add unique constraints to avoid duplicates
         log.debug("Nb of patients: %s", len(self.patients))
-        log.debug("Nb of clinical records: %s", len(self.clinical_records))
-        log.debug("Nb of phenotypic records: %s", len(self.phenotypic_records))
+        log.debug("Nb of examination records: %s", len(self.examination_records))
 
     def __create_patient(self, sample):
         # log.debug(sample)
@@ -173,19 +205,12 @@ class ETL:
         self.patients.append(new_patient)
         return new_patient
 
-    def create_clinical_record(self, hospital: Hospital, patient: Patient, associated_examination: Examination, value):
+    def create_examination_record(self, hospital: Hospital, patient: Patient, associated_examination: Examination, value):
         status = ""
         code = ""
         issued = ""
         interpretation = ""
-        self.clinical_records.append(ClinicalRecord(associated_examination, status, code, patient, hospital, value, issued, interpretation))
-
-    def create_phenotypic_record(self, hospital: Hospital, patient: Patient, associated_examination: Examination, value):
-        status = ""
-        code = ""
-        issued = ""
-        interpretation = ""
-        self.phenotypic_records.append(PhenotypicRecord(associated_examination, status, code, patient, hospital, value, issued, interpretation))
+        self.examination_records.append(ExaminationRecord(associated_examination, status, code, patient, hospital, value, issued, interpretation))
 
     def __create_examinations(self):
         columns = self.samples.columns.values.tolist()

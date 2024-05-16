@@ -3,11 +3,11 @@ from src.fhirDatatypes.CodeableConcept import CodeableConcept
 from src.fhirDatatypes.Reference import Reference
 from src.profiles.Examination import Examination
 from src.profiles.Hospital import Hospital
-from src.profiles.Patient import Patient
+from src.profiles.patient import Patient
 from src.profiles.Resource import Resource
 
 
-class ClinicalRecord(Resource):
+class ExaminationRecord(Resource):
     ID_COUNTER = 1
 
     def __init__(self, examination: Examination, status: str, code: CodeableConcept, subject: Patient,
@@ -24,8 +24,8 @@ class ClinicalRecord(Resource):
         :param interpretation: a CodeableConcept to help understand whether the value is normal or not.
         """
         super().__init__()
-        self.url = ClinicalRecord.ID_COUNTER
-        ClinicalRecord.ID_COUNTER = ClinicalRecord.ID_COUNTER + 1
+        self.url = ExaminationRecord.ID_COUNTER
+        ExaminationRecord.ID_COUNTER = ExaminationRecord.ID_COUNTER + 1
         self.instantiate = Reference(examination)
         self.status = status
         self.code = code
@@ -60,7 +60,7 @@ class ClinicalRecord(Resource):
         return self.issued
 
     def get_resource_type(self):
-        return TableNames.CLINICAL_RECORD_TABLE_NAME
+        return TableNames.EXAMINATION_RECORD_TABLE_NAME
 
     def to_json(self):
         json_clinical_record = {

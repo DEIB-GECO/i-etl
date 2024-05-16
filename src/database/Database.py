@@ -6,7 +6,7 @@ import json
 
 from src.database.TableNames import TableNames
 from src.profiles.Examination import Examination
-from src.utils.Utils import decorate_all_functions, check_types_before_func, check_types
+from src.utils.utils import decorate_all_functions, check_types_before_func, check_types
 from src.utils.setup_logger import log
 
 
@@ -163,7 +163,7 @@ class Database:
             }
         ])
 
-    def get_value_distribution_of_examination(self, table_name: str, examination_url: str):
+    def get_value_distribution_of_examination(self, table_name: str, examination_url: str, limit: int, min_value: int):
         return self.db[table_name].aggregate([
             {
                 "$match": {
@@ -181,8 +181,18 @@ class Database:
                         "$sum": 1
                     }
                 }
+            }, {
+                "$match": {
+                    "total": {
+                        "$gt": min_value
+                    }
+                }
+            }, {
+                "$sort": {
+                    "_id": 1,
+                }
             }
-        ])
+        ]) #.collation({"locale": "en_US", "numericOrdering": "true"})
 
     def __str__(self) -> str:
         return "Database " + self.connection_string

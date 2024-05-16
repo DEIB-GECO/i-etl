@@ -1,8 +1,10 @@
-from functools import wraps
-from utils.setup_logger import log
+import re
+
+from src.utils.setup_logger import log
 
 
-####### Python utils #######
+# ASSERTIONS
+
 def is_float(value) -> bool:
     try:
         float(value)
@@ -10,48 +12,26 @@ def is_float(value) -> bool:
     except ValueError:
         return False
 
-def assert_type(given_type, expected_type):
-    if given_type != expected_type:
-        raise TypeError("Expected type is " + str(expected_type) + " while given type is " + str(given_type))
+
+def assert_type(variable, expected_type, variable_name: str):
+    assert isinstance(variable_name, str)
+
+    assert isinstance(variable, expected_type), "The variable " + variable_name + " is of type " + str(
+        type(variable)) + " while it should be of type " + expected_type + "."
 
 
-def check_type(given_type, expected_type):
-    # TODO Nelly: hint annotation: given_type: Type[Class], expected_type: Type[Class]
-    return given_type == expected_type
+def assert_regex(value: str, regex: str) -> None:
+    assert_type(variable=value, expected_type=str, variable_name="value")
+    assert_type(variable=regex, expected_type=str, variable_name="regex")
+
+    # returns True if the string matches the given regex, False else
+    assert bool(re.match(pattern=regex, string=value)) is True, "The value " + value + "does not match the regex '" + regex + "'."
 
 
-def check_types(types):
-    # TODO Nelly: hint annotation: list[tuple]
-    for type_var in types:
-        log.debug(type_var)
-        given_type = type_var[0]
-        expected_type = type_var[1]
-        if (given_type != expected_type):
-            # there is a mismatch between the given and expected variable types
-            raise TypeError("Type mismatch. Given type is: " + given_type + "; Expected type is: " + expected_type)
-    return True
+# BUILDING URLs
 
+def build_url(base: str, id: int) -> str:
+    assert_type(base, str, "base")
+    assert_type(id, int, "id")
 
-def decorate_all_functions(function_decorator):
-    def decorator(cls):
-        for name, obj in vars(cls).items():
-            if callable(obj):
-                setattr(cls, name, function_decorator(obj))
-        return cls
-
-    return decorator
-
-
-def check_types_before_func(func):
-    @wraps(func)
-    def wrapper(*args, **kw):
-        log.debug(args)
-        log.debug(kw)
-
-        try:
-            res = func(*args, **kw)
-        except:
-            raise Exception("Something went wrong")
-        return res
-
-    return wrapper
+    return base + "\\" + str(id)
