@@ -1,6 +1,7 @@
 import math
 import re
 from datetime import datetime
+from typing import Any
 
 from dateutil.parser import parse
 
@@ -41,15 +42,36 @@ def is_not_nan(value) -> bool:
     return not is_float(value) or (is_float(value) and not math.isnan(float(value)))
 
 
-def assert_not_none(variable, variable_name: str) -> None:
-    assert variable is not None, "The variable " + variable_name + " is None, while it should not."
-
-
 def assert_type(variable, expected_type, variable_name: str) -> None:
     assert isinstance(variable_name, str)
 
     assert isinstance(variable, expected_type), "The variable " + variable_name + " is of type " + str(
         type(variable)) + " while it should be of type " + str(expected_type) + "."
+
+
+def assert_not_empty(variable, variable_name: str) -> None:
+    assert_type(variable=variable, expected_type=str, variable_name=variable_name)
+
+    message = "The variable " + variable_name + " is not supposed to be empty"
+    if isinstance(variable, int) or isinstance(variable, float):
+        assert True
+    elif isinstance(variable, str):
+        assert variable != "", message
+    elif isinstance(variable, list):
+        assert variable is not None and variable != [], message
+    elif isinstance(variable, dict):
+        assert variable is not None and variable != {}, message
+    elif isinstance(variable, tuple):
+        assert variable is not None and variable != (), message
+    else:
+        # no clue about the variable typ
+        # thus, we only check whether it is None
+        assert variable is not None, message
+
+
+def assert_variable(variable, expected_type, variable_name: str) -> None:
+    assert_type(variable=variable, expected_type=expected_type, variable_name=variable_name)
+    assert_not_empty(variable=variable, variable_name=variable_name)
 
 
 def assert_regex(value: str, regex: str) -> None:
@@ -115,3 +137,46 @@ def normalize_value(value):
     else:
         # log.info("%s is not a string, so no further cast is possible", value)
         return value
+
+
+# MONGODB UTILS
+
+def mongodb_match(field: str, value: Any) -> dict:
+    return {
+        "$match": {
+            field: value
+        }
+    }
+
+
+def mongodb_project_one(field: str) -> dict:
+    return {
+        "$project": {
+            field: 1
+        }
+    }
+
+
+def mongodb_sort(field: str, sort_order: int) -> dict:
+    return {
+        "$sort": {
+            field: sort_order
+        }
+    }
+
+
+def mongodb_limit(nb: int) -> dict:
+    return {
+        "$limit": nb
+    }
+
+
+def mongodb_group_by(group_key: Any, group_by_name: str, operator: str, field) -> dict:
+    return {
+        "$group": {
+            "_id": group_key,
+            group_by_name: {
+                operator: "$"+field  # $avg: $<the field on which the avg is computed>
+            }
+        }
+    }

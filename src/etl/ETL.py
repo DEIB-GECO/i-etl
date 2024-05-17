@@ -70,12 +70,12 @@ class ETL:
         if self.compute_plots:
             examination_url = build_url(EXAMINATION_TABLE_NAME, 88)  # premature baby
             log.debug(examination_url)
-            cursor = self.database.get_value_distribution_of_examination(EXAMINATION_RECORD_TABLE_NAME, examination_url, 5, -1)
+            cursor = self.database.get_value_distribution_of_examination(EXAMINATION_RECORD_TABLE_NAME, examination_url, -1)
             plot = DistributionPlot(cursor, examination_url, "Premature Baby", False)  # do not print the cursor before, otherwise it would consume it
             plot.draw()
 
             examination_url = build_url(EXAMINATION_TABLE_NAME, 77)  # ethnicity
-            cursor = self.database.get_value_distribution_of_examination(EXAMINATION_RECORD_TABLE_NAME, examination_url, 5, 20)
+            cursor = self.database.get_value_distribution_of_examination(EXAMINATION_RECORD_TABLE_NAME, examination_url,  20)
             plot = DistributionPlot(cursor, examination_url, "Ethnicity", True)  # do not print the cursor before, otherwise it would consume it
             plot.draw()
 

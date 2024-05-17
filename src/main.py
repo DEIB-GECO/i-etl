@@ -1,29 +1,31 @@
-from database.Database import *
-from etl.ETL import *
-from utils.setup_logger import log
 import sys
 
+from src.etl.ETL import ETL
+from utils.setup_logger import log
 
 if __name__ == '__main__':
 
-    log.info("Hello world!")
+    log.info("Hello!")
 
     argList = sys.argv
     log.info("Argument list is: " + str(argList))
 
-    if len(argList) != 4:
-        raise Exception(
-            "This script expects 3 arguments: hospital name, file path to variable description, and file path to "
-            "samples. Please make sure that you provided them correctly.")
+    # the code is supposed to be run like this:
+    # python3 main.py Buzzi path/to/metadata.csv path/to/data.csv true
+    if len(argList) != 5:
+        raise RuntimeError(
+            "This script expects 4 arguments: hospital name, file path to variable description, file path to "
+            "samples, and a boolean indicating whether to reset the database. "
+            "Please make sure that you provided them correctly.")
 
     # argList[0] is the script filename, i.e., main.py
-    hospitalName = argList[1]
-    variablesFilepath = argList[2]
-    samplesFilepath = argList[3]
+    hospital_name = argList[1]
+    variables_filepath = argList[2]
+    samples_filepath = argList[3]
+    reset_db = bool(argList[4])
 
-    # variablesFilepath = "/Users/nelly/Documents/boulot/postdoc-polimi/BETTER-fairificator/data/metadata/IT-Buzzi-variables.csv"
-    # samplesFilepath = "/Users/nelly/Documents/boulot/postdoc-polimi/BETTER-fairificator/data/samples/BUZZI/buzzi_subset_small_quoted.csv"
-    etl = ETL(hospitalName, variablesFilepath, samplesFilepath, True)
+    etl = ETL(hospital_name=hospital_name, metadata_filepath=variables_filepath, samples_filepath=samples_filepath,
+              reset_db=reset_db)
     etl.run()
 
-    log.info("Goodbye world!")
+    log.info("Goodbye!")
