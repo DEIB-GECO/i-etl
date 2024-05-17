@@ -49,8 +49,8 @@ def assert_type(variable, expected_type, variable_name: str) -> None:
         type(variable)) + " while it should be of type " + str(expected_type) + "."
 
 
-def assert_not_empty(variable, variable_name: str) -> None:
-    assert_type(variable=variable, expected_type=str, variable_name=variable_name)
+def assert_not_empty(variable, variable_name: str, check_not_empty=True) -> None:
+    assert_type(variable=variable_name, expected_type=str, variable_name=variable_name)
 
     message = "The variable " + variable_name + " is not supposed to be empty"
     if isinstance(variable, int) or isinstance(variable, float):
@@ -58,20 +58,26 @@ def assert_not_empty(variable, variable_name: str) -> None:
     elif isinstance(variable, str):
         assert variable != "", message
     elif isinstance(variable, list):
-        assert variable is not None and variable != [], message
+        assert variable is not None, message
+        if check_not_empty:
+            assert variable != [], message
     elif isinstance(variable, dict):
-        assert variable is not None and variable != {}, message
+        assert variable is not None, message
+        if check_not_empty:
+            assert variable != {}, message
     elif isinstance(variable, tuple):
-        assert variable is not None and variable != (), message
+        assert variable is not None, message
+        if check_not_empty:
+            assert variable != (), message
     else:
         # no clue about the variable typ
         # thus, we only check whether it is None
         assert variable is not None, message
 
 
-def assert_variable(variable, expected_type, variable_name: str) -> None:
+def assert_variable(variable, expected_type, variable_name: str, check_not_empty=True) -> None:
     assert_type(variable=variable, expected_type=expected_type, variable_name=variable_name)
-    assert_not_empty(variable=variable, variable_name=variable_name)
+    assert_not_empty(variable=variable, variable_name=variable_name, check_not_empty=check_not_empty)
 
 
 def assert_regex(value: str, regex: str) -> None:

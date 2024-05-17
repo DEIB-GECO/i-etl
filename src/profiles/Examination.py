@@ -1,6 +1,6 @@
 from src.fhirDatatypes.CodeableConcept import CodeableConcept
 from src.profiles.Resource import Resource
-from src.utils.utils import build_url, assert_not_none, EXAMINATION_TABLE_NAME
+from src.utils.utils import build_url, EXAMINATION_TABLE_NAME, assert_variable
 
 
 class Examination(Resource):
@@ -9,9 +9,9 @@ class Examination(Resource):
     def __init__(self, code: CodeableConcept, status: str, category: CodeableConcept, permitted_datatypes: list, multiple_results_allowed: bool, body_site: str):
         super().__init__()
 
-        assert_not_none(variable=code, variable_name="code")
-        assert_not_none(variable=status, variable_name="status")
-        assert_not_none(variable=category, variable_name="category")
+        assert_variable(variable=code, expected_type=CodeableConcept, variable_name="code")
+        assert_variable(variable=status, expected_type=str, variable_name="status")
+        assert_variable(variable=category, expected_type=CodeableConcept, variable_name="category")
 
         self.id = Examination.ID_COUNTER
         Examination.ID_COUNTER = Examination.ID_COUNTER + 1
@@ -30,7 +30,7 @@ class Examination(Resource):
         return self.category
 
     def get_resource_type(self):
-        return TableNames.EXAMINATION_TABLE_NAME
+        return EXAMINATION_TABLE_NAME
 
     def to_json(self):
         json_examination = {

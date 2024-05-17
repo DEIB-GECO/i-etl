@@ -20,7 +20,7 @@ from src.utils.setup_logger import log
 
 class ETL:
     def __init__(self, hospital_name, metadata_filepath: str, samples_filepath: str, reset_db: bool):
-        self.database = Database(database_name="better_database_mini")
+        self.database = Database(connection_string="mongodb://localhost:27017/", database_name="better_database_mini")
         if reset_db:
             self.database.reset()
         self.create_structures = True

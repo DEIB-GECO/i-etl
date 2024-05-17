@@ -7,7 +7,7 @@ from pymongo.cursor import Cursor
 from pymongo.mongo_client import MongoClient
 
 from src.utils.setup_logger import log
-from src.utils.utils import EXAMINATION_RECORD_TABLE_NAME, assert_type, assert_not_none, assert_variable, mongodb_match, \
+from src.utils.utils import EXAMINATION_RECORD_TABLE_NAME, assert_variable, mongodb_match, \
     mongodb_project_one, mongodb_sort, mongodb_limit, mongodb_group_by
 
 
@@ -83,7 +83,7 @@ class Database:
         :return: A list of integers being the MongoDB _id of the inserted tuples.
         """
         assert_variable(variable=table_name, expected_type=str, variable_name="table_name")
-        assert_variable(variable=tuples, expected_type=list[dict], variable_name="tuples")
+        assert_variable(variable=tuples, expected_type=list, variable_name="tuples")
 
         return self.db[table_name].insert_many(tuples, ordered=False).inserted_ids
 
@@ -137,7 +137,7 @@ class Database:
         :return: An integer being the number of documents matched by the given filter.
         """
         assert_variable(variable=table_name, expected_type=str, variable_name="table_name")
-        assert_variable(variable=filter_dict, expected_type=dict, variable_name="filter_dict")
+        assert_variable(variable=filter_dict, expected_type=dict, variable_name="filter_dict", check_not_empty=False)
 
         log.debug("table_name is: %s", table_name)
         log.debug("filter_dict is: %s", filter_dict)
