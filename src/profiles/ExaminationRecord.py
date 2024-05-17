@@ -1,11 +1,11 @@
-from src.database.TableNames import TableNames
 from src.fhirDatatypes.CodeableConcept import CodeableConcept
+from src.fhirDatatypes.Coding import Coding
 from src.fhirDatatypes.Reference import Reference
 from src.profiles.Examination import Examination
 from src.profiles.Hospital import Hospital
 from src.profiles.Patient import Patient
 from src.profiles.Resource import Resource
-from src.utils.utils import build_url
+from src.utils.utils import build_url, EXAMINATION_RECORD_TABLE_NAME
 
 
 class ExaminationRecord(Resource):
@@ -27,7 +27,7 @@ class ExaminationRecord(Resource):
         super().__init__()
         self.id = ExaminationRecord.ID_COUNTER
         ExaminationRecord.ID_COUNTER = ExaminationRecord.ID_COUNTER + 1
-        self.url = build_url(TableNames.EXAMINATION_RECORD_TABLE_NAME, self.id)
+        self.url = build_url(EXAMINATION_RECORD_TABLE_NAME, self.id)
         self.instantiate = Reference(examination)
         self.status = status
         self.code = code
@@ -41,9 +41,17 @@ class ExaminationRecord(Resource):
         return self.url
 
     def get_resource_type(self) -> str:
-        return TableNames.EXAMINATION_RECORD_TABLE_NAME
+        return EXAMINATION_RECORD_TABLE_NAME
 
     def to_json(self):
+        expanded_value = None
+        if isinstance(self.value, CodeableConcept) or isinstance(self.value, Coding) or isinstance(self.value, Reference):
+            # ccomplex type, we need to expand it with .to_json()
+            expanded_value = self.value.to_json()
+        else:
+            # primitive type, no need to expand it
+            expanded_value = self.value
+
         json_clinical_record = {
             "id": self.id,
             "url": self.url,
@@ -52,7 +60,7 @@ class ExaminationRecord(Resource):
             # "code": self.code.to_json(), # TODO Nelly: add this after understanding what is code about
             "subject": self.subject.to_json(),
             "recorded_by": self.recorded_by.to_json(),
-            "value": self.value,
+            "value": expanded_value,
             "issued": self.issued,
             "interpretation": self.interpretation
         }

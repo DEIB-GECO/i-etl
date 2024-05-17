@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     # variablesFilepath = "/Users/nelly/Documents/boulot/postdoc-polimi/BETTER-fairificator/data/metadata/IT-Buzzi-variables.csv"
     # samplesFilepath = "/Users/nelly/Documents/boulot/postdoc-polimi/BETTER-fairificator/data/samples/BUZZI/buzzi_subset_small_quoted.csv"
-    etl = ETL(hospitalName, variablesFilepath, samplesFilepath)
+    etl = ETL(hospitalName, variablesFilepath, samplesFilepath, True)
     etl.run()
 
     log.info("Goodbye world!")

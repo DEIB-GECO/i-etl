@@ -78,7 +78,7 @@ loinc,30531-8,"LOINC code 30531-8 is for ""Isovalerylcarnitine+Methylbutyrylcarn
 loinc,53065-9,,,,,Lab_Serum,screening.csv,c4-b,butirrilcarnitina,butyrylcarnitine,float,microM,,
 loinc,45213-6,,,,,Lab_Serum,screening.csv,c4-i,isobutirrilcarnitina,isobutyrylcarnitine,float,microM,,
 snomed ct,184099003,,loinc,21112-8,,,screening.csv,DateOfBirth,Data di nascita,Date of birth,datetime64,,Format {yyyy/mm/dd},
-snomed ct,734000001,,loinc,46098-0,,,screening.csv,Sex,Sesso,Sex,category,,{M} Male\\{F} Female,"{""value"": ""M"", ""explanation"": ""Male"", ""snomed_ct"": ""248153007""}, {""value"": ""F"", ""explanation"": ""snomed_ct"": ""248152002""}"
+snomed ct,734000001,,loinc,46098-0,,,screening.csv,Sex,Sesso,Sex,category,,{M} Male\\{F} Female,"{""value"": ""M"", ""explanation"": ""Male"", ""snomed_ct"": ""248153007""}, {""value"": ""F"", ""explanation"": ""Female"", ""snomed_ct"": ""248152002""}"
 loinc,68997-6,,,,,,screening.csv,City,Città di residenza,City of residence,str,,,
 loinc,79566-6,"LOINC code 79566-6 ids for ""Bld.dot"" Collection method",,,,,screening.csv,Sampling,Tipo di prelievo ,Blood sampling type,category,,,
 loinc,49051-6,LOINC code 49051-6 is for Gestational age in weeks,,,,,screening.csv,GestationalAge,Età gestazionale ,Gestational age,int,settimane e giorni,,

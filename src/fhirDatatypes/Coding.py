@@ -1,6 +1,5 @@
 import json
 
-from src.utils.setup_logger import log
 from src.utils.utils import assert_type
 
 

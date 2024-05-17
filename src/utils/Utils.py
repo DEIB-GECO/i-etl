@@ -1,10 +1,29 @@
 import math
 import re
+from datetime import datetime
+
+from dateutil.parser import parse
 
 from src.utils.setup_logger import log
 
+# CONSTANTS
+
+ONTOLOGY_SNOMED = "http://snomed.info/sct"
+ONTOLOGY_LOINC = "http://loinc.org"
+
+CATEGORY_CLINICAL = (ONTOLOGY_LOINC, "81259-4", "Associated phenotype")
+CATEGORY_PHENOTYPIC = (ONTOLOGY_LOINC, "75321-0", "Clinical finding")
+
+
+HOSPITAL_TABLE_NAME = "Hospital"
+PATIENT_TABLE_NAME = "Patient"
+EXAMINATION_TABLE_NAME = "Examination"
+EXAMINATION_RECORD_TABLE_NAME = "ExaminationRecord"
+DISEASE_RECORD_TABLE_NAME = "DiseaseRecord"
+DISEASE_TABLE_NAME = "Disease"
 
 # ASSERTIONS
+
 
 def is_float(value) -> bool:
     if isinstance(value, str) or isinstance(value, int) or isinstance(value, float):
@@ -40,11 +59,59 @@ def assert_regex(value: str, regex: str) -> None:
     # returns True if the string matches the given regex, False else
     assert bool(re.match(pattern=regex, string=value)) is True, "The value " + value + "does not match the regex '" + regex + "'."
 
-
 # BUILDING URLs
+
 
 def build_url(base: str, id: int) -> str:
     assert_type(base, str, "base")
     assert_type(id, int, "id")
 
     return base + "/" + str(id)
+
+# GET PREDEFINED VALUES
+
+
+def get_ontology_system(ontology: str) -> str:
+    ontology = ontology.strip()
+    ontology = ontology.replace(" ", "_")
+    ontology = ontology.upper()
+    if ontology == "SNOMED_CT":
+        return ONTOLOGY_SNOMED
+    elif ontology == "LOINC":
+        return ONTOLOGY_LOINC
+    else:
+        raise ValueError("The given ontology system '%S' is not known.", ontology)
+
+
+def get_ontology_code(ontology_code: str) -> str:
+    ontology_code = ontology_code.strip()  # remove spaces around : for compound SNOMED_CT codes
+
+    return ontology_code
+
+
+def normalize_value(value):
+    if isinstance(value, str):
+        # trying to cast to something if possible
+        # try to cast as float
+        try:
+            float_value = float(value)
+            log.debug("Will return %s as a float", float_value)
+            return float_value
+        except ValueError:
+            pass  # this was not a float value
+        # try to cast as datetime (first, because it is more restrictive than simple date)
+        try:
+            datetime_value = parse(value)
+            # %Y-%m-%d %H:%M:%S is the format used by default by parse (the output is always of this form)
+            if ":" in value:
+                # there was a time in the value, let's return a datetime value
+                return str(datetime_value)
+            else:
+                # the value was only a date, so we return only a date too
+                return str(datetime_value.date())
+        except ValueError:
+            pass  # this was not a datetime value
+        return value
+    else:
+        # log.info("%s is not a string, so no further cast is possible", value)
+        return value

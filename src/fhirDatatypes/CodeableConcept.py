@@ -1,13 +1,16 @@
 import json
 
 from src.fhirDatatypes.Coding import Coding
-from src.utils.setup_logger import log
 
 
 class CodeableConcept:
-    def __init__(self):
+    # only one constructor is allowed, so we need to use default values
+    def __init__(self, one_coding=None):
         self.text = ""
-        self.codings = []
+        if one_coding is None:
+            self.codings = []
+        else:
+            self.codings = [Coding(one_coding)]
 
     def add_coding(self, triple: tuple):
         self.codings.append(Coding(triple))

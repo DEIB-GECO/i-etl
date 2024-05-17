@@ -4,8 +4,8 @@ from pymongo.collection import Collection
 import csv
 import json
 
-from src.database.TableNames import TableNames
 from src.utils.setup_logger import log
+from src.utils.utils import EXAMINATION_RECORD_TABLE_NAME
 
 
 class Database:
@@ -13,6 +13,7 @@ class Database:
         assert type(connection_string) is str
 
         # self.connection_string = "mongodb+srv://"+username+":"+password+"@"+cluster+".qo5xs5j.mongodb.net/?retryWrites=true&w=majority&appName="+app_name
+        self.database_name = database_name
         self.connection_string = connection_string
         self.client = MongoClient(self.connection_string)  #, server_api=ServerApi(server_api))
         self.db = self.client[database_name]
@@ -35,6 +36,9 @@ class Database:
         except Exception as e:
             log.error(e)
             return False
+
+    def reset(self) -> None:
+        self.client.drop_database(self.database_name)
 
     def get_table(self, table_name: str) -> Collection:
         assert type(table_name) is str
@@ -95,17 +99,11 @@ class Database:
         log.debug(self.db[table_name])
         self.db[table_name].create_index(columns, unique=True)
 
-    def get_min_value_of_phenotypic_record(self, examination_url: str):
-        return self.__get_min_max_value_of_examination_record(TableNames.PHENOTYPIC_RECORD_TABLE_NAME, examination_url, "min")
+    def get_min_value_of_examination_record(self, examination_url: str):
+        return self.__get_min_max_value_of_examination_record(EXAMINATION_RECORD_TABLE_NAME, examination_url, "min")
 
-    def get_min_value_of_clinical_record(self, examination_url: str):
-        return self.__get_min_max_value_of_examination_record(TableNames.CLINICAL_RECORD_TABLE_NAME, examination_url, "min")
-
-    def get_max_value_of_phenotypic_record(self, examination_url: str):
-        return self.__get_min_max_value_of_examination_record(TableNames.PHENOTYPIC_RECORD_TABLE_NAME, examination_url, "max")
-
-    def get_max_value_of_clinical_record(self, examination_url: str):
-        return self.__get_min_max_value_of_examination_record(TableNames.CLINICAL_RECORD_TABLE_NAME, examination_url, "max")
+    def get_max_value_of_examination_record(self, examination_url: str):
+        return self.__get_min_max_value_of_examination_record(EXAMINATION_RECORD_TABLE_NAME, examination_url, "max")
 
     def __get_min_max_value_of_examination_record(self, table_name: str, examination_url: str, min_or_max: str):
         if min_or_max == "min":
@@ -134,9 +132,6 @@ class Database:
                 "$limit": 1  # sort in ascending order and return the first value: this is the min
             }
         ])
-
-    def get_avg_value_of_phenotypic_record(self, examination_url: str):
-        return self.__get_avg_value_of_examination_record(TableNames.PHENOTYPIC_RECORD_TABLE_NAME, examination_url)
 
     def __get_avg_value_of_examination_record(self, table_name: str, examination_url: str):
         return self.db[table_name].aggregate([
@@ -198,31 +193,31 @@ class Database:
 
     def test_insert_patient(self):
         return True
-    # mongodb+srv://nellybarret:aeyuZpyUOJGI0PpS@better-cluster.qo5xs5j.mongodb.net/?retryWrites=true&w=majority&appName=BETTER-application
-    # mongodb+srv://nellybarret:<password>@better-cluster.qo5xs5j.mongodb.net/?retryWrites=true&w=majority&appName=BETTER-application
+        # mongodb+srv://nellybarret:aeyuZpyUOJGI0PpS@better-cluster.qo5xs5j.mongodb.net/?retryWrites=true&w=majority&appName=BETTER-application
+        # mongodb+srv://nellybarret:<password>@better-cluster.qo5xs5j.mongodb.net/?retryWrites=true&w=majority&appName=BETTER-application
 
-    # create a table, called a collection in the MongoDB language
-    # patients_table = database.get_table("patients")
+        # create a table, called a collection in the MongoDB language
+        # patients_table = database.get_table("patients")
 
-    # database.insert_tuples_from_csv("patients2", "../data/buzzi_subset_small_quoted.csv", ',', '')
+        # database.insert_tuples_from_csv("patients2", "../data/buzzi_subset_small_quoted.csv", ',', '')
 
-    # create a first patient and fill its data
-    # first_patient = { "first-name": "Bob", "last-name": "Doe", "condition": "breast cancer" }
+        # create a first patient and fill its data
+        # first_patient = { "first-name": "Bob", "last-name": "Doe", "condition": "breast cancer" }
 
-    # log.debug("my first patient: ")
-    # log.debug(first_patient)
+        # log.debug("my first patient: ")
+        # log.debug(first_patient)
 
-    # actually insert the first patient in the database
-    # this will also create the collection (as soon as the first tuple is inserted)
-    # first_patient_id = patients_table.insert_one(first_patient).inserted_id
+        # actually insert the first patient in the database
+        # this will also create the collection (as soon as the first tuple is inserted)
+        # first_patient_id = patients_table.insert_one(first_patient).inserted_id
 
-    # log.debug("First patient has been inserted. Its ID is: %d", first_patient_id)
+        # log.debug("First patient has been inserted. Its ID is: %d", first_patient_id)
 
-    # # get one tuple of the patients table
-    # log.debug(patients_table.find_one())
+        # # get one tuple of the patients table
+        # log.debug(patients_table.find_one())
 
-    # # print the first patient having for first-name "Alice"
-    # log.debug(patients_table.find_one({"first-name": "Alice"}))
+        # # print the first patient having for first-name "Alice"
+        # log.debug(patients_table.find_one({"first-name": "Alice"}))
 
     def get_db(self):
         return self.db

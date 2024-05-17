@@ -1,26 +1,28 @@
-import math
-
 import os
+from datetime import datetime
+
 import pandas as pd
 import re
 
 from src.database.Database import *
-from src.database.TableNames import TableNames
 from src.fhirDatatypes.CodeableConcept import CodeableConcept
 from src.profiles.Examination import Examination
-from src.profiles.ExaminationCategory import ExaminationCategory
 from src.profiles.ExaminationRecord import ExaminationRecord
 from src.profiles.Hospital import Hospital
 from src.profiles.Patient import Patient
+from src.utils import utils
 from src.utils.DistributionPlot import DistributionPlot
-from src.utils.TimeMeasurer import TimeMeasurer
-from src.utils.utils import build_url, is_not_nan
+from src.utils.utils import EXAMINATION_TABLE_NAME, EXAMINATION_RECORD_TABLE_NAME, HOSPITAL_TABLE_NAME, \
+    PATIENT_TABLE_NAME, CATEGORY_CLINICAL, CATEGORY_PHENOTYPIC, normalize_value
+from src.utils.utils import build_url, is_not_nan, get_ontology_system, get_ontology_code
 from src.utils.setup_logger import log
 
 
 class ETL:
-    def __init__(self, hospital_name, metadata_filepath: str, samples_filepath: str):
-        self.database = Database(database_name="better_database_18")
+    def __init__(self, hospital_name, metadata_filepath: str, samples_filepath: str, reset_db: bool):
+        self.database = Database(database_name="better_database_mini")
+        if reset_db:
+            self.database.reset()
         self.create_structures = True
         self.transform_data = True
         self.load_data = True
@@ -66,28 +68,25 @@ class ETL:
         # # 3. comment the 3 lines above
         # # uncomment lines below
         if self.compute_plots:
-            examination_url = build_url(TableNames.EXAMINATION_TABLE_NAME, 88)  # premature baby
+            examination_url = build_url(EXAMINATION_TABLE_NAME, 88)  # premature baby
             log.debug(examination_url)
-            cursor = self.database.get_value_distribution_of_examination(TableNames.EXAMINATION_RECORD_TABLE_NAME, examination_url, 5, -1)
+            cursor = self.database.get_value_distribution_of_examination(EXAMINATION_RECORD_TABLE_NAME, examination_url, 5, -1)
             plot = DistributionPlot(cursor, examination_url, "Premature Baby", False)  # do not print the cursor before, otherwise it would consume it
             plot.draw()
 
-            examination_url = build_url(TableNames.EXAMINATION_TABLE_NAME, 77)  # ethnicity
-            cursor = self.database.get_value_distribution_of_examination(TableNames.EXAMINATION_RECORD_TABLE_NAME, examination_url, 5, 20)
+            examination_url = build_url(EXAMINATION_TABLE_NAME, 77)  # ethnicity
+            cursor = self.database.get_value_distribution_of_examination(EXAMINATION_RECORD_TABLE_NAME, examination_url, 5, 20)
             plot = DistributionPlot(cursor, examination_url, "Ethnicity", True)  # do not print the cursor before, otherwise it would consume it
             plot.draw()
-
-
-
 
         # cursor = self.database.get_min_value_of_examination_record(TableNames.EXAMINATION_RECORD_TABLE_NAME, "76")
         # cursor = self.database.get_avg_value_of_examination_record(TableNames.EXAMINATION_RECORD_TABLE_NAME, "76")
 
     def __create_db_indexes(self):
-        self.database.create_unique_index(table_name=TableNames.PATIENT_TABLE_NAME, columns={"metadata.csv_filepath": 1, "metadata.csv_line": 1})
-        self.database.create_unique_index(TableNames.HOSPITAL_TABLE_NAME, {"id": 1, "name": 1})
-        self.database.create_unique_index(TableNames.EXAMINATION_TABLE_NAME, {"code.codings.system": 1, "code.codings.code": 1})
-        self.database.create_unique_index(TableNames.EXAMINATION_RECORD_TABLE_NAME, {"instantiate.reference": 1, "subject.reference": 1, "recorded_by.reference": 1, "value": 1, "issued": 1})
+        self.database.create_unique_index(table_name=PATIENT_TABLE_NAME, columns={"metadata.csv_filepath": 1, "metadata.csv_line": 1})
+        self.database.create_unique_index(table_name=HOSPITAL_TABLE_NAME, columns={"id": 1, "name": 1})
+        self.database.create_unique_index(table_name=EXAMINATION_TABLE_NAME, columns={"code.codings.system": 1, "code.codings.code": 1})
+        self.database.create_unique_index(table_name=EXAMINATION_RECORD_TABLE_NAME, columns={"instantiate.reference": 1, "subject.reference": 1, "recorded_by.reference": 1, "value": 1, "issued": 1})
 
     def __load_phenotypic_variables(self):
         self.phenotypic_variables = json.load(open(os.path.join("data", "metadata", "phenotypic-variables.json")))
@@ -115,12 +114,12 @@ class ETL:
         # filter_hospital_name = {
         #     "name": new_hospital.get_name()
         # }
-        nb_hospitals_with_name = self.database.count_documents(TableNames.HOSPITAL_TABLE_NAME, filter_hospital_name)
+        nb_hospitals_with_name = self.database.count_documents(HOSPITAL_TABLE_NAME, filter_hospital_name)
         log.debug("Nb of hospitals with name '%s': %d", self.hospital_name, nb_hospitals_with_name)
         if nb_hospitals_with_name == 0:
             # the hospital does not exist yet, we will create it
             log.info("No hospital labelled '%s' exists: creating it.", self.hospital_name)
-            self.database.insert_one_tuple(TableNames.HOSPITAL_TABLE_NAME, hospital_tuple)
+            self.database.insert_one_tuple(HOSPITAL_TABLE_NAME, hospital_tuple)
             return new_hospital
         elif nb_hospitals_with_name == 1:
             # the hospital already exists, no need to do something
@@ -134,9 +133,9 @@ class ETL:
         self.__create_fair_samples()
 
     def __insert_data(self):
-        self.database.insert_many_tuples(TableNames.PATIENT_TABLE_NAME, [patient.to_json() for patient in self.patients])
-        self.database.insert_many_tuples(TableNames.EXAMINATION_TABLE_NAME, [examination.to_json() for examination in self.examinations])
-        self.database.insert_many_tuples(TableNames.EXAMINATION_RECORD_TABLE_NAME, [examination_record.to_json() for examination_record in self.examination_records])
+        self.database.insert_many_tuples(PATIENT_TABLE_NAME, [patient.to_json() for patient in self.patients])
+        self.database.insert_many_tuples(EXAMINATION_TABLE_NAME, [examination.to_json() for examination in self.examinations])
+        self.database.insert_many_tuples(EXAMINATION_RECORD_TABLE_NAME, [examination_record.to_json() for examination_record in self.examination_records])
 
     def __load_metadata_file(self):
         assert os.path.exists(self.metadata_filepath), "The provided metadata file could not be found. Please check the filepath you specify when running this script."
@@ -195,17 +194,15 @@ class ETL:
     def __create_fair_samples(self):
         for index, sample in self.samples.iterrows():
             # create patients, one per sample, and add it to self.patients
+            # TODO Pietro: one patient per sample for now, but it is not true. How do we know the list of patients?
             patient = self.__create_patient(sample)
             # create clinical and phenotypic records by associating observations to patients
             for column_name, value in sample.items():
                 if value is None or value == "" or not is_not_nan(value):
-                    # TODO Pietro: is it okay to skip NaN values?
-                    # If not, we are losing one of the main advantages of No-SQL databases
                     # there is no value for that examination for the current patient
-                    # therefore w d not create a clinical or phenotypic record and skip this cell
+                    # therefore we do not create an examination record and skip this cell
                     pass
                 else:
-                    log.info("I'm registering value %s for column %s", value, column_name)
                     if column_name in self.mapping_colname_to_examination:
                         log.info("I know a code for column %s", column_name)
                         # we know a code for this column, so we can register the value of that examination
@@ -215,6 +212,7 @@ class ETL:
                         #  but for others we need normalization (WP6?)
                         #  we could even clean more the data, e.g., do not allow "Italy" as ethnicity (caucasian, etc)
                         fairified_value = self.__fairify_value(column_name=column_name, value=value)
+                        log.info("I'm registering value %s for column %s from value %s", fairified_value, column_name, value)
                         self.create_examination_record(self.hospital, patient, associated_examination, fairified_value)
                     else:
                         # Ideally, there will be no column left without a code
@@ -260,10 +258,10 @@ class ETL:
         rows = self.metadata.loc[self.metadata['name'] == column_name]
         if len(rows) == 1:
             cc = CodeableConcept()
-            cc_tuple = self.create_code_from_metadata(rows, "ontology", "ontology_code", column_name)
+            cc_tuple = self.create_code_from_metadata(rows, "ontology", "ontology_code")
             if cc_tuple is not None:
                 cc.add_coding(cc_tuple)
-            cc_tuple = self.create_code_from_metadata(rows, "secondary_ontology", "secondary_ontology_code", column_name)
+            cc_tuple = self.create_code_from_metadata(rows, "secondary_ontology", "secondary_ontology_code")
             if cc_tuple is not None:
                 cc.add_coding(cc_tuple)
             return cc
@@ -271,10 +269,10 @@ class ETL:
             # log.warn("Did not find the column '%s' in the metadata", column_name)
             return None
         else:
-            # log.warn("Found several times the column '%s' in the metada", column_name)
+            # log.warn("Found several times the column '%s' in the metadata", column_name)
             return None
 
-    def create_code_from_metadata(self, rows, ontology_column: str, code_column: str, column_name: str):
+    def create_code_from_metadata(self, rows, ontology_column: str, code_column: str):
         ontology = rows[ontology_column].iloc[0]
         if is_not_nan(ontology):
             # no ontology code has been provided for that variable name, let's skip it
@@ -295,15 +293,28 @@ class ETL:
         for coding in code.codings:
             coding_full_name = coding.system + "/" + coding.code
             if coding_full_name in self.phenotypic_variables:
-                return ExaminationCategory.PHENOTYPIC.name
+                return CodeableConcept(CATEGORY_PHENOTYPIC)  #  we can't create the CC directly in utils due to circular imoprts
             else:
-                return ExaminationCategory.CLINICAL.name
+                return CodeableConcept(CATEGORY_CLINICAL)
 
     def __fairify_value(self, column_name, value):
         if column_name in self.mapped_values:
             for mapping in self.mapped_values[column_name]:
-                if mapping['snomed_ct'] == value:
-                    log.debug(mapping['snomed_ct'])
-                    return mapping['snomed_ct']
-            return value  # no coded value for that value
-        return value  # no coded value for that value
+                mapped_value = mapping['value']
+                # for string values, we need to do a case-insensitive comparison
+                # otherwise, we can simply compare the values directly
+                if mapped_value == value or (isinstance(value, str) and value.casefold() == mapped_value.casefold()):
+                    # if the value matches a mapping, we need to create a CodeableConcept
+                    # with each code added to the mapping, e.g., snomed_ct and loinc
+                    # recall that a mapping is of the form: {'value': 'X', 'explanation': '...', 'snomed_ct': '123', 'loinc': '456' }
+                    # and we need to add each ontology code to that CodeableConcept
+                    cc = CodeableConcept()
+                    for key, val in mapping.items():
+                        if key != 'value' and key != 'explanation':
+                            system = get_ontology_system(key)
+                            code = get_ontology_code(val)
+                            display = mapping['explanation']
+                            cc.add_coding((system, code, display))
+                    return cc  # return the CC computed out of the corresponding mapping
+            return normalize_value(value)  # no coded value for that value, trying at least to normalize it a bit
+        return normalize_value(value)  # no coded value for that value, trying at least to normalize it a bit
