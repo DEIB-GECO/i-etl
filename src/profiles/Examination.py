@@ -9,9 +9,9 @@ class Examination(Resource):
     def __init__(self, code: CodeableConcept, status: str, category: CodeableConcept, permitted_datatypes: list, multiple_results_allowed: bool, body_site: str):
         super().__init__()
 
-        assert_variable(variable=code, expected_type=CodeableConcept, variable_name="code")
-        assert_variable(variable=status, expected_type=str, variable_name="status")
-        assert_variable(variable=category, expected_type=CodeableConcept, variable_name="category")
+        assert_variable(variable=code, expected_type=CodeableConcept)
+        assert_variable(variable=status, expected_type=str)
+        assert_variable(variable=category, expected_type=CodeableConcept)
 
         self.id = Examination.ID_COUNTER
         Examination.ID_COUNTER = Examination.ID_COUNTER + 1

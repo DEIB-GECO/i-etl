@@ -1,19 +1,20 @@
 import os
-from datetime import datetime
 
 import pandas as pd
 import re
 
+from src.analysis.ValueAnalysis import ValueAnalysis
+from src.analysis.VariableAnalysis import VariableAnalysis
 from src.database.Database import *
 from src.fhirDatatypes.CodeableConcept import CodeableConcept
 from src.profiles.Examination import Examination
 from src.profiles.ExaminationRecord import ExaminationRecord
 from src.profiles.Hospital import Hospital
 from src.profiles.Patient import Patient
-from src.utils import utils
-from src.utils.DistributionPlot import DistributionPlot
+from src.analysis.DistributionPlot import DistributionPlot
 from src.utils.utils import EXAMINATION_TABLE_NAME, EXAMINATION_RECORD_TABLE_NAME, HOSPITAL_TABLE_NAME, \
-    PATIENT_TABLE_NAME, CATEGORY_CLINICAL, CATEGORY_PHENOTYPIC, normalize_value
+    PATIENT_TABLE_NAME, CATEGORY_CLINICAL, CATEGORY_PHENOTYPIC, normalize_value, is_not_empty, \
+    get_values_from_JSON_values, ONTOLOGY_SNOMED_NAME, convert_value, ONTOLOGY_LOINC_NAME, is_equal_insensitive
 from src.utils.utils import build_url, is_not_nan, get_ontology_system, get_ontology_code
 from src.utils.setup_logger import log
 
@@ -24,8 +25,9 @@ class ETL:
         if reset_db:
             self.database.reset()
         self.create_structures = True
-        self.transform_data = True
-        self.load_data = True
+        self.run_analysis = True
+        self.transform_data = False
+        self.load_data = False
         self.compute_plots = False
         # self.database = Database()
         self.hospital_name = hospital_name
@@ -38,7 +40,8 @@ class ETL:
         self.examination_records = []
         self.phenotypic_variables = {}
         self.mapping_colname_to_examination = {}
-        self.mapped_values = {}
+        self.mapped_values = {}  # accepted values for some categorical columns (column "JSON_values" in metadata)
+        self.mapped_types = {}  # expected data type for columns (column "vartype" in metadata)
 
     def run(self):
         # self.__create_db_indexes()
@@ -51,6 +54,11 @@ class ETL:
             self.__load_samples_file()
             self.__load_phenotypic_variables()
             self.__compute_mapped_values()
+            self.__compute_mapped_types()
+
+        if self.run_analysis:
+            # self.__run_value_analysis()
+            self.__run_variable_analysis()
 
         if self.transform_data:
             self.__transform_data()
@@ -69,7 +77,6 @@ class ETL:
         # # uncomment lines below
         if self.compute_plots:
             examination_url = build_url(EXAMINATION_TABLE_NAME, 88)  # premature baby
-            log.debug(examination_url)
             cursor = self.database.get_value_distribution_of_examination(EXAMINATION_RECORD_TABLE_NAME, examination_url, -1)
             plot = DistributionPlot(cursor, examination_url, "Premature Baby", False)  # do not print the cursor before, otherwise it would consume it
             plot.draw()
@@ -96,12 +103,28 @@ class ETL:
         self.mapped_values = {}
 
         for index, row in self.metadata.iterrows():
-            log.debug(row)
             if is_not_nan(row["JSON_values"]):
-                log.debug(row["JSON_values"])
-                self.mapped_values[row["name"]] = json.loads(row["JSON_values"])
-
+                current_dicts = json.loads(row["JSON_values"])
+                parsed_dicts = []
+                for current_dict in current_dicts:
+                    # if we can convert the JSON value to a float or an int, we do it, otherwise we let it as a string
+                    current_dict["value"] = convert_value(current_dict["value"])
+                    # if we can also convert the snomed_ct / loinc code, we do it
+                    if ONTOLOGY_SNOMED_NAME in current_dict:
+                        current_dict[ONTOLOGY_SNOMED_NAME] = convert_value(current_dict[ONTOLOGY_SNOMED_NAME])
+                    if ONTOLOGY_LOINC_NAME in current_dict:
+                        current_dict[ONTOLOGY_LOINC_NAME] = convert_value(current_dict[ONTOLOGY_LOINC_NAME])
+                    parsed_dicts.append(current_dict)
+                self.mapped_values[row["name"]] = parsed_dicts
         log.debug(self.mapped_values)
+
+    def __compute_mapped_types(self):
+        self.mapped_types = {}
+
+        for index, row in self.metadata.iterrows():
+            if is_not_nan(row["vartype"]):
+                self.mapped_types[row["name"]] = row["vartype"]  # we associate the column name to its expected type
+        log.debug(self.mapped_types)
 
     def __create_hospital(self):
         new_hospital = Hospital(self.hospital_name)
@@ -140,9 +163,8 @@ class ETL:
     def __load_metadata_file(self):
         assert os.path.exists(self.metadata_filepath), "The provided metadata file could not be found. Please check the filepath you specify when running this script."
 
-        log.debug("self.metadata_filepath is %s", self.metadata_filepath)
-
-        self.metadata = pd.read_csv(self.metadata_filepath)
+        # index_col is False to not add a column with line numbers
+        self.metadata = pd.read_csv(self.metadata_filepath, index_col=False)
 
         # lower case all column names to avoid inconsistencies
         self.metadata['name'] = self.metadata['name'].apply(lambda x: x.lower())
@@ -163,17 +185,12 @@ class ETL:
             if is_not_nan(row["JSON_values"]):
                 values_dicts = []
                 json_dicts = re.split('}, {', row["JSON_values"])
-                # json_dicts = re.split('(\W)', 'foo/bar spam\neggs')
-                log.debug(json_dicts)
                 for json_dict in json_dicts:
-                    log.debug(json_dict)
                     if not json_dict.startswith("{"):
                         json_dict = "{" + json_dict
                     if not json_dict.endswith("}"):
                         json_dict = json_dict + "}"
-                    log.debug(json_dict)
                     values_dicts.append(json.loads(json_dict))
-                log.debug(values_dicts)
                 self.metadata.loc[index, "JSON_values"] = json.dumps(values_dicts) # set the new JSON values as a string
 
     def __load_samples_file(self):
@@ -181,15 +198,11 @@ class ETL:
 
         log.debug("self.samples_filepath is %s", self.samples_filepath)
 
-        self.samples = pd.read_csv(self.samples_filepath)
-
-        log.debug(self.samples[0:10])
+        # index_col is False to not add a column with line numbers
+        self.samples = pd.read_csv(self.samples_filepath, index_col=False)
 
         # lower case all column names to avoid inconsistencies
-        self.samples = self.samples.reset_index()
         self.samples.columns = self.samples.columns.str.lower()
-
-        log.debug(list(self.samples.columns))
 
     def __create_fair_samples(self):
         for index, sample in self.samples.iterrows():
@@ -204,7 +217,7 @@ class ETL:
                     pass
                 else:
                     if column_name in self.mapping_colname_to_examination:
-                        log.info("I know a code for column %s", column_name)
+                        # log.info("I know a code for column %s", column_name)
                         # we know a code for this column, so we can register the value of that examination
                         associated_examination = self.mapping_colname_to_examination[column_name]
                         # TODO Pietro: harmonize values (upper-lower case, dates, etc)
@@ -212,7 +225,7 @@ class ETL:
                         #  but for others we need normalization (WP6?)
                         #  we could even clean more the data, e.g., do not allow "Italy" as ethnicity (caucasian, etc)
                         fairified_value = self.__fairify_value(column_name=column_name, value=value)
-                        log.info("I'm registering value %s for column %s from value %s", fairified_value, column_name, value)
+                        # log.info("I'm registering value %s for column %s from value %s", fairified_value, column_name, value)
                         self.create_examination_record(self.hospital, patient, associated_examination, fairified_value)
                     else:
                         # Ideally, there will be no column left without a code
@@ -299,17 +312,21 @@ class ETL:
 
     def __fairify_value(self, column_name, value):
         if column_name in self.mapped_values:
+            # we iterate over all the mappings of a given column
             for mapping in self.mapped_values[column_name]:
+                # we get the value of the mapping, e.g., F, or M, or NA
                 mapped_value = mapping['value']
-                # for string values, we need to do a case-insensitive comparison
-                # otherwise, we can simply compare the values directly
-                if mapped_value == value or (isinstance(value, str) and value.casefold() == mapped_value.casefold()):
-                    # if the value matches a mapping, we need to create a CodeableConcept
-                    # with each code added to the mapping, e.g., snomed_ct and loinc
+                # if the sample value is equal to the mapping value,
+                # we have found a match and we will record the associated ontology term instead of the value
+                if is_equal_insensitive(value, mapped_value):
+                    # we create a CodeableConcept with each code added to the mapping, e.g., snomed_ct and loinc
                     # recall that a mapping is of the form: {'value': 'X', 'explanation': '...', 'snomed_ct': '123', 'loinc': '456' }
-                    # and we need to add each ontology code to that CodeableConcept
+                    # and we add each ontology code to that CodeableConcept
                     cc = CodeableConcept()
                     for key, val in mapping.items():
+                        # for any key value pair that is not about the value or the explanation
+                        # (i.e., loinc and snomed_ct columns), we create a Coding, which we add to the CodeableConcept
+                        # we need to do a loopp because there may be several ontology terms for a single mapping
                         if key != 'value' and key != 'explanation':
                             system = get_ontology_system(key)
                             code = get_ontology_code(val)
@@ -318,3 +335,33 @@ class ETL:
                     return cc  # return the CC computed out of the corresponding mapping
             return normalize_value(value)  # no coded value for that value, trying at least to normalize it a bit
         return normalize_value(value)  # no coded value for that value, trying at least to normalize it a bit
+
+    def __run_value_analysis(self):
+        log.debug(self.mapped_values)
+        # for each column in the sample data (and not in the metadata because some (empty) data columns are not
+        # present in the metadata file), we compare the set of values it takes against the accepted set of values
+        # (available in the mapped_values variable)
+        for column in self.samples.columns:
+            values = pd.Series(self.samples[column].values)
+            values = values.apply(lambda value: value.casefold().strip() if isinstance(value, str) else value)
+            # log.debug("Values are: %s", values)
+            # log.debug(self.metadata["name"])
+            log.info("Working on column '%s'", column)
+            # trying to get the expected type of the current column
+            if column in self.mapped_types:
+                expected_type = self.mapped_types[column]
+            else:
+                expected_type = ""
+            # trying to get expected values for the current column
+            if column in self.mapped_values:
+                # self.mapped_values[column] contains the mappings (JSON dicts) for the given column
+                # we need to get only the set of values described in the mappings of the given column
+                accepted_values = get_values_from_JSON_values(json_values=self.mapped_values[column])
+            else:
+                accepted_values = []
+            analysis = ValueAnalysis(column_name=column, values=values, expected_type=expected_type, accepted_values=accepted_values)
+            analysis.run_analysis()
+
+    def __run_variable_analysis(self):
+        variable_analysis = VariableAnalysis(samples=self.samples, metadata=self.metadata)
+        variable_analysis.run_analysis()

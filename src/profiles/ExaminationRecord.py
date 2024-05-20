@@ -44,7 +44,6 @@ class ExaminationRecord(Resource):
         return EXAMINATION_RECORD_TABLE_NAME
 
     def to_json(self):
-        expanded_value = None
         if isinstance(self.value, CodeableConcept) or isinstance(self.value, Coding) or isinstance(self.value, Reference):
             # ccomplex type, we need to expand it with .to_json()
             expanded_value = self.value.to_json()

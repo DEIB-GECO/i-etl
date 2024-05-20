@@ -5,7 +5,7 @@ from src.utils.utils import assert_type
 
 class Coding:
     def __init__(self, triple: tuple):
-        assert_type(triple, tuple, "triple")
+        assert_type(triple, tuple)
 
         self.system = triple[0]
         self.code = triple[1]
