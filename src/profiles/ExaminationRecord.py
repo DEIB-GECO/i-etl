@@ -5,43 +5,40 @@ from src.profiles.Examination import Examination
 from src.profiles.Hospital import Hospital
 from src.profiles.Patient import Patient
 from src.profiles.Resource import Resource
-from src.utils.utils import build_url, EXAMINATION_RECORD_TABLE_NAME
+from src.profiles.Sample import Sample
+from src.utils.TableNames import TableNames
+from src.utils.utils import NONE_VALUE
 
 
 class ExaminationRecord(Resource):
     ID_COUNTER = 1
 
-    def __init__(self, examination: Examination, status: str, code: CodeableConcept, subject: Patient,
-                 hospital: Hospital, value, issued, interpretation: str):
+    def __init__(self, id_value: str, examination: Examination, status: str, subject: Patient,
+                 hospital: Hospital, value, sample: Sample):
         """
-        Create a new ClinicalRecord instance.
-        :param examination: the Examination instance that record is referring to.
-        :param status: a value in [registered, preliminary, final, amended] depicting the current record status.
-        :param code: a CodeableConcept TODO: what is code?
-        :param subject: the Patient on which the clinical record has been measured.
-        :param hospital: the Hospital in which the clinical record has been measured.
-        :param value: the value of what is examined in that clinical record.
-        :param issued: when the clinical record has been measured.
-        :param interpretation: a CodeableConcept to help understand whether the value is normal or not.
+        A new ClinicalRecord instance, either built from existing data or from scratch.
+        :param global_id: A string being the BETTER ID of the ExaminationRecord instance.
+        :param examination: An Examination instance being the Examination that record is referring to.
+        :param status: A string in [registered, preliminary, final, amended] depicting the current record status.
+        :param subject: A Patient instance being the patient on which the clinical record has been measured.
+        :param hospital: A Hospital instance being the hospital in which the clinical record has been measured.
+        :param value: A string/int/float/CodeableConcept being the value of what is examined in that clinical record.
+        :param issued: A Date being when the clinical record has been measured.
         """
-        super().__init__()
-        self.id = ExaminationRecord.ID_COUNTER
-        ExaminationRecord.ID_COUNTER = ExaminationRecord.ID_COUNTER + 1
-        self.url = build_url(EXAMINATION_RECORD_TABLE_NAME, self.id)
-        self.instantiate = Reference(examination)
+        # set up the resource ID
+        super().__init__(id_value=id_value, resource_type=self.get_type())
+
+        # set up the resource attributes
         self.status = status
-        self.code = code
-        self.subject = Reference(subject)
-        self.recorded_by = Reference(hospital)
+        self.code = NONE_VALUE
         self.value = value
-        self.issued = issued
-        self.interpretation = interpretation
+        self.recorded_by = Reference(hospital)
+        self.based_on = Reference(sample)
+        self.instantiate = Reference(examination)
+        self.subject = Reference(subject)
 
-    def get_url(self) -> str:
-        return self.url
-
-    def get_resource_type(self) -> str:
-        return EXAMINATION_RECORD_TABLE_NAME
+    def get_type(self) -> str:
+        return TableNames.EXAMINATION_RECORD.value
 
     def to_json(self):
         if isinstance(self.value, CodeableConcept) or isinstance(self.value, Coding) or isinstance(self.value, Reference):
@@ -52,16 +49,15 @@ class ExaminationRecord(Resource):
             expanded_value = self.value
 
         json_clinical_record = {
-            "id": self.id,
-            "url": self.url,
-            "instantiate": self.instantiate.to_json(),
+            "identifier": self.identifier.to_json(),
+            "resourceType": self.get_type(),
             "status": self.status,
-            # "code": self.code.to_json(), # TODO Nelly: add this after understanding what is code about
-            "subject": self.subject.to_json(),
-            "recorded_by": self.recorded_by.to_json(),
+            "code": NONE_VALUE,  # This is defined in the FHIR standard and cannot be removed, thus I set it the None value.
             "value": expanded_value,
-            "issued": self.issued,
-            "interpretation": self.interpretation
+            "recordedBy": self.recorded_by.to_json(),
+            "basedOn": self.based_on.to_json(),
+            "instantiate": self.instantiate.to_json(),
+            "subject": self.subject.to_json()
         }
 
         return json_clinical_record

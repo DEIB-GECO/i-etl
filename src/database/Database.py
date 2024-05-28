@@ -5,9 +5,9 @@ from pymongo.command_cursor import CommandCursor
 from pymongo.cursor import Cursor
 from pymongo.mongo_client import MongoClient
 
+from src.utils.TableNames import TableNames
 from src.utils.setup_logger import log
-from src.utils.utils import EXAMINATION_RECORD_TABLE_NAME, assert_variable, mongodb_match, \
-    mongodb_project_one, mongodb_sort, mongodb_limit, mongodb_group_by
+from src.utils.utils import mongodb_match, mongodb_project_one, mongodb_sort, mongodb_limit, mongodb_group_by
 
 
 class Database:
@@ -15,16 +15,13 @@ class Database:
     The class Database represents the underlying MongoDB database: the connection, the database itself and
     auxiliary functions to make interactions with the database object (insert, select, ...).
     """
-    def __init__(self, connection_string, database_name):
+    def __init__(self, connection_string: str, database_name: str):
         """
         Initiate a new connection to a MongoDB client, reachable based on the given connection string, and initialize
         class members.
         :param connection_string: A string being the complete URI to connect to the MongoDB client.
         :param database_name: A string being the MongoDB database name.
         """
-        assert_variable(variable=connection_string, expected_type=str)
-        assert_variable(variable=database_name, expected_type=str)
-
         # mongodb://localhost:27017/
         # mongodb+srv://<username>:<password>@<cluster>.qo5xs5j.mongodb.net/?retryWrites=true&w=majority&appName=<app_name>
         self.database_name = database_name
@@ -60,6 +57,7 @@ class Database:
         Truncate the current database.
         :return: Nothing.
         """
+        log.error("Will drop the database %s", self.database_name)
         self.client.drop_database(name_or_database=self.database_name)
 
     def insert_one_tuple(self, table_name: str, one_tuple: dict) -> int:
@@ -69,9 +67,8 @@ class Database:
         :param one_tuple: A dict being the tuple to insert.
         :return: An integer being the MongoDB _id of the inserted tuple.
         """
-        assert_variable(variable=table_name, expected_type=str)
-        assert_variable(variable=one_tuple, expected_type=dict)
-
+        log.debug(table_name)
+        log.debug(one_tuple)
         return self.db[table_name].insert_one(one_tuple).inserted_id
 
     def insert_many_tuples(self, table_name: str, tuples: list[dict]) -> list[int]:
@@ -81,9 +78,6 @@ class Database:
         :param tuples: A list of dicts being the tuples to insert.
         :return: A list of integers being the MongoDB _id of the inserted tuples.
         """
-        assert_variable(variable=table_name, expected_type=str)
-        assert_variable(variable=tuples, expected_type=list)
-
         return self.db[table_name].insert_many(tuples, ordered=False).inserted_ids
 
     def insert_tuples_from_csv(self, table_name: str, csv_path: str, delimiter: str, quote_char: str) -> list[int]:
@@ -96,11 +90,6 @@ class Database:
         :param quote_char: A string being the CSV quote char used in the CSV dataset, often '"'.
         :return: A list of integers being the MongoDB _id of the inserted tuples.
         """
-        assert_variable(variable=table_name, expected_type=str)
-        assert_variable(variable=csv_path, expected_type=str)
-        assert_variable(variable=delimiter, expected_type=str)
-        assert_variable(variable=quote_char, expected_type=str)
-
         log.debug("table_name is: %s", table_name)
         log.debug("csv_path is: %s", csv_path)
         with open(csv_path, newline='') as csvfile:
@@ -115,18 +104,18 @@ class Database:
 
         return self.insert_many_tuples(table_name, double_quoted_data)
 
-    def find_operation(self, table_name: str, filter_dict: dict) -> Cursor:
+    def find_operation(self, table_name: str, filter_dict: dict, projection: dict) -> Cursor:
         """
         Perform a find operation (SELECT * FROM x WHERE filter_dict) in a given table.
         :param table_name: A string being the table name in which the find operation is performed.
         :param filter_dict: A dict being the set of filters (conditions) to apply on the data in the given table.
+        :param projection: A dict being the set of projections (selections) to apply on the data in the given table.
         :return: A Cursor on the results, i.e., filtered data.
         """
-        assert_variable(variable=table_name, expected_type=str)
-
         log.debug("table name is: %s", table_name)
         log.debug("filter_dict is: %s", filter_dict)
-        return self.db[table_name].find(filter_dict)
+        log.debug("projection is: %s", projection)
+        return self.db[table_name].find(filter_dict, projection)
 
     def count_documents(self, table_name: str, filter_dict: dict) -> int:
         """
@@ -135,9 +124,6 @@ class Database:
         :param filter_dict: A dict being the set of filters to be applied on the documents.
         :return: An integer being the number of documents matched by the given filter.
         """
-        assert_variable(variable=table_name, expected_type=str)
-        assert_variable(variable=filter_dict, expected_type=dict, not_empty=False)
-
         log.debug("table_name is: %s", table_name)
         log.debug("filter_dict is: %s", filter_dict)
         return self.db[table_name].count_documents(filter_dict)
@@ -150,9 +136,6 @@ class Database:
         only one column should be unique. The parameter should be of the form { "colA": 1, ... }.
         :return: Nothing.
         """
-        assert_variable(variable=table_name, expected_type=str)
-        assert_variable(variable=columns, expected_type=dict)
-
         log.debug(self.db[table_name])
         self.db[table_name].create_index(columns, unique=True)
 
@@ -164,8 +147,6 @@ class Database:
         to that examination url.
         :return: A float value being the minimum value for the given examination url.
         """
-        assert_variable(variable=examination_url, expected_type=str)
-
         return self.__get_min_max_value_of_examination_record(examination_url=examination_url, min_or_max="min")
 
     def get_max_value_of_examination_record(self, examination_url: str) -> float:
@@ -176,8 +157,6 @@ class Database:
         to that examination url.
         :return: A float value being the maximum value for the given examination url.
         """
-        assert_variable(variable=examination_url, expected_type=str)
-
         return self.__get_min_max_value_of_examination_record(examination_url=examination_url, min_or_max="max")
 
     def __get_min_max_value_of_examination_record(self, examination_url: str, min_or_max: str) -> float:
@@ -189,9 +168,6 @@ class Database:
         :param min_or_max: A string being "min" or "max", depending on which value is needed.
         :return: A float value being the minimum or maximum value for the given examination url.
         """
-        assert_variable(variable=examination_url, expected_type=str)
-        assert_variable(variable=min_or_max, expected_type=str)
-
         if min_or_max == "min":
             sort_order = 1
         elif min_or_max == "max":
@@ -200,7 +176,7 @@ class Database:
             sort_order = 1
             log.warn("You asked for something else than min or max. This will be min by default.")
 
-        cursor = self.db[EXAMINATION_RECORD_TABLE_NAME].aggregate([
+        cursor = self.db[TableNames.EXAMINATION_RECORD.value].aggregate([
             mongodb_match(field="instantiate.reference", value=examination_url),
             mongodb_project_one(field="value"),
             mongodb_sort(field="value", sort_order=sort_order),
@@ -218,9 +194,7 @@ class Database:
         to that examination url.
         :return: A float value being the average value for the given examination url.
         """
-        assert_variable(variable=examination_url, expected_type=str)
-
-        cursor = self.db[EXAMINATION_RECORD_TABLE_NAME].aggregate([
+        cursor = self.db[TableNames.EXAMINATION_RECORD.value].aggregate([
             mongodb_match(field="instantiate.reference", value=examination_url),
             mongodb_project_one(field="value"),
             mongodb_group_by(group_key=None, group_by_name="avg_val", operator="$avg", field="$value")
@@ -238,9 +212,6 @@ class Database:
         :param min_value: A float value being the minimum frequency that an element should have to be part of the plot.
         :return: A CommandCursor to iterate over the value distribution of the form { "value": frequency, ... }
         """
-        assert_variable(variable=examination_url, expected_type=str)
-        assert_variable(variable=min_value, expected_type=float)
-
         pipeline = [
             mongodb_match(field="instantiate.reference", value=examination_url),
             mongodb_project_one(field="value"),
@@ -250,7 +221,7 @@ class Database:
         ]
         log.debug(pipeline)
         # .collation({"locale": "en_US", "numericOrdering": "true"})
-        return self.db[EXAMINATION_RECORD_TABLE_NAME].aggregate(pipeline)
+        return self.db[TableNames.EXAMINATION_RECORD.value].aggregate(pipeline)
 
     def __str__(self) -> str:
         return "Database " + self.connection_string

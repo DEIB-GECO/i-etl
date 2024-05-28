@@ -1,3 +1,5 @@
+import json
+
 from src.utils.setup_logger import log
 from src.utils.utils import is_not_nan
 
@@ -10,8 +12,11 @@ class VariableAnalysis:
         self.sample_variables = self.samples.columns.to_list()
         self.metadata_variables = self.metadata["name"].to_list()
 
+        # cumulative variables to count what happens in the variable analysis
         self.nb_categorical_features_without_mapping = 0
         self.total_nb_categorical_features = 0
+        self.ratio_categorical_feature_with_no_mapping = 0.0
+        self.ratio_variable_no_ontology = 0.0
 
     def run_analysis(self):
         self.__compute_nb_variables_without_ontology()
@@ -23,15 +28,27 @@ class VariableAnalysis:
             if data_variable not in self.metadata_variables:
                 nb_variables_without_ontology += 1
         total_number_variables = len(self.sample_variables)
-        ratio_variable_no_ontology = nb_variables_without_ontology / total_number_variables
-        log.info("Number of variables without ontology: %s/%s=%s", nb_variables_without_ontology, total_number_variables, ratio_variable_no_ontology)
+        self.ratio_variable_no_ontology = nb_variables_without_ontology / total_number_variables
+        log.debug("Number of variables without ontology: %s/%s=%s", nb_variables_without_ontology, total_number_variables, self.ratio_variable_no_ontology)
 
     def __compute_nb_categorical_features_without_mapping(self):
         self.nb_categorical_features_without_mapping = 0
         for index, metadata_variable in self.metadata.iterrows():
             if metadata_variable["vartype"] == "category":
                 if not is_not_nan(metadata_variable["JSON_values"]):
+                    log.debug(metadata_variable["name"])
                     self.nb_categorical_features_without_mapping += 1
                 self.total_nb_categorical_features += 1
-        ratio_categorical_feature_with_no_mapping = self.nb_categorical_features_without_mapping / self.total_nb_categorical_features
-        log.info("Ratio of categorical feature having no mapping: %s/%s=%s", self.nb_categorical_features_without_mapping, self.total_nb_categorical_features, ratio_categorical_feature_with_no_mapping)
+        self.ratio_categorical_feature_with_no_mapping = self.nb_categorical_features_without_mapping / self.total_nb_categorical_features
+        log.debug("Ratio of categorical feature having no mapping: %s/%s=%s", self.nb_categorical_features_without_mapping, self.total_nb_categorical_features, self.ratio_categorical_feature_with_no_mapping)
+
+    def to_json(self):
+        return {
+            "nb_categorical_features_without_mapping": str(self.nb_categorical_features_without_mapping),
+            "total_nb_categorical_features": str(self.total_nb_categorical_features),
+            "ratio_categorical_feature_with_no_mapping": str(self.ratio_categorical_feature_with_no_mapping),
+            "ratio_variable_no_ontology": str(self.ratio_variable_no_ontology)
+        }
+
+    def __repr__(self):
+        return json.dumps(self.to_json())

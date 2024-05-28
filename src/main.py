@@ -23,7 +23,11 @@ if __name__ == '__main__':
     hospital_name = argList[1]
     variables_filepath = argList[2]
     samples_filepath = argList[3]
-    reset_db = bool(argList[4])
+    reset_db_str = argList[4]  # cannot use bool(argList[4]) because this always returns True
+    if reset_db_str.lower() == "true":
+        reset_db = True
+    else:
+        reset_db = False
 
     etl = ETL(hospital_name=hospital_name, metadata_filepath=variables_filepath, samples_filepath=samples_filepath,
               reset_db=reset_db)

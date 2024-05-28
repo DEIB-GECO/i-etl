@@ -1,3 +1,4 @@
+import json
 from typing import Set
 
 from pandas import Series
@@ -24,6 +25,14 @@ class ValueAnalysis:
         self.accepted_values = set(accepted_values)
         self.columns_to_check = {}  # columns for which the value analysis has revealed problems
 
+        # cumulative variables to count what happens in the value analysis
+        self.nb_unrecognized_data_types = 0
+        self.nb_wrongly_typed_values_in_column = 0
+        self.nb_empty_values = 0
+        self.ratio_empty_values = 0.0
+        self.ratio_values_matching_accepted = 0.0
+        self.ratio_non_empty_values_matching_accepted = 0.0
+
     def run_analysis(self):
         self.__compare_values_with_expected_type()  # this will call compare values for categorical values
 
@@ -40,6 +49,7 @@ class ValueAnalysis:
                 wrong_type = False  # when a mistyped value is encountered this values false
                 if not type_is_int and not type_is_float and not type_is_datetime and not type_is_str:
                     log.error("Unrecognized type variable '%s'.", self.expected_type)
+                    self.nb_unrecognized_data_types += 1
                 else:
                     # for primitive types, we check that all values can be converted to the expected type (or are NaN)
                     if type_is_int:
@@ -48,7 +58,7 @@ class ValueAnalysis:
                             value_is_not_nan = is_not_nan(value)
                             int_value = get_int_from_str(value)
                             if value_is_not_nan and int_value is None:
-                                log.error("Could not convert %s to int value", value)
+                                log.debug("Could not convert %s to int value", value)
                                 wrong_type = True
                     elif type_is_float:
                         for value in self.unique_values:
@@ -56,7 +66,7 @@ class ValueAnalysis:
                             value_is_not_nan = is_not_nan(value)
                             float_value = get_float_from_str(value)
                             if value_is_not_nan and float_value is None:
-                                log.error("Could not convert %s to float value", value)
+                                log.debug("Could not convert %s to float value", value)
                                 wrong_type = True
                     elif type_is_datetime:
                         for value in self.unique_values:
@@ -64,22 +74,23 @@ class ValueAnalysis:
                             value_is_not_nan = is_not_nan(value)
                             datetime_value = get_datetime_from_str(value)
                             if value_is_not_nan and datetime_value is None:
-                                log.error("Could not convert %s to datetime value", value)
+                                log.debug("Could not convert %s to datetime value", value)
                                 wrong_type = True
                     elif type_is_str:
                         for value in self.unique_values:
                             # check that all values can be cast to str or are NaN
                             value_is_not_nan = is_not_nan(value)
                             if value_is_not_nan and not isinstance(value, str):
-                                log.error("Could not convert %s to string value", value)
+                                log.debug("Could not convert %s to string value", value)
                                 wrong_type = True
 
                     if wrong_type:
-                        # no wrong type has been detected
-                        log.info("Some wrong type have been detected for %s", self.column_name)
+                        # some wrong types have been detected
+                        log.error("Some wrong type have been detected for %s", self.column_name)
+                        self.nb_wrongly_typed_values_in_column += 1
                     else:
                         # no wrong type has been detected
-                        log.info("No wrong type detected for %s", self.column_name)
+                        log.debug("No wrong type detected for %s", self.column_name)
 
     def __compare_values_with_accepted_values(self):
         # we only compare the SET of values with the SET of accepted values
@@ -99,12 +110,29 @@ class ValueAnalysis:
                 for matching_value in matching_values:
                     # compute the real number of values for which this value matches
                     total_nb_mathing_value += self.values.value_counts()[matching_value]
-                nb_empty_values = self.values.isna().sum()
                 nb_values = len(self.values)
-                ratio_accepted_with_nan = total_nb_mathing_value/nb_values
-                ratio_accepted_without_nan = total_nb_mathing_value/(nb_values - nb_empty_values)
-                log.debug("Number of empty values: %s", nb_empty_values)
-                log.debug("Ratio of values matching an accepted value: %s/%s=%s", total_nb_mathing_value, nb_values, ratio_accepted_with_nan)
-                log.debug("Ratio of non-empty values matching an accepted value: %s/(%s-%s)=%s", total_nb_mathing_value, nb_values, nb_empty_values, ratio_accepted_without_nan)
+                self.nb_empty_values = self.values.isna().sum()
+                self.ratio_empty_values = self.nb_empty_values / len(self.values)
+                log.debug("Number of empty values: %s (%s)", self.nb_empty_values, self.ratio_empty_values)
+                self.ratio_values_matching_accepted = total_nb_mathing_value/nb_values
+                log.debug("Ratio of values matching an accepted value: %s/%s=%s", total_nb_mathing_value, nb_values, self.ratio_values_matching_accepted)
+                self.ratio_non_empty_values_matching_accepted = total_nb_mathing_value/(nb_values - self.nb_empty_values)
+                log.debug("Ratio of non-empty values matching an accepted value: %s/(%s-%s)=%s", total_nb_mathing_value, nb_values, self.nb_empty_values, self.ratio_non_empty_values_matching_accepted)
         else:
-            log.warn("No categorical values are expected...")
+            log.debug("No categorical values are expected...")
+
+    def write_results_in_file(self):
+        pass
+
+    def to_json(self):
+        return {
+            "nb_unrecognized_data_types": str(self.nb_unrecognized_data_types),
+            "nb_wrongly_typed_values_in_column": str(self.nb_wrongly_typed_values_in_column),
+            "nb_empty_values": str(self.nb_empty_values),
+            "ratio_empty_values": str(self.ratio_empty_values),
+            "ratio_values_matching_accepted": str(self.ratio_values_matching_accepted),
+            "ratio_non_empty_values_matching_accepted": str(self.ratio_non_empty_values_matching_accepted)
+        }
+
+    def __repr__(self):
+        return json.dumps(self.to_json())

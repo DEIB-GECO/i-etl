@@ -1,21 +1,23 @@
 import json
 
-from src.utils.setup_logger import log
-
 
 class Reference:
+    """
+    The class Reference implements the FHIR Reference data type.
+    This allows to refer to other resources using their BETTER ID
+    (not the local_id, which is proper to each hospital, but instead the id
+    """
     def __init__(self, resource):
         """
         Create a new reference to another resource.
         :param resource:
         """
-        super().__init__()
-        self.ref = resource.get_url()
+        self.reference = resource.identifier
         self.type = type(resource).__name__
 
     def to_json(self):
         json_reference = {
-            "reference": self.ref,
+            "reference": self.reference.to_json(),
             "type": self.type
         }
 

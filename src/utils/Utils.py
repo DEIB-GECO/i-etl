@@ -1,35 +1,26 @@
 import math
 import re
-from datetime import datetime
 from typing import Any
 
 from dateutil.parser import parse
 from pandas import DataFrame
 
+from src.utils.HospitalNames import HospitalNames
+from src.utils.Ontologies import Ontologies
 from src.utils.setup_logger import log
 
 # CONSTANTS
 
-ONTOLOGY_SNOMED_NAME = "snomed_ct"
-ONTOLOGY_SNOMED_URL = "http://snomed.info/sct"
-ONTOLOGY_LOINC_NAME = "loinc"
-ONTOLOGY_LOINC_URL = "http://loinc.org"
+NONE_VALUE = "NONE"
 
-CATEGORY_CLINICAL = (ONTOLOGY_LOINC_URL, "81259-4", "Associated phenotype")
-CATEGORY_PHENOTYPIC = (ONTOLOGY_LOINC_URL, "75321-0", "Clinical finding")
+ID_COLUMNS = {
+    HospitalNames.BUZZI.value: "id"
+}
 
-
-HOSPITAL_TABLE_NAME = "Hospital"
-PATIENT_TABLE_NAME = "Patient"
-EXAMINATION_TABLE_NAME = "Examination"
-EXAMINATION_RECORD_TABLE_NAME = "ExaminationRecord"
-DISEASE_RECORD_TABLE_NAME = "DiseaseRecord"
-DISEASE_TABLE_NAME = "Disease"
-
+NO_RECORD_COLUMNS = ["line", "unnamed", "samplebarcode"]
 
 
 # ASSERTIONS
-
 
 def is_float(value) -> bool:
     if isinstance(value, str) or isinstance(value, int) or isinstance(value, float):
@@ -92,19 +83,6 @@ def is_not_empty(variable, not_empty=True) -> bool:
         return variable is not None
 
 
-def assert_variable(variable, expected_type, not_empty=True) -> None:
-    assert_type(variable=variable, expected_type=expected_type)
-    assert_not_empty(variable=variable, not_empty=not_empty)
-
-
-def assert_regex(value: str, regex: str) -> None:
-    assert_type(variable=value, expected_type=str)
-    assert_type(variable=regex, expected_type=str)
-
-    # returns True if the string matches the given regex, False else
-    assert bool(re.match(pattern=regex, string=value)) is True, "'" + value + "' does not match '" + regex + "'."
-
-
 def is_equal_insensitive(value, compared):
     if not isinstance(value, str):
         return value == compared
@@ -115,49 +93,42 @@ def is_equal_insensitive(value, compared):
 # BUILDING URLs
 
 
-def build_url(base: str, element_id: int) -> str:
-    assert_type(base, str)
-    assert_type(element_id, int)
-
-    return base + "/" + str(id)
+# def build_url(base: str, element_id: str) -> str:
+#     assert_type(base, str)
+#     assert_type(element_id, int)
+#
+#     return base + "/" + str(element_id)
 
 
 # GET PREDEFINED VALUES
 
 
 def get_ontology_system(ontology: str) -> str:
-    ontology = ontology.strip()
-    ontology = ontology.replace(" ", "_")
-    ontology = ontology.upper()
-    if ontology == "SNOMED_CT":
-        return ONTOLOGY_SNOMED_URL
-    elif ontology == "LOINC":
-        return ONTOLOGY_LOINC_URL
-    else:
-        raise ValueError("The given ontology system '%S' is not known.", ontology)
+    ontology = normalize_value(ontology)
 
-
-def get_ontology_code(ontology_code: str) -> str:
-    ontology_code = ontology_code.strip()  # remove spaces around : for compound SNOMED_CT codes
-
-    return ontology_code
+    for existing_ontology in Ontologies:
+        if existing_ontology.value[0] == ontology:
+            return existing_ontology.value[1]  # return the ontology URI associated to that ontology
+    # at the end of the loop, no enum value could match the given ontology
+    # thus we need to raise an error
+    raise ValueError("The given ontology system '%s' is not known.", ontology)
 
 
 def get_int_from_str(str_value) -> int:
     try:
         return int(str_value)
     except ValueError:
-        return None  # this was not an int value
+        pass  # this was not an int value
 
 
 def get_float_from_str(str_value) -> float:
     try:
         return float(str_value)
     except ValueError:
-        return None  # this was not a float value
+        pass  # this was not a float value
 
 
-def get_datetime_from_str(str_value):
+def get_datetime_from_str(str_value) -> str:
     try:
         datetime_value = parse(str_value)
         # %Y-%m-%d %H:%M:%S is the format used by default by parse (the output is always of this form)
@@ -169,10 +140,9 @@ def get_datetime_from_str(str_value):
             return str(datetime_value.date())
     except ValueError:
         pass  # this was not a datetime value
-    return None
 
 
-def normalize_value(value):
+def cast_value(value):
     if isinstance(value, str):
         # trying to cast to something if possible
         # first, try to cast as int
@@ -192,6 +162,10 @@ def normalize_value(value):
     else:
         # log.info("%s is not a string, so no further cast is possible", value)
         return value
+
+
+def normalize_value(input_string: str) -> str:
+    return input_string.upper().strip().replace(" ", "").replace("_", "")
 
 
 # MONGODB UTILS
