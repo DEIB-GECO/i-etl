@@ -28,10 +28,10 @@ PHENOTYPIC_VARIABLES = {
 }
 
 SAMPLE_VARIABLES = {
-    get_ontology_resource_uri(Ontologies.LOINC.value[1], "79566-6"): "Sampling",
-    get_ontology_resource_uri(Ontologies.LOINC.value[1], "57718-9"): "SampleQuality",
-    get_ontology_resource_uri(Ontologies.LOINC.value[1], "51953-8"): "SamTimeCollected",
-    get_ontology_resource_uri(Ontologies.LOINC.value[1], "63572-2"): "SamTimeReceived",
+    get_ontology_resource_uri(Ontologies.LOINC.value["url"], "79566-6"): "Sampling",
+    get_ontology_resource_uri(Ontologies.LOINC.value["url"], "57718-9"): "SampleQuality",
+    get_ontology_resource_uri(Ontologies.LOINC.value["url"], "51953-8"): "SamTimeCollected",
+    get_ontology_resource_uri(Ontologies.LOINC.value["url"], "63572-2"): "SamTimeReceived",
     "unknown1": "TooYoung",
     "unknown2": "BIS"
 }

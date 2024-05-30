@@ -14,8 +14,8 @@ class ETL:
         self.create_structures = True
         self.extract_data = True
         self.run_analysis = True
-        self.transform_data = False
-        self.load_data = False
+        self.transform_data = True
+        self.load_data = True
         self.compute_plots = False
 
         self.extract = Extract(metadata_filepath=metadata_filepath, samples_filepath=samples_filepath, database=self.database, run_analysis=self.run_analysis)

@@ -14,7 +14,7 @@ class Hospital(Resource):
         """
         # set up the resource ID
         log.info(id_value)
-        super().init__(id_value=id_value, resource_type=self.get_type())
+        super().__init__(id_value=id_value, resource_type=self.get_type())
 
         # set up the resource attributes
         self.name = name

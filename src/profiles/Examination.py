@@ -9,7 +9,7 @@ class Examination(Resource):
 
     def __init__(self, id_value: str, code: CodeableConcept, status: str, category: CodeableConcept):
         # set up the resource ID
-        super().init__(id_value=id_value, resource_type=self.get_type())
+        super().__init__(id_value=id_value, resource_type=self.get_type())
 
         # set up the resource attributes
         self.code = code
