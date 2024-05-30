@@ -3,17 +3,12 @@ import json
 from pandas import Series
 
 from src.utils.setup_logger import log
-from src.utils.utils import is_not_empty, assert_type, is_equal_insensitive, get_int_from_str, is_not_nan, \
+from src.utils.utils import is_not_empty, is_equal_insensitive, get_int_from_str, is_not_nan, \
     get_float_from_str, get_datetime_from_str
 
 
 class ValueAnalysis:
     def __init__(self, column_name: str, values: Series, expected_type: str, accepted_values: list):
-        assert_type(variable=column_name, expected_type=str)
-        assert_type(variable=values, expected_type=Series)
-        assert_type(variable=expected_type, expected_type=str)
-        assert_type(variable=accepted_values, expected_type=list)
-
         self.column_name = column_name
         self.values = values
         self.expected_type = expected_type

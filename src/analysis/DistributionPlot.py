@@ -3,8 +3,6 @@ import numpy as np
 import pandas as pd
 from pymongo.command_cursor import CommandCursor
 
-from src.utils.utils import assert_type
-
 import matplotlib.pyplot as plt
 
 from src.utils.setup_logger import log

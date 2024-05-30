@@ -77,9 +77,6 @@ def is_equal_insensitive(value, compared):
 
 
 # def build_url(base: str, element_id: str) -> str:
-#     assert_type(base, str)
-#     assert_type(element_id, int)
-#
 #     return base + "/" + str(element_id)
 
 
