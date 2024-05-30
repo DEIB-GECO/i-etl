@@ -14,11 +14,6 @@ from src.utils.setup_logger import log
 
 class DistributionPlot:
     def __init__(self, cursor: CommandCursor, examination_name: str, y_label: str, vertical_y: bool):
-        assert_type(variable=cursor, expected_type=CommandCursor, variable_name="cursor")
-        assert_type(variable=examination_name, expected_type=str, variable_name="examination_name")
-        assert_type(variable=y_label, expected_type=str, variable_name="y_label")
-        assert_type(variable=vertical_y, expected_type=bool, variable_name="vertical_y")
-
         self.cursor = cursor
         self.examination_name = examination_name
         self.y_label = y_label

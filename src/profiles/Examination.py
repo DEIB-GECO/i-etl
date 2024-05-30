@@ -1,7 +1,7 @@
 from src.fhirDatatypes.CodeableConcept import CodeableConcept
 from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
-from src.utils.utils import is_not_nan
+from src.utils.utils import is_not_nan, get_codeable_concept_from_json, get_category_from_json
 
 
 class Examination(Resource):
@@ -36,7 +36,7 @@ class Examination(Resource):
     @classmethod
     def from_json(cls, the_json: dict):
         return cls(id_value=the_json["identifier"]["value"],
-                   code=get_code_from_json(the_json["code"]),
+                   code=get_codeable_concept_from_json(the_json["code"]),
                    status=the_json["status"],
                    category=get_category_from_json(the_json["category"])
                    )
