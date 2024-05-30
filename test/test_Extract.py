@@ -16,8 +16,8 @@ class TestExtract(TestCase):
         self.fail()
 
     def test_load_existing_data_in_memory(self):
-        data_filepath = "data/tests/manual.csv"
-        metadata_filepath = "data/tests/metadata.csv"
+        data_filepath = "data/test/manual.csv"
+        metadata_filepath = "data/test/metadata.csv"
         database = Database("mongodb://localhost:27017/", "unit_tests")
         patient1, patient2, patient3 = Patient("123"), Patient("456"), Patient("789")
         hospital1, hospital2 = Hospital("1", "Hospital A"), Hospital("2", "Hospital B")
