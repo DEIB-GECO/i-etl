@@ -11,15 +11,16 @@ from src.fhirDatatypes.CodeableConcept import CodeableConcept
 from src.utils.Ontologies import Ontologies
 from src.utils.TableNames import TableNames
 from src.utils.setup_logger import log
-from src.utils.utils import is_not_nan, convert_value, get_values_from_JSON_values
+from src.utils.utils import is_not_nan, convert_value, get_values_from_json_values
 
 
 class Extract:
 
     def __init__(self, metadata_filepath: str, samples_filepath: str, database: Database, run_analysis: bool):
         self.metadata_filepath = metadata_filepath
-        self.samples_filepath = samples_filepath
         self.metadata = None
+        self.samples_filepath = samples_filepath
+        self.samples = None
         self.mapped_values = {}  # accepted values for some categorical columns (column "JSON_values" in metadata)
         self.mapped_types = {}  # expected data type for columns (column "vartype" in metadata)
 
@@ -170,16 +171,15 @@ class Extract:
             if column in self.mapped_values:
                 # self.mapped_values[column] contains the mappings (JSON dicts) for the given column
                 # we need to get only the set of values described in the mappings of the given column
-                accepted_values = get_values_from_JSON_values(json_values=self.mapped_values[column])
+                accepted_values = get_values_from_json_values(json_values=self.mapped_values[column])
             else:
                 accepted_values = []
             value_analysis = ValueAnalysis(column_name=column, values=values, expected_type=expected_type, accepted_values=accepted_values)
             value_analysis.run_analysis()
-            if value_analysis.nb_unrecognized_data_types > 0 or (value_analysis.ratio_non_empty_values_matching_accepted > 0 and value_analysis.ratio_non_empty_values_matching_accepted < 1):
+            if value_analysis.nb_unrecognized_data_types > 0 or (0 < value_analysis.ratio_non_empty_values_matching_accepted < 1):
                 log.info("%s: %s", column, value_analysis)
 
     def run_variable_analysis(self):
         variable_analysis = VariableAnalysis(samples=self.samples, metadata=self.metadata)
         variable_analysis.run_analysis()
         log.info(variable_analysis)
-

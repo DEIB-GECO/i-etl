@@ -5,11 +5,11 @@ from pymongo.command_cursor import CommandCursor
 
 from src.utils.utils import assert_type
 
-matplotlib.rcParams['backend'] = 'TkAgg'  # fix to avoid "Loaded backend macosx version unknown." error
 import matplotlib.pyplot as plt
-from pymongo.cursor import Cursor
 
 from src.utils.setup_logger import log
+
+matplotlib.rcParams['backend'] = 'TkAgg'  # fix to avoid "Loaded backend macosx version unknown." error
 
 
 class DistributionPlot:
@@ -18,6 +18,8 @@ class DistributionPlot:
         self.examination_name = examination_name
         self.y_label = y_label
         self.vertical_y = vertical_y
+        self.y = None
+        self.x = None
         self.compute_x_and_y_from_cursor("_id", "total")
 
     def draw(self):

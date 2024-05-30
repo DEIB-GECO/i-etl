@@ -1,4 +1,4 @@
-from src.database.Database import *
+from src.database.Database import Database
 from src.etl.Extract import Extract
 from src.etl.Load import Load
 from src.etl.Transform import Transform
@@ -29,5 +29,3 @@ class ETL:
             self.transform.run()
         if self.load_data:
             self.load.run()
-
-

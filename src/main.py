@@ -1,6 +1,5 @@
 import sys
 
-from src.analysis.ValueAnalysis import ValueAnalysis
 from src.etl.ETL import ETL
 from utils.setup_logger import log
 

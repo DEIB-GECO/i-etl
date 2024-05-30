@@ -27,7 +27,6 @@ class VariableAnalysis:
         for data_variable in self.sample_variables:
             if data_variable not in self.metadata_variables:
                 nb_variables_without_ontology += 1
-        total_number_variables = len(self.sample_variables)
         count_values_per_column = self.samples.count()
         total_number_variables_with_data = count_values_per_column.loc[lambda x: (x > 0)]
         print(total_number_variables_with_data)

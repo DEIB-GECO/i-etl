@@ -3,7 +3,6 @@ import unittest
 from src.profiles.Patient import Patient
 from src.utils.IdUsages import IdUsages
 from src.utils.TableNames import TableNames
-from src.utils.constants import NONE_VALUE
 
 
 class TestPatient(unittest.TestCase):

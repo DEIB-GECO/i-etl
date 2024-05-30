@@ -1,7 +1,6 @@
 from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
 from src.utils.setup_logger import log
-from src.utils.utils import get_identifier_from_json
 
 
 class Hospital(Resource):

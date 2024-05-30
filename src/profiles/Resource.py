@@ -4,7 +4,6 @@ from src.fhirDatatypes.Identifier import Identifier
 from src.utils.IdUsages import IdUsages
 from src.utils.TableNames import TableNames
 from src.utils.constants import NONE_VALUE
-from src.utils.setup_logger import log
 
 
 class Resource:

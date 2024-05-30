@@ -5,7 +5,7 @@ from src.utils.TableNames import TableNames
 from src.utils.setup_logger import log
 
 
-class Load():
+class Load:
     def __init__(self, extract: Extract, transform: Transform, database: Database):
         self.extract = extract
         self.transform = transform

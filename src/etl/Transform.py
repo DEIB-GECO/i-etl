@@ -16,7 +16,7 @@ from src.utils.utils import is_not_nan, get_ontology_system, is_equal_insensitiv
     convert_value, get_ontology_resource_uri
 
 
-class Transform():
+class Transform:
     def __init__(self, extract: Extract, hospital_name: str, database: Database):
         self.patients = set()  # to avoid duplicated patients when a single patient has many examination records
         self.examinations = []
@@ -160,8 +160,6 @@ class Transform():
             return None
 
     def create_code_from_metadata(self, row, ontology_column: str, code_column: str):
-        # log.debug("ontology_column is: " + str(ontology_column))
-        # log.debug("code_column is: " + str(code_column))
         ontology = row[ontology_column]
         if not is_not_nan(ontology):
             # no ontology code has been provided for that variable name, let's skip it

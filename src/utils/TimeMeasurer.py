@@ -1,5 +1,6 @@
 import time
 
+
 class TimeMeasurer:
     def __init__(self):
         self.measure = 0
@@ -25,5 +26,5 @@ class TimeMeasurer:
     def get_measure(self):
         return self.measure
 
-    def __get_ms_time(self):
+    def get_ms_time(self):
         return round(time.time() * 1000)

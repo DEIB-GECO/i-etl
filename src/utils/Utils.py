@@ -7,7 +7,6 @@ from pandas import DataFrame
 from src.fhirDatatypes.CodeableConcept import CodeableConcept
 from src.fhirDatatypes.Identifier import Identifier
 from src.fhirDatatypes.Reference import Reference
-from src.utils.ExaminationCategory import ExaminationCategory
 from src.utils.Ontologies import Ontologies
 
 
@@ -29,17 +28,9 @@ def is_not_nan(value) -> bool:
     return not is_float(value) or (is_float(value) and not math.isnan(float(value)))
 
 
-def assert_type(variable, expected_type) -> None:
-    message = "The variable '" + str(variable) + (" "
-                                                  "is of type ") + str(type(variable)) + (" "
-                                                                                          "while it should be of type ") + str(
-        expected_type) + "."
-    assert isinstance(variable, expected_type), message
-
-
 def assert_not_empty(variable, not_empty=True) -> None:
     if is_not_empty(variable=variable, not_empty=not_empty):
-        assert True
+        pass
     else:
         message = "A variable " + variable + " is not supposed to be empty"
         assert False, message
@@ -233,7 +224,7 @@ def mongodb_group_by(group_key: Any, group_by_name: str, operator: str, field) -
 # LIST AND DICT CONVERSIONS
 
 
-def get_values_from_JSON_values(json_values):
+def get_values_from_json_values(json_values):
     values = []
     for current_dict in json_values:
         if is_not_nan(current_dict) and is_not_empty(current_dict):

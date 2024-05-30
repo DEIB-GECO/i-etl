@@ -8,7 +8,7 @@ from src.profiles.Resource import Resource
 from src.profiles.Sample import Sample
 from src.utils.TableNames import TableNames
 from src.utils.constants import NONE_VALUE
-from src.utils.utils import get_identifier_from_json, get_reference_from_json
+from src.utils.utils import get_reference_from_json
 
 
 class ExaminationRecord(Resource):
@@ -26,7 +26,7 @@ class ExaminationRecord(Resource):
         :param value: A string/int/float/CodeableConcept being the value of what is examined in that clinical record.
         """
         # set up the resource ID
-        super().init__(id_value=id_value, resource_type=self.get_type())
+        super().__init__(id_value=id_value, resource_type=self.get_type())
 
         # set up the resource attributes
         self.status = status
