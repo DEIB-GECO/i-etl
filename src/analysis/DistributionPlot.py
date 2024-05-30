@@ -23,7 +23,7 @@ class DistributionPlot:
         self.examination_name = examination_name
         self.y_label = y_label
         self.vertical_y = vertical_y
-        self.__compute_x_and_y_from_cursor("_id", "total")
+        self.compute_x_and_y_from_cursor("_id", "total")
 
     def draw(self):
         log.debug(self.x)
@@ -46,7 +46,7 @@ class DistributionPlot:
             plt.text(value, index, str(value))
         plt.show()
 
-    def __compute_x_and_y_from_cursor(self, x_axis: str, y_axis: str):
+    def compute_x_and_y_from_cursor(self, x_axis: str, y_axis: str):
         log.debug(self.cursor)
         self.x = []
         self.y = []

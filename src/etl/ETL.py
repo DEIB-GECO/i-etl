@@ -2,10 +2,6 @@ from src.database.Database import *
 from src.etl.Extract import Extract
 from src.etl.Load import Load
 from src.etl.Transform import Transform
-from src.profiles.Hospital import Hospital
-from src.utils.TableNames import TableNames
-from src.utils.setup_logger import log
-from src.utils.utils import NONE_VALUE
 
 
 class ETL:
@@ -17,9 +13,9 @@ class ETL:
         # flags to know what to do during the ETL process
         self.create_structures = True
         self.extract_data = True
-        self.run_analysis = False
-        self.transform_data = True
-        self.load_data = True
+        self.run_analysis = True
+        self.transform_data = False
+        self.load_data = False
         self.compute_plots = False
 
         self.extract = Extract(metadata_filepath=metadata_filepath, samples_filepath=samples_filepath, database=self.database, run_analysis=self.run_analysis)

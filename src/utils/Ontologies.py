@@ -2,7 +2,8 @@ from enum import Enum
 
 
 class Ontologies(Enum):
-    SNOMEDCT = ("SNOMEDCT", "http://snomed.info/sct")
-    LOINC = ("LOINC", "http://loinc.org")
-    CLIR = ("CLIR", "https://clir.mayo.edu/")
-    PUBCHEM = ("PUBCHEM", "https://pubchem.ncbi.nlm.nih.gov/")
+    SNOMEDCT = { "name": "SNOMEDCT", "url": "http://snomed.info/sct" }
+    LOINC = { "name": "LOINC","url":  "http://loinc.org" }
+    CLIR = { "name": "CLIR", "url": "https://clir.mayo.edu/" }
+    PUBCHEM = { "name": "PUBCHEM", "url": "https://pubchem.ncbi.nlm.nih.gov/" }
+    GSSO = { "name": "GSSO", "url": "http://purl.obolibrary.org/obo/" }

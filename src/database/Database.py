@@ -33,13 +33,13 @@ class Database:
         log.debug("the new MongoClient is: %s", self.client)
         log.debug("the database is: %s", self.db)
 
-        if self.__check_server_is_up():
+        if self.check_server_is_up():
             log.info("The connection is up.")
         else:
             log.error("There was a problem while connecting to the MongoDB instance at %s.", self.connection_string)
             exit()
 
-    def __check_server_is_up(self) -> bool:
+    def check_server_is_up(self) -> bool:
         """
         Send a ping to confirm a successful connection.
         :return: A boolean being whether the MongoDB client is up.
@@ -147,7 +147,7 @@ class Database:
         to that examination url.
         :return: A float value being the minimum value for the given examination url.
         """
-        return self.__get_min_max_value_of_examination_record(examination_url=examination_url, min_or_max="min")
+        return self.get_min_max_value_of_examination_record(examination_url=examination_url, min_or_max="min")
 
     def get_max_value_of_examination_record(self, examination_url: str) -> float:
         """
@@ -157,9 +157,9 @@ class Database:
         to that examination url.
         :return: A float value being the maximum value for the given examination url.
         """
-        return self.__get_min_max_value_of_examination_record(examination_url=examination_url, min_or_max="max")
+        return self.get_min_max_value_of_examination_record(examination_url=examination_url, min_or_max="max")
 
-    def __get_min_max_value_of_examination_record(self, examination_url: str, min_or_max: str) -> float:
+    def get_min_max_value_of_examination_record(self, examination_url: str, min_or_max: str) -> float:
         """
         Compute the maximum or the maximum value among all the examination records for a certain examination.
         :param examination_url: A string being the examination url of the form Examination/X, where X is the
@@ -186,7 +186,7 @@ class Database:
         for result in cursor:
             return float(result)  # There should be only one result, so we can return directly the min or max value
 
-    def __get_avg_value_of_examination_record(self, examination_url: str) -> float:
+    def get_avg_value_of_examination_record(self, examination_url: str) -> float:
         """
         Compute the average value among all the examination records for a certain examination.
         :param examination_url: A string being the examination url of the form Examination/X, where X is the

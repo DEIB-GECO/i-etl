@@ -7,7 +7,8 @@ from src.profiles.Patient import Patient
 from src.profiles.Resource import Resource
 from src.profiles.Sample import Sample
 from src.utils.TableNames import TableNames
-from src.utils.utils import NONE_VALUE
+from src.utils.constants import NONE_VALUE
+from src.utils.utils import get_identifier_from_json, get_reference_from_json
 
 
 class ExaminationRecord(Resource):
@@ -17,16 +18,15 @@ class ExaminationRecord(Resource):
                  hospital: Hospital, value, sample: Sample):
         """
         A new ClinicalRecord instance, either built from existing data or from scratch.
-        :param global_id: A string being the BETTER ID of the ExaminationRecord instance.
+        :param id_value: A string being the BETTER ID of the ExaminationRecord instance.
         :param examination: An Examination instance being the Examination that record is referring to.
         :param status: A string in [registered, preliminary, final, amended] depicting the current record status.
         :param subject: A Patient instance being the patient on which the clinical record has been measured.
         :param hospital: A Hospital instance being the hospital in which the clinical record has been measured.
         :param value: A string/int/float/CodeableConcept being the value of what is examined in that clinical record.
-        :param issued: A Date being when the clinical record has been measured.
         """
         # set up the resource ID
-        super().__init__(id_value=id_value, resource_type=self.get_type())
+        super().init__(id_value=id_value, resource_type=self.get_type())
 
         # set up the resource attributes
         self.status = status
@@ -61,3 +61,14 @@ class ExaminationRecord(Resource):
         }
 
         return json_clinical_record
+
+    @classmethod
+    def from_json(cls, the_json: dict):
+        return cls(id_value=the_json["identifier"]["value"],
+                    examination=get_reference_from_json(the_json["instantiate"]),
+                    status=the_json["status"],
+                    subject=get_reference_from_json(the_json["subject"]),
+                    hospital=get_reference_from_json(the_json["recordedBy"]),
+                    value=the_json["value"],
+                    sample=get_reference_from_json(the_json["basedOn"])
+                   )

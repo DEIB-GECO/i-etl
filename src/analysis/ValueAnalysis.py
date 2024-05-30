@@ -34,13 +34,13 @@ class ValueAnalysis:
         self.ratio_non_empty_values_matching_accepted = 0.0
 
     def run_analysis(self):
-        self.__compare_values_with_expected_type()  # this will call compare values for categorical values
+        self.compare_values_with_expected_type()  # this will call compare values for categorical values
 
-    def __compare_values_with_expected_type(self):
+    def compare_values_with_expected_type(self):
         if is_not_empty(self.expected_type):
             if is_equal_insensitive(self.expected_type, "category"):
                 # for categorical values, we have a dedicated method to check whether the values match the expected ones
-                self.__compare_values_with_accepted_values()
+                self.compare_values_with_accepted_values()
             else:
                 type_is_int = is_equal_insensitive(self.expected_type, "int")
                 type_is_float = is_equal_insensitive(self.expected_type, "float")
@@ -92,7 +92,7 @@ class ValueAnalysis:
                         # no wrong type has been detected
                         log.debug("No wrong type detected for %s", self.column_name)
 
-    def __compare_values_with_accepted_values(self):
+    def compare_values_with_accepted_values(self):
         # we only compare the SET of values with the SET of accepted values
         # then, we compute the number of values matching an accepted values using the number of occurrences of each
         # in the LIST of values

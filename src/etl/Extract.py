@@ -7,6 +7,7 @@ import pandas as pd
 from src.analysis.ValueAnalysis import ValueAnalysis
 from src.analysis.VariableAnalysis import VariableAnalysis
 from src.database.Database import Database
+from src.fhirDatatypes.CodeableConcept import CodeableConcept
 from src.utils.Ontologies import Ontologies
 from src.utils.TableNames import TableNames
 from src.utils.setup_logger import log
@@ -19,7 +20,6 @@ class Extract:
         self.metadata_filepath = metadata_filepath
         self.samples_filepath = samples_filepath
         self.metadata = None
-        self.phenotypic_variables = {}
         self.mapped_values = {}  # accepted values for some categorical columns (column "JSON_values" in metadata)
         self.mapped_types = {}  # expected data type for columns (column "vartype" in metadata)
 
@@ -27,7 +27,6 @@ class Extract:
 
         # data that has already been ingested
         # we load it in-memory to avoid many calls to MongoDB for efficiency
-        self.existing_hospital_names = set()
         self.existing_local_patient_ids = set()
         self.existing_disease_ccs = set()
         self.existing_examination_ccs = set()
@@ -37,18 +36,17 @@ class Extract:
         self.run_analysis = run_analysis
 
     def run(self):
-        self.__load_existing_data_in_memory()
-        self.__load_metadata_file()
-        self.__load_samples_file()
-        self.__load_phenotypic_variables()
-        self.__compute_mapped_values()
-        self.__compute_mapped_types()
+        self.load_existing_data_in_memory()
+        self.load_metadata_file()
+        self.load_samples_file()
+        self.compute_mapped_values()
+        self.compute_mapped_types()
 
         if self.run_analysis:
-            self.__run_value_analysis()
-            self.__run_variable_analysis()
+            self.run_value_analysis()
+            self.run_variable_analysis()
 
-    def __load_metadata_file(self):
+    def load_metadata_file(self):
         assert os.path.exists(self.metadata_filepath), "The provided metadata file could not be found. Please check the filepath you specify when running this script."
 
         # index_col is False to not add a column with line numbers
@@ -81,7 +79,7 @@ class Extract:
                     values_dicts.append(json.loads(json_dict))
                 self.metadata.loc[index, "JSON_values"] = json.dumps(values_dicts) # set the new JSON values as a string
 
-    def __load_samples_file(self):
+    def load_samples_file(self):
         assert os.path.exists(self.samples_filepath), "The provided samples file could not be found. Please check the filepath you specify when running this script."
 
         log.debug("self.samples_filepath is %s", self.samples_filepath)
@@ -94,13 +92,7 @@ class Extract:
         self.samples.columns = self.samples.columns.str.lower()
         log.debug(self.samples.columns)
 
-        v_counts = self.samples['id'].value_counts()
-
-    def __load_phenotypic_variables(self):
-        self.phenotypic_variables = json.load(open(os.path.join("data", "metadata", "phenotypic-variables.json")))
-        log.debug("Nb of phenotypic variables: %s", len(self.phenotypic_variables))
-
-    def __compute_mapped_values(self):
+    def compute_mapped_values(self):
         self.mapped_values = {}
 
         for index, row in self.metadata.iterrows():
@@ -112,15 +104,15 @@ class Extract:
                     current_dict["value"] = convert_value(current_dict["value"])
                     # if we can also convert the snomed_ct / loinc code, we do it
                     # TODO Nelly: loop on all ontologies known in OntologyNames
-                    if Ontologies.SNOMEDCT in current_dict:
-                        current_dict[Ontologies.SNOMEDCT.value] = convert_value(current_dict[Ontologies.SNOMEDCT.value])
-                    if Ontologies.LOINC in current_dict:
-                        current_dict[Ontologies.LOINC.value] = convert_value(current_dict[Ontologies.LOINC.value])
+                    if Ontologies.SNOMEDCT.value["name"] in current_dict:
+                        current_dict[Ontologies.SNOMEDCT.value["name"]] = convert_value(current_dict[Ontologies.SNOMEDCT.value])
+                    if Ontologies.LOINC.value["name"] in current_dict:
+                        current_dict[Ontologies.LOINC.value["name"]] = convert_value(current_dict[Ontologies.LOINC.value])
                     parsed_dicts.append(current_dict)
                 self.mapped_values[row["name"]] = parsed_dicts
         log.debug(self.mapped_values)
 
-    def __compute_mapped_types(self):
+    def compute_mapped_types(self):
         self.mapped_types = {}
 
         for index, row in self.metadata.iterrows():
@@ -128,41 +120,37 @@ class Extract:
                 self.mapped_types[row["name"]] = row["vartype"]  # we associate the column name to its expected type
         log.debug(self.mapped_types)
 
-    def __load_existing_data_in_memory(self):
+    def load_existing_data_in_memory(self):
         # get existing patient IDs
         self.existing_local_patient_ids = set()
-        cursor = self.database.find_operation(TableNames.PATIENT.value, {}, {"id": 1})
+        cursor = self.database.find_operation(TableNames.PATIENT.value, {}, {"identifier.value": 1})
         for result in cursor:
             log.debug(result)
-            self.existing_local_patient_ids.add(result)
+            self.existing_local_patient_ids.add(result["identifier"]["value"])
         log.info("%s existing patients", len(self.existing_local_patient_ids))
         log.debug(self.existing_local_patient_ids)
-
-        # get existing hospital names
-        self.existing_hospital_names = set()
-        cursor = self.database.find_operation(TableNames.HOSPITAL.value, {}, {"name": 1})
-        for result in cursor:
-            log.debug(result)
-            self.existing_hospital_names.add(result["name"])
-        log.info("%s existing hospitals", len(self.existing_hospital_names))
-        log.debug(self.existing_hospital_names)
 
         # get existing CCs for examinations
         self.existing_examination_ccs = set()
         cursor = self.database.find_operation(TableNames.EXAMINATION.value, {}, {"code.coding.system": 1, "code.coding.code": 1})
         for result in cursor:
-            self.existing_examination_ccs.add((result["system"], result["code"]))
+            log.info(result)
+            cc = CodeableConcept()
+            for one_coding in result["code"]["coding"]:
+                cc.add_coding((one_coding["system"], one_coding["code"], ""))  # TODO Nelly: why is there no display in inserted Codings ? one_coding["display"]
+            self.existing_examination_ccs.add(cc)
         log.info("%s existing examinations", len(self.existing_examination_ccs))
         log.debug(self.existing_examination_ccs)
 
-        self.existing_disease_ccs = set()
-        cursor = self.database.find_operation(TableNames.DISEASE.value, {}, {"code.coding.system": 1, "code.coding.code": 1})
-        for result in cursor:
-            self.existing_disease_ccs.add((result["system"], result["code"]))
-        log.info("%s existing diseases", len(self.existing_disease_ccs))
-        log.debug(self.existing_disease_ccs)
+        # TODO Nelly: bring thi back when I wil implement Diseases
+        # self.existing_disease_ccs = set()
+        # cursor = self.database.find_operation(TableNames.DISEASE.value, {}, {"code.coding.system": 1, "code.coding.code": 1})
+        # for result in cursor:
+        #     self.existing_disease_ccs.add((result["system"], result["code"]))
+        # log.info("%s existing diseases", len(self.existing_disease_ccs))
+        # log.debug(self.existing_disease_ccs)
 
-    def __run_value_analysis(self):
+    def run_value_analysis(self):
         log.debug(self.mapped_values)
         # for each column in the sample data (and not in the metadata because some (empty) data columns are not
         # present in the metadata file), we compare the set of values it takes against the accepted set of values
@@ -190,7 +178,7 @@ class Extract:
             if value_analysis.nb_unrecognized_data_types > 0 or (value_analysis.ratio_non_empty_values_matching_accepted > 0 and value_analysis.ratio_non_empty_values_matching_accepted < 1):
                 log.info("%s: %s", column, value_analysis)
 
-    def __run_variable_analysis(self):
+    def run_variable_analysis(self):
         variable_analysis = VariableAnalysis(samples=self.samples, metadata=self.metadata)
         variable_analysis.run_analysis()
         log.info(variable_analysis)

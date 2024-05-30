@@ -1,10 +1,21 @@
 import json
 
+from src.utils.setup_logger import log
+
 
 class Identifier:
-    def __init__(self, id_value: str, use: str):
-        self.value = id_value
-        self.use = use  # 'official' for IDs given by hospitals, 'secondary' for the BETTER IDs
+    def __init__(self, id_value: str, resource_type: str, use: str):
+        self.value = self.create_identifier(id_value, resource_type)
+        self.use = use  # corresponding enum: IdUsages; 'official' for IDs given by hospitals, 'secondary' for the BETTER IDs
+
+    def create_identifier(self, id_value: str, resource_type: str) -> str:
+        if "/" in id_value:
+            # the provided id_value is already of the form type/id, thus we do not need to append the resource type
+            # this happens when we build (instance) resources from the existing data in the database
+            # the stored if is already of the form type/id
+            return id_value
+        else:
+            return resource_type + "/" + id_value
 
     def to_json(self):
         json_identifier = {

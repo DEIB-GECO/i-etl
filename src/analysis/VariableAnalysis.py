@@ -19,19 +19,25 @@ class VariableAnalysis:
         self.ratio_variable_no_ontology = 0.0
 
     def run_analysis(self):
-        self.__compute_nb_variables_without_ontology()
-        self.__compute_nb_categorical_features_without_mapping()
+        self.compute_nb_variables_without_ontology()
+        self.compute_nb_categorical_features_without_mapping()
 
-    def __compute_nb_variables_without_ontology(self):
+    def compute_nb_variables_without_ontology(self):
         nb_variables_without_ontology = 0
         for data_variable in self.sample_variables:
             if data_variable not in self.metadata_variables:
                 nb_variables_without_ontology += 1
         total_number_variables = len(self.sample_variables)
-        self.ratio_variable_no_ontology = nb_variables_without_ontology / total_number_variables
-        log.debug("Number of variables without ontology: %s/%s=%s", nb_variables_without_ontology, total_number_variables, self.ratio_variable_no_ontology)
+        count_values_per_column = self.samples.count()
+        total_number_variables_with_data = count_values_per_column.loc[lambda x: (x > 0)]
+        print(total_number_variables_with_data)
+        total_number_variables_with_data = len(count_values_per_column.loc[lambda x: (x > 0)])
+        print(total_number_variables_with_data)
+        log.info("total_number_variables_with_data = %s", total_number_variables_with_data)
+        self.ratio_variable_no_ontology = nb_variables_without_ontology / total_number_variables_with_data
+        log.debug("Number of variables without ontology: %s/%s=%s", nb_variables_without_ontology, total_number_variables_with_data, self.ratio_variable_no_ontology)
 
-    def __compute_nb_categorical_features_without_mapping(self):
+    def compute_nb_categorical_features_without_mapping(self):
         self.nb_categorical_features_without_mapping = 0
         for index, metadata_variable in self.metadata.iterrows():
             if metadata_variable["vartype"] == "category":

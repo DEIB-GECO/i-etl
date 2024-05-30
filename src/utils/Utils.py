@@ -1,23 +1,12 @@
 import math
-import re
 from typing import Any
 
 from dateutil.parser import parse
 from pandas import DataFrame
 
-from src.utils.HospitalNames import HospitalNames
+from src.fhirDatatypes.Identifier import Identifier
+from src.fhirDatatypes.Reference import Reference
 from src.utils.Ontologies import Ontologies
-from src.utils.setup_logger import log
-
-# CONSTANTS
-
-NONE_VALUE = "NONE"
-
-ID_COLUMNS = {
-    HospitalNames.BUZZI.value: "id"
-}
-
-NO_RECORD_COLUMNS = ["line", "unnamed", "samplebarcode"]
 
 
 # ASSERTIONS
@@ -40,8 +29,9 @@ def is_not_nan(value) -> bool:
 
 def assert_type(variable, expected_type) -> None:
     message = "The variable '" + str(variable) + (" "
-                "is of type ") + str(type(variable)) + (" "
-                "while it should be of type ") + str(expected_type) + "."
+                                                  "is of type ") + str(type(variable)) + (" "
+                                                                                          "while it should be of type ") + str(
+        expected_type) + "."
     assert isinstance(variable, expected_type), message
 
 
@@ -107,12 +97,26 @@ def get_ontology_system(ontology: str) -> str:
     ontology = normalize_value(ontology)
 
     for existing_ontology in Ontologies:
-        if existing_ontology.value[0] == ontology:
-            return existing_ontology.value[1]  # return the ontology URI associated to that ontology
+        if existing_ontology.value["name"] == ontology:
+            return existing_ontology.value["url"]  # return the ontology URI associated to that ontology
     # at the end of the loop, no enum value could match the given ontology
     # thus we need to raise an error
     raise ValueError("The given ontology system '%s' is not known.", ontology)
 
+
+def get_ontology_resource_uri(ontology_system: str, resource_code: str) -> str:
+    return ontology_system + "/" + resource_code
+
+
+def get_identifier_from_json(identifier_as_json: dict, resource_type: str):
+    return Identifier(id_value=identifier_as_json["value"], resource_type=resource_type, use=identifier_as_json["use"])
+
+
+def get_reference_from_json(reference_as_json: dict):
+    return Reference(get_identifier_from_json(identifier_as_json=reference_as_json["reference"], resource_type=reference_as_json["type"]))
+
+
+# NORMALIZE DATA
 
 def get_int_from_str(str_value) -> int:
     try:
@@ -205,7 +209,7 @@ def mongodb_group_by(group_key: Any, group_by_name: str, operator: str, field) -
         "$group": {
             "_id": group_key,
             group_by_name: {
-                operator: "$"+field  # $avg: $<the field on which the avg is computed>
+                operator: "$" + field  # $avg: $<the field on which the avg is computed>
             }
         }
     }

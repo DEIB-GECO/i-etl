@@ -1,5 +1,6 @@
 from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
+from src.utils.utils import get_identifier_from_json
 
 
 class Patient(Resource):
@@ -10,7 +11,7 @@ class Patient(Resource):
         This ID is shared by the different patent sample, and SHOULD be shared by the hospitals.
         """
         # set up the resource ID
-        super().__init__(id_value=id_value, resource_type=self.get_type())
+        super().init__(id_value=id_value, resource_type=self.get_type())
 
     def get_type(self) -> str:
         """
@@ -30,6 +31,10 @@ class Patient(Resource):
         }
 
         return json_patient
+
+    @classmethod
+    def from_json(cls, the_json: dict):
+        return cls(the_json["identifier"]["value"])
 
     def __eq__(self, other) -> bool:
         if isinstance(other, Patient):

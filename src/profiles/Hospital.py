@@ -1,6 +1,7 @@
 from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
-from src.utils.utils import NONE_VALUE
+from src.utils.setup_logger import log
+from src.utils.utils import get_identifier_from_json
 
 
 class Hospital(Resource):
@@ -12,7 +13,8 @@ class Hospital(Resource):
         :param name: A string being the name of the hospital.
         """
         # set up the resource ID
-        super().__init__(id_value=id_value, resource_type=self.get_type())
+        log.info(id_value)
+        super().init__(id_value=id_value, resource_type=self.get_type())
 
         # set up the resource attributes
         self.name = name
@@ -35,3 +37,7 @@ class Hospital(Resource):
             "name": self.name
         }
         return json_hospital
+
+    @classmethod
+    def from_json(cls, the_json: dict):
+        return cls(the_json["identifier"]["value"], the_json["name"])

@@ -13,7 +13,7 @@ class Reference:
         :param resource:
         """
         self.reference = resource.identifier
-        self.type = type(resource).__name__
+        self.type = type(resource).name__
 
     def to_json(self):
         json_reference = {

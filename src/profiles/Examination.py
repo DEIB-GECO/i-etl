@@ -1,7 +1,7 @@
 from src.fhirDatatypes.CodeableConcept import CodeableConcept
 from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
-from src.utils.utils import NONE_VALUE
+from src.utils.utils import is_not_nan
 
 
 class Examination(Resource):
@@ -9,7 +9,7 @@ class Examination(Resource):
 
     def __init__(self, id_value: str, code: CodeableConcept, status: str, category: CodeableConcept):
         # set up the resource ID
-        super().__init__(id_value=id_value, resource_type=self.get_type())
+        super().init__(id_value=id_value, resource_type=self.get_type())
 
         # set up the resource attributes
         self.code = code
@@ -32,3 +32,21 @@ class Examination(Resource):
         }
 
         return json_examination
+
+    @classmethod
+    def from_json(cls, the_json: dict):
+        return cls(id_value=the_json["identifier"]["value"],
+                   code=get_code_from_json(the_json["code"]),
+                   status=the_json["status"],
+                   category=get_category_from_json(the_json["category"])
+                   )
+
+    @classmethod
+    def get_label(cls, row) -> str:
+        display = row["name"]
+        if is_not_nan(row["description"]):
+            # by default the display is the variable name
+            # if we also have a description, we append it to the display
+            # e.g., "BTD (human biotinidase activity)"
+            display = display + " (" + str(row["description"]) + ")"
+        return display
