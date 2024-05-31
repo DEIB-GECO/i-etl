@@ -5,14 +5,13 @@ from src.utils.utils import get_ontology_resource_uri
 
 NONE_VALUE = "NONE"
 
+# This expects to have column names IN LOWER CASE
 ID_COLUMNS = {
     HospitalNames.BUZZI.value: {
         TableNames.PATIENT.value: "id",
         TableNames.SAMPLE.value: "samplebarcode"
     }
 }
-
-NO_EXAMINATION_COLUMNS = ["line", "unnamed", "id", "samplebarcode"]
 
 PHENOTYPIC_VARIABLES = {
     get_ontology_resource_uri(Ontologies.SNOMEDCT.value["url"], "184099003"): "DateOfBirth",
@@ -35,3 +34,10 @@ SAMPLE_VARIABLES = {
     "unknown1": "TooYoung",
     "unknown2": "BIS"
 }
+
+# curly braces here specify a set, i.e., set()
+# all values here ARE EXPECTED TO BE LOWER CASE to facilitate comparison (and make it efficient)
+NO_EXAMINATION_COLUMNS = {"line", "unnamed", "id", "samplebarcode", "sampling", "samplequality", "samtimecollected",
+                          "samtimereceived"}
+
+BATCH_SIZE = 2

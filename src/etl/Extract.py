@@ -19,27 +19,19 @@ class Extract:
     def __init__(self, metadata_filepath: str, samples_filepath: str, database: Database, run_analysis: bool):
         self.metadata_filepath = metadata_filepath
         self.metadata = None
-        self.samples_filepath = samples_filepath
-        self.samples = None
+        self.data_filepath = samples_filepath
+        self.data = None
         self.mapped_values = {}  # accepted values for some categorical columns (column "JSON_values" in metadata)
         self.mapped_types = {}  # expected data type for columns (column "vartype" in metadata)
 
         self.database = database
 
-        # data that has already been ingested
-        # we load it in-memory to avoid many calls to MongoDB for efficiency
-        self.existing_local_patient_ids = set()
-        self.existing_disease_ccs = set()
-        self.existing_examination_ccs = set()
-        self.existing_medication_ccs = set()
-
         # flags
         self.run_analysis = run_analysis
 
     def run(self):
-        self.load_existing_data_in_memory()
         self.load_metadata_file()
-        self.load_samples_file()
+        self.load_data_file()
         self.compute_mapped_values()
         self.compute_mapped_types()
 
@@ -49,6 +41,8 @@ class Extract:
 
     def load_metadata_file(self):
         assert os.path.exists(self.metadata_filepath), "The provided metadata file could not be found. Please check the filepath you specify when running this script."
+
+        log.info("Metadata filepath is %s.", self.metadata_filepath)
 
         # index_col is False to not add a column with line numbers
         self.metadata = pd.read_csv(self.metadata_filepath, index_col=False)
@@ -78,20 +72,22 @@ class Extract:
                     if not json_dict.endswith("}"):
                         json_dict = json_dict + "}"
                     values_dicts.append(json.loads(json_dict))
-                self.metadata.loc[index, "JSON_values"] = json.dumps(values_dicts) # set the new JSON values as a string
+                self.metadata.loc[index, "JSON_values"] = json.dumps(values_dicts)  # set the new JSON values as a string
 
-    def load_samples_file(self):
-        assert os.path.exists(self.samples_filepath), "The provided samples file could not be found. Please check the filepath you specify when running this script."
+        log.info("%s columns and %s lines in the metadata file.", len(self.metadata.columns), len(self.metadata))
 
-        log.debug("self.samples_filepath is %s", self.samples_filepath)
+    def load_data_file(self):
+        assert os.path.exists(self.data_filepath), "The provided samples file could not be found. Please check the filepath you specify when running this script."
+
+        log.info("Data filepath is %s.", self.data_filepath)
 
         # index_col is False to not add a column with line numbers
-        self.samples = pd.read_csv(self.samples_filepath, index_col=False)
-        log.debug(self.samples)
+        self.data = pd.read_csv(self.data_filepath, index_col=False)
 
         # lower case all column names to avoid inconsistencies
-        self.samples.columns = self.samples.columns.str.lower()
-        log.debug(self.samples.columns)
+        self.data.columns = self.data.columns.str.lower()
+
+        log.info("%s columns and %s lines in the data file.", len(self.data.columns), len(self.data))
 
     def compute_mapped_values(self):
         self.mapped_values = {}
@@ -121,43 +117,13 @@ class Extract:
                 self.mapped_types[row["name"]] = row["vartype"]  # we associate the column name to its expected type
         log.debug(self.mapped_types)
 
-    def load_existing_data_in_memory(self):
-        # get existing patient IDs
-        self.existing_local_patient_ids = set()
-        cursor = self.database.find_operation(TableNames.PATIENT.value, {}, {"identifier.value": 1})
-        for result in cursor:
-            log.debug(result)
-            self.existing_local_patient_ids.add(result["identifier"]["value"])
-        log.info("%s existing patients", len(self.existing_local_patient_ids))
-        log.debug(self.existing_local_patient_ids)
-
-        # get existing CCs for examinations
-        self.existing_examination_ccs = set()
-        cursor = self.database.find_operation(TableNames.EXAMINATION.value, {}, {"code.coding.system": 1, "code.coding.code": 1})
-        for result in cursor:
-            log.info(result)
-            cc = CodeableConcept()
-            for one_coding in result["code"]["coding"]:
-                cc.add_coding((one_coding["system"], one_coding["code"], ""))  # TODO Nelly: why is there no display in inserted Codings ? one_coding["display"]
-            self.existing_examination_ccs.add(cc)
-        log.info("%s existing examinations", len(self.existing_examination_ccs))
-        log.debug(self.existing_examination_ccs)
-
-        # TODO Nelly: bring thi back when I wil implement Diseases
-        # self.existing_disease_ccs = set()
-        # cursor = self.database.find_operation(TableNames.DISEASE.value, {}, {"code.coding.system": 1, "code.coding.code": 1})
-        # for result in cursor:
-        #     self.existing_disease_ccs.add((result["system"], result["code"]))
-        # log.info("%s existing diseases", len(self.existing_disease_ccs))
-        # log.debug(self.existing_disease_ccs)
-
     def run_value_analysis(self):
         log.debug(self.mapped_values)
         # for each column in the sample data (and not in the metadata because some (empty) data columns are not
         # present in the metadata file), we compare the set of values it takes against the accepted set of values
         # (available in the mapped_values variable)
-        for column in self.samples.columns:
-            values = pd.Series(self.samples[column].values)
+        for column in self.data.columns:
+            values = pd.Series(self.data[column].values)
             values = values.apply(lambda value: value.casefold().strip() if isinstance(value, str) else value)
             # log.debug("Values are: %s", values)
             # log.debug(self.metadata["name"])
@@ -180,6 +146,6 @@ class Extract:
                 log.info("%s: %s", column, value_analysis)
 
     def run_variable_analysis(self):
-        variable_analysis = VariableAnalysis(samples=self.samples, metadata=self.metadata)
+        variable_analysis = VariableAnalysis(samples=self.data, metadata=self.metadata)
         variable_analysis.run_analysis()
         log.info(variable_analysis)

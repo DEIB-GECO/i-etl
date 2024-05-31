@@ -1,7 +1,6 @@
 import unittest
 
 from src.profiles.Patient import Patient
-from src.utils.IdUsages import IdUsages
 from src.utils.TableNames import TableNames
 
 
@@ -13,8 +12,7 @@ class TestPatient(unittest.TestCase):
         """
         patient1 = Patient("123")
         self.assertIsNotNone(patient1.identifier)
-        self.assertEqual(patient1.identifier.value, TableNames.PATIENT.value + "/123")
-        self.assertEqual(patient1.identifier.use, IdUsages.ASSIGNED_BY_HOSPITAL.value)
+        self.assertEqual(patient1.identifier, TableNames.PATIENT.value + "/123")
 
         # TODO Nelly: check how to verify that a Patient cannot be created with a NON_VALUE id
         # I tried with self.assertRaises(ValueError, Patient(NONE_VALUE, TableNames.PATIENT.value))
@@ -34,26 +32,19 @@ class TestPatient(unittest.TestCase):
 
         self.assertIsNotNone(patient1_json)
         self.assertIn("identifier", patient1_json)
-        self.assertIn("value", patient1_json["identifier"])
-        self.assertEqual(patient1_json["identifier"]["value"], TableNames.PATIENT.value + "/123")
-        self.assertIn("use", patient1_json["identifier"])
-        self.assertEqual(patient1_json["identifier"]["use"], IdUsages.ASSIGNED_BY_HOSPITAL.value)
+        self.assertEqual(patient1_json["identifier"], TableNames.PATIENT.value + "/123")
         self.assertIn("resourceType", patient1_json)
         self.assertEqual(patient1_json["resourceType"], TableNames.PATIENT.value)
 
     def test_from_json(self):
         json_patient = {
-            "identifier": {
-                "value": TableNames.PATIENT.value + "/123",
-                "use": IdUsages.ASSIGNED_BY_HOSPITAL.value
-            },
+            "identifier": TableNames.PATIENT.value + "/123",
             "resourceType": TableNames.PATIENT.value
         }
 
         patient = Patient.from_json(json_patient)
         self.assertIsNotNone(patient.identifier)
-        self.assertEqual(patient.identifier.value, TableNames.PATIENT.value + "/123")
-        self.assertEqual(patient.identifier.use, IdUsages.ASSIGNED_BY_HOSPITAL.value)
+        self.assertEqual(patient.identifier, TableNames.PATIENT.value + "/123")
         self.assertEqual(patient.get_type(), TableNames.PATIENT.value)
 
 

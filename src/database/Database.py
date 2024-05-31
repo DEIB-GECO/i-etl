@@ -1,11 +1,20 @@
-import csv
-import json
+from datetime import datetime, timedelta
+from random import randrange
 
+import pymongo
+from bson import ObjectId
+from pymongo import MongoClient, ReturnDocument
 from pymongo.command_cursor import CommandCursor
 from pymongo.cursor import Cursor
-from pymongo.mongo_client import MongoClient
 
+from src.profiles import Disease, DiseaseRecord
+from src.profiles.Examination import Examination
+from src.profiles.ExaminationRecord import ExaminationRecord
+from src.profiles.Hospital import Hospital
+from src.profiles.Patient import Patient
+from src.profiles.Sample import Sample
 from src.utils.TableNames import TableNames
+from src.utils.constants import BATCH_SIZE
 from src.utils.setup_logger import log
 from src.utils.utils import mongodb_match, mongodb_project_one, mongodb_sort, mongodb_limit, mongodb_group_by
 
@@ -60,17 +69,6 @@ class Database:
         log.error("Will drop the database %s", self.database_name)
         self.client.drop_database(name_or_database=self.database_name)
 
-    def insert_one_tuple(self, table_name: str, one_tuple: dict) -> int:
-        """
-        Insert the given tuple in the specified table.
-        :param table_name: A string being the table name in which insert the tuple.
-        :param one_tuple: A dict being the tuple to insert.
-        :return: An integer being the MongoDB _id of the inserted tuple.
-        """
-        log.debug(table_name)
-        log.debug(one_tuple)
-        return self.db[table_name].insert_one(one_tuple).inserted_id
-
     def insert_many_tuples(self, table_name: str, tuples: list[dict]) -> list[int]:
         """
         Insert the given tuples in the specified table.
@@ -80,29 +78,107 @@ class Database:
         """
         return self.db[table_name].insert_many(tuples, ordered=False).inserted_ids
 
-    def insert_tuples_from_csv(self, table_name: str, csv_path: str, delimiter: str, quote_char: str) -> list[int]:
-        """
-        Inert data from a CSV file in the given table, i.e., each line corresponds to a tuple, each pair of a
-        column name and a value corresponds to a key-value pair in the inserted objects.
-        :param table_name: A string being the table name in which data will be inserted.
-        :param csv_path: A string being the file path to the CSV file containing the data.
-        :param delimiter: A string being the CSV delimiter used in the CSV dataset, often ','.
-        :param quote_char: A string being the CSV quote char used in the CSV dataset, often '"'.
-        :return: A list of integers being the MongoDB _id of the inserted tuples.
-        """
-        log.debug("table_name is: %s", table_name)
-        log.debug("csv_path is: %s", csv_path)
-        with open(csv_path, newline='') as csvfile:
-            # TODO Nelly: check if we can force DictReader to write double quoted json
-            csv_reader = csv.DictReader(csvfile, delimiter=delimiter, quotechar=quote_char, quoting=csv.QUOTE_ALL)
-            data = [row for row in csv_reader]
-            log.debug(type(data))
-            double_quoted_string_data = json.dumps(data)
-            log.debug(type(double_quoted_string_data))
-            double_quoted_data = json.loads(double_quoted_string_data)
-            log.debug(type(double_quoted_data))
+    def upsert_one_tuple(self, table_name: str, unique_variables: list[str], one_tuple: dict) -> tuple:
+        # filter_dict should only contain the fields on which we want a Resource to be unique,
+        # e.g., name for Hospital instances, ID for Patient instances,
+        #       the combination of Patient, Hospital, Sample and Examination instances for ExaminationRecord instances
+        #       see https://github.com/Nelly-Barret/BETTER-fairificator/issues/3
+        # one_tuple contains the Resource itself (with all its fields; as a JSON dict)
+        # use $setOnInsert instead of $set to not modify the existing tuple if it already exists in the DB
+        filter_dict = {}
+        for unique_variable in unique_variables:
+            filter_dict[unique_variable] = one_tuple[unique_variable]
+        # return_document:
+        # If ReturnDocument.BEFORE (the default), returns the original document before it was replaced, or None if no document matches.
+        # If ReturnDocument.AFTER, returns the replaced or inserted document.
+        # We choose: AFTER so that
+        # (i) when the instance already exists in the DB, we get the resource after its update (but the update does nothing with the help of $setOnInsert)
+        # (ii) when the instance does not exist yet, we insert it and the returned value is the inserted document
+        # as in both (i) and (ii) we get a Document, we need to use a timestamp in order to know whether this was an update or an insert
+        timestamp = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+        one_tuple["insertedAt"] = timestamp
+        update_stmt = {"$setOnInsert": one_tuple}
+        log.debug(one_tuple)
 
-        return self.insert_many_tuples(table_name, double_quoted_data)
+        result = self.db[table_name].find_one_and_update(filter=filter_dict, update=update_stmt, upsert=True, return_document=ReturnDocument.AFTER)
+        is_insert = False
+        log.debug(result)
+        if result["insertedAt"] == timestamp:
+            is_insert = True
+        return (result, is_insert)   # this is the (MongoDB) _id of the object inserted or updated
+
+    def upsert_many_tuples(self, table_name: str, unique_variables: list[str], tuples: list[dict]) -> None:
+        """
+
+        :param unique_variables:
+        :param table_name:
+        :param tuples:
+        :return: An integer being the number of upserted tuples.
+        """
+        # in case there are more than 1000 tuples to upserts, we split them in batch of 1000
+        # and send one bulk operation per batch. This allows to save time by not doing a db call per upsert
+        # but do not overload the MongoDB with thousands of upserts.
+        batch_tuples = self.compute_batches(tuples=tuples)
+        log.debug(len(batch_tuples))
+        # we use the bulk operation to send sets of 1K operations, each doing an upsert
+        # this allows to have only on call to the database for each bulk operation (instead of one per upsert operation)
+        for batch in batch_tuples:
+            log.debug(len(batch))
+            operations = []
+            for one_tuple in batch:
+                filter_dict = {}
+                used_rands = []
+                for unique_variable in unique_variables:
+                    # if unique_variable="name", getattr() returns the value of the variable labelled "name" in the object
+                    filter_dict[unique_variable] = one_tuple[unique_variable]
+                rand_delta = randrange(0, 10)
+                while rand_delta in used_rands:
+                    rand_delta = randrange(0, 10)
+                used_rands.append(rand_delta)
+                timestamp = datetime.now() + timedelta(days=rand_delta)
+                timestamp2 = timestamp.strftime("%m/%d/%Y, %H:%M:%S")
+                one_tuple["insertedAt"] = timestamp2
+                log.debug(one_tuple)
+                update_stmt = {"$setOnInsert": one_tuple}
+                operations.append(pymongo.UpdateOne(filter=filter_dict, update=update_stmt, upsert=True))
+
+            results = self.db[table_name].bulk_write(operations)
+            log.debug("sending a bulk write of %s operations", len(operations))
+            log.debug(results)
+            # return results.upserted_count  # this is the (MongoDB) _id of the object inserted or updated
+
+    def compute_batches(self, tuples: list[dict]) -> list[list[dict]]:
+        batch_tuples = []
+        if len(tuples) <= BATCH_SIZE:
+            batch_tuples.append(tuples)
+        else:
+            # +1 to take the elements remaining after X thousands,
+            # e.g., in 4321, we need one more iteration to gt the 321 remaining elements in a batch
+            nb_batch = (len(tuples) // BATCH_SIZE) + 1
+            log.debug(nb_batch)
+            for i in range(0, nb_batch):
+                log.debug("iteration %s", i)
+                left_index = i * BATCH_SIZE
+                right_index = (i + 1) * BATCH_SIZE
+                batch = tuples[left_index: right_index]
+                log.debug("append an array with %s elements between indices %s and %s ", len(batch), left_index, right_index)
+                batch_tuples.append(batch)
+        return batch_tuples
+
+    def retrieve_identifiers(self, table_name: str, projection: str) -> dict:
+        projection_as_dict = {projection: 1, "identifier": 1}
+        cursor = self.find_operation(table_name=table_name, filter_dict={}, projection=projection_as_dict)
+        mapping = {}
+        count = 0
+        for result in cursor:
+            log.debug(result)
+            log.debug(result["identifier"])
+            log.debug(result[projection])
+            mapping[result[projection]] = result["identifier"]
+            count = count + 1
+        log.debug(count)
+        log.debug(mapping)
+        return mapping
 
     def find_operation(self, table_name: str, filter_dict: dict, projection: dict) -> Cursor:
         """

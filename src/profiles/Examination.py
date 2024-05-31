@@ -24,7 +24,7 @@ class Examination(Resource):
 
     def to_json(self):
         json_examination = {
-            "identifier": self.identifier.to_json(),
+            "identifier": self.identifier,
             "resourceType": self.get_type(),
             "code": self.code.to_json(),
             "status": self.status,
@@ -35,7 +35,7 @@ class Examination(Resource):
 
     @classmethod
     def from_json(cls, the_json: dict):
-        return cls(id_value=the_json["identifier"]["value"],
+        return cls(id_value=the_json["identifier"],
                    code=get_codeable_concept_from_json(the_json["code"]),
                    status=the_json["status"],
                    category=get_category_from_json(the_json["category"])

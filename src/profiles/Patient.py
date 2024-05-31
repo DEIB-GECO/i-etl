@@ -25,7 +25,7 @@ class Patient(Resource):
         :return: A JSON dict being the Patient with all its attributes.
         """
         json_patient = {
-            "identifier": self.identifier.to_json(),
+            "identifier": self.identifier,
             "resourceType": self.get_type()
         }
 
@@ -33,7 +33,7 @@ class Patient(Resource):
 
     @classmethod
     def from_json(cls, the_json: dict):
-        return cls(the_json["identifier"]["value"])
+        return cls(the_json["identifier"])
 
     def __eq__(self, other) -> bool:
         if isinstance(other, Patient):
