@@ -7,16 +7,10 @@ from pymongo import MongoClient, ReturnDocument
 from pymongo.command_cursor import CommandCursor
 from pymongo.cursor import Cursor
 
-from src.profiles import Disease, DiseaseRecord
-from src.profiles.Examination import Examination
-from src.profiles.ExaminationRecord import ExaminationRecord
-from src.profiles.Hospital import Hospital
-from src.profiles.Patient import Patient
-from src.profiles.Sample import Sample
 from src.utils.TableNames import TableNames
+from src.utils.Utils import mongodb_project_one, mongodb_group_by, mongodb_match, mongodb_limit, mongodb_sort
 from src.utils.constants import BATCH_SIZE
 from src.utils.setup_logger import log
-from src.utils.utils import mongodb_match, mongodb_project_one, mongodb_sort, mongodb_limit, mongodb_group_by
 
 
 class Database:

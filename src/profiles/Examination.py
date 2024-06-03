@@ -1,7 +1,7 @@
 from src.fhirDatatypes.CodeableConcept import CodeableConcept
 from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
-from src.utils.utils import is_not_nan, get_codeable_concept_from_json, get_category_from_json
+from src.utils.Utils import get_codeable_concept_from_json, get_category_from_json, is_not_nan
 
 
 class Examination(Resource):

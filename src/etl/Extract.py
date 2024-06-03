@@ -7,11 +7,9 @@ import pandas as pd
 from src.analysis.ValueAnalysis import ValueAnalysis
 from src.analysis.VariableAnalysis import VariableAnalysis
 from src.database.Database import Database
-from src.fhirDatatypes.CodeableConcept import CodeableConcept
 from src.utils.Ontologies import Ontologies
-from src.utils.TableNames import TableNames
+from src.utils.Utils import is_not_nan, convert_value, get_values_from_json_values
 from src.utils.setup_logger import log
-from src.utils.utils import is_not_nan, convert_value, get_values_from_json_values
 
 
 class Extract:

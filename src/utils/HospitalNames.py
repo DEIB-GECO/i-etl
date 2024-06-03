@@ -2,10 +2,11 @@ from enum import Enum
 
 
 class HospitalNames(Enum):
-    BUZZI = "BUZZI"
-    IMGGE = "IMGGE"
-    HSDJ = "HSDJ"
-    TERRASSA = "TERRASSA"
-    UKK = "UKK"
-    LAFE = "LAFE"
-    HMC = "HMC"
+    BUZZI_UC1 = "IT_BUZZI_UC1"
+    IMGGE = "RS_IMGGE"
+    HSJD = "ES_HSJS"
+    BUZZI_UC3 = "IT_BUZZI_UC3"
+    TERRASSA = "ES_TERRASSA"
+    UKK = "DE_UKK"
+    LAFE = "ES_LAFE"
+    HMC = "IL_HMC"
