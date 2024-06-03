@@ -10,10 +10,11 @@ from src.profiles.Sample import Sample
 from src.utils.ExaminationCategory import ExaminationCategory
 from src.utils.HospitalNames import HospitalNames
 from src.utils.TableNames import TableNames
-from src.utils.constants import NONE_VALUE, ID_COLUMNS, PHENOTYPIC_VARIABLES, NO_EXAMINATION_COLUMNS, BATCH_SIZE
+from src.utils.constants import NONE_VALUE, ID_COLUMNS, PHENOTYPIC_VARIABLES, NO_EXAMINATION_COLUMNS, BATCH_SIZE, \
+    SAMPLE_VARIABLES
 from src.utils.setup_logger import log
 from src.utils.utils import is_not_nan, get_ontology_system, is_equal_insensitive, normalize_value, \
-    convert_value, get_ontology_resource_uri, create_identifier
+    convert_value, create_identifier, is_in_insensitive
 
 
 class Transform:
@@ -24,9 +25,10 @@ class Transform:
         self.database = database
 
         # to record objects that will be further inserted in the database
-        self.patients = set()
+        self.patients = []
         self.examinations = []
         self.examination_records = []
+        self.samples = []
 
         # to keep track off what is in the CSV and which objects (their identifiers) have been created out of it
         # this will also allow us to get resource identifiers of the referred resources
@@ -38,7 +40,8 @@ class Transform:
         self.create_hospital(hospital_name=self.hospital_name)
         self.create_examinations()
         self.create_samples()
-        # self.create_examination_records()
+        self.create_patients()
+        self.create_examination_records()
 
     def create_hospital(self, hospital_name: str) -> None:
         log.info("create hospital")
@@ -52,16 +55,18 @@ class Transform:
     def create_examinations(self):
         log.info("create examinations")
         columns = self.extract.data.columns.values.tolist()
-        for column in columns:
-            if column.lower() not in NO_EXAMINATION_COLUMNS:
-                code = self.create_codeable_concept_from_column(column)
-                if code is not None and code.codings != []:
-                    log.info("adding a new examination about %s.", code.text)
+        for column_name in columns:
+            lower_column_name = column_name.lower()
+            if lower_column_name not in NO_EXAMINATION_COLUMNS:
+                cc = self.create_codeable_concept_from_column(lower_column_name)
+                if cc is not None and cc.codings != []:
                     status = "registered"
-                    category = self.determine_examination_category(code)
-                    new_examination = Examination(id_value=NONE_VALUE, code=code, status=status, category=category)
+                    category = self.determine_examination_category(lower_column_name)
+                    new_examination = Examination(id_value=NONE_VALUE, code=cc, status=status, category=category)
+                    log.info("adding a new examination about %s: %s", cc.text, new_examination)
                     self.examinations.append(new_examination)
                     if len(self.examinations) > BATCH_SIZE:
+                        log.debug("last examination: %s", self.examinations[len(self.examinations)-1])
                         self.database.upsert_many_tuples(table_name=TableNames.EXAMINATION.value, unique_variables=["code"], tuples=[examination.to_json() for examination in self.examinations])
                         self.examinations = []
                 else:
@@ -69,18 +74,55 @@ class Transform:
                     # TODO Nelly: this is not true: TooYoung, AnswerIX and BIS have no ontology code as of today (May, 29th 2024)
                     pass
             else:
-                log.debug("I am skipping column %s because it has been marked as not being part of examination instances.", column)
+                log.debug("I am skipping column %s because it has been marked as not being part of examination instances.", lower_column_name)
+        # insert the remaining tuples that have not been inserted (because there were less than BATCH_SIZE tuples before the loop ends).
+        self.database.upsert_many_tuples(table_name=TableNames.EXAMINATION.value, unique_variables=["code"],
+                                         tuples=[examination.to_json() for examination in self.examinations])
+        self.examinations = []
         self.mapping_column_to_examination_id = self.database.retrieve_identifiers(table_name=TableNames.EXAMINATION.value, projection="code.text")
-        log.debug("Nb of examinations: %s", len(self.examinations))
+        log.debug(self.mapping_column_to_examination_id.keys())
 
     def create_samples(self):
-        # TODO Nelly: code this
-        pass
+        if is_in_insensitive(ID_COLUMNS[HospitalNames.BUZZI.value][TableNames.SAMPLE.value], self.extract.data.columns):
+            # this is a dataset with samples
+            log.info("create sample records")
+            created_sample_barcodes = set()
+            for index, row in self.extract.data.iterrows():
+                for column_name, value in row.items():
+                    if value is None or value == "" or not is_not_nan(value):
+                        # there is no value for that (sample) column, thus we skip it
+                        pass
+                    else:
+                        sample_barcode = row["samplebarcode"]
+                        if sample_barcode not in created_sample_barcodes:
+                            created_sample_barcodes.add(sample_barcode)
+                            sampling = row["sampling"]
+                            sample_quality = row["samplequality"]
+                            time_collected = row["samtimecollected"]
+                            time_received = row["samtimereceived"]
+                            too_young = row["tooyoung"]
+                            bis = row["bis"]
+                            new_sample = Sample(sample_barcode, sampling=sampling, quality=sample_quality,
+                                                time_collected=time_collected, time_received=time_received,
+                                                too_young=too_young, bis=bis)
+                            created_sample_barcodes.add(sample_barcode)
+                            self.samples.append(new_sample)
+                            if len(self.samples) > BATCH_SIZE:
+                                self.database.upsert_many_tuples(table_name=TableNames.SAMPLE.value,
+                                                                 unique_variables=["identifier"],
+                                                                 tuples=[sample.to_json() for sample in self.samples])
+                                self.samples = []
+                                # no need to load Sample instances because they are referenced using their ID,
+                                # which was provided by the hospital (thus is known by the dataset)
+            self.database.upsert_many_tuples(table_name=TableNames.SAMPLE.value,
+                                             unique_variables=["identifier"],
+                                             tuples=[sample.to_json() for sample in self.samples])
+            log.info("Nb of samples: %s", len(self.samples))
 
     def create_examination_records(self):
         log.info("create examination records")
         for index, row in self.extract.data.iterrows():
-            # create clinical and phenotypic records by associating observations to patients (and possibly the sample)
+            # create examination records by associating observations to patients (and possibly the sample)
             for column_name, value in row.items():
                 lower_column_name = column_name.lower()
                 if lower_column_name in NO_EXAMINATION_COLUMNS or value is None or value == "" or not is_not_nan(value):
@@ -94,10 +136,15 @@ class Transform:
                         # log.info("I know a code for column %s", column_name)
                         # we know a code for this column, so we can register the value of that examination
                         examination_id = self.mapping_column_to_examination_id[lower_column_name]
-                        hospital_id = self.mapping_hospital_to_hospital_id[self.hospital_name.lower()]
+                        examination_ref = Reference(examination_id, TableNames.EXAMINATION.value)
+                        hospital_id = self.mapping_hospital_to_hospital_id[HospitalNames.BUZZI.value]
+                        hospital_ref = Reference(hospital_id, TableNames.HOSPITAL.value)
                         # for patient and sample instances, no need to go through a mapping because they have an ID assigned by the hospital
-                        patient_id = row[ID_COLUMNS[HospitalNames.BUZZI.value][TableNames.PATIENT.value]]  # TODO Nelly: Replace BUZZI by the current hospital
-                        sample_id = row[ID_COLUMNS[HospitalNames.BUZZI.value][TableNames.SAMPLE.value]]  # TODO Nelly: (fill samples)
+                        patient_id = create_identifier(row[ID_COLUMNS[HospitalNames.BUZZI.value][TableNames.PATIENT.value]], TableNames.PATIENT.value)  # TODO Nelly: Replace BUZZI by the current hospital
+                        subject_ref = Reference(patient_id, TableNames.PATIENT.value)
+                        sample_id = create_identifier(row[ID_COLUMNS[HospitalNames.BUZZI.value][TableNames.SAMPLE.value]], TableNames.SAMPLE.value)  # TODO Nelly: Replace BUZZI by the current hospital
+                        sample_ref = Reference(sample_id, TableNames.SAMPLE.value)
+                        log.debug("Eid: %s, Hid: %s, Pid: %s, Sid: %s", examination_id, hospital_id, patient_id, sample_id)
                         # TODO Nelly: add the associated sample
                         # TODO Pietro: harmonize values (upper-lower case, dates, etc)
                         #  we should use codes (JSON-styled by Boris) whenever we can
@@ -105,11 +152,12 @@ class Transform:
                         #  we could even clean more the data, e.g., do not allow "Italy" as ethnicity (caucasian, etc)
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
                         status = ""
-                        new_examination_record = ExaminationRecord(id_value=NONE_VALUE, examination_ref=examination_id,
-                                                                   subject_ref=patient_id, hospital_ref=hospital_id,
-                                                                   sample_ref=sample_id, value=fairified_value, status=status)
+                        new_examination_record = ExaminationRecord(id_value=NONE_VALUE, examination_ref=examination_ref,
+                                                                   subject_ref=subject_ref, hospital_ref=hospital_ref,
+                                                                   sample_ref=sample_ref, value=fairified_value, status=status)
+                        log.debug(new_examination_record.to_json())
                         self.examination_records.append(new_examination_record)
-                        if len(self.examinations) > BATCH_SIZE:
+                        if len(self.examination_records) > BATCH_SIZE:
                             self.database.upsert_many_tuples(TableNames.EXAMINATION_RECORD.value, ["recordedBy", "subject", "basedOn", "instantiate"], [examination_record.to_json() for examination_record in self.examination_records])
                             # no need to load ExaminationRecords instances because they are never referenced
                             self.examination_records = []  # TODO Nelly: maybe trigger this from the Load class?
@@ -118,35 +166,37 @@ class Transform:
                         # So this should never happen
                         # TODO Nelly: this is not true, 3 columns in Buzzi are still not mapped
                         pass
+        if len(self.examinations) > BATCH_SIZE:
+            self.database.upsert_many_tuples(TableNames.EXAMINATION_RECORD.value,
+                                             ["recordedBy", "subject", "basedOn", "instantiate"],
+                                             [examination_record.to_json() for examination_record in
+                                              self.examination_records])
+            # no need to load ExaminationRecords instances because they are never referenced
+            self.examination_records = []  # TODO Nelly: maybe trigger this from the Load class?
+
         log.info("Nb of patients: %s", len(self.patients))
         log.info("Nb of examination records: %s", len(self.examination_records))
 
-    def create_patient(self, sample) -> Patient:
-        patient_unique_id = create_identifier(str(sample[ID_COLUMNS[self.hospital.name]]), TableNames.PATIENT.value)
-        new_patient = None
-        # check if this patient has already been created
-        # if so, get it from the database, otherwise, create a new Patient
-        log.info("I already know %s patients", len(self.extract.existing_local_patient_ids))
-        log.info(self.extract.existing_local_patient_ids)
-        if patient_unique_id in self.extract.existing_local_patient_ids:
-            # the patient already exists, no need to do something
-            log.debug("The patient with ID %s already exists and will be retrieved from the database. ")
-            filter_patient_id = {"identifier": patient_unique_id}
-            cursor = self.database.find_operation(TableNames.PATIENT.value, filter_patient_id, {"identifier.value": 1})
-            for result in cursor:
-                log.info("A patient with ID %s exists: retrieving it.", patient_unique_id)
-                log.info(result["identifier"])
-                new_patient = Patient(id_value=result["identifier"])
-                log.info(new_patient)
-        else:
-            # the patient does not exist yet, we will create it
-            log.info("No patient with ID %s: creating it.", patient_unique_id)
-            log.debug(type(patient_unique_id))
-            new_patient = Patient(id_value=patient_unique_id.value)
-        self.patients.add(new_patient)
-        log.debug(new_patient)
-        log.debug(self.patients)
-        return new_patient
+    def create_patients(self):
+        log.info("create patients")
+        created_patient_ids = set()
+        for index, row in self.extract.data.iterrows():
+            patient_id = row[ID_COLUMNS[HospitalNames.BUZZI.value][TableNames.PATIENT.value]]
+            if patient_id not in created_patient_ids:
+                # the patient does not exist yet, we will create it
+                new_patient = Patient(id_value=str(patient_id))
+                created_patient_ids.add(patient_id)
+                self.patients.append(new_patient)
+                if len(self.patients) > BATCH_SIZE:
+                    self.database.upsert_many_tuples(table_name=TableNames.PATIENT.value,
+                                                     unique_variables=["identifier"],
+                                                     tuples=[patient.to_json() for patient in self.patients])
+                    self.patients = []
+                    # no need to load Patient instances because they are referenced using their ID,
+                    # which was provided by the hospital (thus is known by the dataset)
+        self.database.upsert_many_tuples(table_name=TableNames.PATIENT.value,
+                                         unique_variables=["identifier"],
+                                         tuples=[patient.to_json() for patient in self.patients])
 
     def create_codeable_concept_from_column(self, column_name: str):
         rows = self.extract.metadata.loc[self.extract.metadata['name'] == column_name]
@@ -181,17 +231,15 @@ class Transform:
             cc_tuple = (str(ontology), str(code), str(display))
             return cc_tuple
 
-    def determine_examination_category(self, code: CodeableConcept):
-        for coding in code.codings:
-            coding_full_name = get_ontology_resource_uri(coding.system, coding.code)
-            if self.is_column_name_phenotypic(coding_full_name):
-                return CodeableConcept(ExaminationCategory.CATEGORY_PHENOTYPIC.value)
-            else:
-                return CodeableConcept(ExaminationCategory.CATEGORY_CLINICAL.value)
+    def determine_examination_category(self, column_name: str):
+        if self.is_column_name_phenotypic(column_name):
+            return CodeableConcept(ExaminationCategory.CATEGORY_PHENOTYPIC.value)
+        else:
+            return CodeableConcept(ExaminationCategory.CATEGORY_CLINICAL.value)
 
-    def is_column_name_phenotypic(self, code_url: str):
-        for key, value in PHENOTYPIC_VARIABLES.items():
-            if is_equal_insensitive(value=key, compared=code_url):
+    def is_column_name_phenotypic(self, column_name: str):
+        for phen_variable in PHENOTYPIC_VARIABLES:
+            if is_equal_insensitive(value=phen_variable, compared=column_name):
                 return True
         return False
 
@@ -201,8 +249,8 @@ class Transform:
             for mapping in self.extract.mapped_values[column_name]:
                 # we get the value of the mapping, e.g., F, or M, or NA
                 mapped_value = mapping['value']
-                # if the sample value is equal to the mapping value,
-                # we have found a match and we will record the associated ontology term instead of the value
+                # if the sample value is equal to the mapping value, we have found a match,
+                # and we will record the associated ontology term instead of the value
                 if is_equal_insensitive(value, mapped_value):
                     # we create a CodeableConcept with each code added to the mapping, e.g., snomed_ct and loinc
                     # recall that a mapping is of the form: {'value': 'X', 'explanation': '...', 'snomed_ct': '123', 'loinc': '456' }

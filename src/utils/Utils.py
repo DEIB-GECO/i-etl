@@ -64,6 +64,16 @@ def is_not_empty(variable, not_empty=True) -> bool:
         return variable is not None
 
 
+def is_in_insensitive(value, list_of_compared):
+    if not isinstance(value, str):
+        return value in list_of_compared
+    else:
+        for compared in list_of_compared:
+            if value.casefold() == compared.casefold():
+                return True
+        return False
+
+
 def is_equal_insensitive(value, compared):
     if not isinstance(value, str):
         return value == compared
@@ -78,6 +88,10 @@ def is_equal_insensitive(value, compared):
 #     return base + "/" + str(element_id)
 
 def create_identifier(id_value: str, resource_type: str) -> str:
+    if not isinstance(id_value, str):
+        # in case the dataframe has converted IDs to integers
+        id_value = str(id_value)
+
     if "/" in id_value:
         # the provided id_value is already of the form type/id, thus we do not need to append the resource type
         # this happens when we build (instance) resources from the existing data in the database
@@ -230,9 +244,9 @@ def get_values_from_json_values(json_values):
 
 def convert_value(value):
     try:
-        return int(value)
+        return float(value)
     except ValueError:
         try:
-            return float(value)
+            return int(value)
         except ValueError:
             return value

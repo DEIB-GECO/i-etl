@@ -173,8 +173,11 @@ class Database:
         for result in cursor:
             log.debug(result)
             log.debug(result["identifier"])
-            log.debug(result[projection])
-            mapping[result[projection]] = result["identifier"]
+            projected_value = result
+            for key in projection.split("."):
+                # this covers the case when the project is a nested key, e.g., code.text
+                projected_value = projected_value[key]
+            mapping[projected_value] = result["identifier"]
             count = count + 1
         log.debug(count)
         log.debug(mapping)
