@@ -5,14 +5,13 @@ from src.utils.utils import get_ontology_resource_uri
 
 NONE_VALUE = "NONE"
 
+# This expects to have column names IN LOWER CASE
 ID_COLUMNS = {
     HospitalNames.BUZZI.value: {
         TableNames.PATIENT.value: "id",
         TableNames.SAMPLE.value: "samplebarcode"
     }
 }
-
-NO_EXAMINATION_COLUMNS = ["line", "unnamed", "id", "samplebarcode"]
 
 PHENOTYPIC_VARIABLES = {
     get_ontology_resource_uri(Ontologies.SNOMEDCT.value["url"], "184099003"): "DateOfBirth",
@@ -27,11 +26,12 @@ PHENOTYPIC_VARIABLES = {
     get_ontology_resource_uri(Ontologies.SNOMEDCT.value["url"], "236973005"): "BirthMethod"
 }
 
-SAMPLE_VARIABLES = {
-    get_ontology_resource_uri(Ontologies.LOINC.value["url"], "79566-6"): "Sampling",
-    get_ontology_resource_uri(Ontologies.LOINC.value["url"], "57718-9"): "SampleQuality",
-    get_ontology_resource_uri(Ontologies.LOINC.value["url"], "51953-8"): "SamTimeCollected",
-    get_ontology_resource_uri(Ontologies.LOINC.value["url"], "63572-2"): "SamTimeReceived",
-    "unknown1": "TooYoung",
-    "unknown2": "BIS"
-}
+SAMPLE_VARIABLES = ["Sampling", "SampleQuality", "SamTimeCollected", "SamTimeReceived", "TooYoung", "BIS"]
+
+
+# curly braces here specify a set, i.e., set()
+# all values here ARE EXPECTED TO BE LOWER CASE to facilitate comparison (and make it efficient)
+NO_EXAMINATION_COLUMNS = {"line", "unnamed", "id", "samplebarcode", "sampling", "samplequality", "samtimecollected",
+                          "samtimereceived"}
+
+BATCH_SIZE = 50

@@ -1,13 +1,14 @@
+import json
 import math
+import os.path
 from typing import Any
 
 from dateutil.parser import parse
 from pandas import DataFrame
 
 from src.fhirDatatypes.CodeableConcept import CodeableConcept
-from src.fhirDatatypes.Identifier import Identifier
-from src.fhirDatatypes.Reference import Reference
 from src.utils.Ontologies import Ontologies
+from src.utils.setup_logger import log
 
 
 # ASSERTIONS
@@ -66,6 +67,16 @@ def is_not_empty(variable, not_empty=True) -> bool:
         return variable is not None
 
 
+def is_in_insensitive(value, list_of_compared):
+    if not isinstance(value, str):
+        return value in list_of_compared
+    else:
+        for compared in list_of_compared:
+            if value.casefold() == compared.casefold():
+                return True
+        return False
+
+
 def is_equal_insensitive(value, compared):
     if not isinstance(value, str):
         return value == compared
@@ -73,11 +84,24 @@ def is_equal_insensitive(value, compared):
         return value.casefold() == compared.casefold()
 
 
-# BUILDING URLs
+# BUILDING URLs and IDs
 
 
 # def build_url(base: str, element_id: str) -> str:
 #     return base + "/" + str(element_id)
+
+def create_identifier(id_value: str, resource_type: str) -> str:
+    if not isinstance(id_value, str):
+        # in case the dataframe has converted IDs to integers
+        id_value = str(id_value)
+
+    if "/" in id_value:
+        # the provided id_value is already of the form type/id, thus we do not need to append the resource type
+        # this happens when we build (instance) resources from the existing data in the database
+        # the stored if is already of the form type/id
+        return id_value
+    else:
+        return resource_type + "/" + id_value
 
 
 # GET PREDEFINED VALUES
@@ -98,10 +122,6 @@ def get_ontology_resource_uri(ontology_system: str, resource_code: str) -> str:
     return ontology_system + "/" + resource_code
 
 
-def get_identifier_from_json(identifier_as_json: dict, resource_type: str):
-    return Identifier(id_value=identifier_as_json["value"], resource_type=resource_type, use=identifier_as_json["use"])
-
-
 def get_codeable_concept_from_json(codeable_concept_as_json: dict):
     cc = CodeableConcept()
     cc.text = codeable_concept_as_json["text"]
@@ -113,10 +133,6 @@ def get_codeable_concept_from_json(codeable_concept_as_json: dict):
 def get_category_from_json(category_as_json: dict):
     # the category is either PHENOTYPIC or CLINICAL, thus no loop for the codings is necessary
     return CodeableConcept((category_as_json["system"], category_as_json["code"], category_as_json["display"]))
-
-
-def get_reference_from_json(reference_as_json: dict):
-    return Reference(get_identifier_from_json(identifier_as_json=reference_as_json["reference"], resource_type=reference_as_json["type"]))
 
 
 # NORMALIZE DATA
@@ -231,9 +247,21 @@ def get_values_from_json_values(json_values):
 
 def convert_value(value):
     try:
-        return int(value)
+        return float(value)
     except ValueError:
         try:
-            return float(value)
+            return int(value)
         except ValueError:
             return value
+
+
+# FILE UTILITIES
+
+def save_in_file(data_array: list, table_name: str, count: int):
+    if len(data_array) > 0:
+        log.debug(data_array)
+        filename = os.path.join("working-dir", "files", table_name + str(count) + ".json")
+        with open(filename, "w") as data_file:
+            json.dump([resource.to_json() for resource in data_array], data_file)
+    else:
+        log.info("No data when saving file %s/%s", table_name, count)

@@ -25,27 +25,8 @@ class Patient(Resource):
         :return: A JSON dict being the Patient with all its attributes.
         """
         json_patient = {
-            "identifier": self.identifier.to_json(),
+            "identifier": self.identifier,
             "resourceType": self.get_type()
         }
 
         return json_patient
-
-    @classmethod
-    def from_json(cls, the_json: dict):
-        return cls(the_json["identifier"]["value"])
-
-    def __eq__(self, other) -> bool:
-        if isinstance(other, Patient):
-            if len(self.identifier) != len(other.identifier):
-                return False
-            else:
-                for idx in range(self.identifier):
-                    if self.identifier[idx] != other.identifier[idx]:
-                        return False
-                return True
-        else:
-            return False
-
-    def __hash__(self):
-        return hash(self.identifier)

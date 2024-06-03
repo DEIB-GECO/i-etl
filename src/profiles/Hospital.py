@@ -12,7 +12,6 @@ class Hospital(Resource):
         :param name: A string being the name of the hospital.
         """
         # set up the resource ID
-        log.info(id_value)
         super().__init__(id_value=id_value, resource_type=self.get_type())
 
         # set up the resource attributes
@@ -31,12 +30,8 @@ class Hospital(Resource):
         :return: A JSON dict being the Hospital with all its attributes.
         """
         json_hospital = {
-            "identifier": self.identifier.to_json(),
+            "identifier": self.identifier,
             "resourceType": self.get_type(),
             "name": self.name
         }
         return json_hospital
-
-    @classmethod
-    def from_json(cls, the_json: dict):
-        return cls(the_json["identifier"]["value"], the_json["name"])

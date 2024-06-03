@@ -7,17 +7,17 @@ class Reference:
     This allows to refer to other resources using their BETTER ID
     (not the local_id, which is proper to each hospital, but instead the id
     """
-    def __init__(self, resource):
+    def __init__(self, resource_identifier: str, resource_type: str):
         """
         Create a new reference to another resource.
-        :param resource:
+        :param resource_identifier:
         """
-        self.reference = resource.identifier
-        self.type = type(resource).name__
+        self.reference = resource_identifier
+        self.type = resource_type
 
     def to_json(self):
         json_reference = {
-            "reference": self.reference.to_json(),
+            "reference": self.reference,
             "type": self.type
         }
 
