@@ -30,22 +30,3 @@ class Patient(Resource):
         }
 
         return json_patient
-
-    @classmethod
-    def from_json(cls, the_json: dict):
-        return cls(the_json["identifier"])
-
-    def __eq__(self, other) -> bool:
-        if isinstance(other, Patient):
-            if len(self.identifier) != len(other.identifier):
-                return False
-            else:
-                for idx in range(self.identifier):
-                    if self.identifier[idx] != other.identifier[idx]:
-                        return False
-                return True
-        else:
-            return False
-
-    def __hash__(self):
-        return hash(self.identifier)

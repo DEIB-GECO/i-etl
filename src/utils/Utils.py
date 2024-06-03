@@ -1,4 +1,6 @@
+import json
 import math
+import os.path
 from typing import Any
 
 from dateutil.parser import parse
@@ -6,6 +8,7 @@ from pandas import DataFrame
 
 from src.fhirDatatypes.CodeableConcept import CodeableConcept
 from src.utils.Ontologies import Ontologies
+from src.utils.setup_logger import log
 
 
 # ASSERTIONS
@@ -250,3 +253,15 @@ def convert_value(value):
             return int(value)
         except ValueError:
             return value
+
+
+# FILE UTILITIES
+
+def save_in_file(data_array: list, table_name: str, count: int):
+    if len(data_array) > 0:
+        log.debug(data_array)
+        filename = os.path.join("working-dir", "files", table_name + str(count) + ".json")
+        with open(filename, "w") as data_file:
+            json.dump([resource.to_json() for resource in data_array], data_file)
+    else:
+        log.info("No data when saving file %s/%s", table_name, count)

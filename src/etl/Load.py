@@ -1,29 +1,41 @@
+import json
+import os
+import re
+
 from src.database.Database import Database
-from src.etl.Extract import Extract
-from src.etl.Transform import Transform
 from src.utils.TableNames import TableNames
 from src.utils.setup_logger import log
 
 
 class Load:
-    def __init__(self, extract: Extract, transform: Transform, database: Database):
-        self.extract = extract
-        self.transform = transform
+    def __init__(self, database: Database):
         self.database = database
 
     def run(self):
-        # Recall: do not insert data if the lists are empty, otherwise MongoDb will throw an error
-        # lists are empty if the created resource instances already exist in the database.
-        if len(self.transform.patients) > 0:
-            patients_json_list = [patient.to_json() for patient in self.transform.patients]
-            self.database.insert_many_tuples(table_name=TableNames.PATIENT.value, tuples=patients_json_list)
-        if len(self.transform.examinations) > 0:
-            log.debug(len(self.transform.examinations))
-            examinations_json_list = [examination.to_json() for examination in self.transform.examinations]
-            self.database.insert_many_tuples(table_name=TableNames.EXAMINATION.value, tuples=examinations_json_list)
-        if len(self.transform.examination_records) > 0:
-            examination_records_json_list = [examination_record.to_json() for examination_record in self.transform.examination_records]
-            self.database.insert_many_tuples(table_name=TableNames.EXAMINATION_RECORD.value, tuples=examination_records_json_list)
+        # Insert resources that have not been inserted yet, i.e.,
+        # anything else than Hospital, Examination and Disease instances
+        log.debug("in the Load class")
+        self.load_json_in_table(table_name=TableNames.PATIENT.value, unique_variables=["identifier"])
+
+        self.load_json_in_table(table_name=TableNames.EXAMINATION_RECORD.value, unique_variables=["recordedBy", "subject", "basedOn", "instantiate"])
+
+        self.load_json_in_table(table_name=TableNames.SAMPLE.value, unique_variables=["identifier"])
+
+    def load_json_in_table(self, table_name: str, unique_variables):
+        for filename in os.listdir(os.path.join("working-dir", "files")):
+            if re.search(table_name+"[0-9]+", filename) is not None:
+                # implementation note: we cannot simply use filename.startswith(table_name)
+                # because both Examination and ExaminationRecord start with Examination
+                # the solution is to use a regex
+                with open(os.path.join("working-dir", "files", filename), "r") as json_datafile:
+                    tuples = json.load(json_datafile)
+                    log.debug("Table %s, file %s, loading %s tuples", table_name, filename, len(tuples))
+                    self.database.upsert_batch_of_tuples(table_name=table_name,
+                                                         unique_variables=unique_variables,
+                                                         tuples=tuples)
+
+    def retrieve_identifiers(self, table_name: str, projection: str):
+        return self.database.retrieve_identifiers(table_name=table_name, projection=projection)
 
     def create_db_indexes(self):
         self.database.create_unique_index(table_name=TableNames.PATIENT.value, columns={"metadata.csv_filepath": 1, "metadata.csv_line": 1})

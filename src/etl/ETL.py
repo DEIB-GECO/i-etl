@@ -36,12 +36,12 @@ class ETL:
         self.extract_data = True
         self.run_analysis = False
         self.transform_data = True
-        self.load_data = False
+        self.load_data = True
         self.compute_plots = False
 
         self.extract = Extract(metadata_filepath=metadata_filepath, samples_filepath=samples_filepath, database=self.database, run_analysis=self.run_analysis)
-        self.transform = Transform(extract=self.extract, hospital_name=hospital_name, database=self.database)
-        # self.load = Load(extract=self.extract, transform=self.transform, database=self.database)
+        self.load = Load(database=self.database)
+        self.transform = Transform(extract=self.extract, load=self.load, hospital_name=hospital_name, database=self.database)
 
     def run(self):
         if self.extract_data:

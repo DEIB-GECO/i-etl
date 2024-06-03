@@ -98,16 +98,9 @@ class Database:
         timestamp = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
         one_tuple["insertedAt"] = timestamp
         update_stmt = {"$setOnInsert": one_tuple}
-        log.debug(one_tuple)
+        self.db[table_name].find_one_and_update(filter=filter_dict, update=update_stmt, upsert=True, return_document=ReturnDocument.AFTER)
 
-        result = self.db[table_name].find_one_and_update(filter=filter_dict, update=update_stmt, upsert=True, return_document=ReturnDocument.AFTER)
-        is_insert = False
-        log.debug(result)
-        if result["insertedAt"] == timestamp:
-            is_insert = True
-        return (result, is_insert)   # this is the (MongoDB) _id of the object inserted or updated
-
-    def upsert_many_tuples(self, table_name: str, unique_variables: list[str], tuples: list[dict]) -> None:
+    def upsert_batch_of_tuples(self, table_name: str, unique_variables: list[str], tuples: list[dict]) -> None:
         """
 
         :param unique_variables:
@@ -118,34 +111,28 @@ class Database:
         # in case there are more than 1000 tuples to upserts, we split them in batch of 1000
         # and send one bulk operation per batch. This allows to save time by not doing a db call per upsert
         # but do not overload the MongoDB with thousands of upserts.
-        batch_tuples = self.compute_batches(tuples=tuples)
-        log.debug(len(batch_tuples))
-        # we use the bulk operation to send sets of 1K operations, each doing an upsert
+        log.debug("--- Table %s has tuples to be inserted: %s", table_name, len(tuples))
+        # we use the bulk operation to send sets of BATCH_SIZE operations, each doing an upsert
         # this allows to have only on call to the database for each bulk operation (instead of one per upsert operation)
-        for batch in batch_tuples:
-            log.debug(len(batch))
-            operations = []
-            for one_tuple in batch:
-                filter_dict = {}
-                used_rands = []
-                for unique_variable in unique_variables:
-                    # if unique_variable="name", getattr() returns the value of the variable labelled "name" in the object
-                    filter_dict[unique_variable] = one_tuple[unique_variable]
+        operations = []
+        for one_tuple in tuples:
+            filter_dict = {}
+            used_rands = []
+            for unique_variable in unique_variables:
+                # if unique_variable="name", getattr() returns the value of the variable labelled "name" in the object
+                filter_dict[unique_variable] = one_tuple[unique_variable]
+            rand_delta = randrange(0, 10)
+            while rand_delta in used_rands:
                 rand_delta = randrange(0, 10)
-                while rand_delta in used_rands:
-                    rand_delta = randrange(0, 10)
-                used_rands.append(rand_delta)
-                timestamp = datetime.now() + timedelta(days=rand_delta)
-                timestamp2 = timestamp.strftime("%m/%d/%Y, %H:%M:%S")
-                one_tuple["insertedAt"] = timestamp2
-                log.debug(one_tuple)
-                update_stmt = {"$setOnInsert": one_tuple}
-                operations.append(pymongo.UpdateOne(filter=filter_dict, update=update_stmt, upsert=True))
-
-            results = self.db[table_name].bulk_write(operations)
-            log.debug("sending a bulk write of %s operations", len(operations))
-            log.debug(results)
-            # return results.upserted_count  # this is the (MongoDB) _id of the object inserted or updated
+            used_rands.append(rand_delta)
+            timestamp = datetime.now() + timedelta(days=rand_delta)
+            timestamp2 = timestamp.strftime("%m/%d/%Y, %H:%M:%S")
+            one_tuple["insertedAt"] = timestamp2
+            update_stmt = {"$setOnInsert": one_tuple}
+            operations.append(pymongo.UpdateOne(filter=filter_dict, update=update_stmt, upsert=True))
+        log.debug(len(operations))
+        self.db[table_name].bulk_write(operations)  # TODO Nelly: check whether the upsert has succeeded or not
+        log.debug("Table %s: sending a bulk write of %s operations", table_name, len(operations))
 
     def compute_batches(self, tuples: list[dict]) -> list[list[dict]]:
         batch_tuples = []
@@ -155,13 +142,10 @@ class Database:
             # +1 to take the elements remaining after X thousands,
             # e.g., in 4321, we need one more iteration to gt the 321 remaining elements in a batch
             nb_batch = (len(tuples) // BATCH_SIZE) + 1
-            log.debug(nb_batch)
             for i in range(0, nb_batch):
-                log.debug("iteration %s", i)
                 left_index = i * BATCH_SIZE
                 right_index = (i + 1) * BATCH_SIZE
                 batch = tuples[left_index: right_index]
-                log.debug("append an array with %s elements between indices %s and %s ", len(batch), left_index, right_index)
                 batch_tuples.append(batch)
         return batch_tuples
 
@@ -171,16 +155,12 @@ class Database:
         mapping = {}
         count = 0
         for result in cursor:
-            log.debug(result)
-            log.debug(result["identifier"])
             projected_value = result
             for key in projection.split("."):
                 # this covers the case when the project is a nested key, e.g., code.text
                 projected_value = projected_value[key]
             mapping[projected_value] = result["identifier"]
             count = count + 1
-        log.debug(count)
-        log.debug(mapping)
         return mapping
 
     def find_operation(self, table_name: str, filter_dict: dict, projection: dict) -> Cursor:
@@ -191,9 +171,6 @@ class Database:
         :param projection: A dict being the set of projections (selections) to apply on the data in the given table.
         :return: A Cursor on the results, i.e., filtered data.
         """
-        log.debug("table name is: %s", table_name)
-        log.debug("filter_dict is: %s", filter_dict)
-        log.debug("projection is: %s", projection)
         return self.db[table_name].find(filter_dict, projection)
 
     def count_documents(self, table_name: str, filter_dict: dict) -> int:
@@ -203,8 +180,6 @@ class Database:
         :param filter_dict: A dict being the set of filters to be applied on the documents.
         :return: An integer being the number of documents matched by the given filter.
         """
-        log.debug("table_name is: %s", table_name)
-        log.debug("filter_dict is: %s", filter_dict)
         return self.db[table_name].count_documents(filter_dict)
 
     def create_unique_index(self, table_name: str, columns: dict) -> None:
@@ -215,7 +190,6 @@ class Database:
         only one column should be unique. The parameter should be of the form { "colA": 1, ... }.
         :return: Nothing.
         """
-        log.debug(self.db[table_name])
         self.db[table_name].create_index(columns, unique=True)
 
     def get_min_value_of_examination_record(self, examination_url: str) -> float:
