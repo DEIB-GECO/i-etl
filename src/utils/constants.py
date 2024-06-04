@@ -1,7 +1,7 @@
 from src.utils.HospitalNames import HospitalNames
 from src.utils.Ontologies import Ontologies
 from src.utils.TableNames import TableNames
-from src.utils.Utils import get_ontology_resource_uri
+from src.utils.utils import get_ontology_resource_uri
 
 NONE_VALUE = "NONE"
 
@@ -11,7 +11,7 @@ METADATA_VARIABLES = ["ontology", "ontology_code", "ontology_comment", "secondar
 
 # This expects to have column names IN LOWER CASE
 ID_COLUMNS = {
-    HospitalNames.BUZZI_UC1.value: {
+    HospitalNames.IT_BUZZI_UC1.value: {
         TableNames.PATIENT.value: "id",
         TableNames.SAMPLE.value: "samplebarcode"
     }

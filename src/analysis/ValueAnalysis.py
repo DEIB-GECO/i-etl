@@ -2,7 +2,7 @@ import json
 
 from pandas import Series
 
-from src.utils.Utils import get_int_from_str, is_not_nan, get_float_from_str, is_equal_insensitive, is_not_empty, \
+from src.utils.utils import get_int_from_str, is_not_nan, get_float_from_str, is_equal_insensitive, is_not_empty, \
     get_datetime_from_str
 from src.utils.setup_logger import log
 

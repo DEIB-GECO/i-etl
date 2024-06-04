@@ -2,13 +2,12 @@ from datetime import datetime, timedelta
 from random import randrange
 
 import pymongo
-from bson import ObjectId
 from pymongo import MongoClient, ReturnDocument
 from pymongo.command_cursor import CommandCursor
 from pymongo.cursor import Cursor
 
 from src.utils.TableNames import TableNames
-from src.utils.Utils import mongodb_project_one, mongodb_group_by, mongodb_match, mongodb_limit, mongodb_sort
+from src.utils.utils import mongodb_project_one, mongodb_group_by, mongodb_match, mongodb_limit, mongodb_sort
 from src.utils.constants import BATCH_SIZE
 from src.utils.setup_logger import log
 
@@ -18,28 +17,25 @@ class Database:
     The class Database represents the underlying MongoDB database: the connection, the database itself and
     auxiliary functions to make interactions with the database object (insert, select, ...).
     """
-    def __init__(self, connection_string: str, database_name: str):
+    def __init__(self, config):
         """
         Initiate a new connection to a MongoDB client, reachable based on the given connection string, and initialize
         class members.
-        :param connection_string: A string being the complete URI to connect to the MongoDB client.
-        :param database_name: A string being the MongoDB database name.
         """
         # mongodb://localhost:27017/
         # mongodb+srv://<username>:<password>@<cluster>.qo5xs5j.mongodb.net/?retryWrites=true&w=majority&appName=<app_name>
-        self.database_name = database_name
-        self.connection_string = connection_string
-        self.client = MongoClient(host=self.connection_string)
-        self.db = self.client[database_name]
+        self.config = config
+        self.client = MongoClient(host=self.config.get("DATABASE", "connection"))
+        self.db = self.client[self.config.get("DATABASE", "name")]
 
-        log.debug("the connection string is: %s", self.connection_string)
+        log.debug("the connection string is: %s", self.config.get("DATABASE", "connection"))
         log.debug("the new MongoClient is: %s", self.client)
         log.debug("the database is: %s", self.db)
 
         if self.check_server_is_up():
             log.info("The connection is up.")
         else:
-            log.error("There was a problem while connecting to the MongoDB instance at %s.", self.connection_string)
+            log.error("There was a problem while connecting to the MongoDB instance at %s.", self.config.get("DATABASE", "connection"))
             exit()
 
     def check_server_is_up(self) -> bool:
@@ -60,8 +56,8 @@ class Database:
         Truncate the current database.
         :return: Nothing.
         """
-        log.error("Will drop the database %s", self.database_name)
-        self.client.drop_database(name_or_database=self.database_name)
+        log.info("!!!!! Will drop the database %s !!!!!", self.config.get("DATABASE", "name"))
+        self.client.drop_database(name_or_database=self.config.get("DATABASE", "name"))
 
     def insert_many_tuples(self, table_name: str, tuples: list[dict]) -> list[int]:
         """
@@ -72,7 +68,7 @@ class Database:
         """
         return self.db[table_name].insert_many(tuples, ordered=False).inserted_ids
 
-    def upsert_one_tuple(self, table_name: str, unique_variables: list[str], one_tuple: dict) -> tuple:
+    def upsert_one_tuple(self, table_name: str, unique_variables: list[str], one_tuple: dict) -> None:
         # filter_dict should only contain the fields on which we want a Resource to be unique,
         # e.g., name for Hospital instances, ID for Patient instances,
         #       the combination of Patient, Hospital, Sample and Examination instances for ExaminationRecord instances
@@ -155,6 +151,7 @@ class Database:
                 projected_value = projected_value[key]
             mapping[projected_value] = result["identifier"]
             count = count + 1
+        log.debug(mapping)
         return mapping
 
     def find_operation(self, table_name: str, filter_dict: dict, projection: dict) -> Cursor:
@@ -271,7 +268,7 @@ class Database:
         return self.db[TableNames.EXAMINATION_RECORD.value].aggregate(pipeline)
 
     def __str__(self) -> str:
-        return "Database " + self.connection_string
+        return "Database " + self.config.get("DATABASE", "connection")
 
     def get_db(self):
         return self.db
