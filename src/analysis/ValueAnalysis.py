@@ -2,9 +2,9 @@ import json
 
 from pandas import Series
 
+from src.utils.Utils import get_int_from_str, is_not_nan, get_float_from_str, is_equal_insensitive, is_not_empty, \
+    get_datetime_from_str
 from src.utils.setup_logger import log
-from src.utils.utils import is_not_empty, is_equal_insensitive, get_int_from_str, is_not_nan, \
-    get_float_from_str, get_datetime_from_str
 
 
 class ValueAnalysis:

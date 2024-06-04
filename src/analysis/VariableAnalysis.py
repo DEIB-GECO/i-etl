@@ -1,7 +1,7 @@
 import json
 
+from src.utils.Utils import is_not_nan
 from src.utils.setup_logger import log
-from src.utils.utils import is_not_nan
 
 
 class VariableAnalysis:

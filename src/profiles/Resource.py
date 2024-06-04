@@ -1,8 +1,8 @@
 import json
 
 from src.utils.TableNames import TableNames
+from src.utils.Utils import create_identifier
 from src.utils.constants import NONE_VALUE
-from src.utils.utils import create_identifier
 
 
 class Resource:

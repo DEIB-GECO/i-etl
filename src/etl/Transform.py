@@ -11,11 +11,10 @@ from src.profiles.Sample import Sample
 from src.utils.ExaminationCategory import ExaminationCategory
 from src.utils.HospitalNames import HospitalNames
 from src.utils.TableNames import TableNames
-from src.utils.constants import NONE_VALUE, ID_COLUMNS, PHENOTYPIC_VARIABLES, NO_EXAMINATION_COLUMNS, BATCH_SIZE, \
-    SAMPLE_VARIABLES
+from src.utils.Utils import normalize_value, save_in_file, is_in_insensitive, cast_value, is_not_nan, create_identifier, \
+    get_ontology_system, is_equal_insensitive, convert_value
+from src.utils.constants import NONE_VALUE, ID_COLUMNS, PHENOTYPIC_VARIABLES, NO_EXAMINATION_COLUMNS, BATCH_SIZE
 from src.utils.setup_logger import log
-from src.utils.utils import is_not_nan, get_ontology_system, is_equal_insensitive, normalize_value, \
-    convert_value, create_identifier, is_in_insensitive, save_in_file, cast_value
 
 
 class Transform:
@@ -81,7 +80,7 @@ class Transform:
         save_in_file(self.examinations, TableNames.EXAMINATION.value, count)
 
     def create_samples(self):
-        if is_in_insensitive(ID_COLUMNS[HospitalNames.BUZZI.value][TableNames.SAMPLE.value], self.extract.data.columns):
+        if is_in_insensitive(ID_COLUMNS[HospitalNames.BUZZI_UC1.value][TableNames.SAMPLE.value], self.extract.data.columns):
             # this is a dataset with samples
             log.info("create sample records")
             created_sample_barcodes = set()
@@ -146,12 +145,12 @@ class Transform:
                         # we know a code for this column, so we can register the value of that examination
                         examination_id = self.mapping_column_to_examination_id[lower_column_name]
                         examination_ref = Reference(examination_id, TableNames.EXAMINATION.value)
-                        hospital_id = self.mapping_hospital_to_hospital_id[HospitalNames.BUZZI.value]
+                        hospital_id = self.mapping_hospital_to_hospital_id[HospitalNames.BUZZI_UC1.value]
                         hospital_ref = Reference(hospital_id, TableNames.HOSPITAL.value)
                         # for patient and sample instances, no need to go through a mapping because they have an ID assigned by the hospital
-                        patient_id = create_identifier(row[ID_COLUMNS[HospitalNames.BUZZI.value][TableNames.PATIENT.value]], TableNames.PATIENT.value)  # TODO Nelly: Replace BUZZI by the current hospital
+                        patient_id = create_identifier(row[ID_COLUMNS[HospitalNames.BUZZI_UC1.value][TableNames.PATIENT.value]], TableNames.PATIENT.value)  # TODO Nelly: Replace BUZZI by the current hospital
                         subject_ref = Reference(patient_id, TableNames.PATIENT.value)
-                        sample_id = create_identifier(row[ID_COLUMNS[HospitalNames.BUZZI.value][TableNames.SAMPLE.value]], TableNames.SAMPLE.value)  # TODO Nelly: Replace BUZZI by the current hospital
+                        sample_id = create_identifier(row[ID_COLUMNS[HospitalNames.BUZZI_UC1.value][TableNames.SAMPLE.value]], TableNames.SAMPLE.value)  # TODO Nelly: Replace BUZZI by the current hospital
                         sample_ref = Reference(sample_id, TableNames.SAMPLE.value)
                         # TODO Nelly: add the associated sample
                         # TODO Pietro: harmonize values (upper-lower case, dates, etc)
@@ -184,7 +183,7 @@ class Transform:
         created_patient_ids = set()
         count = 1
         for index, row in self.extract.data.iterrows():
-            patient_id = row[ID_COLUMNS[HospitalNames.BUZZI.value][TableNames.PATIENT.value]]
+            patient_id = row[ID_COLUMNS[HospitalNames.BUZZI_UC1.value][TableNames.PATIENT.value]]
             if patient_id not in created_patient_ids:
                 # the patient does not exist yet, we will create it
                 new_patient = Patient(id_value=str(patient_id))
