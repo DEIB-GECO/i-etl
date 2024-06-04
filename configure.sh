@@ -1,6 +1,9 @@
+CURRENT_DIR=$(pwd)
 WORKING_DIR=working-dir
 FILES_DIR=$WORKING_DIR/files
 METADATA_DIR=$WORKING_DIR/metadata
+
+echo "The working directory is $CURRENT_DIR/$WORKING_DIR"
 
 # create the working-dir only if it does not exist yet
 mkdir -p "$WORKING_DIR"
@@ -10,12 +13,15 @@ then
   rm -Rf $FILES_DIR
   mkdir "$FILES_DIR"
 fi
-# create the metadata dir if it does not exist yet
-mkdir -p "$METADATA_DIR"
+# Empty the metadata dir if needed
+if [ -d "$METADATA_DIR" ]
+then
+  rm -Rf $METADATA_DIR
+  mkdir "$METADATA_DIR"
+fi
 
 # Write the properties.ini files, with the above folders
 PROPERTIES_FILE=properties.ini
-CURRENT_DIR=$(pwd)
 echo "[FILES]" > ${PROPERTIES_FILE} # empty the file and write the string
 echo "working_dir=$CURRENT_DIR/$WORKING_DIR" >> ${PROPERTIES_FILE}
 echo "files_dir=$CURRENT_DIR/$FILES_DIR" >> ${PROPERTIES_FILE}
