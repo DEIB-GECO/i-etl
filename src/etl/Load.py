@@ -8,8 +8,9 @@ from src.utils.setup_logger import log
 
 
 class Load:
-    def __init__(self, database: Database):
+    def __init__(self, database: Database, config):
         self.database = database
+        self.config = config
 
     def run(self):
         # Insert resources that have not been inserted yet, i.e.,
@@ -22,12 +23,12 @@ class Load:
         self.load_json_in_table(table_name=TableNames.SAMPLE.value, unique_variables=["identifier"])
 
     def load_json_in_table(self, table_name: str, unique_variables):
-        for filename in os.listdir(os.path.join("working-dir", "files")):
+        for filename in os.listdir(self.config.get("FILES", "working_dir_current")):
             if re.search(table_name+"[0-9]+", filename) is not None:
                 # implementation note: we cannot simply use filename.startswith(table_name)
                 # because both Examination and ExaminationRecord start with Examination
                 # the solution is to use a regex
-                with open(os.path.join("working-dir", "files", filename), "r") as json_datafile:
+                with open(os.path.join(self.config.get("FILES", "working_dir_current"), filename), "r") as json_datafile:
                     tuples = json.load(json_datafile)
                     log.debug("Table %s, file %s, loading %s tuples", table_name, filename, len(tuples))
                     self.database.upsert_batch_of_tuples(table_name=table_name,
