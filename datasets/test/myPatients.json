@@ -1,0 +1,30 @@
+[
+    {
+        "id": 1,
+        "metadata": {
+            "csv_filepath": "data/samples/BUZZI/buzzi_subset_small_quoted.csv",
+            "csv_line": 0
+        }
+    },
+    {
+        "id": 2,
+        "metadata": {
+            "csv_filepath": "data/samples/BUZZI/buzzi_subset_small_quoted.csv",
+            "csv_line": 1
+        }
+    },
+    {
+        "id": 3,
+        "metadata": {
+            "csv_filepath": "data/samples/BUZZI/buzzi_subset_small_quoted.csv",
+            "csv_line": 2
+        }
+    },
+    {
+        "id": 4,
+        "metadata": {
+            "csv_filepath": "data/samples/BUZZI/buzzi_subset_small_quoted.csv",
+            "csv_line": 3
+        }
+    }
+]
