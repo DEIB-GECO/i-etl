@@ -1,5 +1,5 @@
 # BETTER-fairificator
-The fairification tools for BETTER projet data. 
+The fairification tools for BETTER project.
 
 
 ### Installation
