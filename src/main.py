@@ -1,5 +1,7 @@
 import configparser
+import getpass
 import os.path
+import platform
 import sys
 import argparse
 from datetime import datetime
@@ -68,8 +70,16 @@ if __name__ == '__main__':
         data_filepath = args.data_filepath
         config.set("FILES", "data_filepath", data_filepath)
 
+    # write more information about the current run in the config
+    config.add_section("SYSTEM")
+    config.set("SYSTEM", "python_version", str(sys.version))
+    config.set("SYSTEM", "execution_date", str(datetime.now()))
+    config.set("SYSTEM", "platform", platform.platform())
+    config.set("SYSTEM", "platform_version", platform.version())
+    config.set("SYSTEM", "user", getpass.getuser())
+
     # save the config file in the current working directory
-    saved_config_file = os.path.join(working_folder, "command-line.txt")
+    saved_config_file = os.path.join(working_folder, "parameter.ini")
     with open(saved_config_file, 'w') as f:
         config.write(f)
 
