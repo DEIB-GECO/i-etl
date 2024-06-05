@@ -1,3 +1,4 @@
+from src.config.BetterConfig import BetterConfig
 from src.database.Database import Database
 from src.etl.Extract import Extract
 from src.etl.Load import Load
@@ -9,10 +10,10 @@ from random import randrange
 
 
 class ETL:
-    def __init__(self, config, metadata_filepath: str, data_filepath: str):
+    def __init__(self, config: BetterConfig):
         self.config = config
         self.database = Database(self.config)
-        if config.get("DATABASE", "reset"):
+        if config.get_db_reset():
             self.database.reset()
 
         # flags to know what to do during the ETL process
@@ -22,7 +23,7 @@ class ETL:
         self.load_data = True
         self.compute_plots = False
 
-        self.extract = Extract(metadata_filepath=metadata_filepath, data_filepath=data_filepath, database=self.database, run_analysis=self.run_analysis, config=self.config)
+        self.extract = Extract(database=self.database, run_analysis=self.run_analysis, config=self.config)
         self.load = Load(database=self.database, config=self.config)
         self.transform = Transform(extract=self.extract, load=self.load, database=self.database, config=self.config)
 
