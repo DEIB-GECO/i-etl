@@ -257,18 +257,6 @@ def convert_value(value):
             return value
 
 
-# FILE UTILITIES
-
-def save_in_file(data_array: list, table_name: str, count: int, config):
-    if len(data_array) > 0:
-        log.debug(data_array)
-        filename = os.path.join(config.get("FILES", "working_dir_current"), table_name + str(count) + ".json")
-        with open(filename, "w") as data_file:
-            json.dump([resource.to_json() for resource in data_array], data_file)
-    else:
-        log.info("No data when saving file %s/%s", table_name, count)
-
-
 # COMPUTE CONSTANTS
 def current_milli_time():
     return int(time.time())

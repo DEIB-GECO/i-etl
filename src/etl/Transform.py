@@ -1,3 +1,4 @@
+from src.config.BetterConfig import BetterConfig
 from src.database.Database import Database
 from src.etl.Extract import Extract
 from src.etl.Load import Load
@@ -11,7 +12,7 @@ from src.profiles.Sample import Sample
 from src.utils.ExaminationCategory import ExaminationCategory
 from src.utils.HospitalNames import HospitalNames
 from src.utils.TableNames import TableNames
-from src.utils.utils import normalize_value, save_in_file, is_in_insensitive, cast_value, is_not_nan, create_identifier, \
+from src.utils.utils import normalize_value, is_in_insensitive, cast_value, is_not_nan, create_identifier, \
     get_ontology_system, is_equal_insensitive, convert_value
 from src.utils.constants import NONE_VALUE, ID_COLUMNS, PHENOTYPIC_VARIABLES, NO_EXAMINATION_COLUMNS, BATCH_SIZE
 from src.utils.setup_logger import log
@@ -19,7 +20,7 @@ from src.utils.setup_logger import log
 
 class Transform:
 
-    def __init__(self, extract: Extract, load: Load, database: Database, config):
+    def __init__(self, extract: Extract, load: Load, database: Database, config: BetterConfig):
         self.extract = extract
         self.load = load
         self.database = database
@@ -39,7 +40,7 @@ class Transform:
         self.mapping_disease_to_disease_id = {}  # map the disease names to their Disease IDs
 
     def run(self):
-        self.create_hospital(hospital_name=self.config.get("HOSPITAL", "name"))
+        self.create_hospital(hospital_name=self.config.get_hospital_name())
         self.create_examinations()
         self.create_samples()
         self.create_patients()
@@ -49,7 +50,7 @@ class Transform:
         log.info("create hospital")
         new_hospital = Hospital(NONE_VALUE, hospital_name)
         self.hospitals.append(new_hospital)
-        save_in_file(self.hospitals, TableNames.HOSPITAL.value, 1, self.config)
+        self.database.save_in_file(self.hospitals, TableNames.HOSPITAL.value, 1)
 
     def create_examinations(self):
         log.info("create examinations")
@@ -66,7 +67,7 @@ class Transform:
                     # log.info("adding a new examination about %s: %s", cc.text, new_examination)
                     self.examinations.append(new_examination)
                     if len(self.examinations) >= BATCH_SIZE:
-                        save_in_file(self.examinations, TableNames.EXAMINATION.value, count, self.config)
+                        self.database.save_in_file(self.examinations, TableNames.EXAMINATION.value, count)
                         self.examinations = []
                         count = count + 1
                 else:
@@ -76,7 +77,7 @@ class Transform:
             else:
                 log.debug("I am skipping column %s because it has been marked as not being part of examination instances.", lower_column_name)
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
-        save_in_file(self.examinations, TableNames.EXAMINATION.value, count, self.config)
+        self.database.save_in_file(self.examinations, TableNames.EXAMINATION.value, count)
 
     def create_samples(self):
         if is_in_insensitive(ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.SAMPLE.value], self.extract.data.columns):
@@ -105,12 +106,12 @@ class Transform:
                             created_sample_barcodes.add(sample_barcode)
                             self.samples.append(new_sample)
                             if len(self.samples) >= BATCH_SIZE:
-                                save_in_file(self.samples, TableNames.SAMPLE.value, count, self.config)
+                                self.database.save_in_file(self.samples, TableNames.SAMPLE.value, count)
                                 self.samples = []
                                 count = count + 1
                                 # no need to load Sample instances because they are referenced using their ID,
                                 # which was provided by the hospital (thus is known by the dataset)
-            save_in_file(self.samples, TableNames.SAMPLE.value, count, self.config)
+            self.database.save_in_file(self.samples, TableNames.SAMPLE.value, count)
             log.info("Nb of samples: %s", len(self.samples))
 
     def create_examination_records(self):
@@ -163,7 +164,7 @@ class Transform:
                                                                    sample_ref=sample_ref, value=fairified_value, status=status)
                         self.examination_records.append(new_examination_record)
                         if len(self.examination_records) >= BATCH_SIZE:
-                            save_in_file(self.examination_records, TableNames.EXAMINATION_RECORD.value, count, self.config)
+                            self.database.save_in_file(self.examination_records, TableNames.EXAMINATION_RECORD.value, count)
                             # no need to load ExaminationRecords instances because they are never referenced
                             self.examination_records = []
                             count = count + 1
@@ -173,7 +174,7 @@ class Transform:
                         # TODO Nelly: this is not true, 3 columns in Buzzi are still not mapped
                         pass
 
-        save_in_file(self.examination_records, TableNames.EXAMINATION_RECORD.value, count, self.config)
+        self.database.save_in_file(self.examination_records, TableNames.EXAMINATION_RECORD.value, count)
         log.info("Nb of patients: %s", len(self.patients))
         log.info("Nb of examination records: %s", len(self.examination_records))
 
@@ -189,12 +190,13 @@ class Transform:
                 created_patient_ids.add(patient_id)
                 self.patients.append(new_patient)
                 if len(self.patients) >= BATCH_SIZE:
-                    save_in_file(self.patients, TableNames.PATIENT.value, count, self.config)  # this will save the data if it has reached BATCH_SIZE
+                    self.database.save_in_file(self.patients, TableNames.PATIENT.value, count)  # this will save the data if it has reached BATCH_SIZE
                     self.patients = []
                     count = count + 1
                     # no need to load Patient instances because they are referenced using their ID,
                     # which was provided by the hospital (thus is known by the dataset)
-        save_in_file(self.patients, TableNames.PATIENT.value, count, self.config)
+        self.database.save_in_file(self.patients, TableNames.PATIENT.value, count)
+
     def create_codeable_concept_from_column(self, column_name: str):
         rows = self.extract.metadata.loc[self.extract.metadata['name'] == column_name]
         if len(rows) == 1:

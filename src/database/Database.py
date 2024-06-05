@@ -1,3 +1,5 @@
+import json
+import os
 from datetime import datetime, timedelta
 from random import randrange
 
@@ -6,6 +8,7 @@ from pymongo import MongoClient, ReturnDocument
 from pymongo.command_cursor import CommandCursor
 from pymongo.cursor import Cursor
 
+from src.config.BetterConfig import BetterConfig
 from src.utils.TableNames import TableNames
 from src.utils.utils import mongodb_project_one, mongodb_group_by, mongodb_match, mongodb_limit, mongodb_sort
 from src.utils.constants import BATCH_SIZE
@@ -17,7 +20,7 @@ class Database:
     The class Database represents the underlying MongoDB database: the connection, the database itself and
     auxiliary functions to make interactions with the database object (insert, select, ...).
     """
-    def __init__(self, config):
+    def __init__(self, config: BetterConfig):
         """
         Initiate a new connection to a MongoDB client, reachable based on the given connection string, and initialize
         class members.
@@ -25,17 +28,17 @@ class Database:
         # mongodb://localhost:27017/
         # mongodb+srv://<username>:<password>@<cluster>.qo5xs5j.mongodb.net/?retryWrites=true&w=majority&appName=<app_name>
         self.config = config
-        self.client = MongoClient(host=self.config.get("DATABASE", "connection"))
-        self.db = self.client[self.config.get("DATABASE", "name")]
+        self.client = MongoClient(host=self.config.get_db_connection())
+        self.db = self.client[self.config.get_db_name()]
 
-        log.debug("the connection string is: %s", self.config.get("DATABASE", "connection"))
+        log.debug("the connection string is: %s", self.config.get_db_connection())
         log.debug("the new MongoClient is: %s", self.client)
         log.debug("the database is: %s", self.db)
 
         if self.check_server_is_up():
             log.info("The connection is up.")
         else:
-            log.error("There was a problem while connecting to the MongoDB instance at %s.", self.config.get("DATABASE", "connection"))
+            log.error("There was a problem while connecting to the MongoDB instance at %s.", self.config.get_db_connection())
             exit()
 
     def check_server_is_up(self) -> bool:
@@ -56,8 +59,8 @@ class Database:
         Truncate the current database.
         :return: Nothing.
         """
-        log.info("!!!!! Will drop the database %s !!!!!", self.config.get("DATABASE", "name"))
-        self.client.drop_database(name_or_database=self.config.get("DATABASE", "name"))
+        log.info("!!!!! Will drop the database %s !!!!!", self.config.get_db_name())
+        self.client.drop_database(name_or_database=self.config.get_db_name())
 
     def insert_many_tuples(self, table_name: str, tuples: list[dict]) -> list[int]:
         """
@@ -153,6 +156,15 @@ class Database:
             count = count + 1
         log.debug(mapping)
         return mapping
+
+    def save_in_file(self, data_array: list, table_name: str, count: int):
+        if len(data_array) > 0:
+            log.debug(data_array)
+            filename = os.path.join(self.config.get_working_dir_current(), table_name + str(count) + ".json")
+            with open(filename, "w") as data_file:
+                json.dump([resource.to_json() for resource in data_array], data_file)
+        else:
+            log.info("No data when saving file %s/%s", table_name, count)
 
     def find_operation(self, table_name: str, filter_dict: dict, projection: dict) -> Cursor:
         """
@@ -268,7 +280,7 @@ class Database:
         return self.db[TableNames.EXAMINATION_RECORD.value].aggregate(pipeline)
 
     def __str__(self) -> str:
-        return "Database " + self.config.get("DATABASE", "connection")
+        return "Database " + self.config.get_db_name()
 
     def get_db(self):
         return self.db
