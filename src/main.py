@@ -97,12 +97,7 @@ if __name__ == '__main__':
     # everything has been written in the log file,
     # so we move it (the file with the latest timestamp) to its respective database folder in working-dir
     # first: close handlers that were writing the log files
-    handlers = log.handlers[:]
-    print(handlers)
-    logger = logging.getLogger()
-    while logger.hasHandlers():
-        logger.removeHandler(logger.handlers[0])
-
+    log.handlers.clear()
     # now we can move the latest log file to its destination
     latest_log_filename = max([f for f in pathlib.Path('.').glob('*.log')], key=os.path.getctime)
     print(latest_log_filename)
