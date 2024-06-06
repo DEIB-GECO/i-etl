@@ -25,7 +25,9 @@ class Database:
         Initiate a new connection to a MongoDB client, reachable based on the given connection string, and initialize
         class members.
         """
+        self.config = config
         # mongodb://localhost:27017/
+        # mongodb://127.0.0.1:27017/
         # mongodb+srv://<username>:<password>@<cluster>.qo5xs5j.mongodb.net/?retryWrites=true&w=majority&appName=<app_name>
         self.config = config
         self.client = MongoClient(host=self.config.get_db_connection())
@@ -36,9 +38,9 @@ class Database:
         log.debug("the database is: %s", self.db)
 
         if self.check_server_is_up():
-            log.info("The connection is up.")
+            log.info("The MongoDB client could be set up properly.")
         else:
-            log.error("There was a problem while connecting to the MongoDB instance at %s.", self.config.get_db_connection())
+            log.error("The MongoDB client could not be set up properly. The given connection string was %s.", self.config.get_db_connection())
             exit()
 
     def check_server_is_up(self) -> bool:
@@ -54,22 +56,27 @@ class Database:
             log.error(e)
             return False
 
-    def reset(self) -> None:
+    def drop_db(self) -> None:
         """
-        Truncate the current database.
+        Drop the current database.
         :return: Nothing.
         """
         log.info("!!!!! Will drop the database %s !!!!!", self.config.get_db_name())
         self.client.drop_database(name_or_database=self.config.get_db_name())
 
-    def insert_many_tuples(self, table_name: str, tuples: list[dict]) -> list[int]:
+    def close(self) -> None:
+        self.client.close()
+
+    def insert_one_tuple(self, table_name: str, one_tuple: dict) -> None:
+        self.db[table_name].insert_one(one_tuple)
+
+    def insert_many_tuples(self, table_name: str, tuples: list[dict]) -> None:
         """
         Insert the given tuples in the specified table.
         :param table_name: A string being the table name in which to insert the tuples.
         :param tuples: A list of dicts being the tuples to insert.
-        :return: A list of integers being the MongoDB _id of the inserted tuples.
         """
-        return self.db[table_name].insert_many(tuples, ordered=False).inserted_ids
+        self.db[table_name].insert_many(tuples, ordered=False)
 
     def upsert_one_tuple(self, table_name: str, unique_variables: list[str], one_tuple: dict) -> None:
         # filter_dict should only contain the fields on which we want a Resource to be unique,
@@ -157,14 +164,14 @@ class Database:
         log.debug(mapping)
         return mapping
 
-    def save_in_file(self, data_array: list, table_name: str, count: int):
+    def write_in_file(self, data_array: list, table_name: str, count: int):
         if len(data_array) > 0:
             log.debug(data_array)
             filename = os.path.join(self.config.get_working_dir_current(), table_name + str(count) + ".json")
             with open(filename, "w") as data_file:
                 json.dump([resource.to_json() for resource in data_array], data_file)
         else:
-            log.info("No data when saving file %s/%s", table_name, count)
+            log.info("No data when writing file %s/%s", table_name, count)
 
     def find_operation(self, table_name: str, filter_dict: dict, projection: dict) -> Cursor:
         """

@@ -41,3 +41,5 @@ NO_EXAMINATION_COLUMNS = {"line", "unnamed", "id", "samplebarcode", "sampling", 
 BATCH_SIZE = 50
 
 DEFAULT_CONFIG_FILE = "properties.ini"
+
+DEFAULT_DB_NAME = "better_default"
