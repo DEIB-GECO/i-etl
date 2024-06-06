@@ -1,7 +1,9 @@
 from unittest import TestCase
 
 from config.BetterConfig import BetterConfig
-from utils.constants import DEFAULT_DB_NAME
+from database.Database import Database
+from utils.constants import TEST_DB_NAME, TEST_TABLE_NAME
+from utils.setup_logger import log
 
 
 class TestDatabase(TestCase):
@@ -10,14 +12,14 @@ class TestDatabase(TestCase):
         config = BetterConfig()
 
         # test with the correct (default) string
-        config.set_db_name(DEFAULT_DB_NAME)
+        config.set_db_name(TEST_DB_NAME)
         database = Database(config)
         self.assertTrue(database.check_server_is_up())
         # database.close()
 
         # test with a wrong connection string
         config.set_db_connection("a_random_connection_string")
-        config.set_db_name(DEFAULT_DB_NAME)
+        config.set_db_name(TEST_DB_NAME)
         database = Database(config)
         self.assertFalse(database.check_server_is_up())
         # database.close()
@@ -25,24 +27,21 @@ class TestDatabase(TestCase):
     def test_drop(self):
         # check that, after drop, no db with the provided name exists
         config = BetterConfig()
-        config.set_db_name(DEFAULT_DB_NAME)
+        config.set_db_name(TEST_DB_NAME)
 
     def test_reset(self):
-        self.fail()
-        log.debug(config.config.sections())
-        log.debug(config.to_json())
-
+        config = BetterConfig()
         # create a test database
         # and add only one triple to be sure that the db is created
         database = Database(config)
         log.debug(database.client)
         log.debug(database.db)
-        database.insert_one_tuple(TEST_TABLE, { "id": "1", "name": "Alice Doe"})
+        database.insert_one_tuple(TEST_TABLE_NAME, { "id": "1", "name": "Alice Doe"})
         list_dbs = database.client.list_databases()
         found = False
         for db in list_dbs:
             log.debug(db)
-            if db['name'] == DEFAULT_DB_NAME:
+            if db['name'] == TEST_DB_NAME:
                 found = True
         self.assertTrue(found)
         database.drop()
@@ -50,7 +49,7 @@ class TestDatabase(TestCase):
         list_dbs = database.client.list_databases()
         found = False
         for db in list_dbs:
-            if db['name'] == DEFAULT_DB_NAME:
+            if db['name'] == TEST_DB_NAME:
                 found = True
         self.assertFalse(found)
         # database.close()
@@ -78,7 +77,7 @@ class TestDatabase(TestCase):
 
     def test_insert_many_tuples(self):
         config = BetterConfig()
-        config.set_db_name(DEFAULT_DB_NAME)
+        config.set_db_name(TEST_DB_NAME)
         config.set_db_drop("True")
         log.debug(config.to_json())
 
@@ -86,16 +85,16 @@ class TestDatabase(TestCase):
         tuples = [{"id": 1, "name": "Louise", "country": "FR", "job": "PhD student"},
                   {"id": 2, "name": "Francesca", "country": "IT", "university": True},
                   {"id": 3, "name": "Martin", "country": "DE", "age": 26}]
-        log.debug(TEST_TABLE)
+        log.debug(TEST_TABLE_NAME)
         log.debug(tuples)
         list_dbs = database.client.list_databases()
         for db in list_dbs:
             log.debug(db)
-        database.insert_many_tuples(TEST_TABLE, tuples)
+        database.insert_many_tuples(TEST_TABLE_NAME, tuples)
         log.debug(tuples)
-        docs = database.db[TEST_TABLE].find({})  # return JSON data
+        docs = database.db[TEST_TABLE_NAME].find({})  # return JSON data
         print("JSON data:", docs)
-        database.write_in_file(docs, TEST_TABLE, 0)
+        database.write_in_file(docs, TEST_TABLE_NAME, 0)
 
     def test_upsert_one_tuple(self):
         self.fail()

@@ -43,3 +43,5 @@ BATCH_SIZE = 50
 DEFAULT_CONFIG_FILE = "properties.ini"
 
 DEFAULT_DB_NAME = "better_default"
+TEST_DB_NAME = "better_test"
+TEST_TABLE_NAME = "test"

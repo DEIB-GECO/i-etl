@@ -5,6 +5,8 @@ import sys
 import argparse
 import shutil
 
+from utils.constants import DEFAULT_DB_NAME
+
 sys.path.append('.')  # add the current project to the python path to be runnable in cmd-line
 
 from src.config.BetterConfig import BetterConfig
@@ -33,8 +35,11 @@ if __name__ == '__main__':
         config.set_hospital_name(args.hospital_name)
     if args.connection is not None:
         config.set_db_connection(args.connection)
-    if args.database_name is not None:
+    if args.database_name is not None and args.database_name != "":
         config.set_db_name(args.database_name)
+    else:
+        log.info("There was no database name provided. Using the default one: %s", DEFAULT_DB_NAME)
+        config.set_db_name(DEFAULT_DB_NAME)
     if args.drop is not None:
         config.set_db_drop(args.drop)
     log.debug(config.get_db_drop())
