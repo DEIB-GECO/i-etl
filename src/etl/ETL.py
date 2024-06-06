@@ -13,8 +13,8 @@ class ETL:
     def __init__(self, config: BetterConfig):
         self.config = config
         self.database = Database(self.config)
-        if config.get_db_reset():
-            self.database.reset()
+        if config.get_db_drop():
+            self.database.drop_db()
 
         # flags to know what to do during the ETL process
         self.extract_data = True

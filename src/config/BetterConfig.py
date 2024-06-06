@@ -1,4 +1,11 @@
 import configparser
+import getpass
+import os.path
+import platform
+
+from datetime import datetime
+
+import pymongo
 
 from src.utils.constants import DEFAULT_CONFIG_FILE
 
@@ -34,33 +41,37 @@ class BetterConfig:
         self.set_database_section()
         self.config.set("DATABASE", "name", db_name)
 
-    def set_db_reset(self, reset):
+    def set_db_drop(self, drop):
         self.set_database_section()
-        self.config.set("DATABASE", "reset", reset)
+        self.config.set("DATABASE", "drop", drop)
 
     def set_hospital_name(self, hospital_name):
         self.set_hospital_section()
         self.config.set("HOSPITAL", "name", hospital_name)
 
-    def set_python_version(self, python_version):
+    def add_python_version(self):
         self.set_system_section()
-        self.config.set("SYSTEM", "python_version", python_version)
+        self.config.set("SYSTEM", "python_version", platform.python_version())
 
-    def set_execution_date(self, execution_date):
+    def add_pymongo_version(self):
         self.set_system_section()
-        self.config.set("SYSTEM", "execution_date", execution_date)
+        self.config.set("SYSTEM", "pymongo_version", pymongo.version)
 
-    def set_platform(self, platform):
+    def add_execution_date(self):
         self.set_system_section()
-        self.config.set("SYSTEM", "platform", platform)
+        self.config.set("SYSTEM", "execution_date", str(datetime.now()))
 
-    def set_platform_version(self, platform_version):
+    def add_platform(self):
         self.set_system_section()
-        self.config.set("SYSTEM", "platform_version", platform_version)
+        self.config.set("SYSTEM", "platform", platform.platform())
 
-    def set_user(self, user):
+    def add_platform_version(self):
         self.set_system_section()
-        self.config.set("SYSTEM", "user", user)
+        self.config.set("SYSTEM", "platform_version", platform.version())
+
+    def add_user(self):
+        self.set_system_section()
+        self.config.set("SYSTEM", "user", getpass.getuser())
 
     # set sections
     def set_files_section(self):
@@ -98,8 +109,8 @@ class BetterConfig:
     def get_db_name(self):
         return self.config.get("DATABASE", "name")
 
-    def get_db_reset(self):
-        return self.config.get("DATABASE", "reset")
+    def get_db_drop(self) -> bool:
+        return self.config.get("DATABASE", "drop") == "True"
 
     def get_hospital_name(self):
         return self.config.get("HOSPITAL", "name")
@@ -120,6 +131,7 @@ class BetterConfig:
         return self.config.get("SYSTEM", "user")
 
     # write config to file
-    def write_to_file(self, config_filepath):
+    def write_to_file(self):
+        config_filepath = os.path.join(self.get_working_dir_current(), DEFAULT_CONFIG_FILE)
         with open(config_filepath, 'w') as f:
             self.config.write(f)
