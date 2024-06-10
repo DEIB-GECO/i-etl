@@ -26,4 +26,5 @@ jobs:
     - name: Test with pytest
       run: |
         bash configure.sh
-        python -m unittest discover
+        source .venv-better-fairificator/bin/activate
+        python3 -m unittest discover
