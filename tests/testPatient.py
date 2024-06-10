@@ -18,8 +18,6 @@ class TestPatient(unittest.TestCase):
         # I tried with self.assertRaises(ValueError, Patient(NONE_VALUE, TableNames.PATIENT.value))
         # but this still raises the Exception and does not pass the test
 
-        TestPatient.NB_TESTS_RUN = TestPatient.NB_TESTS_RUN + 1
-
     def test_get_type(self):
         """
         Check whether the Patient type is indeed the Patient table name.
@@ -27,8 +25,6 @@ class TestPatient(unittest.TestCase):
         """
         patient1 = Patient("123")
         self.assertEqual(patient1.get_type(), TableNames.PATIENT.value)
-
-        TestPatient.NB_TESTS_RUN = TestPatient.NB_TESTS_RUN + 1
 
     def test_to_json(self):
         patient1 = Patient("123")
@@ -39,5 +35,3 @@ class TestPatient(unittest.TestCase):
         self.assertEqual(patient1_json["identifier"], TableNames.PATIENT.value + "/123")
         self.assertIn("resourceType", patient1_json)
         self.assertEqual(patient1_json["resourceType"], TableNames.PATIENT.value)
-
-        TestPatient.NB_TESTS_RUN = TestPatient.NB_TESTS_RUN + 1

@@ -16,8 +16,6 @@ class TestHospital(unittest.TestCase):
         self.assertIsNotNone(hospital2.identifier)
         self.assertEqual(hospital2.identifier, TableNames.HOSPITAL.value + "/1")
 
-        TestHospital.NB_TESTS_RUN = TestHospital.NB_TESTS_RUN + 1
-
     def test_get_type(self):
         hospital1 = Hospital("123", "MyHospital")
         self.assertIsNotNone(hospital1)
@@ -26,8 +24,6 @@ class TestHospital(unittest.TestCase):
         hospital2 = Hospital(NONE_VALUE, "MyHospital")
         self.assertIsNotNone(hospital2)
         self.assertEqual(hospital2.get_type(), TableNames.HOSPITAL.value)
-
-        TestHospital.NB_TESTS_RUN = TestHospital.NB_TESTS_RUN + 1
 
     def test_to_json(self):
         hospital1 = Hospital("123", "MyHospital")
@@ -38,5 +34,3 @@ class TestHospital(unittest.TestCase):
         self.assertEqual(hospital1_json["identifier"], TableNames.HOSPITAL.value + "/123")
         self.assertIn("resourceType", hospital1_json)
         self.assertEqual(hospital1_json["resourceType"], TableNames.HOSPITAL.value)
-
-        TestHospital.NB_TESTS_RUN = TestHospital.NB_TESTS_RUN + 1

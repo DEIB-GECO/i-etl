@@ -22,8 +22,6 @@ class TestDatabase(unittest.TestCase):
         self.assertFalse(database.check_server_is_up())
         # database.close()
 
-        TestDatabase.NB_TESTS_RUN = TestDatabase.NB_TESTS_RUN + 1
-
     def test_drop(self):
         # check that, after drop, no db with the provided name exists
         config = BetterConfig()
@@ -52,8 +50,6 @@ class TestDatabase(unittest.TestCase):
                 found = True
         self.assertFalse(found)
         # database.close()
-
-        TestDatabase.NB_TESTS_RUN = TestDatabase.NB_TESTS_RUN + 1
 
     def my_test(self):
 
