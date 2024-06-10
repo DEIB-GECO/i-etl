@@ -27,11 +27,15 @@ class Database:
         class members.
         """
         self.config = config
+
+
         # mongodb://localhost:27017/
         # mongodb://127.0.0.1:27017/
         # mongodb+srv://<username>:<password>@<cluster>.qo5xs5j.mongodb.net/?retryWrites=true&w=majority&appName=<app_name>
         self.config = config
         self.client = MongoClient(host=self.config.get_db_connection(), serverSelectionTimeoutMS=5000)  # timeout after 5 sec instead of 20
+        if config.get_db_drop():
+            self.drop_db()
         self.db = self.client[self.config.get_db_name()]
 
         log.debug("the connection string is: %s", self.config.get_db_connection())

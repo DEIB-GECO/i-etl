@@ -20,9 +20,6 @@ class ETL:
             log.error("The MongoDB client could not be set up properly. The given connection string was %s.", self.config.get_db_connection())
             exit()
 
-        if config.get_db_drop():
-            self.database.drop_db()
-
         # flags to know what to do during the ETL process
         self.extract_data = True
         self.run_analysis = False
