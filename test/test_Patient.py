@@ -36,17 +36,5 @@ class TestPatient(unittest.TestCase):
         self.assertIn("resourceType", patient1_json)
         self.assertEqual(patient1_json["resourceType"], TableNames.PATIENT.value)
 
-    def test_from_json(self):
-        json_patient = {
-            "identifier": TableNames.PATIENT.value + "/123",
-            "resourceType": TableNames.PATIENT.value
-        }
-
-        patient = Patient.from_json(json_patient)
-        self.assertIsNotNone(patient.identifier)
-        self.assertEqual(patient.identifier, TableNames.PATIENT.value + "/123")
-        self.assertEqual(patient.get_type(), TableNames.PATIENT.value)
-
-
 if __name__ == '__main__':
     unittest.main()

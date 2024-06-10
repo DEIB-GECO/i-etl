@@ -8,130 +8,218 @@ from datetime import datetime
 import pymongo
 
 from src.utils.constants import DEFAULT_CONFIG_FILE
+from utils.setup_logger import log
 
 
 class BetterConfig:
+    FILES_SECTION = "FILES"
+    DB_SECTION = "DATABASE"
+    HOSPITAL_SECTION = "HOSPITAL"
+    SYSTEM_SECTION = "SYSTEM"
+
+    WORKING_DIR_KEY = "working_dir"
+    WORKING_DIR_CURRENT_KEY = "working_key_current"
+    METADATA_FILEPATH_KEY = "metadata_filepath"
+    DATA_FILEPATH_KEY = "data_filepath"
+    CONNECTION_KEY = "connection"
+    NAME_KEY = "name"
+    DROP_KEY = "drop"
+    PYTHON_VERSION_KEY = "python_version"
+    PYMONGO_VERSION_KEY = "pymongo_version"
+    EXECUTION_KEY = "execution_date"
+    PLATFORM_KEY = "platform"
+    PLATFORM_VERSION_KEY = "platform_version"
+    USER_KEY = "user"
+
     def __init__(self):
         self.config = configparser.ConfigParser()
         self.config.read(DEFAULT_CONFIG_FILE)
+        log.debug(self.to_json())
 
     # below, define methods for each parameter in the config
     # keep it up-to-date wrt the config file
     def set_working_dir(self, working_dir):
         self.set_files_section()
-        self.config.set("FILES", "working_dir", working_dir)
+        self.config.set(BetterConfig.FILES_SECTION, BetterConfig.WORKING_DIR_KEY, working_dir)
 
     def set_working_dir_current(self, working_dir_current):
         self.set_files_section()
-        self.config.set("FILES", "working_dir_current", working_dir_current)
+        self.config.set(BetterConfig.FILES_SECTION, BetterConfig.WORKING_DIR_CURRENT_KEY, working_dir_current)
 
     def set_metadata_filepath(self, metadata_filepath):
         self.set_files_section()
-        self.config.set("FILES", "metadata_filepath", metadata_filepath)
+        self.config.set(BetterConfig.FILES_SECTION, BetterConfig.METADATA_FILEPATH_KEY, metadata_filepath)
 
     def set_data_filepath(self, data_filepath):
         self.set_files_section()
-        self.config.set("FILES", "data_filepath", data_filepath)
+        self.config.set(BetterConfig.FILES_SECTION, BetterConfig.DATA_FILEPATH_KEY, data_filepath)
 
     def set_db_connection(self, db_connection):
         self.set_database_section()
-        self.config.set("DATABASE", "connection", db_connection)
+        self.config.set(BetterConfig.DB_SECTION, BetterConfig.CONNECTION_KEY, db_connection)
 
     def set_db_name(self, db_name):
         self.set_database_section()
-        self.config.set("DATABASE", "name", db_name)
+        self.config.set(BetterConfig.DB_SECTION, BetterConfig.NAME_KEY, db_name)
+        log.debug(db_name)
+        log.debug(self.config.has_option("DATABASE", "name"))
+        log.debug(self.config.get("DATABASE", "name"))
+        log.debug(self.to_json())
 
     def set_db_drop(self, drop):
         self.set_database_section()
-        self.config.set("DATABASE", "drop", drop)
+        self.config.set(BetterConfig.DB_SECTION, BetterConfig.DROP_KEY, drop)
 
     def set_hospital_name(self, hospital_name):
         self.set_hospital_section()
-        self.config.set("HOSPITAL", "name", hospital_name)
+        self.config.set(BetterConfig.HOSPITAL_SECTION, BetterConfig.NAME_KEY, hospital_name)
 
     def add_python_version(self):
         self.set_system_section()
-        self.config.set("SYSTEM", "python_version", platform.python_version())
+        self.config.set(BetterConfig.SYSTEM_SECTION, BetterConfig.PYTHON_VERSION_KEY, platform.python_version())
 
     def add_pymongo_version(self):
         self.set_system_section()
-        self.config.set("SYSTEM", "pymongo_version", pymongo.version)
+        self.config.set(BetterConfig.SYSTEM_SECTION, BetterConfig.PYMONGO_VERSION_KEY, pymongo.version)
 
     def add_execution_date(self):
         self.set_system_section()
-        self.config.set("SYSTEM", "execution_date", str(datetime.now()))
+        self.config.set(BetterConfig.SYSTEM_SECTION, BetterConfig.EXECUTION_KEY, str(datetime.now()))
 
     def add_platform(self):
         self.set_system_section()
-        self.config.set("SYSTEM", "platform", platform.platform())
+        self.config.set(BetterConfig.SYSTEM_SECTION, BetterConfig.PLATFORM_KEY, platform.platform())
 
     def add_platform_version(self):
         self.set_system_section()
-        self.config.set("SYSTEM", "platform_version", platform.version())
+        self.config.set(BetterConfig.SYSTEM_SECTION, BetterConfig.PLATFORM_VERSION_KEY, platform.version())
 
     def add_user(self):
         self.set_system_section()
-        self.config.set("SYSTEM", "user", getpass.getuser())
+        self.config.set(BetterConfig.SYSTEM_SECTION, BetterConfig.USER_KEY, getpass.getuser())
 
     # set sections
     def set_files_section(self):
-        if not self.config.has_section("FILES"):
-            self.config.add_section("FILES")
+        if not self.config.has_section(BetterConfig.FILES_SECTION):
+            self.config.add_section(BetterConfig.FILES_SECTION)
 
     def set_database_section(self):
-        if not self.config.has_section("DATABASE"):
-            self.config.add_section("DATABASE")
+        if not self.config.has_section(BetterConfig.DB_SECTION):
+            self.config.add_section(BetterConfig.DB_SECTION)
 
     def set_hospital_section(self):
-        if not self.config.has_section("HOSPITAL"):
-            self.config.add_section("HOSPITAL")
+        if not self.config.has_section(BetterConfig.HOSPITAL_SECTION):
+            self.config.add_section(BetterConfig.HOSPITAL_SECTION)
 
     def set_system_section(self):
-        if not self.config.has_section("SYSTEM"):
-            self.config.add_section("SYSTEM")
+        if not self.config.has_section(BetterConfig.SYSTEM_SECTION):
+            self.config.add_section(BetterConfig.SYSTEM_SECTION)
 
     # get config variables
     def get_working_dir(self):
-        return self.config.get("FILES", "working_dir")
+        try:
+            return self.config.get(BetterConfig.FILES_SECTION, BetterConfig.WORKING_DIR_KEY)
+        except:
+            return ""
 
     def get_working_dir_current(self):
-        return self.config.get("FILES", "working_dir_current")
+        try:
+            return self.config.get(BetterConfig.FILES_SECTION, BetterConfig.WORKING_DIR_CURRENT_KEY)
+        except:
+            return ""
 
     def get_metadata_filepath(self):
-        return self.config.get("FILES", "metadata_filepath")
+        try:
+            return self.config.get(BetterConfig.FILES_SECTION, BetterConfig.METADATA_FILEPATH_KEY)
+        except:
+            return ""
 
     def get_data_filepath(self):
-        return self.config.get("FILES", "data_filepath")
+        try:
+            return self.config.get(BetterConfig.FILES_SECTION, BetterConfig.DATA_FILEPATH_KEY)
+        except:
+            return ""
 
     def get_db_connection(self):
-        return self.config.get("DATABASE", "connection")
+        try:
+            return self.config.get(BetterConfig.DB_SECTION, BetterConfig.CONNECTION_KEY)
+        except:
+            return ""
 
     def get_db_name(self):
-        return self.config.get("DATABASE", "name")
+        try:
+            return self.config.get(BetterConfig.DB_SECTION, BetterConfig.NAME_KEY)
+        except:
+            return ""
 
     def get_db_drop(self) -> bool:
-        return self.config.get("DATABASE", "drop") == "True"
+        try:
+            return self.config.get(BetterConfig.DB_SECTION, BetterConfig.DROP_KEY) == "True"
+        except:
+            return False
 
     def get_hospital_name(self):
-        return self.config.get("HOSPITAL", "name")
+        try:
+            return self.config.get(BetterConfig.HOSPITAL_SECTION, BetterConfig.NAME_KEY)
+        except:
+            return ""
 
     def get_python_version(self):
-        return self.config.get("SYSTEM", "python_version")
+        try:
+            return self.config.get(BetterConfig.SYSTEM_SECTION, BetterConfig.PYTHON_VERSION_KEY)
+        except:
+            return ""
+
+    def get_pymongo_version(self):
+        try:
+            return self.config.get(BetterConfig.SYSTEM_SECTION, BetterConfig.PYMONGO_VERSION_KEY)
+        except:
+            return ""
 
     def get_execution_date(self):
-        return self.config.get("SYSTEM", "execution_date")
+        try:
+            return self.config.get(BetterConfig.SYSTEM_SECTION, BetterConfig.EXECUTION_KEY)
+        except:
+            return ""
 
     def get_platform(self):
-        return self.config.get("SYSTEM", "platform")
+        try:
+            return self.config.get(BetterConfig.SYSTEM_SECTION, BetterConfig.PLATFORM_KEY)
+        except:
+            return ""
 
     def get_platform_version(self):
-        return self.config.get("SYSTEM", "platform_version")
+        try:
+            return self.config.get(BetterConfig.SYSTEM_SECTION, BetterConfig.PLATFORM_VERSION_KEY)
+        except:
+            return ""
 
     def get_user(self):
-        return self.config.get("SYSTEM", "user")
+        try:
+            return self.config.get(BetterConfig.SYSTEM_SECTION, BetterConfig.USER_KEY)
+        except:
+            return ""
 
     # write config to file
     def write_to_file(self):
         config_filepath = os.path.join(self.get_working_dir_current(), DEFAULT_CONFIG_FILE)
         with open(config_filepath, 'w') as f:
             self.config.write(f)
+
+    def to_json(self):
+        return {
+            BetterConfig.FILES_SECTION + "/" + BetterConfig.WORKING_DIR_KEY: self.get_working_dir(),
+            BetterConfig.FILES_SECTION + "/" + BetterConfig.WORKING_DIR_CURRENT_KEY: self.get_working_dir_current(),
+            BetterConfig.FILES_SECTION + "/" + BetterConfig.METADATA_FILEPATH_KEY: self.get_metadata_filepath(),
+            BetterConfig.FILES_SECTION + "/" + BetterConfig.DATA_FILEPATH_KEY: self.get_data_filepath(),
+            BetterConfig.DB_SECTION + "/" + BetterConfig.CONNECTION_KEY: self.get_db_connection(),
+            BetterConfig.DB_SECTION + "/" + BetterConfig.NAME_KEY: self.get_db_name(),
+            BetterConfig.DB_SECTION + "/" + BetterConfig.DROP_KEY: self.get_db_drop(),
+            BetterConfig.HOSPITAL_SECTION + "/" + BetterConfig.NAME_KEY: self.get_hospital_name(),
+            BetterConfig.SYSTEM_SECTION + "/" + BetterConfig.PYTHON_VERSION_KEY: self.get_python_version(),
+            BetterConfig.SYSTEM_SECTION + "/" + BetterConfig.EXECUTION_KEY: self.get_execution_date(),
+            BetterConfig.SYSTEM_SECTION + "/" + BetterConfig.PLATFORM_KEY: self.get_platform(),
+            BetterConfig.SYSTEM_SECTION + "/" + BetterConfig.PLATFORM_VERSION_KEY: self.get_platform_version(),
+            BetterConfig.SYSTEM_SECTION + "/" + BetterConfig.USER_KEY: self.get_user()
+        }
+    
