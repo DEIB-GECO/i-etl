@@ -37,7 +37,7 @@ jobs:
     - name: Test with pytest
       run: |
         # https://stackoverflow.com/questions/41748464/pytest-cannot-import-module-while-python-can
-        rm ./test/__init__.py
-        tree
-        export PYTHONPATH=$PYTHONPATH:.
+        # rm ./tests/__init__.py
+        # tree
+        # export PYTHONPATH=$PYTHONPATH:.
         python -m pytest test
