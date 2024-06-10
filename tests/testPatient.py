@@ -5,14 +5,6 @@ from src.utils.TableNames import TableNames
 
 
 class TestPatient(unittest.TestCase):
-    NB_TESTS = 3
-    NB_TESTS_RUN = 0
-
-    def run_all(self):
-        self.test_constructor()
-        self.test_get_type()
-        self.test_to_json()
-
     def test_constructor(self):
         """
         Test whether the Patient constructor correctly assign IDs and the resource type.

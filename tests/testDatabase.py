@@ -6,15 +6,6 @@ from src.utils.constants import TEST_DB_NAME, TEST_TABLE_NAME
 
 
 class TestDatabase(unittest.TestCase):
-    NB_TESTS = 18
-    NB_TESTS_RUN = 0
-
-    def run_all(self):
-        self.test_check_server_is_up()
-        self.test_drop()
-        self.test_reset()
-        self.test_insert_many_tuples()
-
     def test_check_server_is_up(self):
         config = BetterConfig()
 
