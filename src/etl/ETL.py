@@ -3,10 +3,7 @@ from src.database.Database import Database
 from src.etl.Extract import Extract
 from src.etl.Load import Load
 from src.etl.Transform import Transform
-from src.profiles.Hospital import Hospital
-from src.utils.TableNames import TableNames
 from src.utils.setup_logger import log
-from random import randrange
 
 
 class ETL:

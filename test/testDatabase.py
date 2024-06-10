@@ -1,22 +1,19 @@
-from unittest import TestCase
+import unittest
 
-from config.BetterConfig import BetterConfig
-from database.Database import Database
-from utils.constants import TEST_DB_NAME, TEST_TABLE_NAME
-from utils.setup_logger import log
+from src.config.BetterConfig import BetterConfig
+from src.database.Database import Database
+from src.utils.constants import TEST_DB_NAME, TEST_TABLE_NAME
 
 
-class TestDatabase(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        log.info(log.handlers)
-        for current_handler in log.handlers:
-            if "FileHandler" in current_handler.__repr__():
-                log.removeHandler(current_handler)
-        # log.handlers.sort()
-        # log.info(log.handlers)
-        # log.info(log.handlers.pop(__index=0))
-        log.debug(log.handlers)
+class TestDatabase(unittest.TestCase):
+    NB_TESTS = 18
+    NB_TESTS_RUN = 0
+
+    def run_all(self):
+        self.test_check_server_is_up()
+        self.test_drop()
+        self.test_reset()
+        self.test_insert_many_tuples()
 
     def test_check_server_is_up(self):
         config = BetterConfig()
@@ -34,25 +31,24 @@ class TestDatabase(TestCase):
         self.assertFalse(database.check_server_is_up())
         # database.close()
 
+        TestDatabase.NB_TESTS_RUN = TestDatabase.NB_TESTS_RUN + 1
+
     def test_drop(self):
         # check that, after drop, no db with the provided name exists
         config = BetterConfig()
         config.set_db_name(TEST_DB_NAME)
+        # TODO Nelly assert
 
     def test_reset(self):
         config = BetterConfig()
         config.set_db_name(TEST_DB_NAME)
-        log.debug(config.to_json())
         # create a test database
         # and add only one triple to be sure that the db is created
         database = Database(config)
-        log.debug(database.client)
-        log.debug(database.db)
-        database.insert_one_tuple(TEST_TABLE_NAME, {"id": "1", "name": "Alice Doe"})
+        database.insert_one_tuple(TEST_TABLE_NAME, { "id": "1", "name": "Alice Doe"})
         list_dbs = database.client.list_databases()
         found = False
         for db in list_dbs:
-            log.debug(db)
             if db['name'] == TEST_DB_NAME:
                 found = True
         self.assertTrue(found)
@@ -61,11 +57,12 @@ class TestDatabase(TestCase):
         list_dbs = database.client.list_databases()
         found = False
         for db in list_dbs:
-            log.debug(db)
             if db['name'] == TEST_DB_NAME:
                 found = True
         self.assertFalse(found)
         # database.close()
+
+        TestDatabase.NB_TESTS_RUN = TestDatabase.NB_TESTS_RUN + 1
 
     def my_test(self):
 
@@ -73,20 +70,15 @@ class TestDatabase(TestCase):
         # for i in range(0, 3):
         #     four_thousands_hospitals.append(Hospital(str(i), "Buzzi " + str(randrange(10))).to_json())
 
-        # log.debug(len(four_thousands_hospitals))
         # an_hospital = Hospital("6", "Buzzi 5")
         # an_hospital2 = Hospital("2", "BUZZI 2")
         # hospitals = [an_hospital, an_hospital2]
         # json_hospitals = [hospital.to_json() for hospital in hospitals]
-        # log.debug("json_hospitals: %s", json_hospitals)
         # upserted_id = self.database.upsert_one_tuple(table_name=TableNames.HOSPITAL.value, filter_dict={"name": an_hospital.name}, one_tuple=an_hospital.to_json())
         # (upserted_document, is_insert) = self.database.upsert_one_tuple(table_name=TableNames.HOSPITAL.value, unique_variables=["name"], one_tuple=an_hospital2.to_json())
-        # log.debug(upserted_document)
-        # log.debug(is_insert)
         # upserted_id = self.database.upsert_one_tuple(table_name=TableNames.HOSPITAL.value, filter_dict={"name": an_hospital3.name}, one_tuple=an_hospital3.to_json())
         # self.database.upsert_many_tuples(table_name=TableNames.HOSPITAL.value, unique_variables=["name"], tuples=four_thousands_hospitals)
-        # log.debug(nb_upserts)
-        self.fail()
+        pass
 
     def test_insert_many_tuples(self):
         config = BetterConfig()
@@ -101,46 +93,6 @@ class TestDatabase(TestCase):
         docs = []
         for doc in database.db[TEST_TABLE_NAME].find({}):
             docs.append(doc)
-        log.debug("JSON data: %s", docs)
 
         self.assertEqual(len(tuples), len(docs))
         # TODO Nelly: test more
-
-    def test_upsert_one_tuple(self):
-        pass
-
-    def test_upsert_batch_of_tuples(self):
-        pass
-
-    def test_compute_batches(self):
-        pass
-
-    def test_retrieve_identifiers(self):
-        pass
-
-    def test_find_operation(self):
-        pass
-
-    def test_count_documents(self):
-        pass
-
-    def test_create_unique_index(self):
-        pass
-
-    def test_get_min_value_of_examination_record(self):
-        pass
-
-    def test_get_max_value_of_examination_record(self):
-        pass
-
-    def test_get_min_max_value_of_examination_record(self):
-        pass
-
-    def test_get_avg_value_of_examination_record(self):
-        pass
-
-    def test_get_value_distribution_of_examination(self):
-        pass
-
-    def test_get_db(self):
-        pass

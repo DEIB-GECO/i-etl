@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from random import randrange
 
 import pymongo
-from pymongo import MongoClient, ReturnDocument
+from pymongo import MongoClient
 from pymongo.command_cursor import CommandCursor
 from pymongo.cursor import Cursor
 
@@ -13,7 +13,7 @@ from src.utils.TableNames import TableNames
 from src.utils.utils import mongodb_project_one, mongodb_group_by, mongodb_match, mongodb_limit, mongodb_sort
 from src.utils.constants import BATCH_SIZE
 from src.utils.setup_logger import log
-from utils.UpsertPolicy import UpsertPolicy
+from src.utils.UpsertPolicy import UpsertPolicy
 
 
 class Database:

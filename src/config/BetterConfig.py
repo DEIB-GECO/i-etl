@@ -8,7 +8,7 @@ from datetime import datetime
 import pymongo
 
 from src.utils.constants import DEFAULT_CONFIG_FILE
-from utils.setup_logger import log
+from src.utils.setup_logger import log
 
 
 class BetterConfig:

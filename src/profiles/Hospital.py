@@ -1,6 +1,5 @@
 from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
-from src.utils.setup_logger import log
 
 
 class Hospital(Resource):

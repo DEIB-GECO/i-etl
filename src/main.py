@@ -1,19 +1,17 @@
-import logging
 import os.path
 import pathlib
 import sys
 import argparse
 import shutil
 
-from utils.constants import DEFAULT_DB_NAME
 
 sys.path.append('.')  # add the current project to the python path to be runnable in cmd-line
 
 from src.config.BetterConfig import BetterConfig
 from src.etl.ETL import ETL
 from src.utils.HospitalNames import HospitalNames
+from utils.constants import DEFAULT_DB_NAME
 from utils.setup_logger import log
-
 
 
 if __name__ == '__main__':
