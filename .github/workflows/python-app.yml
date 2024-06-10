@@ -3,11 +3,7 @@
 
 name: BETTER FAIRification
 
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+on: [push, pull_request]
 
 permissions:
   contents: read
@@ -15,7 +11,7 @@ permissions:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
     - uses: actions/checkout@v4
@@ -25,11 +21,9 @@ jobs:
         python-version: "3.12"
     - name: Install Mongo
       run: |
-        sudo apt-key list | grep "expired: " | sed -ne 's|pub .*/\([^ ]*\) .*|\1|gp' | xargs -n1 sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 
-        wget -qO - https://www.mongodb.org/static/pgp/server-3.0.asc | sudo apt-key add -
-        echo "deb http://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/3.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.0.list
-        sudo apt-get update
-        sudo apt-get install -y mongodb-org 
+        brew tap mongodb/brew
+        brew install mongodb-community@7.0
+        brew services start mongodb/brew/mongodb-community
     - name: Test with pytest
       run: |
         bash configure.sh
