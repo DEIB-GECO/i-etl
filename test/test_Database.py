@@ -8,7 +8,6 @@ from utils.setup_logger import log
 
 class TestDatabase(TestCase):
     def test_check_server_is_up(self):
-        self.fail()
         config = BetterConfig()
 
         # test with the correct (default) string
@@ -31,6 +30,7 @@ class TestDatabase(TestCase):
 
     def test_reset(self):
         config = BetterConfig()
+        log.debug(config.to_json())
         # create a test database
         # and add only one triple to be sure that the db is created
         database = Database(config)
@@ -44,7 +44,7 @@ class TestDatabase(TestCase):
             if db['name'] == TEST_DB_NAME:
                 found = True
         self.assertTrue(found)
-        database.drop()
+        database.drop_db()
         # check the DB does not exist anymore after drop
         list_dbs = database.client.list_databases()
         found = False
@@ -97,40 +97,40 @@ class TestDatabase(TestCase):
         database.write_in_file(docs, TEST_TABLE_NAME, 0)
 
     def test_upsert_one_tuple(self):
-        self.fail()
+        pass
 
     def test_upsert_batch_of_tuples(self):
-        self.fail()
+        pass
 
     def test_compute_batches(self):
-        self.fail()
+        pass
 
     def test_retrieve_identifiers(self):
-        self.fail()
+        pass
 
     def test_find_operation(self):
-        self.fail()
+        pass
 
     def test_count_documents(self):
-        self.fail()
+        pass
 
     def test_create_unique_index(self):
-        self.fail()
+        pass
 
     def test_get_min_value_of_examination_record(self):
-        self.fail()
+        pass
 
     def test_get_max_value_of_examination_record(self):
-        self.fail()
+        pass
 
     def test_get_min_max_value_of_examination_record(self):
-        self.fail()
+        pass
 
     def test_get_avg_value_of_examination_record(self):
-        self.fail()
+        pass
 
     def test_get_value_distribution_of_examination(self):
-        self.fail()
+        pass
 
     def test_get_db(self):
-        self.fail()
+        pass

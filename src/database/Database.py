@@ -30,18 +30,12 @@ class Database:
         # mongodb://127.0.0.1:27017/
         # mongodb+srv://<username>:<password>@<cluster>.qo5xs5j.mongodb.net/?retryWrites=true&w=majority&appName=<app_name>
         self.config = config
-        self.client = MongoClient(host=self.config.get_db_connection())
+        self.client = MongoClient(host=self.config.get_db_connection(), serverSelectionTimeoutMS=5000)  # timeout after 5 sec instead of 20
         self.db = self.client[self.config.get_db_name()]
 
         log.debug("the connection string is: %s", self.config.get_db_connection())
         log.debug("the new MongoClient is: %s", self.client)
         log.debug("the database is: %s", self.db)
-
-        if self.check_server_is_up():
-            log.info("The MongoDB client could be set up properly.")
-        else:
-            log.error("The MongoDB client could not be set up properly. The given connection string was %s.", self.config.get_db_connection())
-            exit()
 
     def check_server_is_up(self) -> bool:
         """

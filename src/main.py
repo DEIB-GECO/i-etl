@@ -35,6 +35,7 @@ if __name__ == '__main__':
         config.set_hospital_name(args.hospital_name)
     if args.connection is not None:
         config.set_db_connection(args.connection)
+    log.debug(args.database_name)
     if args.database_name is not None and args.database_name != "":
         config.set_db_name(args.database_name)
     else:
@@ -93,6 +94,8 @@ if __name__ == '__main__':
     log.info("The database will be dropped: %s", config.get_db_drop())
     log.info("The metadata file is located at: %s", config.get_metadata_filepath())
     log.info("The data file is located at: %s", config.get_data_filepath())
+
+    log.debug(config.to_json())
 
     etl = ETL(config=config)
     etl.run()

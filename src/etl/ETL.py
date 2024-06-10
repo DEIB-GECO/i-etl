@@ -13,6 +13,13 @@ class ETL:
     def __init__(self, config: BetterConfig):
         self.config = config
         self.database = Database(self.config)
+
+        if self.database.check_server_is_up():
+            log.info("The MongoDB client could be set up properly.")
+        else:
+            log.error("The MongoDB client could not be set up properly. The given connection string was %s.", self.config.get_db_connection())
+            exit()
+
         if config.get_db_drop():
             self.database.drop_db()
 
