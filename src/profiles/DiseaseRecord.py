@@ -1,8 +1,5 @@
 from src.fhirDatatypes.CodeableConcept import CodeableConcept
 from src.fhirDatatypes.Reference import Reference
-from src.profiles.Disease import Disease
-from src.profiles.Hospital import Hospital
-from src.profiles.Patient import Patient
 from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
 

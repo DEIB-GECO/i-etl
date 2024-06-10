@@ -36,8 +36,4 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        # https://stackoverflow.com/questions/41748464/pytest-cannot-import-module-while-python-can
-        # rm ./tests/__init__.py
-        # tree
-        # export PYTHONPATH=$PYTHONPATH:.
-        python -m pytest test
+        python -m unittest discover

@@ -1,5 +1,3 @@
-# from unittest import TestCase
-#
 # from src.database.Database import Database
 # from src.etl.Extract import Extract
 # from src.fhirDatatypes.CodeableConcept import CodeableConcept
@@ -11,7 +9,7 @@
 # from src.utils.TableNames import TableNames
 #
 #
-# class TestExtract(TestCase):
+# class TestExtract:
 #     pass
 #     # def test_run(self):
 #     #     self.fail()

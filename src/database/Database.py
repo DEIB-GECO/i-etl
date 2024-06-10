@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from random import randrange
 
 import pymongo
-from pymongo import MongoClient, ReturnDocument
+from pymongo import MongoClient
 from pymongo.command_cursor import CommandCursor
 from pymongo.cursor import Cursor
 
@@ -13,7 +13,7 @@ from src.utils.TableNames import TableNames
 from src.utils.utils import mongodb_project_one, mongodb_group_by, mongodb_match, mongodb_limit, mongodb_sort
 from src.utils.constants import BATCH_SIZE
 from src.utils.setup_logger import log
-from utils.UpsertPolicy import UpsertPolicy
+from src.utils.UpsertPolicy import UpsertPolicy
 
 
 class Database:
@@ -27,11 +27,15 @@ class Database:
         class members.
         """
         self.config = config
+
+
         # mongodb://localhost:27017/
         # mongodb://127.0.0.1:27017/
         # mongodb+srv://<username>:<password>@<cluster>.qo5xs5j.mongodb.net/?retryWrites=true&w=majority&appName=<app_name>
         self.config = config
         self.client = MongoClient(host=self.config.get_db_connection(), serverSelectionTimeoutMS=5000)  # timeout after 5 sec instead of 20
+        if config.get_db_drop():
+            self.drop_db()
         self.db = self.client[self.config.get_db_name()]
 
         log.debug("the connection string is: %s", self.config.get_db_connection())

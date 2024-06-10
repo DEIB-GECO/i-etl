@@ -5,6 +5,14 @@ from src.utils.TableNames import TableNames
 
 
 class TestPatient(unittest.TestCase):
+    NB_TESTS = 3
+    NB_TESTS_RUN = 0
+
+    def run_all(self):
+        self.test_constructor()
+        self.test_get_type()
+        self.test_to_json()
+
     def test_constructor(self):
         """
         Test whether the Patient constructor correctly assign IDs and the resource type.
@@ -18,6 +26,8 @@ class TestPatient(unittest.TestCase):
         # I tried with self.assertRaises(ValueError, Patient(NONE_VALUE, TableNames.PATIENT.value))
         # but this still raises the Exception and does not pass the test
 
+        TestPatient.NB_TESTS_RUN = TestPatient.NB_TESTS_RUN + 1
+
     def test_get_type(self):
         """
         Check whether the Patient type is indeed the Patient table name.
@@ -25,6 +35,8 @@ class TestPatient(unittest.TestCase):
         """
         patient1 = Patient("123")
         self.assertEqual(patient1.get_type(), TableNames.PATIENT.value)
+
+        TestPatient.NB_TESTS_RUN = TestPatient.NB_TESTS_RUN + 1
 
     def test_to_json(self):
         patient1 = Patient("123")
@@ -36,5 +48,4 @@ class TestPatient(unittest.TestCase):
         self.assertIn("resourceType", patient1_json)
         self.assertEqual(patient1_json["resourceType"], TableNames.PATIENT.value)
 
-if __name__ == '__main__':
-    unittest.main()
+        TestPatient.NB_TESTS_RUN = TestPatient.NB_TESTS_RUN + 1

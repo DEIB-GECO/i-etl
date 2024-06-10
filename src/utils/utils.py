@@ -1,6 +1,4 @@
-import json
 import math
-import os.path
 from datetime import time
 from typing import Any
 import time
@@ -10,7 +8,6 @@ from pandas import DataFrame
 
 from src.fhirDatatypes.CodeableConcept import CodeableConcept
 from src.utils.Ontologies import Ontologies
-from src.utils.setup_logger import log
 
 
 # ASSERTIONS

@@ -1,11 +1,18 @@
-import unittest
-
 from src.profiles.Hospital import Hospital
 from src.utils.TableNames import TableNames
 from src.utils.constants import NONE_VALUE
+import unittest
 
 
 class TestHospital(unittest.TestCase):
+    NB_TESTS = 3
+    NB_TESTS_RUN = 0
+
+    def run_all(self):
+        self.test_constructor()
+        self.test_get_type()
+        self.test_to_json()
+
     def test_constructor(self):
         hospital1 = Hospital("123", "MyHospital")
         self.assertIsNotNone(hospital1)
@@ -17,6 +24,8 @@ class TestHospital(unittest.TestCase):
         self.assertIsNotNone(hospital2.identifier)
         self.assertEqual(hospital2.identifier, TableNames.HOSPITAL.value + "/1")
 
+        TestHospital.NB_TESTS_RUN = TestHospital.NB_TESTS_RUN + 1
+
     def test_get_type(self):
         hospital1 = Hospital("123", "MyHospital")
         self.assertIsNotNone(hospital1)
@@ -25,6 +34,8 @@ class TestHospital(unittest.TestCase):
         hospital2 = Hospital(NONE_VALUE, "MyHospital")
         self.assertIsNotNone(hospital2)
         self.assertEqual(hospital2.get_type(), TableNames.HOSPITAL.value)
+
+        TestHospital.NB_TESTS_RUN = TestHospital.NB_TESTS_RUN + 1
 
     def test_to_json(self):
         hospital1 = Hospital("123", "MyHospital")
@@ -36,6 +47,4 @@ class TestHospital(unittest.TestCase):
         self.assertIn("resourceType", hospital1_json)
         self.assertEqual(hospital1_json["resourceType"], TableNames.HOSPITAL.value)
 
-
-if __name__ == '__main__':
-    unittest.main()
+        TestHospital.NB_TESTS_RUN = TestHospital.NB_TESTS_RUN + 1
