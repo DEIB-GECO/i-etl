@@ -13,6 +13,7 @@ from src.utils.TableNames import TableNames
 from src.utils.utils import mongodb_project_one, mongodb_group_by, mongodb_match, mongodb_limit, mongodb_sort
 from src.utils.constants import BATCH_SIZE
 from src.utils.setup_logger import log
+from utils.UpsertPolicy import UpsertPolicy
 
 
 class Database:
@@ -91,8 +92,15 @@ class Database:
         # as in both (i) and (ii) we get a Document, we need to use a timestamp in order to know whether this was an update or an insert
         timestamp = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
         one_tuple["insertedAt"] = timestamp
-        update_stmt = {"$setOnInsert": one_tuple}
-        self.db[table_name].find_one_and_update(filter=filter_dict, update=update_stmt, upsert=True, return_document=ReturnDocument.AFTER)
+        if UpsertPolicy.DO_NOTHING:
+            # insert the document if it does not exist
+            # otherwise, do nothing
+            update_stmt = {"$setOnInsert": one_tuple}
+        else:
+            # insert the document if it does not exist
+            # otherwise, replace it
+            update_stmt = {"$set": one_tuple}
+        self.db[table_name].find_one_and_update(filter=filter_dict, update=update_stmt, upsert=True)
 
     def upsert_batch_of_tuples(self, table_name: str, unique_variables: list[str], tuples: list[dict]) -> None:
         """
