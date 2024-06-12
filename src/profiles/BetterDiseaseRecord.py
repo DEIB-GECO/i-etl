@@ -1,13 +1,13 @@
-from src.fhirDatatypes.CodeableConcept import CodeableConcept
-from src.fhirDatatypes.Reference import Reference
-from src.profiles.Resource import Resource
+from src.datatypes.BetterCodeableConcept import BetterCodeableConcept
+from src.datatypes.BetterReference import BetterReference
+from src.profiles.BetterResource import BetterResource
 from src.utils.TableNames import TableNames
 
 
-class DiseaseRecord(Resource):
+class BetterDiseaseRecord(BetterResource):
     ID_COUNTER = 1
 
-    def __init__(self, id_value: str, clinical_status: str, subject_ref: Reference, hospital_ref: Reference, disease_ref: Reference, severity: CodeableConcept, recorded_date: str):
+    def __init__(self, id_value: str, clinical_status: str, subject_ref: BetterReference, hospital_ref: BetterReference, disease_ref: BetterReference, severity: BetterCodeableConcept, recorded_date: str):
         # set up the resource ID
         super().__init__(id_value, self.get_type())
 

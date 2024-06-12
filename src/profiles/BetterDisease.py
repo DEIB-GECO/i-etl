@@ -1,10 +1,10 @@
-from src.fhirDatatypes.CodeableConcept import CodeableConcept
-from src.profiles.Resource import Resource
+from src.datatypes.BetterCodeableConcept import BetterCodeableConcept
+from src.profiles.BetterResource import BetterResource
 from src.utils.TableNames import TableNames
 
 
-class Disease(Resource):
-    def __init__(self, id_value: str, status: str, code: CodeableConcept):
+class BetterDisease(BetterResource):
+    def __init__(self, id_value: str, status: str, code: BetterCodeableConcept):
         """
         Create a new Disease instance.
         This is different from a DiseaseRecord:

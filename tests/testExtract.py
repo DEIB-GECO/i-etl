@@ -1,6 +1,6 @@
 # from src.database.Database import Database
 # from src.etl.Extract import Extract
-# from src.fhirDatatypes.CodeableConcept import CodeableConcept
+# from src.datatypes.CodeableConcept import CodeableConcept
 # from src.profiles.Examination import Examination
 # from src.profiles.Hospital import Hospital
 # from src.profiles.Patient import Patient

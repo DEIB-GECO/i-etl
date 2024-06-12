@@ -1,8 +1,8 @@
-from src.profiles.Resource import Resource
+from src.profiles.BetterResource import BetterResource
 from src.utils.TableNames import TableNames
 
 
-class Hospital(Resource):
+class BetterHospital(BetterResource):
     def __init__(self, id_value: str, name: str):
         """
         A new hospital instance, either built from existing data or from scratch.

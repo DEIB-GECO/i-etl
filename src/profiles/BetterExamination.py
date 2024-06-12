@@ -1,13 +1,13 @@
-from src.fhirDatatypes.CodeableConcept import CodeableConcept
-from src.profiles.Resource import Resource
+from src.datatypes.BetterCodeableConcept import BetterCodeableConcept
+from src.profiles.BetterResource import BetterResource
 from src.utils.TableNames import TableNames
 from src.utils.utils import get_codeable_concept_from_json, get_category_from_json, is_not_nan
 
 
-class Examination(Resource):
+class BetterExamination(BetterResource):
     ID_COUNTER = 1
 
-    def __init__(self, id_value: str, code: CodeableConcept, status: str, category: CodeableConcept):
+    def __init__(self, id_value: str, code: BetterCodeableConcept, status: str, category: BetterCodeableConcept):
         # set up the resource ID
         super().__init__(id_value=id_value, resource_type=self.get_type())
 
@@ -32,14 +32,6 @@ class Examination(Resource):
         }
 
         return json_examination
-
-    @classmethod
-    def from_json(cls, the_json: dict):
-        return cls(id_value=the_json["identifier"],
-                   code=get_codeable_concept_from_json(the_json["code"]),
-                   status=the_json["status"],
-                   category=get_category_from_json(the_json["category"])
-                   )
 
     @classmethod
     def get_label(cls, row) -> str:

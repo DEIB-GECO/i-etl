@@ -6,7 +6,7 @@ import time
 from dateutil.parser import parse
 from pandas import DataFrame
 
-from src.fhirDatatypes.CodeableConcept import CodeableConcept
+from src.datatypes.BetterCodeableConcept import BetterCodeableConcept
 from src.utils.Ontologies import Ontologies
 
 
@@ -122,7 +122,7 @@ def get_ontology_resource_uri(ontology_system: str, resource_code: str) -> str:
 
 
 def get_codeable_concept_from_json(codeable_concept_as_json: dict):
-    cc = CodeableConcept()
+    cc = BetterCodeableConcept()
     cc.text = codeable_concept_as_json["text"]
     for coding_as_json in codeable_concept_as_json["coding"]:
         cc.add_coding((coding_as_json["system"], coding_as_json["code"], codeable_concept_as_json["display"]))
@@ -131,7 +131,7 @@ def get_codeable_concept_from_json(codeable_concept_as_json: dict):
 
 def get_category_from_json(category_as_json: dict):
     # the category is either PHENOTYPIC or CLINICAL, thus no loop for the codings is necessary
-    return CodeableConcept((category_as_json["system"], category_as_json["code"], category_as_json["display"]))
+    return BetterCodeableConcept((category_as_json["system"], category_as_json["code"], category_as_json["display"]))
 
 
 # NORMALIZE DATA
