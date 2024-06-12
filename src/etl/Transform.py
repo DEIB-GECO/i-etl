@@ -2,13 +2,13 @@ from src.config.BetterConfig import BetterConfig
 from src.database.Database import Database
 from src.etl.Extract import Extract
 from src.etl.Load import Load
-from src.fhirDatatypes.CodeableConcept import CodeableConcept
-from src.fhirDatatypes.Reference import Reference
-from src.profiles.Examination import Examination
-from src.profiles.ExaminationRecord import ExaminationRecord
-from src.profiles.Hospital import Hospital
-from src.profiles.Patient import Patient
-from src.profiles.Sample import Sample
+from src.fhirDatatypes.BetterCodeableConcept import BetterCodeableConcept
+from src.fhirDatatypes.BetterReference import BetterReference
+from src.profiles.BetterExamination import BetterExamination
+from src.profiles.BetterExaminationRecord import BetterExaminationRecord
+from src.profiles.BetterHospital import BetterHospital
+from src.profiles.BetterPatient import BetterPatient
+from src.profiles.BetterSample import BetterSample
 from src.utils.ExaminationCategory import ExaminationCategory
 from src.utils.HospitalNames import HospitalNames
 from src.utils.TableNames import TableNames
@@ -48,7 +48,7 @@ class Transform:
 
     def create_hospital(self, hospital_name: str) -> None:
         log.info("create hospital")
-        new_hospital = Hospital(NONE_VALUE, hospital_name)
+        new_hospital = BetterHospital(NONE_VALUE, hospital_name)
         self.hospitals.append(new_hospital)
         self.database.write_in_file(self.hospitals, TableNames.HOSPITAL.value, 1)
 
@@ -63,7 +63,7 @@ class Transform:
                 if cc is not None and cc.codings != []:
                     status = "registered"
                     category = self.determine_examination_category(lower_column_name)
-                    new_examination = Examination(id_value=NONE_VALUE, code=cc, status=status, category=category)
+                    new_examination = BetterExamination(id_value=NONE_VALUE, code=cc, status=status, category=category)
                     # log.info("adding a new examination about %s: %s", cc.text, new_examination)
                     self.examinations.append(new_examination)
                     if len(self.examinations) >= BATCH_SIZE:
@@ -100,9 +100,9 @@ class Transform:
                             time_received = cast_value(row["samtimereceived"])
                             too_young = cast_value(row["tooyoung"])
                             bis = cast_value(row["bis"])
-                            new_sample = Sample(sample_barcode, sampling=sampling, quality=sample_quality,
-                                                time_collected=time_collected, time_received=time_received,
-                                                too_young=too_young, bis=bis)
+                            new_sample = BetterSample(sample_barcode, sampling=sampling, quality=sample_quality,
+                                                      time_collected=time_collected, time_received=time_received,
+                                                      too_young=too_young, bis=bis)
                             created_sample_barcodes.add(sample_barcode)
                             self.samples.append(new_sample)
                             if len(self.samples) >= BATCH_SIZE:
@@ -144,14 +144,14 @@ class Transform:
                         # log.info("I know a code for column %s", column_name)
                         # we know a code for this column, so we can register the value of that examination
                         examination_id = self.mapping_column_to_examination_id[lower_column_name]
-                        examination_ref = Reference(examination_id, TableNames.EXAMINATION.value)
+                        examination_ref = BetterReference(examination_id, TableNames.EXAMINATION.value)
                         hospital_id = self.mapping_hospital_to_hospital_id[HospitalNames.IT_BUZZI_UC1.value]
-                        hospital_ref = Reference(hospital_id, TableNames.HOSPITAL.value)
+                        hospital_ref = BetterReference(hospital_id, TableNames.HOSPITAL.value)
                         # for patient and sample instances, no need to go through a mapping because they have an ID assigned by the hospital
                         patient_id = create_identifier(row[ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.PATIENT.value]], TableNames.PATIENT.value)  # TODO Nelly: Replace BUZZI by the current hospital
-                        subject_ref = Reference(patient_id, TableNames.PATIENT.value)
+                        subject_ref = BetterReference(patient_id, TableNames.PATIENT.value)
                         sample_id = create_identifier(row[ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.SAMPLE.value]], TableNames.SAMPLE.value)  # TODO Nelly: Replace BUZZI by the current hospital
-                        sample_ref = Reference(sample_id, TableNames.SAMPLE.value)
+                        sample_ref = BetterReference(sample_id, TableNames.SAMPLE.value)
                         # TODO Nelly: add the associated sample
                         # TODO Pietro: harmonize values (upper-lower case, dates, etc)
                         #  we should use codes (JSON-styled by Boris) whenever we can
@@ -159,9 +159,9 @@ class Transform:
                         #  we could even clean more the data, e.g., do not allow "Italy" as ethnicity (caucasian, etc)
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
                         status = "final"
-                        new_examination_record = ExaminationRecord(id_value=NONE_VALUE, examination_ref=examination_ref,
-                                                                   subject_ref=subject_ref, hospital_ref=hospital_ref,
-                                                                   sample_ref=sample_ref, value=fairified_value, status=status)
+                        new_examination_record = BetterExaminationRecord(id_value=NONE_VALUE, examination_ref=examination_ref,
+                                                                         subject_ref=subject_ref, hospital_ref=hospital_ref,
+                                                                         sample_ref=sample_ref, value=fairified_value, status=status)
                         self.examination_records.append(new_examination_record)
                         if len(self.examination_records) >= BATCH_SIZE:
                             self.database.write_in_file(self.examination_records, TableNames.EXAMINATION_RECORD.value, count)
@@ -186,7 +186,7 @@ class Transform:
             patient_id = row[ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.PATIENT.value]]
             if patient_id not in created_patient_ids:
                 # the patient does not exist yet, we will create it
-                new_patient = Patient(id_value=str(patient_id))
+                new_patient = BetterPatient(id_value=str(patient_id))
                 created_patient_ids.add(patient_id)
                 self.patients.append(new_patient)
                 if len(self.patients) >= BATCH_SIZE:
@@ -201,7 +201,7 @@ class Transform:
         rows = self.extract.metadata.loc[self.extract.metadata['name'] == column_name]
         if len(rows) == 1:
             row = rows.iloc[0]
-            cc = CodeableConcept()
+            cc = BetterCodeableConcept()
             cc_tuple = self.create_code_from_metadata(row, "ontology", "ontology_code")
             if cc_tuple is not None:
                 cc.add_coding(cc_tuple)
@@ -225,16 +225,16 @@ class Transform:
         else:
             ontology = get_ontology_system(ontology)  # get the URI of the ontology system instead of its string name
             code = normalize_value(row[code_column])  # get the ontology code in the metadata for the given column and normalize it (just in case)
-            display = Examination.get_label(row)
+            display = BetterExamination.get_label(row)
             # log.info("Found exactly an ontology code for the column '%s', i.e., %s", column_name, code)
             cc_tuple = (str(ontology), str(code), str(display))
             return cc_tuple
 
     def determine_examination_category(self, column_name: str):
         if self.is_column_name_phenotypic(column_name):
-            return CodeableConcept(ExaminationCategory.CATEGORY_PHENOTYPIC.value)
+            return BetterCodeableConcept(ExaminationCategory.CATEGORY_PHENOTYPIC.value)
         else:
-            return CodeableConcept(ExaminationCategory.CATEGORY_CLINICAL.value)
+            return BetterCodeableConcept(ExaminationCategory.CATEGORY_CLINICAL.value)
 
     def is_column_name_phenotypic(self, column_name: str):
         for phen_variable in PHENOTYPIC_VARIABLES:
@@ -254,7 +254,7 @@ class Transform:
                     # we create a CodeableConcept with each code added to the mapping, e.g., snomed_ct and loinc
                     # recall that a mapping is of the form: {'value': 'X', 'explanation': '...', 'snomed_ct': '123', 'loinc': '456' }
                     # and we add each ontology code to that CodeableConcept
-                    cc = CodeableConcept()
+                    cc = BetterCodeableConcept()
                     for key, val in mapping.items():
                         # for any key value pair that is not about the value or the explanation
                         # (i.e., loinc and snomed_ct columns), we create a Coding, which we add to the CodeableConcept

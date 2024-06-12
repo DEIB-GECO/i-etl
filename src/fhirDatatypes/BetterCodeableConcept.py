@@ -1,9 +1,9 @@
 import json
 
-from src.fhirDatatypes.Coding import Coding
+from src.fhirDatatypes.BetterCoding import BetterCoding
 
 
-class CodeableConcept:
+class BetterCodeableConcept:
     """
     The class CodeableConcept implements the FHIR CodeableConcept data type.
     This allows to groups different representations of a single concept, e.g.,
@@ -21,7 +21,7 @@ class CodeableConcept:
         if one_coding is None:
             self.codings = []
         else:
-            self.codings = [Coding(one_coding)]
+            self.codings = [BetterCoding(one_coding)]
 
     def add_coding(self, triple: tuple) -> None:
         """
@@ -30,7 +30,7 @@ class CodeableConcept:
         :return: Nothing.
         """
         if triple is not None:
-            self.codings.append(Coding(triple))
+            self.codings.append(BetterCoding(triple))
 
     def to_json(self) -> dict:
         """

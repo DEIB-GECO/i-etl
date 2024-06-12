@@ -1,7 +1,7 @@
 import json
 
 
-class Reference:
+class BetterReference:
     """
     The class Reference implements the FHIR Reference data type.
     This allows to refer to other resources using their BETTER ID

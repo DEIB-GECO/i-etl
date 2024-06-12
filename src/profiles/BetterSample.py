@@ -1,8 +1,8 @@
-from src.profiles.Resource import Resource
+from src.profiles.BetterResource import BetterResource
 from src.utils.TableNames import TableNames
 
 
-class Sample(Resource):
+class BetterSample(BetterResource):
     def __init__(self, id_value: str, quality: str, sampling: str, time_collected: str, time_received: str, too_young: bool, bis: bool):
         # set up the resource ID
         # this corresponds to the SampleBarcode in Buzzi data

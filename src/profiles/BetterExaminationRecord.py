@@ -1,16 +1,16 @@
-from src.fhirDatatypes.CodeableConcept import CodeableConcept
-from src.fhirDatatypes.Coding import Coding
-from src.fhirDatatypes.Reference import Reference
-from src.profiles.Resource import Resource
+from src.fhirDatatypes.BetterCodeableConcept import BetterCodeableConcept
+from src.fhirDatatypes.BetterCoding import BetterCoding
+from src.fhirDatatypes.BetterReference import BetterReference
+from src.profiles.BetterResource import BetterResource
 from src.utils.TableNames import TableNames
 from src.utils.constants import NONE_VALUE
 
 
-class ExaminationRecord(Resource):
+class BetterExaminationRecord(BetterResource):
     ID_COUNTER = 1
 
-    def __init__(self, id_value: str, examination_ref: Reference, subject_ref: Reference,
-                 hospital_ref: Reference, sample_ref: Reference, value, status: str):
+    def __init__(self, id_value: str, examination_ref: BetterReference, subject_ref: BetterReference,
+                 hospital_ref: BetterReference, sample_ref: BetterReference, value, status: str):
         """
         A new ClinicalRecord instance, either built from existing data or from scratch.
         :param id_value: A string being the BETTER ID of the ExaminationRecord instance.
@@ -26,7 +26,7 @@ class ExaminationRecord(Resource):
 
         # set up the resource attributes
         self.status = status
-        self.code = NONE_VALUE
+        self.code = "final"
         self.value = value
         self.recorded_by = hospital_ref
         self.based_on = sample_ref
@@ -37,7 +37,7 @@ class ExaminationRecord(Resource):
         return TableNames.EXAMINATION_RECORD.value
 
     def to_json(self):
-        if isinstance(self.value, CodeableConcept) or isinstance(self.value, Coding) or isinstance(self.value, Reference):
+        if isinstance(self.value, BetterCodeableConcept) or isinstance(self.value, BetterCoding) or isinstance(self.value, BetterReference):
             # complex type, we need to expand it with .to_json()
             expanded_value = self.value.to_json()
         else:
