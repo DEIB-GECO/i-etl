@@ -1,6 +1,6 @@
 import json
 
-from src.fhirDatatypes.BetterCoding import BetterCoding
+from src.datatypes.BetterCoding import BetterCoding
 
 
 class BetterCodeableConcept:

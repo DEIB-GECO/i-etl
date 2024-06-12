@@ -1,4 +1,4 @@
-from src.fhirDatatypes.BetterCodeableConcept import BetterCodeableConcept
+from src.datatypes.BetterCodeableConcept import BetterCodeableConcept
 from src.profiles.BetterResource import BetterResource
 from src.utils.TableNames import TableNames
 

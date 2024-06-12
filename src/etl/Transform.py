@@ -2,8 +2,8 @@ from src.config.BetterConfig import BetterConfig
 from src.database.Database import Database
 from src.etl.Extract import Extract
 from src.etl.Load import Load
-from src.fhirDatatypes.BetterCodeableConcept import BetterCodeableConcept
-from src.fhirDatatypes.BetterReference import BetterReference
+from src.datatypes.BetterCodeableConcept import BetterCodeableConcept
+from src.datatypes.BetterReference import BetterReference
 from src.profiles.BetterExamination import BetterExamination
 from src.profiles.BetterExaminationRecord import BetterExaminationRecord
 from src.profiles.BetterHospital import BetterHospital

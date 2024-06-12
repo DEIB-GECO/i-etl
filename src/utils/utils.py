@@ -6,7 +6,7 @@ import time
 from dateutil.parser import parse
 from pandas import DataFrame
 
-from src.fhirDatatypes.BetterCodeableConcept import BetterCodeableConcept
+from src.datatypes.BetterCodeableConcept import BetterCodeableConcept
 from src.utils.Ontologies import Ontologies
 
 

@@ -1,4 +1,4 @@
-from src.fhirDatatypes.BetterCodeableConcept import BetterCodeableConcept
+from src.datatypes.BetterCodeableConcept import BetterCodeableConcept
 from src.profiles.BetterResource import BetterResource
 from src.utils.TableNames import TableNames
 from src.utils.utils import get_codeable_concept_from_json, get_category_from_json, is_not_nan
@@ -32,14 +32,6 @@ class BetterExamination(BetterResource):
         }
 
         return json_examination
-
-    @classmethod
-    def from_json(cls, the_json: dict):
-        return cls(id_value=the_json["identifier"],
-                   code=get_codeable_concept_from_json(the_json["code"]),
-                   status=the_json["status"],
-                   category=get_category_from_json(the_json["category"])
-                   )
 
     @classmethod
     def get_label(cls, row) -> str:
