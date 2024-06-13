@@ -1,3 +1,4 @@
+from datatypes.Identifier import Identifier
 from src.config.BetterConfig import BetterConfig
 from src.database.Database import Database
 from src.etl.Extract import Extract
@@ -12,7 +13,7 @@ from src.profiles.Sample import Sample
 from src.utils.ExaminationCategory import ExaminationCategory
 from src.utils.HospitalNames import HospitalNames
 from src.utils.TableNames import TableNames
-from src.utils.utils import normalize_value, is_in_insensitive, cast_value, is_not_nan, create_identifier, \
+from src.utils.utils import normalize_value, is_in_insensitive, cast_value, is_not_nan, \
     get_ontology_system, is_equal_insensitive, convert_value
 from src.utils.constants import NONE_VALUE, ID_COLUMNS, PHENOTYPIC_VARIABLES, NO_EXAMINATION_COLUMNS, BATCH_SIZE
 from src.utils.setup_logger import log
@@ -147,10 +148,10 @@ class Transform:
                         hospital_id = self.mapping_hospital_to_hospital_id[HospitalNames.IT_BUZZI_UC1.value]
                         hospital_ref = Reference(resource_identifier=hospital_id, resource_type=TableNames.HOSPITAL.value)
                         # for patient and sample instances, no need to go through a mapping because they have an ID assigned by the hospital
-                        patient_id = create_identifier(id_value=row[ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.PATIENT.value]], resource_type=TableNames.PATIENT.value)  # TODO Nelly: Replace BUZZI by the current hospital
-                        subject_ref = Reference(resource_identifier=patient_id, resource_type=TableNames.PATIENT.value)
-                        sample_id = create_identifier(id_value=row[ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.SAMPLE.value]], resource_type=TableNames.SAMPLE.value)  # TODO Nelly: Replace BUZZI by the current hospital
-                        sample_ref = Reference(resource_identifier=sample_id, resource_type=TableNames.SAMPLE.value)
+                        patient_id = Identifier(id_value=row[ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.PATIENT.value]], resource_type=TableNames.PATIENT.value)  # TODO Nelly: Replace BUZZI by the current hospital
+                        subject_ref = Reference(resource_identifier=patient_id.value, resource_type=TableNames.PATIENT.value)
+                        sample_id = Identifier(id_value=row[ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.SAMPLE.value]], resource_type=TableNames.SAMPLE.value)  # TODO Nelly: Replace BUZZI by the current hospital
+                        sample_ref = Reference(resource_identifier=sample_id.value, resource_type=TableNames.SAMPLE.value)
                         # TODO Nelly: add the associated sample
                         # TODO Pietro: harmonize values (upper-lower case, dates, etc)
                         #  we should use codes (JSON-styled by Boris) whenever we can

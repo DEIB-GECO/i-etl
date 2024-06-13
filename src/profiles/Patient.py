@@ -25,7 +25,7 @@ class Patient(Resource):
         :return: A JSON dict being the Patient with all its attributes.
         """
         json_patient = {
-            "identifier": self.identifier,
+            "identifier": self.identifier.to_json(),
             "resourceType": self.get_type()
         }
 

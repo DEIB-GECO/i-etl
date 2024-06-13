@@ -17,7 +17,7 @@ class GenomicData(Resource):
 
     def to_json(self):
         return {
-            "identifier": self.identifier,
+            "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "analysis": self.analysis.to_json(),
             "subject": self.subject.to_json(),

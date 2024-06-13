@@ -25,7 +25,7 @@ class Disease(Resource):
 
     def to_json(self):
         json_disease = {
-            "identifier": self.identifier,
+            "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "code": self.code.to_json()
         }

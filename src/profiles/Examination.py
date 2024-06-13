@@ -25,7 +25,7 @@ class Examination(Resource):
 
     def to_json(self):
         json_examination = {
-            "identifier": self.identifier,
+            "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "code": self.code.to_json(),
             "category": self.category.to_json(),
