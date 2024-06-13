@@ -21,7 +21,7 @@ class Sample(Resource):
 
     def to_json(self):
         json_sample = {
-            "identifier": self.identifier,
+            "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "quality": self.quality,
             "sampling": self.sampling,

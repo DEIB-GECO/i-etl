@@ -14,7 +14,7 @@ class Medicine(Resource):
 
     def to_json(self):
         return {
-            "identifier": self.identifier,
+            "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "code": self.code.to_json()
         }

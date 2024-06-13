@@ -20,7 +20,7 @@ class Analysis(Resource):
 
     def to_json(self):
         return {
-            "identifier": self.identifier,
+            "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "methodType": self.method_type.to_json(),
             "changeType": self.change_type.to_json(),

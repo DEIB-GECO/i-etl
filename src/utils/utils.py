@@ -6,6 +6,7 @@ import time
 from dateutil.parser import parse
 from pandas import DataFrame
 
+from datatypes.Identifier import Identifier
 from src.datatypes.CodeableConcept import CodeableConcept
 from src.utils.Ontologies import Ontologies
 
@@ -88,19 +89,6 @@ def is_equal_insensitive(value, compared):
 
 # def build_url(base: str, element_id: str) -> str:
 #     return base + "/" + str(element_id)
-
-def create_identifier(id_value: str, resource_type: str) -> str:
-    if not isinstance(id_value, str):
-        # in case the dataframe has converted IDs to integers
-        id_value = str(id_value)
-
-    if "/" in id_value:
-        # the provided id_value is already of the form type/id, thus we do not need to append the resource type
-        # this happens when we build (instance) resources from the existing data in the database
-        # the stored if is already of the form type/id
-        return id_value
-    else:
-        return resource_type + "/" + id_value
 
 
 # GET PREDEFINED VALUES

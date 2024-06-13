@@ -43,7 +43,7 @@ class ExaminationRecord(Resource):
             expanded_value = self.value
 
         json_clinical_record = {
-            "identifier": self.identifier,
+            "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "value": expanded_value,
             "subject": self.subject.to_json(),

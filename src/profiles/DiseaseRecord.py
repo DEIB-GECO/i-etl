@@ -24,7 +24,7 @@ class DiseaseRecord(Resource):
 
     def to_json(self):
         json_disease_record = {
-            "identifier": self.identifier,
+            "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "clinicalStatus": self.clinical_status,
             "recordedDate": self.recorded_date,

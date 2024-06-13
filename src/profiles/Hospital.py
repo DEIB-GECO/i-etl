@@ -29,7 +29,7 @@ class Hospital(Resource):
         :return: A JSON dict being the Hospital with all its attributes.
         """
         json_hospital = {
-            "identifier": self.identifier,
+            "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "name": self.name
         }

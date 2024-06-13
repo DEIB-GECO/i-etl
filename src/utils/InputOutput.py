@@ -27,7 +27,7 @@ class InputOutput(Resource):
 
     def to_json(self):
         return {
-            "identifier": self.identifier,
+            "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "file": self.file,
             "type": self.type,
