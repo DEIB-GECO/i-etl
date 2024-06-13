@@ -1,16 +1,16 @@
-from src.datatypes.BetterCodeableConcept import BetterCodeableConcept
-from src.datatypes.BetterCoding import BetterCoding
-from src.datatypes.BetterReference import BetterReference
-from src.profiles.BetterResource import BetterResource
+from src.datatypes.CodeableConcept import CodeableConcept
+from src.datatypes.Coding import Coding
+from src.datatypes.Reference import Reference
+from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
 from src.utils.constants import NONE_VALUE
 
 
-class BetterExaminationRecord(BetterResource):
+class ExaminationRecord(Resource):
     ID_COUNTER = 1
 
-    def __init__(self, id_value: str, examination_ref: BetterReference, subject_ref: BetterReference,
-                 hospital_ref: BetterReference, sample_ref: BetterReference, value, status: str):
+    def __init__(self, id_value: str, examination_ref: Reference, subject_ref: Reference,
+                 hospital_ref: Reference, sample_ref: Reference, value):
         """
         A new ClinicalRecord instance, either built from existing data or from scratch.
         :param id_value: A string being the BETTER ID of the ExaminationRecord instance.
@@ -25,19 +25,17 @@ class BetterExaminationRecord(BetterResource):
         super().__init__(id_value=id_value, resource_type=self.get_type())
 
         # set up the resource attributes
-        self.status = status
-        self.code = "final"
         self.value = value
-        self.recorded_by = hospital_ref
-        self.based_on = sample_ref
-        self.instantiate = examination_ref
         self.subject = subject_ref
+        self.recorded_by = hospital_ref
+        self.instantiate = examination_ref
+        self.based_on = sample_ref
 
     def get_type(self) -> str:
         return TableNames.EXAMINATION_RECORD.value
 
     def to_json(self):
-        if isinstance(self.value, BetterCodeableConcept) or isinstance(self.value, BetterCoding) or isinstance(self.value, BetterReference):
+        if isinstance(self.value, CodeableConcept) or isinstance(self.value, Coding) or isinstance(self.value, Reference):
             # complex type, we need to expand it with .to_json()
             expanded_value = self.value.to_json()
         else:
@@ -47,13 +45,11 @@ class BetterExaminationRecord(BetterResource):
         json_clinical_record = {
             "identifier": self.identifier,
             "resourceType": self.get_type(),
-            "status": self.status,
-            "code": NONE_VALUE,  # This is defined in the FHIR standard and cannot be optional, thus I set it the None value.
             "value": expanded_value,
+            "subject": self.subject.to_json(),
             "recordedBy": self.recorded_by.to_json(),
-            "basedOn": self.based_on.to_json(),
             "instantiate": self.instantiate.to_json(),
-            "subject": self.subject.to_json()
+            "basedOn": self.based_on.to_json()
         }
 
         return json_clinical_record

@@ -1,10 +1,10 @@
-from src.datatypes.BetterCodeableConcept import BetterCodeableConcept
-from src.profiles.BetterResource import BetterResource
+from src.datatypes.CodeableConcept import CodeableConcept
+from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
 
 
-class BetterDisease(BetterResource):
-    def __init__(self, id_value: str, status: str, code: BetterCodeableConcept):
+class Disease(Resource):
+    def __init__(self, id_value: str, status: str, code: CodeableConcept):
         """
         Create a new Disease instance.
         This is different from a DiseaseRecord:
@@ -18,7 +18,6 @@ class BetterDisease(BetterResource):
         super().__init__(id_value=id_value, resource_type=self.get_type())
 
         # set up the resource attributes
-        self.status = status
         self.code = code
 
     def get_type(self):
@@ -28,7 +27,6 @@ class BetterDisease(BetterResource):
         json_disease = {
             "identifier": self.identifier,
             "resourceType": self.get_type(),
-            "status": self.status,
             "code": self.code.to_json()
         }
         return json_disease

@@ -1,6 +1,6 @@
 import unittest
 
-from src.profiles.BetterPatient import BetterPatient
+from src.profiles.Patient import Patient
 from src.utils.TableNames import TableNames
 
 
@@ -10,7 +10,7 @@ class TestPatient(unittest.TestCase):
         Test whether the Patient constructor correctly assign IDs and the resource type.
         :return: None.
         """
-        patient1 = BetterPatient("123")
+        patient1 = Patient(id_value="123")
         self.assertIsNotNone(patient1.identifier)
         self.assertEqual(patient1.identifier, TableNames.PATIENT.value + "/123")
 
@@ -23,11 +23,11 @@ class TestPatient(unittest.TestCase):
         Check whether the Patient type is indeed the Patient table name.
         :return: None.
         """
-        patient1 = BetterPatient("123")
+        patient1 = Patient(id_value="123")
         self.assertEqual(patient1.get_type(), TableNames.PATIENT.value)
 
     def test_to_json(self):
-        patient1 = BetterPatient("123")
+        patient1 = Patient(id_value="123")
         patient1_json = patient1.to_json()
 
         self.assertIsNotNone(patient1_json)

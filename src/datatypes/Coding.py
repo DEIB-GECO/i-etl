@@ -1,7 +1,7 @@
 import json
 
 
-class BetterCoding:
+class Coding:
     def __init__(self, triple: tuple):
         self.system = triple[0]
         self.code = triple[1]
