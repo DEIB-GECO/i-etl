@@ -11,14 +11,14 @@ class TestDatabase(unittest.TestCase):
 
         # test with the correct (default) string
         config.set_db_name(TEST_DB_NAME)
-        database = Database(config)
+        database = Database(config=config)
         self.assertTrue(database.check_server_is_up())
         # database.close()
 
         # test with a wrong connection string
         config.set_db_connection("a_random_connection_string")
         config.set_db_name(TEST_DB_NAME)
-        database = Database(config)
+        database = Database(config=config)
         self.assertFalse(database.check_server_is_up())
         # database.close()
 
@@ -33,7 +33,7 @@ class TestDatabase(unittest.TestCase):
         config.set_db_name(TEST_DB_NAME)
         # create a test database
         # and add only one triple to be sure that the db is created
-        database = Database(config)
+        database = Database(config=config)
         database.insert_one_tuple(TEST_TABLE_NAME, { "id": "1", "name": "Alice Doe"})
         list_dbs = database.client.list_databases()
         found = False
@@ -72,7 +72,7 @@ class TestDatabase(unittest.TestCase):
         config.set_db_name(TEST_DB_NAME)
         config.set_db_drop("True")
 
-        database = Database(config)
+        database = Database(config=config)
         tuples = [{"id": 1, "name": "Louise", "country": "FR", "job": "PhD student"},
                   {"id": 2, "name": "Francesca", "country": "IT", "university": True},
                   {"id": 3, "name": "Martin", "country": "DE", "age": 26}]

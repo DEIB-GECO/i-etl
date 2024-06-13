@@ -9,3 +9,6 @@ class TableNames(Enum):
     DISEASE_RECORD = "DiseaseRecord"
     DISEASE = "Disease"
     SAMPLE = "Sample"
+    GENOMIC_DATA = "GenomicData"
+    MEDICINE = "Medicine"
+    MEDICINE_RECORD = "MedicineRecord"

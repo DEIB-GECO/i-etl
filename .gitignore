@@ -34,3 +34,6 @@ properties.ini
 # Data
 datasets/data
 datasets/metadata
+
+# log files
+*.log

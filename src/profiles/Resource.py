@@ -5,7 +5,7 @@ from src.utils.utils import create_identifier
 from src.utils.constants import NONE_VALUE
 
 
-class BetterResource:
+class Resource:
     ID_COUNTER = 1
 
     def __init__(self, id_value: str, resource_type: str):
@@ -21,8 +21,8 @@ class BetterResource:
                 raise ValueError("Patient and Sample instances should have an ID.")
             else:
                 # We assign an ID to the new resource
-                self.identifier = create_identifier(id_value=str(BetterResource.ID_COUNTER), resource_type=resource_type)
-                BetterResource.ID_COUNTER = BetterResource.ID_COUNTER + 1
+                self.identifier = create_identifier(id_value=str(Resource.ID_COUNTER), resource_type=resource_type)
+                Resource.ID_COUNTER = Resource.ID_COUNTER + 1
         else:
             # TODO Nelly: explain this case
             self.identifier = create_identifier(id_value=id_value, resource_type=resource_type)
