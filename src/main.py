@@ -34,7 +34,6 @@ if __name__ == '__main__':
         config.set_hospital_name(args.hospital_name)
     if args.connection is not None:
         config.set_db_connection(args.connection)
-    log.debug(args.database_name)
     if args.database_name is not None and args.database_name != "":
         config.set_db_name(args.database_name)
     else:
@@ -42,7 +41,6 @@ if __name__ == '__main__':
         config.set_db_name(DEFAULT_DB_NAME)
     if args.drop is not None:
         config.set_db_drop(args.drop)
-    log.debug(config.get_db_drop())
 
     # create a new folder within the tmp dir to store the current execution tmp files and config
     # this folder is named after the DB name (instead of a timestamp, which will create one folder at each run)

@@ -62,9 +62,7 @@ class Extract:
             log.error("The current dataset is not described in the provided metadata file.")
             exit()
         else:
-            log.debug(self.metadata["name"])
             self.metadata = self.metadata[self.metadata["dataset"] == filename]
-            log.debug(self.metadata["name"])
 
         # lower case all column names to avoid inconsistencies
         self.metadata['name'] = self.metadata['name'].apply(lambda x: x.lower())

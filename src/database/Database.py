@@ -62,7 +62,7 @@ class Database:
         Drop the current database.
         :return: Nothing.
         """
-        log.info("!!!!! Will drop the database %s !!!!!", self.config.get_db_name())
+        log.info("WARNING: The database %s will be dropped!", self.config.get_db_name())
         self.client.drop_database(name_or_database=self.config.get_db_name())
 
     def close(self) -> None:
@@ -166,12 +166,10 @@ class Database:
                 # this covers the case when the project is a nested key, e.g., code.text
                 projected_value = projected_value[key]
             mapping[projected_value] = result["identifier"]
-        log.debug(mapping)
         return mapping
 
     def write_in_file(self, data_array: list, table_name: str, count: int):
         if len(data_array) > 0:
-            log.debug(data_array)
             filename = os.path.join(self.config.get_working_dir_current(), table_name + str(count) + ".json")
             with open(filename, "w") as data_file:
                 json.dump([resource.to_json() for resource in data_array], data_file)
@@ -217,8 +215,6 @@ class Database:
             operations.append(mongodb_min(field=field))
         else:
             operations.append(mongodb_max(field=field))
-
-        log.debug(operations)
 
         cursor = self.db[table_name].aggregate(operations)
 
@@ -272,7 +268,6 @@ class Database:
             mongodb_match(field="total", value={"$gt": min_value}),
             mongodb_sort(field="_id", sort_order=1)
         ]
-        log.debug(pipeline)
         # .collation({"locale": "en_US", "numericOrdering": "true"})
         return self.db[TableNames.EXAMINATION_RECORD.value].aggregate(pipeline)
 
