@@ -4,13 +4,12 @@ from src.datatypes.Reference import Reference
 from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
 from src.utils.constants import NONE_VALUE
+from src.utils.Counter import Counter
 
 
 class ExaminationRecord(Resource):
-    ID_COUNTER = 1
-
     def __init__(self, id_value: str, examination_ref: Reference, subject_ref: Reference,
-                 hospital_ref: Reference, sample_ref: Reference, value):
+                 hospital_ref: Reference, sample_ref: Reference, value, counter: Counter):
         """
         A new ClinicalRecord instance, either built from existing data or from scratch.
         :param id_value: A string being the BETTER ID of the ExaminationRecord instance.
@@ -22,7 +21,7 @@ class ExaminationRecord(Resource):
         :param value: A string/int/float/CodeableConcept being the value of what is examined in that record.
         """
         # set up the resource ID
-        super().__init__(id_value=id_value, resource_type=self.get_type())
+        super().__init__(id_value=id_value, resource_type=self.get_type(), counter=counter)
 
         # set up the resource attributes
         self.value = value

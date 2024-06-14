@@ -1,10 +1,11 @@
 from src.datatypes.CodeableConcept import CodeableConcept
 from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
+from src.utils.Counter import Counter
 
 
 class Disease(Resource):
-    def __init__(self, id_value: str, status: str, code: CodeableConcept):
+    def __init__(self, id_value: str, status: str, code: CodeableConcept, counter: Counter):
         """
         Create a new Disease instance.
         This is different from a DiseaseRecord:
@@ -15,7 +16,7 @@ class Disease(Resource):
         :param code: the set of ontology terms (LOINC, ICD, ...) referring to that disease.
         """
         # set up the resource ID
-        super().__init__(id_value=id_value, resource_type=self.get_type())
+        super().__init__(id_value=id_value, resource_type=self.get_type(), counter=counter)
 
         # set up the resource attributes
         self.code = code

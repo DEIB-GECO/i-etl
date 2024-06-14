@@ -10,7 +10,8 @@ from pymongo.cursor import Cursor
 
 from src.config.BetterConfig import BetterConfig
 from src.utils.TableNames import TableNames
-from src.utils.utils import mongodb_project_one, mongodb_group_by, mongodb_match, mongodb_limit, mongodb_sort
+from src.utils.utils import mongodb_project_one, mongodb_group_by, mongodb_match, mongodb_limit, mongodb_sort, \
+    mongodb_max, mongodb_unwind, mongodb_min
 from src.utils.constants import BATCH_SIZE
 from src.utils.setup_logger import log
 from src.utils.UpsertPolicy import UpsertPolicy
@@ -21,6 +22,7 @@ class Database:
     The class Database represents the underlying MongoDB database: the connection, the database itself and
     auxiliary functions to make interactions with the database object (insert, select, ...).
     """
+
     def __init__(self, config: BetterConfig):
         """
         Initiate a new connection to a MongoDB client, reachable based on the given connection string, and initialize
@@ -28,12 +30,12 @@ class Database:
         """
         self.config = config
 
-
         # mongodb://localhost:27017/
         # mongodb://127.0.0.1:27017/
         # mongodb+srv://<username>:<password>@<cluster>.qo5xs5j.mongodb.net/?retryWrites=true&w=majority&appName=<app_name>
         self.config = config
-        self.client = MongoClient(host=self.config.get_db_connection(), serverSelectionTimeoutMS=5000)  # timeout after 5 sec instead of 20
+        self.client = MongoClient(host=self.config.get_db_connection(),
+                                  serverSelectionTimeoutMS=5000)  # timeout after 5 sec instead of 20
         if config.get_db_drop():
             self.drop_db()
         self.db = self.client[self.config.get_db_name()]
@@ -136,7 +138,6 @@ class Database:
             one_tuple["insertedAt"] = timestamp2
             update_stmt = {"$setOnInsert": one_tuple}
             operations.append(pymongo.UpdateOne(filter=filter_dict, update=update_stmt, upsert=True))
-        log.debug(len(operations))
         self.db[table_name].bulk_write(operations)  # TODO Nelly: check whether the upsert has succeeded or not
         log.debug("Table %s: sending a bulk write of %s operations", table_name, len(operations))
 
@@ -159,14 +160,12 @@ class Database:
         projection_as_dict = {projection: 1, "identifier": 1}
         cursor = self.find_operation(table_name=table_name, filter_dict={}, projection=projection_as_dict)
         mapping = {}
-        count = 0
         for result in cursor:
             projected_value = result
             for key in projection.split("."):
                 # this covers the case when the project is a nested key, e.g., code.text
                 projected_value = projected_value[key]
             mapping[projected_value] = result["identifier"]
-            count = count + 1
         log.debug(mapping)
         return mapping
 
@@ -208,52 +207,37 @@ class Database:
         """
         self.db[table_name].create_index(columns, unique=True)
 
-    def get_min_value_of_examination_record(self, examination_url: str) -> float:
-        """
-        Compute the minimum value among all the examination records for a certain examination.
-        :param examination_url: A string being the examination url of the form Examination/X, where X is the
-        Examination number, and for which the minimum value will be computed among the examination records referring
-        to that examination url.
-        :return: A float value being the minimum value for the given examination url.
-        """
-        return self.get_min_max_value_of_examination_record(examination_url=examination_url, min_or_max="min")
+    def get_min_or_max_value(self, table_name: str, field: str, sort_order: int):
+        operations = []
 
-    def get_max_value_of_examination_record(self, examination_url: str) -> float:
-        """
-        Compute the maximum value among all the examination records for a certain examination.
-        :param examination_url: A string being the examination url of the form Examination/X, where X is the
-        Examination number, and for which the maximum value will be computed among the examination records referring
-        to that examination url.
-        :return: A float value being the maximum value for the given examination url.
-        """
-        return self.get_min_max_value_of_examination_record(examination_url=examination_url, min_or_max="max")
-
-    def get_min_max_value_of_examination_record(self, examination_url: str, min_or_max: str) -> float:
-        """
-        Compute the maximum or the maximum value among all the examination records for a certain examination.
-        :param examination_url: A string being the examination url of the form Examination/X, where X is the
-        Examination number, and for which the min or max value will be computed among the examination records referring
-        to that examination url.
-        :param min_or_max: A string being "min" or "max", depending on which value is needed.
-        :return: A float value being the minimum or maximum value for the given examination url.
-        """
-        if min_or_max == "min":
-            sort_order = 1
-        elif min_or_max == "max":
-            sort_order = -1
+        operations.append(mongodb_project_one(field=field, split_delimiter="/"))
+        operations.append(mongodb_unwind(field=field))
+        operations.append(mongodb_match(field=field, value="[0-9]+", is_regex=True))
+        if sort_order == 1:
+            operations.append(mongodb_min(field=field))
         else:
-            sort_order = 1
-            log.warn("You asked for something else than min or max. This will be min by default.")
+            operations.append(mongodb_max(field=field))
 
-        cursor = self.db[TableNames.EXAMINATION_RECORD.value].aggregate([
-            mongodb_match(field="instantiate.reference", value=examination_url),
-            mongodb_project_one(field="value"),
-            mongodb_sort(field="value", sort_order=sort_order),
-            mongodb_limit(nb=1)  # sort in ascending order and return the first value: this is the min
-        ])
+        log.debug(operations)
+
+        cursor = self.db[table_name].aggregate(operations)
 
         for result in cursor:
-            return float(result)  # There should be only one result, so we can return directly the min or max value
+            log.debug(result)
+            # There should be only one result, so we can return directly the min or max value
+            if sort_order == 1:
+                return result["min"]
+            else:
+                return result["max"]
+
+    def get_max_value(self, table_name: str, field: str):
+        return self.get_min_or_max_value(table_name=table_name, field=field, sort_order=-1)
+
+    def get_min_value(self, table_name: str, field: str):
+        return self.get_min_or_max_value(table_name=table_name, field=field, sort_order=1)
+        # mongodb_match(field="instantiate.reference", value=examination_url),
+        # mongodb_project_one(field="value"),
+        # mongodb_sort(field="value", sort_order=sort_order),
 
     def get_avg_value_of_examination_record(self, examination_url: str) -> float:
         """

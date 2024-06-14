@@ -1,12 +1,13 @@
-from datatypes.Reference import Reference
-from profiles.Analysis import Analysis
-from profiles.Resource import Resource
-from utils.TableNames import TableNames
+from src.datatypes.Reference import Reference
+from src.profiles.Analysis import Analysis
+from src.profiles.Resource import Resource
+from src.utils.TableNames import TableNames
+from src.utils.Counter import Counter
 
 
 class GenomicData(Resource):
-    def __init__(self, id_value: str, analysis: Analysis, subject_ref: Reference, hospital_ref: Reference):
-        super().__init__(id_value=id_value, resource_type=self.get_type())
+    def __init__(self, id_value: str, analysis: Analysis, subject_ref: Reference, hospital_ref: Reference, counter: Counter):
+        super().__init__(id_value=id_value, resource_type=self.get_type(), counter=counter)
 
         self.analysis = analysis
         self.subject = subject_ref

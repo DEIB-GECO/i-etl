@@ -1,4 +1,5 @@
 import math
+import re
 from datetime import time
 from typing import Any
 import time
@@ -6,7 +7,6 @@ import time
 from dateutil.parser import parse
 from pandas import DataFrame
 
-from datatypes.Identifier import Identifier
 from src.datatypes.CodeableConcept import CodeableConcept
 from src.utils.Ontologies import Ontologies
 
@@ -180,20 +180,41 @@ def normalize_value(input_string: str) -> str:
 
 # MONGODB UTILS
 
-def mongodb_match(field: str, value: Any) -> dict:
-    return {
-        "$match": {
-            field: value
+def mongodb_match(field: str, value: Any, is_regex: bool = False) -> dict:
+    if is_regex:
+        # this is a match with a regex (in value)
+        return {
+            "$match": {
+                field: re.compile(value)
+            }
         }
-    }
+    else:
+        # this is a match with a "hard-coded" value (in value)
+        return {
+            "$match": {
+                field: value
+            }
+        }
 
 
-def mongodb_project_one(field: str) -> dict:
-    return {
-        "$project": {
-            field: 1
+def mongodb_project_one(field: str, split_delimiter: str) -> dict:
+    if split_delimiter is None:
+        return {
+            "$project": {
+                field: 1
+            }
         }
-    }
+    else:
+        # also split the projected value
+        return {
+            "$project": {
+                field: {
+                    # we prepend a $ to the fild so that MongoDB understand that
+                    # it needs to parse the actual value of the filed
+                    "$split": ["$"+field, split_delimiter]
+                }
+            }
+        }
 
 
 def mongodb_sort(field: str, sort_order: int) -> dict:
@@ -220,6 +241,37 @@ def mongodb_group_by(group_key: Any, group_by_name: str, operator: str, field) -
         }
     }
 
+
+def mongodb_unwind(field: str) -> dict:
+    return {
+        "$unwind": "$" + field
+    }
+
+
+def mongodb_max(field: str) -> dict:
+    return {
+        "$group": {
+            "_id": field,
+            "max": {
+                "$max": {
+                    "$toLong": "$"+field  # to make the field interpreted
+                }
+            }
+        }
+    }
+
+
+def mongodb_min(field: str) -> dict:
+    return {
+        "$group": {
+            "_id": field,
+            "min": {
+                "$min": {
+                    "$toLong": "$"+field  # to make the field interpreted
+                }
+            }
+        }
+    }
 
 # LIST AND DICT CONVERSIONS
 

@@ -1,12 +1,13 @@
-from datatypes.Reference import Reference
-from profiles.Resource import Resource
-from utils.TableNames import TableNames
+from src.datatypes.Reference import Reference
+from src.profiles.Resource import Resource
+from src.utils.TableNames import TableNames
+from src.utils.Counter import Counter
 
 
 class MedicineRecord(Resource):
     def __init__(self, id_value: str, quantity, medicine_ref: Reference, patient_ref: Reference,
-                 hospital_ref: Reference):
-        super().__init__(id_value, self.get_type())
+                 hospital_ref: Reference, counter: Counter):
+        super().__init__(id_value, self.get_type(), counter=counter)
 
         self.quantity = quantity
         self.instantiates = medicine_ref

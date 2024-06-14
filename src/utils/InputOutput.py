@@ -1,6 +1,6 @@
-from datatypes.CodeableConcept import CodeableConcept
-from profiles.Resource import Resource
-from utils.setup_logger import log
+from src.datatypes.CodeableConcept import CodeableConcept
+from src.profiles.Resource import Resource
+from src.utils.setup_logger import log
 
 
 class InputOutput(Resource):

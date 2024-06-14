@@ -1,4 +1,6 @@
-from datatypes.Identifier import Identifier
+import math
+
+from src.datatypes.Identifier import Identifier
 from src.config.BetterConfig import BetterConfig
 from src.database.Database import Database
 from src.etl.Extract import Extract
@@ -17,6 +19,7 @@ from src.utils.utils import normalize_value, is_in_insensitive, cast_value, is_n
     get_ontology_system, is_equal_insensitive, convert_value
 from src.utils.constants import NONE_VALUE, ID_COLUMNS, PHENOTYPIC_VARIABLES, NO_EXAMINATION_COLUMNS, BATCH_SIZE
 from src.utils.setup_logger import log
+from src.utils.Counter import Counter
 
 
 class Transform:
@@ -26,6 +29,7 @@ class Transform:
         self.load = load
         self.database = database
         self.config = config
+        self.counter = Counter()
 
         # to record objects that will be further inserted in the database
         self.hospitals = []
@@ -41,15 +45,36 @@ class Transform:
         self.mapping_disease_to_disease_id = {}  # map the disease names to their Disease IDs
 
     def run(self):
+        self.set_resource_counter_id()
         self.create_hospital(hospital_name=self.config.get_hospital_name())
         self.create_examinations()
         self.create_samples()
         self.create_patients()
         self.create_examination_records()
 
+    def set_resource_counter_id(self) -> None:
+        max_value = 1
+        for table_name in TableNames:
+            if table_name.value == TableNames.PATIENT.value or table_name.value == TableNames.SAMPLE.value:
+                # pass because Patient and Sample resources have their ID assigned by hospitals, not the FAIRificator
+                pass
+            else:
+                log.debug(table_name)
+                current_max_identifier = self.database.get_max_value(table_name=table_name.value, field="identifier.value")
+                log.debug(current_max_identifier)
+                if current_max_identifier is not None:
+                    if current_max_identifier > max_value:
+                        max_value = current_max_identifier
+                else:
+                    # the table is not created yet (this happens when we start from a fresh new DB, thus we skip this it)
+                    pass
+        # Resource.set_counter(max_value + 1)  # start 1 after the current counter to avoid resources with the same ID
+        log.debug("will set the counter with %s", max_value)
+        self.counter.set(max_value)
+
     def create_hospital(self, hospital_name: str) -> None:
         log.info("create hospital")
-        new_hospital = Hospital(id_value=NONE_VALUE, name=hospital_name)
+        new_hospital = Hospital(id_value=NONE_VALUE, name=hospital_name, counter=self.counter)
         self.hospitals.append(new_hospital)
         self.database.write_in_file(data_array=self.hospitals, table_name=TableNames.HOSPITAL.value, count=1)
 
@@ -63,7 +88,7 @@ class Transform:
                 cc = self.create_codeable_concept_from_column(column_name=lower_column_name)
                 if cc is not None and cc.codings != []:
                     category = self.determine_examination_category(column_name=lower_column_name)
-                    new_examination = Examination(id_value=NONE_VALUE, code=cc, category=category, permitted_data_types=[])
+                    new_examination = Examination(id_value=NONE_VALUE, code=cc, category=category, permitted_data_types=[], counter=self.counter)
                     # log.info("adding a new examination about %s: %s", cc.text, new_examination)
                     self.examinations.append(new_examination)
                     if len(self.examinations) >= BATCH_SIZE:
@@ -94,15 +119,15 @@ class Transform:
                         sample_barcode = row["samplebarcode"]
                         if sample_barcode not in created_sample_barcodes:
                             created_sample_barcodes.add(sample_barcode)
-                            sampling = row["sampling"]
-                            sample_quality = row["samplequality"]
-                            time_collected = cast_value(value=row["samtimecollected"])
-                            time_received = cast_value(value=row["samtimereceived"])
-                            too_young = cast_value(value=row["tooyoung"])
-                            bis = cast_value(value=row["bis"])
+                            sampling = row["sampling"] if "sampling" in row else None
+                            sample_quality = row["samplequality"] if "samplequality" in row else None
+                            time_collected = cast_value(value=row["samtimecollected"]) if "samtimecollected" in row else None
+                            time_received = cast_value(value=row["samtimereceived"]) if "samtimereceived" in row else None
+                            too_young = cast_value(value=row["tooyoung"]) if "tooyoung" in row else None
+                            bis = cast_value(value=row["bis"]) if "bis" in row else None
                             new_sample = Sample(sample_barcode, sampling=sampling, quality=sample_quality,
                                                 time_collected=time_collected, time_received=time_received,
-                                                too_young=too_young, bis=bis)
+                                                too_young=too_young, bis=bis, counter=self.counter)
                             created_sample_barcodes.add(sample_barcode)
                             self.samples.append(new_sample)
                             if len(self.samples) >= BATCH_SIZE:
@@ -112,7 +137,6 @@ class Transform:
                                 # no need to load Sample instances because they are referenced using their ID,
                                 # which was provided by the hospital (thus is known by the dataset)
             self.database.write_in_file(data_array=self.samples, table_name=TableNames.SAMPLE.value, count=count)
-            log.info("Nb of samples: %s", len(self.samples))
 
     def create_examination_records(self):
         log.info("create examination records")
@@ -160,7 +184,8 @@ class Transform:
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
                         new_examination_record = ExaminationRecord(id_value=NONE_VALUE, examination_ref=examination_ref,
                                                                    subject_ref=subject_ref, hospital_ref=hospital_ref,
-                                                                   sample_ref=sample_ref, value=fairified_value)
+                                                                   sample_ref=sample_ref, value=fairified_value,
+                                                                   counter=self.counter)
                         self.examination_records.append(new_examination_record)
                         if len(self.examination_records) >= BATCH_SIZE:
                             self.database.write_in_file(data_array=self.examination_records, table_name=TableNames.EXAMINATION_RECORD.value, count=count)
@@ -174,8 +199,6 @@ class Transform:
                         pass
 
         self.database.write_in_file(data_array=self.examination_records, table_name=TableNames.EXAMINATION_RECORD.value, count=count)
-        log.info("Nb of patients: %s", len(self.patients))
-        log.info("Nb of examination records: %s", len(self.examination_records))
 
     def create_patients(self):
         log.info("create patients")
@@ -185,7 +208,7 @@ class Transform:
             patient_id = row[ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.PATIENT.value]]
             if patient_id not in created_patient_ids:
                 # the patient does not exist yet, we will create it
-                new_patient = Patient(id_value=str(patient_id))
+                new_patient = Patient(id_value=str(patient_id), counter=self.counter)
                 created_patient_ids.add(patient_id)
                 self.patients.append(new_patient)
                 if len(self.patients) >= BATCH_SIZE:

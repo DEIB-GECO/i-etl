@@ -2,14 +2,14 @@ from src.datatypes.CodeableConcept import CodeableConcept
 from src.datatypes.Reference import Reference
 from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
+from src.utils.Counter import Counter
 
 
 class DiseaseRecord(Resource):
-    ID_COUNTER = 1
-
-    def __init__(self, id_value: str, clinical_status: str, subject_ref: Reference, hospital_ref: Reference, disease_ref: Reference, severity: CodeableConcept, recorded_date: str):
+    def __init__(self, id_value: str, clinical_status: str, subject_ref: Reference, hospital_ref: Reference,
+                 disease_ref: Reference, severity: CodeableConcept, recorded_date: str, counter: Counter):
         # set up the resource ID
-        super().__init__(id_value, self.get_type())
+        super().__init__(id_value, self.get_type(), counter=counter)
 
         # set up the resource attributes
         self.clinical_status = clinical_status

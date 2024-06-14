@@ -1,5 +1,5 @@
-from datatypes.CodeableConcept import CodeableConcept
-from profiles.Resource import Resource
+from src.datatypes.CodeableConcept import CodeableConcept
+from src.profiles.Resource import Resource
 
 
 class Analysis(Resource):

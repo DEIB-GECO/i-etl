@@ -2,15 +2,14 @@ from src.datatypes.CodeableConcept import CodeableConcept
 from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
 from src.utils.utils import get_codeable_concept_from_json, get_category_from_json, is_not_nan
+from src.utils.Counter import Counter
 
 
 class Examination(Resource):
-    ID_COUNTER = 1
-
     def __init__(self, id_value: str, code: CodeableConcept, category: CodeableConcept,
-                 permitted_data_types: list[str]):
+                 permitted_data_types: list[str], counter: Counter):
         # set up the resource ID
-        super().__init__(id_value=id_value, resource_type=self.get_type())
+        super().__init__(id_value=id_value, resource_type=self.get_type(), counter=counter)
 
         # set up the resource attributes
         self.code = code

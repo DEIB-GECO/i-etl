@@ -1,9 +1,10 @@
 from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
+from src.utils.Counter import Counter
 
 
 class Hospital(Resource):
-    def __init__(self, id_value: str, name: str):
+    def __init__(self, id_value: str, name: str, counter: Counter):
         """
         A new hospital instance, either built from existing data or from scratch.
         :param id_value: A stringified integer being the BETTER id of that resource.
@@ -11,7 +12,7 @@ class Hospital(Resource):
         :param name: A string being the name of the hospital.
         """
         # set up the resource ID
-        super().__init__(id_value=id_value, resource_type=self.get_type())
+        super().__init__(id_value=id_value, resource_type=self.get_type(), counter=counter)
 
         # set up the resource attributes
         self.name = name

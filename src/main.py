@@ -1,17 +1,18 @@
+import logging
 import os.path
 import pathlib
 import sys
 import argparse
 import shutil
-
+import traceback
 
 sys.path.append('.')  # add the current project to the python path to be runnable in cmd-line
 
 from src.config.BetterConfig import BetterConfig
 from src.etl.ETL import ETL
 from src.utils.HospitalNames import HospitalNames
-from utils.constants import DEFAULT_DB_NAME
-from utils.setup_logger import log
+from src.utils.constants import DEFAULT_DB_NAME
+from src.utils.setup_logger import log
 
 
 if __name__ == '__main__':
@@ -95,10 +96,13 @@ if __name__ == '__main__':
 
     log.debug(config.to_json())
 
-    etl = ETL(config=config)
-    etl.run()
-
-    log.info("Goodbye!")
+    try:
+        etl = ETL(config=config)
+        etl.run()
+        log.info("Goodbye!")
+    except Exception as error:
+        traceback.print_exc()  # print the stack trace
+        log.error("An error occurred during the ETL. Please check the complete log. ")
 
     # everything has been written in the log file,
     # so we move it (the file with the latest timestamp) to its respective database folder in working-dir
@@ -106,5 +110,4 @@ if __name__ == '__main__':
     log.handlers.clear()
     # now we can move the latest log file to its destination
     latest_log_filename = max([f for f in pathlib.Path('.').glob('*.log')], key=os.path.getctime)
-    print(latest_log_filename)
     shutil.move(latest_log_filename, os.path.join(config.get_working_dir_current(), latest_log_filename))

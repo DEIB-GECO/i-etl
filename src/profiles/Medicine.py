@@ -1,11 +1,12 @@
-from datatypes.CodeableConcept import CodeableConcept
-from profiles.Resource import Resource
-from utils.TableNames import TableNames
+from src.datatypes.CodeableConcept import CodeableConcept
+from src.profiles.Resource import Resource
+from src.utils.TableNames import TableNames
+from utils.Counter import Counter
 
 
 class Medicine(Resource):
-    def __init__(self, id_value: str, code: CodeableConcept):
-        super().__init__(id_value, self.get_type())
+    def __init__(self, id_value: str, code: CodeableConcept, counter: Counter):
+        super().__init__(id_value, self.get_type(), counter=counter)
 
         self.code = code
 
