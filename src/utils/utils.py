@@ -84,13 +84,6 @@ def is_equal_insensitive(value, compared):
         return value.casefold() == compared.casefold()
 
 
-# BUILDING URLs and IDs
-
-
-# def build_url(base: str, element_id: str) -> str:
-#     return base + "/" + str(element_id)
-
-
 # GET PREDEFINED VALUES
 
 

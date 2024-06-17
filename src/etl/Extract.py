@@ -56,7 +56,8 @@ class Extract:
             pass
 
         # For any metadata file, we need to keep only the variables that concern the current dataset
-        filename = os.path.basename(self.config.get_data_filepath())
+        filename = os.path.basename(self.config.get_data_filepaths()[0])
+        log.debug(filename)
         log.debug(self.metadata["dataset"].unique())
         if filename not in self.metadata["dataset"].unique():
             log.error("The current dataset is not described in the provided metadata file.")
@@ -114,12 +115,13 @@ class Extract:
         log.debug(self.metadata)
 
     def load_data_file(self):
-        assert os.path.exists(self.config.get_data_filepath()), "The provided samples file could not be found. Please check the filepath you specify when running this script."
+        log.info(self.config.get_current_filepath())
+        assert os.path.exists(self.config.get_current_filepath()), "The provided samples file could not be found. Please check the filepath you specify when running this script."
 
-        log.info("Data filepath is %s.", self.config.get_data_filepath())
+        log.info("Data filepath is %s.", self.config.get_current_filepath())
 
         # index_col is False to not add a column with line numbers
-        self.data = pd.read_csv(self.config.get_data_filepath(), index_col=False)
+        self.data = pd.read_csv(self.config.get_current_filepath(), index_col=False)
 
         # lower case all column names to avoid inconsistencies
         self.data.columns = self.data.columns.str.lower()
