@@ -17,21 +17,31 @@ class BetterConfig:
     DB_SECTION = "DATABASE"
     HOSPITAL_SECTION = "HOSPITAL"
     SYSTEM_SECTION = "SYSTEM"
+    RUN_SECTION = "RUN"
 
+    # FILES section
     WORKING_DIR_KEY = "working_dir"
     WORKING_DIR_CURRENT_KEY = "working_key_current"
     METADATA_FILEPATH_KEY = "metadata_filepath"
     DATA_FILEPATHS_KEY = "data_filepaths"
     CURRENT_FILEPATH_KEY = "current_filepath"
+    # DATABASE section
     CONNECTION_KEY = "connection"
-    NAME_KEY = "name"
     DROP_KEY = "drop"
+    # DATABASE and HOSPITAL sections
+    NAME_KEY = "name"
+    # SYSTEM section
     PYTHON_VERSION_KEY = "python_version"
     PYMONGO_VERSION_KEY = "pymongo_version"
     EXECUTION_KEY = "execution_date"
     PLATFORM_KEY = "platform"
     PLATFORM_VERSION_KEY = "platform_version"
     USER_KEY = "user"
+    # RUN section
+    EXTRACT_KEY = "extract"
+    TRANSFORM_KEY = "transform"
+    LOAD_KEY = "load"
+    ANALYSIS_KEY = "analysis"
 
     def __init__(self, args=None):
         self.config = configparser.ConfigParser()
@@ -44,23 +54,15 @@ class BetterConfig:
             self.args = args
             self.set_from_parameters()
         else:
-            # the user did not provide any parameters
-            # or we are in test mode
+            # the user did not provide any parameters, or we are running tests
             # in any case, we have read the default config, so we are good
             pass
 
     def set_from_parameters(self):
-        if self.args.hospital_name is not None:
-            self.set_hospital_name(self.args.hospital_name)
-        if self.args.connection is not None:
-            self.set_db_connection(self.args.connection)
-        if self.args.database_name is not None and self.args.database_name != "":
-            self.set_db_name(self.args.database_name)
-        else:
-            log.info("There was no database name provided. Using the default one: %s", DEFAULT_DB_NAME)
-            self.set_db_name(DEFAULT_DB_NAME)
-        if self.args.drop is not None:
-            self.set_db_drop(self.args.drop)
+        self.set_hospital_name(self.args.hospital_name)
+        self.set_db_connection(self.args.connection)
+        self.set_db_name(self.args.database_name)
+        self.set_db_drop(self.args.drop)
 
         # create a new folder within the tmp dir to store the current execution tmp files and config
         # this folder is named after the DB name (instead of a timestamp, which will create one folder at each run)
@@ -71,10 +73,7 @@ class BetterConfig:
         os.makedirs(working_folder)  # create the working folder (labelled with the DB name)
 
         # get metadata and data filepaths
-        if self.args.metadata_filepath is None:
-            log.error("No metadata file path has been provided. Please provide one.")
-            exit()
-        elif not os.path.isfile(self.args.metadata_filepath):
+        if not os.path.isfile(self.args.metadata_filepath):
             log.error("The specified metadata file does not seem to exist. Please check the path.")
             exit()
         else:
@@ -83,23 +82,19 @@ class BetterConfig:
             shutil.copyfile(self.args.metadata_filepath, metadata_filepath)
             self.set_metadata_filepath(metadata_filepath)
 
-        if self.args.data_filepath is None:
-            log.error("No data file path has been provided. Please provide one.")
-            exit()
-        else:
-            # if there is a single file, this will put that file in a list
-            # otherwise, when the user provides several files, it will split them in the array
-            log.debug(self.args.data_filepath)
-            split_files = self.args.data_filepath.split(",")
-            log.debug(split_files)
-            for current_file in split_files:
-                if not os.path.isfile(current_file):
-                    log.error("The specified data file '%s' does not seem to exist. Please check the path.",
-                              current_file)
-                    exit()
-            # we do not copy the data in our working dir because it is too large to be copied
-            self.set_data_filepaths(self.args.data_filepath)  # file 1,file 2, ...,file N
-            log.debug(self.get_data_filepaths())
+        # if there is a single file, this will put that file in a list
+        # otherwise, when the user provides several files, it will split them in the array
+        log.debug(self.args.data_filepath)
+        split_files = self.args.data_filepath.split(",")
+        log.debug(split_files)
+        for current_file in split_files:
+            if not os.path.isfile(current_file):
+                log.error("The specified data file '%s' does not seem to exist. Please check the path.",
+                          current_file)
+                exit()
+        # we do not copy the data in our working dir because it is too large to be copied
+        self.set_data_filepaths(self.args.data_filepath)  # file 1,file 2, ...,file N
+        log.debug(self.get_data_filepaths())
 
         # write more information about the current run in the config
         self.add_python_version()
@@ -109,16 +104,29 @@ class BetterConfig:
         self.add_platform_version()
         self.add_user()
 
+        # and about the user parameters
+        log.debug("self.args.extract = %s", self.args.extract)
+        self.set_extract(self.args.extract)
+        self.set_transform(self.args.transform)
+        self.set_load(self.args.load)
+        self.set_analysis(self.args.analysis)
+
         # save the config file in the current working directory
         self.write_to_file()
 
         # print the main parameters of the current run
-        log.info("Selected hospital name: %s", self.get_hospital_name())
+        log.info("The hospital name is: %s", self.get_hospital_name())
         log.info("The database name is %s", self.get_db_name())
+        log.info("The database will be dropped: %s", ("yes" if self.get_db_drop() else "no"))
         log.info("The connection string is: %s", self.get_db_connection())
         log.info("The database will be dropped: %s", self.get_db_drop())
         log.info("The metadata file is located at: %s", self.get_metadata_filepath())
-        log.info("The data file is located at: %s", self.get_data_filepaths())
+        log.info("The data files are located at: %s", self.get_data_filepaths())
+        log.info("The data files are located at: %s", self.get_data_filepaths())
+        log.info("The Extract step will be performed: %s", ("yes" if self.get_extract() else "no"))
+        log.info("The Analysis step will be performed: %s", ("yes" if self.get_analysis() else "no"))
+        log.info("The Transform step will be performed: %s", ("yes" if self.get_transform() else "no"))
+        log.info("The Load step will be performed: %s", ("yes" if self.get_load() else "no"))
         log.debug(self.to_json())
 
     # below, define methods for each parameter in the config
@@ -183,6 +191,22 @@ class BetterConfig:
         self.set_system_section()
         self.config.set(BetterConfig.SYSTEM_SECTION, BetterConfig.USER_KEY, getpass.getuser())
 
+    def set_extract(self, extract):
+        self.set_run_section()
+        self.config.set(BetterConfig.RUN_SECTION, BetterConfig.EXTRACT_KEY, extract)
+
+    def set_transform(self, transform):
+        self.set_run_section()
+        self.config.set(BetterConfig.RUN_SECTION, BetterConfig.TRANSFORM_KEY, transform)
+
+    def set_load(self, load):
+        self.set_run_section()
+        self.config.set(BetterConfig.RUN_SECTION, BetterConfig.LOAD_KEY, load)
+
+    def set_analysis(self, analyze):
+        self.set_run_section()
+        self.config.set(BetterConfig.RUN_SECTION, BetterConfig.ANALYSIS_KEY, analyze)
+
     # set sections
     def set_files_section(self):
         if not self.config.has_section(BetterConfig.FILES_SECTION):
@@ -200,97 +224,125 @@ class BetterConfig:
         if not self.config.has_section(BetterConfig.SYSTEM_SECTION):
             self.config.add_section(BetterConfig.SYSTEM_SECTION)
 
+    def set_run_section(self):
+        if not self.config.has_section(BetterConfig.RUN_SECTION):
+            self.config.add_section(BetterConfig.RUN_SECTION)
+
     # get config variables
     def get_working_dir(self):
         try:
             return self.config.get(BetterConfig.FILES_SECTION, BetterConfig.WORKING_DIR_KEY)
-        except:
+        except Exception:
             return ""
 
     def get_working_dir_current(self):
         try:
             return self.config.get(BetterConfig.FILES_SECTION, BetterConfig.WORKING_DIR_CURRENT_KEY)
-        except:
+        except Exception:
             return ""
 
     def get_metadata_filepath(self):
         try:
             return self.config.get(BetterConfig.FILES_SECTION, BetterConfig.METADATA_FILEPATH_KEY)
-        except:
+        except Exception:
             return ""
 
     def get_current_filepath(self):
         try:
             return self.config.get(BetterConfig.FILES_SECTION, BetterConfig.CURRENT_FILEPATH_KEY)
-        except:
+        except Exception:
             return ""
 
     def get_data_filepaths(self) -> list:
         try:
             # return the list of files instead of the stringified list of files
             return self.config.get(BetterConfig.FILES_SECTION, BetterConfig.DATA_FILEPATHS_KEY).split(",")
-        except:
+        except Exception:
             return []
 
     def get_db_connection(self):
         try:
             return self.config.get(BetterConfig.DB_SECTION, BetterConfig.CONNECTION_KEY)
-        except:
+        except Exception:
             return ""
 
     def get_db_name(self):
         try:
             return self.config.get(BetterConfig.DB_SECTION, BetterConfig.NAME_KEY)
-        except:
+        except Exception:
             return ""
 
     def get_db_drop(self) -> bool:
         try:
             return self.config.get(BetterConfig.DB_SECTION, BetterConfig.DROP_KEY) == "True"
-        except:
+        except Exception:
             return False
 
     def get_hospital_name(self):
         try:
             return self.config.get(BetterConfig.HOSPITAL_SECTION, BetterConfig.NAME_KEY)
-        except:
+        except Exception:
             return ""
 
     def get_python_version(self):
         try:
             return self.config.get(BetterConfig.SYSTEM_SECTION, BetterConfig.PYTHON_VERSION_KEY)
-        except:
+        except Exception:
             return ""
 
     def get_pymongo_version(self):
         try:
             return self.config.get(BetterConfig.SYSTEM_SECTION, BetterConfig.PYMONGO_VERSION_KEY)
-        except:
+        except Exception:
             return ""
 
     def get_execution_date(self):
         try:
             return self.config.get(BetterConfig.SYSTEM_SECTION, BetterConfig.EXECUTION_KEY)
-        except:
+        except Exception:
             return ""
 
     def get_platform(self):
         try:
             return self.config.get(BetterConfig.SYSTEM_SECTION, BetterConfig.PLATFORM_KEY)
-        except:
+        except Exception:
             return ""
 
     def get_platform_version(self):
         try:
             return self.config.get(BetterConfig.SYSTEM_SECTION, BetterConfig.PLATFORM_VERSION_KEY)
-        except:
+        except Exception:
             return ""
 
     def get_user(self):
         try:
             return self.config.get(BetterConfig.SYSTEM_SECTION, BetterConfig.USER_KEY)
-        except:
+        except Exception:
             return ""
+
+    def get_extract(self) -> bool:
+        try:
+            return self.config.get(BetterConfig.RUN_SECTION, BetterConfig.EXTRACT_KEY) == "True"
+        except Exception:
+            return False
+
+    def get_transform(self) -> bool:
+        try:
+            return self.config.get(BetterConfig.RUN_SECTION, BetterConfig.TRANSFORM_KEY) == "True"
+        except Exception:
+            return False
+
+    def get_load(self) -> bool:
+        try:
+            return self.config.get(BetterConfig.RUN_SECTION, BetterConfig.LOAD_KEY) == "True"
+        except Exception:
+            return False
+
+    def get_analysis(self) -> bool:
+        try:
+            return self.config.get(BetterConfig.RUN_SECTION, BetterConfig.ANALYSIS_KEY) == "True"
+        except Exception:
+            return False
 
     # write config to file
     def write_to_file(self):

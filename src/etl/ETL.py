@@ -25,7 +25,6 @@ class ETL:
         self.run_analysis = False
         self.transform_data = True
         self.load_data = True
-        self.compute_plots = False
 
         self.extract = Extract(database=self.database, run_analysis=self.run_analysis, config=self.config)
         self.load = Load(database=self.database, config=self.config)
