@@ -17,7 +17,7 @@ from src.utils.setup_logger import log
 
 class Extract:
 
-    def __init__(self, database: Database, run_analysis: bool, config: BetterConfig):
+    def __init__(self, database: Database, config: BetterConfig):
         self.metadata = None
         self.data = None
         self.mapped_values = {}  # accepted values for some categorical columns (column "JSON_values" in metadata)
@@ -26,16 +26,13 @@ class Extract:
         self.config = config
         self.database = database
 
-        # flags
-        self.run_analysis = run_analysis
-
     def run(self):
         self.load_metadata_file()
         self.load_data_file()
         self.compute_mapped_values()
         self.compute_mapped_types()
 
-        if self.run_analysis:
+        if self.config.get_analysis():
             self.run_value_analysis()
             self.run_variable_analysis()
 

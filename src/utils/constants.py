@@ -17,6 +17,17 @@ ID_COLUMNS = {
     }
 }
 
+LOCALES = {
+    HospitalNames.IT_BUZZI_UC1.value: "it_IT",
+    HospitalNames.RS_IMGGE: "sr_RS",
+    HospitalNames.ES_HSJD: "es_ES",
+    HospitalNames.IT_BUZZI_UC3: "it_IT",
+    HospitalNames.ES_TERRASSA: "es_ES",
+    HospitalNames.DE_UKK: "de_DE",
+    HospitalNames.ES_LAFE: "es_ES",
+    HospitalNames.IL_HMC: "en_IL"
+}
+
 PHENOTYPIC_VARIABLES = {
     get_ontology_resource_uri(Ontologies.SNOMEDCT.value["url"], "184099003"): "DateOfBirth",
     get_ontology_resource_uri(Ontologies.LOINC.value["url"], "21112-8"): "DateOfBirth",

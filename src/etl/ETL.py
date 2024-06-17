@@ -1,3 +1,4 @@
+import locale
 import os
 import traceback
 
@@ -7,6 +8,8 @@ from src.etl.Extract import Extract
 from src.etl.Load import Load
 from src.etl.Transform import Transform
 from src.utils.setup_logger import log
+from utils.HospitalNames import HospitalNames
+from utils.constants import LOCALES
 
 
 class ETL:
@@ -20,13 +23,20 @@ class ETL:
             log.error("The MongoDB client could not be set up properly. The given connection string was %s.", self.config.get_db_connection())
             exit()
 
-        # flags to know what to do during the ETL process
-        self.extract_data = True
-        self.run_analysis = False
-        self.transform_data = True
-        self.load_data = True
+        # set the locale
+        if self.config.get_use_en_locale():
+            # this user explicitly asked for loading data with en_US locale
+            log.debug("default locale: en_US")
+            locale.setlocale(locale.LC_NUMERIC, "en_US")
+        else:
+            # we use the default locale assigned to each center based on their country
+            log.debug("custom locale: %s", LOCALES[HospitalNames[self.config.get_hospital_name()].value])
+            locale.setlocale(locale.LC_NUMERIC, LOCALES[HospitalNames[self.config.get_hospital_name()].value])
 
-        self.extract = Extract(database=self.database, run_analysis=self.run_analysis, config=self.config)
+        log.info("Current locale is: %s", locale.getlocale(locale.LC_NUMERIC))
+
+        # flags to know what to do during the ETL process
+        self.extract = Extract(database=self.database, config=self.config)
         self.load = Load(database=self.database, config=self.config)
         self.transform = Transform(extract=self.extract, load=self.load, database=self.database, config=self.config)
 
@@ -45,11 +55,11 @@ class ETL:
 
             log.info("--- Starting to ingest file '%s'", self.config.get_current_filepath())
             try:
-                if self.extract_data:
+                if self.config.get_extract():
                     self.extract.run()
-                if self.transform_data:
+                if self.config.get_transform():
                     self.transform.run()
-                if self.load_data:
+                if self.config.get_load():
                     self.load.run()
             except Exception:
                 traceback.print_exc()  # print the stack trace

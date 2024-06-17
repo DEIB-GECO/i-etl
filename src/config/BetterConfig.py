@@ -37,6 +37,7 @@ class BetterConfig:
     PLATFORM_KEY = "platform"
     PLATFORM_VERSION_KEY = "platform_version"
     USER_KEY = "user"
+    USE_EN_LOCALE_KEY = "locale"
     # RUN section
     EXTRACT_KEY = "extract"
     TRANSFORM_KEY = "transform"
@@ -103,6 +104,7 @@ class BetterConfig:
         self.add_platform()
         self.add_platform_version()
         self.add_user()
+        self.set_use_en_locale(self.args.use_en_locale)
 
         # and about the user parameters
         log.debug("self.args.extract = %s", self.args.extract)
@@ -127,6 +129,7 @@ class BetterConfig:
         log.info("The Analysis step will be performed: %s", ("yes" if self.get_analysis() else "no"))
         log.info("The Transform step will be performed: %s", ("yes" if self.get_transform() else "no"))
         log.info("The Load step will be performed: %s", ("yes" if self.get_load() else "no"))
+        log.info("Use english (en_US) locale instead of the one assigned by the system: %s", ("yes" if self.get_use_en_locale() else "no"))
         log.debug(self.to_json())
 
     # below, define methods for each parameter in the config
@@ -190,6 +193,10 @@ class BetterConfig:
     def add_user(self):
         self.set_system_section()
         self.config.set(BetterConfig.SYSTEM_SECTION, BetterConfig.USER_KEY, getpass.getuser())
+
+    def set_use_en_locale(self, use_en_locale):
+        self.set_system_section()
+        self.config.set(BetterConfig.SYSTEM_SECTION, BetterConfig.USE_EN_LOCALE_KEY, use_en_locale)
 
     def set_extract(self, extract):
         self.set_run_section()
@@ -319,6 +326,12 @@ class BetterConfig:
             return self.config.get(BetterConfig.SYSTEM_SECTION, BetterConfig.USER_KEY)
         except Exception:
             return ""
+
+    def get_use_en_locale(self) -> bool:
+        try:
+            return self.config.get(BetterConfig.SYSTEM_SECTION, BetterConfig.USE_EN_LOCALE_KEY) == "True"
+        except Exception:
+            return False
 
     def get_extract(self) -> bool:
         try:

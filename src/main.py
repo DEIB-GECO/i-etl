@@ -33,6 +33,7 @@ if __name__ == '__main__':
     parser.add_argument("--analysis", help="Whether to perform a data analysis on the provided files.", choices={"True", "False"}, required=True)
     parser.add_argument("--transform", help="Whether to perform the Transform step of the ETL.", choices={"True", "False"}, required=True)
     parser.add_argument("--load", help="Whether to perform the Load step of the ETL.", choices={"True", "False"}, required=True)
+    parser.add_argument("--use_en_locale", help="Whether to use the en_US locale instead of the one automatically assign by the ETL.", choices={"True", "False"}, required=True)
 
     args = parser.parse_args()
     config = BetterConfig(args)

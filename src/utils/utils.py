@@ -1,5 +1,6 @@
 import math
 import re
+import traceback
 from datetime import time
 from typing import Any
 import time
@@ -9,6 +10,8 @@ from pandas import DataFrame
 
 from src.datatypes.CodeableConcept import CodeableConcept
 from src.utils.Ontologies import Ontologies
+from utils.setup_logger import log
+import locale
 
 
 # ASSERTIONS
@@ -278,13 +281,14 @@ def get_values_from_json_values(json_values):
 
 
 def convert_value(value):
-    try:
-        return float(value)
-    except ValueError:
+    if type(value) is str:
         try:
-            return int(value)
-        except ValueError:
+            return locale.atof(value)
+        except Exception:
             return value
+    else:
+        # this is already cast to the right type, nothing more to do
+        return value
 
 
 # COMPUTE CONSTANTS
