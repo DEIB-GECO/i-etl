@@ -37,8 +37,8 @@ class CodeableConcept:
             "coding": [coding.to_json() for coding in self.codings]
         }
 
-    def __str__(self):
+    def __str__(self) -> str:
         return json.dumps(self.to_json())
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return json.dumps(self.to_json())

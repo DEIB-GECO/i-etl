@@ -22,11 +22,11 @@ class DiseaseRecord(Resource):
         self.recorded_by = hospital_ref
         self.instantiate = disease_ref
 
-    def get_type(self):
+    def get_type(self) -> str:
         return TableNames.DISEASE_RECORD.value
 
-    def to_json(self):
-        json_disease_record = {
+    def to_json(self) -> dict:
+        return {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "clinicalStatus": self.clinical_status,
@@ -37,5 +37,3 @@ class DiseaseRecord(Resource):
             "instantiates": self.instantiate.to_json(),
             "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
         }
-
-        return json_disease_record

@@ -18,14 +18,11 @@ class Examination(Resource):
         self.category = category
         self.permitted_data_types = permitted_data_types
 
-    def get_category(self):
-        return self.category
-
-    def get_type(self):
+    def get_type(self) -> str:
         return TableNames.EXAMINATION.value
 
-    def to_json(self):
-        json_examination = {
+    def to_json(self) -> dict:
+        return {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "code": self.code.to_json(),
@@ -33,8 +30,6 @@ class Examination(Resource):
             "permittedDatatype": self.permitted_data_types,
             "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
         }
-
-        return json_examination
 
     @classmethod
     def get_label(cls, row) -> str:

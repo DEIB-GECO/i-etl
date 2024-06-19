@@ -9,8 +9,8 @@ class Counter:
         self.resource_id = self.resource_id + 1
         return self.resource_id
 
-    def set(self, new_value):
+    def set(self, new_value) -> None:
         self.resource_id = new_value
 
-    def reset(self):
+    def reset(self) -> None:
         self.resource_id = 0

@@ -40,7 +40,7 @@ class ETL:
         self.load = Load(database=self.database, config=self.config)
         self.transform = Transform(extract=self.extract, load=self.load, database=self.database, config=self.config)
 
-    def run(self):
+    def run(self) -> None:
         error_occurred = False
         for one_file in self.config.get_data_filepaths():
             log.debug(one_file)

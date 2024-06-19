@@ -28,10 +28,8 @@ class Patient(Resource):
         Get the JSON representation of the resource.
         :return: A JSON dict being the Patient with all its attributes.
         """
-        json_patient = {
+        return {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
         }
-
-        return json_patient

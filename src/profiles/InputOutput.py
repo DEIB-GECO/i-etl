@@ -24,12 +24,12 @@ class InputOutput(Resource):
         else:
             self.date = date
 
-    def get_type(self):
+    def get_type(self) -> str:
         # do not use a TableName here as we do not create a specific table for them,
         # instead we nest them (as JSON dicts) in Analysis input and output
         return "InputOutput"
 
-    def to_json(self):
+    def to_json(self) -> dict:
         return {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),

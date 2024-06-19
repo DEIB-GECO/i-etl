@@ -157,7 +157,7 @@ class Database:
         log.debug(mapping)
         return mapping
 
-    def write_in_file(self, data_array: list, table_name: str, count: int):
+    def write_in_file(self, data_array: list, table_name: str, count: int) -> None:
         if len(data_array) > 0:
             filename = os.path.join(self.config.get_working_dir_current(), table_name + str(count) + ".json")
             with open(filename, "w") as data_file:
@@ -199,7 +199,7 @@ class Database:
         """
         self.db[table_name].create_index(columns, unique=True)
 
-    def get_min_or_max_value(self, table_name: str, field: str, sort_order: int):
+    def get_min_or_max_value(self, table_name: str, field: str, sort_order: int) -> int | float:
         operations = [
             mongodb_project_one(field=field, split_delimiter="/"),
             mongodb_unwind(field=field),
@@ -221,13 +221,13 @@ class Database:
             else:
                 return result["max"]
 
-    def get_max_value(self, table_name: str, field: str):
+    def get_max_value(self, table_name: str, field: str) -> int | float:
         return self.get_min_or_max_value(table_name=table_name, field=field, sort_order=-1)
 
-    def get_min_value(self, table_name: str, field: str):
+    def get_min_value(self, table_name: str, field: str) -> int | float:
         return self.get_min_or_max_value(table_name=table_name, field=field, sort_order=1)
 
-    def get_avg_value_of_examination_record(self, examination_url: str) -> float:
+    def get_avg_value_of_examination_record(self, examination_url: str) -> int | float:
         """
         Compute the average value among all the examination records for a certain examination.
         :param examination_url: A string being the examination url of the form Examination/X, where X is the
@@ -267,4 +267,5 @@ class Database:
         return "Database " + self.config.get_db_name()
 
     def get_db(self):
+        # TODO Nelly: missing hint for return
         return self.db

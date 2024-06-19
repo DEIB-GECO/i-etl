@@ -13,10 +13,10 @@ class Medicine(Resource):
 
         self.code = code
 
-    def get_type(self):
+    def get_type(self) -> str:
         return TableNames.MEDICINE.value
 
-    def to_json(self):
+    def to_json(self) -> dict:
         return {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),

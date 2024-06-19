@@ -35,7 +35,7 @@ class ExaminationRecord(Resource):
     def get_type(self) -> str:
         return TableNames.EXAMINATION_RECORD.value
 
-    def to_json(self):
+    def to_json(self) -> dict:
         if isinstance(self.value, CodeableConcept) or isinstance(self.value, Coding) or isinstance(self.value, Reference):
             # complex type, we need to expand it with .to_json()
             expanded_value = self.value.to_json()
@@ -46,7 +46,7 @@ class ExaminationRecord(Resource):
             # primitive type, no need to expand it
             expanded_value = self.value
 
-        json_clinical_record = {
+        return {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "value": expanded_value,
@@ -56,5 +56,3 @@ class ExaminationRecord(Resource):
             "basedOn": self.based_on.to_json(),
             "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
         }
-
-        return json_clinical_record

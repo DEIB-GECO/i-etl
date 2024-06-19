@@ -26,7 +26,7 @@ class Extract:
         self.config = config
         self.database = database
 
-    def run(self):
+    def run(self) -> None:
         self.load_metadata_file()
         self.load_data_file()
         self.compute_mapped_values()
@@ -36,7 +36,7 @@ class Extract:
             self.run_value_analysis()
             self.run_variable_analysis()
 
-    def load_metadata_file(self):
+    def load_metadata_file(self) -> None:
         log.info("Metadata filepath is %s.", self.config.get_metadata_filepath())
 
         # index_col is False to not add a column with line numbers
@@ -89,7 +89,7 @@ class Extract:
 
         log.info("%s columns and %s lines in the metadata file.", len(self.metadata.columns), len(self.metadata))
 
-    def preprocess_metadata_file(self):
+    def preprocess_metadata_file(self) -> None:
         # 1. capitalize and replace spaces in column names
         self.metadata.rename(columns=lambda x: x.upper().replace(" ", "_"), inplace=True)
 
@@ -109,7 +109,7 @@ class Extract:
         self.metadata = self.metadata.drop(self.config.get_hospital_name(), axis=1)
         log.debug(self.metadata)
 
-    def load_data_file(self):
+    def load_data_file(self) -> None:
         log.info(self.config.get_current_filepath())
         assert os.path.exists(self.config.get_current_filepath()), "The provided samples file could not be found. Please check the filepath you specify when running this script."
 
@@ -123,7 +123,7 @@ class Extract:
 
         log.info("%s columns and %s lines in the data file.", len(self.data.columns), len(self.data))
 
-    def compute_mapped_values(self):
+    def compute_mapped_values(self) -> None:
         self.mapped_values = {}
 
         for index, row in self.metadata.iterrows():
@@ -143,7 +143,7 @@ class Extract:
                 self.mapped_values[row["name"]] = parsed_dicts
         log.debug(self.mapped_values)
 
-    def compute_mapped_types(self):
+    def compute_mapped_types(self) -> None:
         self.mapped_types = {}
 
         for index, row in self.metadata.iterrows():
@@ -151,7 +151,7 @@ class Extract:
                 self.mapped_types[row["name"]] = row["vartype"]  # we associate the column name to its expected type
         log.debug(self.mapped_types)
 
-    def run_value_analysis(self):
+    def run_value_analysis(self) -> None:
         log.debug(self.mapped_values)
         # for each column in the sample data (and not in the metadata because some (empty) data columns are not
         # present in the metadata file), we compare the set of values it takes against the accepted set of values
@@ -179,7 +179,7 @@ class Extract:
             if value_analysis.nb_unrecognized_data_types > 0 or (0 < value_analysis.ratio_non_empty_values_matching_accepted < 1):
                 log.info("%s: %s", column, value_analysis)
 
-    def run_variable_analysis(self):
+    def run_variable_analysis(self) -> None:
         variable_analysis = VariableAnalysis(samples=self.data, metadata=self.metadata)
         variable_analysis.run_analysis()
         log.info(variable_analysis)

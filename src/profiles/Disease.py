@@ -24,14 +24,13 @@ class Disease(Resource):
         # set up the resource attributes
         self.code = code
 
-    def get_type(self):
+    def get_type(self) -> str:
         return TableNames.DISEASE.value
 
-    def to_json(self):
-        json_disease = {
+    def to_json(self) -> dict:
+        return {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "code": self.code.to_json(),
             "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
         }
-        return json_disease

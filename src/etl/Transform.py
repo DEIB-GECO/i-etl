@@ -1,4 +1,5 @@
 import math
+from typing import Any
 
 from src.datatypes.Identifier import Identifier
 from src.config.BetterConfig import BetterConfig
@@ -44,7 +45,7 @@ class Transform:
         self.mapping_column_to_examination_id = {}  # map the column names to their Examination IDs
         self.mapping_disease_to_disease_id = {}  # map the disease names to their Disease IDs
 
-    def run(self):
+    def run(self) -> None:
         self.set_resource_counter_id()
         self.create_hospital(hospital_name=self.config.get_hospital_name())
         self.load.load_json_in_table(table_name=TableNames.HOSPITAL.value, unique_variables=["name"])
@@ -81,7 +82,7 @@ class Transform:
         self.hospitals.append(new_hospital)
         self.database.write_in_file(data_array=self.hospitals, table_name=TableNames.HOSPITAL.value, count=1)
 
-    def create_examinations(self):
+    def create_examinations(self) -> None:
         log.info("create examination instances in memory")
         columns = self.extract.data.columns.values.tolist()
         count = 1
@@ -107,7 +108,7 @@ class Transform:
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
         self.database.write_in_file(data_array=self.examinations, table_name=TableNames.EXAMINATION.value, count=count)
 
-    def create_samples(self):
+    def create_samples(self) -> None:
         if is_in_insensitive(value=ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.SAMPLE.value], list_of_compared=self.extract.data.columns):
             # this is a dataset with samples
             log.info("create sample instances in memory")
@@ -142,7 +143,7 @@ class Transform:
                                 # which was provided by the hospital (thus is known by the dataset)
             self.database.write_in_file(data_array=self.samples, table_name=TableNames.SAMPLE.value, count=count)
 
-    def create_examination_records(self):
+    def create_examination_records(self) -> None:
         log.info("create examination record instances in memory")
 
         # a. load some data from the database to compute references
@@ -198,7 +199,7 @@ class Transform:
 
         self.database.write_in_file(data_array=self.examination_records, table_name=TableNames.EXAMINATION_RECORD.value, count=count)
 
-    def create_patients(self):
+    def create_patients(self) -> None:
         log.info("create patient instances in memory")
         created_patient_ids = set()
         count = 1
@@ -217,7 +218,7 @@ class Transform:
                     # which was provided by the hospital (thus is known by the dataset)
         self.database.write_in_file(data_array=self.patients, table_name=TableNames.PATIENT.value, count=count)
 
-    def create_codeable_concept_from_column(self, column_name: str):
+    def create_codeable_concept_from_column(self, column_name: str) -> CodeableConcept | None:
         rows = self.extract.metadata.loc[self.extract.metadata['name'] == column_name]
         if len(rows) == 1:
             row = rows.iloc[0]
@@ -237,7 +238,7 @@ class Transform:
             # log.warn("Found several times the column '%s' in the metadata", column_name)
             return None
 
-    def create_code_from_metadata(self, row, ontology_column: str, code_column: str):
+    def create_code_from_metadata(self, row, ontology_column: str, code_column: str) -> tuple | None:
         ontology = row[ontology_column]
         if not is_not_nan(value=ontology):
             # no ontology code has been provided for that variable name, let's skip it
@@ -250,7 +251,7 @@ class Transform:
             cc_tuple = (str(ontology), str(code), str(display))
             return cc_tuple
 
-    def determine_examination_category(self, column_name: str):
+    def determine_examination_category(self, column_name: str) -> CodeableConcept:
         cc = CodeableConcept()
         if self.is_column_name_phenotypic(column_name=column_name):
             cc.add_coding(triple=ExaminationCategory.CATEGORY_PHENOTYPIC.value)
@@ -258,13 +259,13 @@ class Transform:
             cc.add_coding(triple=ExaminationCategory.CATEGORY_CLINICAL.value)
         return cc
 
-    def is_column_name_phenotypic(self, column_name: str):
+    def is_column_name_phenotypic(self, column_name: str) -> bool:
         for phen_variable in PHENOTYPIC_VARIABLES:
             if is_equal_insensitive(value=phen_variable, compared=column_name):
                 return True
         return False
 
-    def fairify_value(self, column_name, value):
+    def fairify_value(self, column_name, value) -> Any:
         if column_name in self.extract.mapped_values:
             # we iterate over all the mappings of a given column
             for mapping in self.extract.mapped_values[column_name]:

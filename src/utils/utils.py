@@ -13,7 +13,7 @@ from src.utils.Ontologies import Ontologies
 
 # ASSERTIONS
 
-def is_float(value) -> bool:
+def is_float(value: Any) -> bool:
     if isinstance(value, str) or isinstance(value, int) or isinstance(value, float):
         try:
             float(value)
@@ -25,11 +25,11 @@ def is_float(value) -> bool:
         return False
 
 
-def is_not_nan(value) -> bool:
+def is_not_nan(value: Any) -> bool:
     return not is_float(value=value) or (is_float(value=value) and not math.isnan(float(value)))
 
 
-def is_not_empty(variable) -> bool:
+def is_not_empty(variable: Any) -> bool:
     if isinstance(variable, int) or isinstance(variable, float):
         return True
     elif isinstance(variable, str):
@@ -50,7 +50,7 @@ def is_not_empty(variable) -> bool:
         return variable is not None
 
 
-def is_in_insensitive(value, list_of_compared):
+def is_in_insensitive(value: Any, list_of_compared: list[Any]) -> bool:
     if not isinstance(value, str):
         return value in list_of_compared
     else:
@@ -60,7 +60,7 @@ def is_in_insensitive(value, list_of_compared):
         return False
 
 
-def is_equal_insensitive(value, compared):
+def is_equal_insensitive(value: Any, compared: Any) -> bool:
     if not isinstance(value, str):
         return value == compared
     else:
@@ -87,21 +87,21 @@ def get_ontology_resource_uri(ontology_system: str, resource_code: str) -> str:
 
 # NORMALIZE DATA
 
-def get_int_from_str(str_value):
+def get_int_from_str(str_value: str):
     try:
         return int(str_value)
     except ValueError:
         return None  # this was not an int value
 
 
-def get_float_from_str(str_value):
+def get_float_from_str(str_value: str):
     try:
         return locale.atof(str_value)
     except ValueError:
         return None  # this was not a float value
 
 
-def get_datetime_from_str(str_value) -> datetime:
+def get_datetime_from_str(str_value: str) -> datetime:
     try:
         datetime_value = parse(str_value)
         # %Y-%m-%d %H:%M:%S is the format used by default by parse (the output is always of this form)
@@ -119,7 +119,7 @@ def normalize_value(input_string: str) -> str:
     return input_string.upper().strip().replace(" ", "").replace("_", "")
 
 
-def convert_value(value):
+def convert_value(value: Any) -> Any:
     if isinstance(value, str):
         # try to convert as boolean
         if value == "True":
@@ -247,7 +247,7 @@ def mongodb_min(field: str) -> dict:
 # LIST AND DICT CONVERSIONS
 
 
-def get_values_from_json_values(json_values):
+def get_values_from_json_values(json_values: dict) -> list[dict]:
     values = []
     for current_dict in json_values:
         if is_not_nan(value=current_dict) and is_not_empty(variable=current_dict):

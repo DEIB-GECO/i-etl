@@ -12,7 +12,7 @@ class Identifier:
         else:
             self.value = resource_type + "/" + id_value
 
-    def to_json(self):
+    def to_json(self) -> dict:
         return {
             "value": self.value
         }

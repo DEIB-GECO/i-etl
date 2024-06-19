@@ -17,10 +17,10 @@ class MedicineRecord(Resource):
         self.subject = patient_ref
         self.recorded_by = hospital_ref
 
-    def get_type(self):
+    def get_type(self) -> str:
         return TableNames.MEDICINE_RECORD.value
 
-    def to_json(self):
+    def to_json(self) -> dict:
         return {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),

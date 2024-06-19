@@ -15,12 +15,12 @@ class Analysis(Resource):
         self.input = the_input
         self.output = the_output
 
-    def get_type(self):
+    def get_type(self) -> str:
         # do not use a TableName here as we do not create a specific table for them,
         # instead we nest them (as JSON dicts) in GenomicData analysis
         return "Analysis"
 
-    def to_json(self):
+    def to_json(self) -> dict:
         return {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),

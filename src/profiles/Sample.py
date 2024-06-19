@@ -22,10 +22,10 @@ class Sample(Resource):
         self.too_young = too_young
         self.bis = bis
 
-    def get_type(self):
+    def get_type(self) -> str:
         return TableNames.SAMPLE.value
 
-    def to_json(self):
+    def to_json(self) -> dict:
         json_sample = {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),

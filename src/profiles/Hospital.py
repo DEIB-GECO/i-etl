@@ -32,10 +32,9 @@ class Hospital(Resource):
         Get the JSON representation of the resource.
         :return: A JSON dict being the Hospital with all its attributes.
         """
-        json_hospital = {
+        return {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "name": self.name,
             "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
         }
-        return json_hospital

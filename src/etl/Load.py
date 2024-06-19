@@ -14,7 +14,7 @@ class Load:
         self.database = database
         self.config = config
 
-    def run(self):
+    def run(self) -> None:
         # Insert resources that have not been inserted yet, i.e.,
         # anything else than Hospital, Examination and Disease instances
         log.debug("in the Load class")
@@ -24,7 +24,7 @@ class Load:
 
         self.load_json_in_table(table_name=TableNames.SAMPLE.value, unique_variables=["identifier"])
 
-    def load_json_in_table(self, table_name: str, unique_variables):
+    def load_json_in_table(self, table_name: str, unique_variables) -> None:
         log.info("insert data in %s", table_name)
         for filename in os.listdir(self.config.get_working_dir_current()):
             if re.search(table_name+"[0-9]+", filename) is not None:
@@ -39,10 +39,10 @@ class Load:
                                                          unique_variables=unique_variables,
                                                          tuples=tuples)
 
-    def retrieve_identifiers(self, table_name: str, projection: str):
+    def retrieve_identifiers(self, table_name: str, projection: str) -> dict:
         return self.database.retrieve_identifiers(table_name=table_name, projection=projection)
 
-    def create_db_indexes(self):
+    def create_db_indexes(self) -> None:
         self.database.create_unique_index(table_name=TableNames.PATIENT.value, columns={"metadata.csv_filepath": 1, "metadata.csv_line": 1})
         self.database.create_unique_index(table_name=TableNames.HOSPITAL.value, columns={"id": 1, "name": 1})
         self.database.create_unique_index(table_name=TableNames.EXAMINATION.value, columns={"code.codings.system": 1, "code.codings.code": 1})
