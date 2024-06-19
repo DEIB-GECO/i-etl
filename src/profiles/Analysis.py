@@ -1,11 +1,13 @@
 from src.datatypes.CodeableConcept import CodeableConcept
 from src.profiles.Resource import Resource
+from utils.Counter import Counter
+from utils.InputOutput import InputOutput
 
 
 class Analysis(Resource):
     def __init__(self, id_value: str, method_type: CodeableConcept, change_type: CodeableConcept,
-                 genome_build: CodeableConcept, the_input: InputOutput, the_output: InputOutput):
-        super().__init__(id_value, self.get_type())
+                 genome_build: CodeableConcept, the_input: InputOutput, the_output: InputOutput, counter: Counter):
+        super().__init__(id_value, self.get_type(), counter)
 
         self.method_type = method_type
         self.change_type = change_type

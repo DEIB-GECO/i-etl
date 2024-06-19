@@ -51,7 +51,7 @@ class ETL:
             else:
                 # this is a relative filepath, we consider it to be relative to the project root (BETTER-fairificator)
                 # we need to add twice .. because the data files are never copied to the working dir (but remain in their place)
-                self.config.set_current_filepath(os.path.join(self.config.get_working_dir_current(), "..", "..", one_file))
+                self.config.set_current_filepath(os.path.join(self.config.get_working_dir_current(), "..", "..", str(one_file)))
 
             log.info("--- Starting to ingest file '%s'", self.config.get_current_filepath())
             try:

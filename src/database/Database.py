@@ -1,8 +1,6 @@
 import json
 import os
 import traceback
-from datetime import datetime, timedelta
-from random import randrange
 
 import pymongo
 from pymongo import MongoClient
@@ -11,8 +9,8 @@ from pymongo.cursor import Cursor
 
 from src.config.BetterConfig import BetterConfig
 from src.utils.TableNames import TableNames
-from src.utils.utils import mongodb_project_one, mongodb_group_by, mongodb_match, mongodb_limit, mongodb_sort, \
-    mongodb_max, mongodb_unwind, mongodb_min, get_mongodb_date_from_datetime
+from src.utils.utils import mongodb_project_one, mongodb_group_by, mongodb_match, mongodb_sort, \
+    mongodb_max, mongodb_unwind, mongodb_min
 from src.utils.constants import BATCH_SIZE
 from src.utils.setup_logger import log
 from src.utils.UpsertPolicy import UpsertPolicy
@@ -205,11 +203,12 @@ class Database:
         self.db[table_name].create_index(columns, unique=True)
 
     def get_min_or_max_value(self, table_name: str, field: str, sort_order: int):
-        operations = []
+        operations = [
+            mongodb_project_one(field=field, split_delimiter="/"),
+            mongodb_unwind(field=field),
+            mongodb_match(field=field, value="[0-9]+", is_regex=True)
+        ]
 
-        operations.append(mongodb_project_one(field=field, split_delimiter="/"))
-        operations.append(mongodb_unwind(field=field))
-        operations.append(mongodb_match(field=field, value="[0-9]+", is_regex=True))
         if sort_order == 1:
             operations.append(mongodb_min(field=field))
         else:
@@ -230,9 +229,6 @@ class Database:
 
     def get_min_value(self, table_name: str, field: str):
         return self.get_min_or_max_value(table_name=table_name, field=field, sort_order=1)
-        # mongodb_match(field="instantiate.reference", value=examination_url),
-        # mongodb_project_one(field="value"),
-        # mongodb_sort(field="value", sort_order=sort_order),
 
     def get_avg_value_of_examination_record(self, examination_url: str) -> float:
         """
@@ -243,8 +239,8 @@ class Database:
         :return: A float value being the average value for the given examination url.
         """
         cursor = self.db[TableNames.EXAMINATION_RECORD.value].aggregate([
-            mongodb_match(field="instantiate.reference", value=examination_url),
-            mongodb_project_one(field="value"),
+            mongodb_match(field="instantiate.reference", value=examination_url, is_regex=False),
+            mongodb_project_one(field="value", split_delimiter=""),
             mongodb_group_by(group_key=None, group_by_name="avg_val", operator="$avg", field="$value")
         ])
 
@@ -261,10 +257,10 @@ class Database:
         :return: A CommandCursor to iterate over the value distribution of the form { "value": frequency, ... }
         """
         pipeline = [
-            mongodb_match(field="instantiate.reference", value=examination_url),
-            mongodb_project_one(field="value"),
+            mongodb_match(field="instantiate.reference", value=examination_url, is_regex=False),
+            mongodb_project_one(field="value", split_delimiter=""),
             mongodb_group_by(group_key="$value", group_by_name="total", operator="$sum", field=1),
-            mongodb_match(field="total", value={"$gt": min_value}),
+            mongodb_match(field="total", value={"$gt": min_value}, is_regex=False),
             mongodb_sort(field="_id", sort_order=1)
         ]
         # .collation({"locale": "en_US", "numericOrdering": "true"})

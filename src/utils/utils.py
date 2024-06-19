@@ -112,7 +112,9 @@ def get_codeable_concept_from_json(codeable_concept_as_json: dict):
 
 def get_category_from_json(category_as_json: dict):
     # the category is either PHENOTYPIC or CLINICAL, thus no loop for the codings is necessary
-    return CodeableConcept(one_coding=(category_as_json["system"], category_as_json["code"], category_as_json["display"]))
+    cc = CodeableConcept()
+    cc.add_coding(triple=(category_as_json["system"], category_as_json["code"], category_as_json["display"]))
+    return cc
 
 
 # NORMALIZE DATA
@@ -181,7 +183,7 @@ def convert_value(value):
 
 # MONGODB UTILS
 
-def mongodb_match(field: str, value: Any, is_regex: bool = False) -> dict:
+def mongodb_match(field: str, value: Any, is_regex: bool) -> dict:
     if is_regex:
         # this is a match with a regex (in value)
         return {

@@ -44,26 +44,19 @@ class BetterConfig:
     LOAD_KEY = "load"
     ANALYSIS_KEY = "analysis"
 
-    def __init__(self, args=None):
+    def __init__(self):
         self.config = configparser.ConfigParser()
         self.config.read(DEFAULT_CONFIG_FILE)
         log.debug(self.to_json())
 
-        if args is not None:
-            # the user gave parameters
-            # set the Config internals with the user parameters (taken as Python main arguments)
-            self.args = args
-            self.set_from_parameters()
-        else:
-            # the user did not provide any parameters, or we are running tests
-            # in any case, we have read the default config, so we are good
-            pass
-
-    def set_from_parameters(self):
-        self.set_hospital_name(self.args.hospital_name)
-        self.set_db_connection(self.args.connection)
-        self.set_db_name(self.args.database_name)
-        self.set_db_drop(self.args.drop)
+    def set_from_parameters(self, args):
+        # the user gave parameters
+        # set the Config internals with the user parameters (taken as Python main arguments)
+        # otherwise (when no parameters are provided), the default config is used
+        self.set_hospital_name(args.hospital_name)
+        self.set_db_connection(args.connection)
+        self.set_db_name(args.database_name)
+        self.set_db_drop(args.drop)
 
         # create a new folder within the tmp dir to store the current execution tmp files and config
         # this folder is named after the DB name (instead of a timestamp, which will create one folder at each run)
@@ -74,19 +67,19 @@ class BetterConfig:
         os.makedirs(working_folder)  # create the working folder (labelled with the DB name)
 
         # get metadata and data filepaths
-        if not os.path.isfile(self.args.metadata_filepath):
+        if not os.path.isfile(args.metadata_filepath):
             log.error("The specified metadata file does not seem to exist. Please check the path.")
             exit()
         else:
-            metadata_filename = "metadata-" + self.args.hospital_name + ".csv"
+            metadata_filename = "metadata-" + args.hospital_name + ".csv"
             metadata_filepath = os.path.join(self.get_working_dir_current(), metadata_filename)
-            shutil.copyfile(self.args.metadata_filepath, metadata_filepath)
+            shutil.copyfile(args.metadata_filepath, metadata_filepath)
             self.set_metadata_filepath(metadata_filepath)
 
         # if there is a single file, this will put that file in a list
         # otherwise, when the user provides several files, it will split them in the array
-        log.debug(self.args.data_filepath)
-        split_files = self.args.data_filepath.split(",")
+        log.debug(args.data_filepath)
+        split_files = args.data_filepath.split(",")
         log.debug(split_files)
         for current_file in split_files:
             if not os.path.isfile(current_file):
@@ -94,7 +87,7 @@ class BetterConfig:
                           current_file)
                 exit()
         # we do not copy the data in our working dir because it is too large to be copied
-        self.set_data_filepaths(self.args.data_filepath)  # file 1,file 2, ...,file N
+        self.set_data_filepaths(args.data_filepath)  # file 1,file 2, ...,file N
         log.debug(self.get_data_filepaths())
 
         # write more information about the current run in the config
@@ -104,14 +97,14 @@ class BetterConfig:
         self.add_platform()
         self.add_platform_version()
         self.add_user()
-        self.set_use_en_locale(self.args.use_en_locale)
+        self.set_use_en_locale(args.use_en_locale)
 
         # and about the user parameters
-        log.debug("self.args.extract = %s", self.args.extract)
-        self.set_extract(self.args.extract)
-        self.set_transform(self.args.transform)
-        self.set_load(self.args.load)
-        self.set_analysis(self.args.analysis)
+        log.debug("self.args.extract = %s", args.extract)
+        self.set_extract(args.extract)
+        self.set_transform(args.transform)
+        self.set_load(args.load)
+        self.set_analysis(args.analysis)
 
         # save the config file in the current working directory
         self.write_to_file()

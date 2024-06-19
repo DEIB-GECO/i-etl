@@ -168,7 +168,7 @@ class Transform:
                     pass
                 else:
                     if lower_column_name in self.mapping_column_to_examination_id:
-                        log.info("I know a code for column %s", column_name)
+                        # log.info("I know a code for column %s", column_name)
                         # we know a code for this column, so we can register the value of that examination
                         examination_id = self.mapping_column_to_examination_id[lower_column_name]
                         examination_ref = Reference(resource_identifier=examination_id, resource_type=TableNames.EXAMINATION.value)
@@ -256,10 +256,12 @@ class Transform:
             return cc_tuple
 
     def determine_examination_category(self, column_name: str):
+        cc = CodeableConcept()
         if self.is_column_name_phenotypic(column_name=column_name):
-            return CodeableConcept(one_coding=ExaminationCategory.CATEGORY_PHENOTYPIC.value)
+            cc.add_coding(triple=ExaminationCategory.CATEGORY_PHENOTYPIC.value)
         else:
-            return CodeableConcept(one_coding=ExaminationCategory.CATEGORY_CLINICAL.value)
+            cc.add_coding(triple=ExaminationCategory.CATEGORY_CLINICAL.value)
+        return cc
 
     def is_column_name_phenotypic(self, column_name: str):
         for phen_variable in PHENOTYPIC_VARIABLES:
