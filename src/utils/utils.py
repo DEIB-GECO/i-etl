@@ -1,17 +1,14 @@
+import locale
 import math
 import re
-import traceback
-from datetime import time
+from datetime import datetime
 from typing import Any
-import time
 
 from dateutil.parser import parse
 from pandas import DataFrame
 
 from src.datatypes.CodeableConcept import CodeableConcept
 from src.utils.Ontologies import Ontologies
-from utils.setup_logger import log
-import locale
 
 
 # ASSERTIONS
@@ -120,58 +117,66 @@ def get_category_from_json(category_as_json: dict):
 
 # NORMALIZE DATA
 
-def get_int_from_str(str_value) -> int:
+def get_int_from_str(str_value):
     try:
         return int(str_value)
     except ValueError:
-        pass  # this was not an int value
+        return None  # this was not an int value
 
 
-def get_float_from_str(str_value) -> float:
+def get_float_from_str(str_value):
     try:
-        return float(str_value)
+        return locale.atof(str_value)
     except ValueError:
-        pass  # this was not a float value
+        return None  # this was not a float value
 
 
-def get_datetime_from_str(str_value) -> str:
+def get_datetime_from_str(str_value) -> datetime:
     try:
         datetime_value = parse(str_value)
         # %Y-%m-%d %H:%M:%S is the format used by default by parse (the output is always of this form)
-        if ":" in str_value:
-            # there was a time in the value, let's return a datetime value
-            return str(datetime_value)
-        else:
-            # the value was only a date, so we return only a date too
-            return str(datetime_value.date())
+        return datetime_value
     except ValueError:
-        pass  # this was not a datetime value
+        # this was not a datetime value, and we signal it with None
+        return None
 
 
-def cast_value(value):
+def get_mongodb_date_from_datetime(current_datetime: datetime) -> dict:
+    return { "$date": current_datetime.strftime('%Y-%m-%dT%H:%M:%SZ') }
+
+
+def normalize_value(input_string: str) -> str:
+    return input_string.upper().strip().replace(" ", "").replace("_", "")
+
+
+def convert_value(value):
     if isinstance(value, str):
-        # trying to cast to something if possible
-        # first, try to cast as int
-        int_value = get_int_from_str(value)
-        if int_value is not None:
-            return int_value
+        # try to convert as boolean
+        if value == "True":
+            return True
+        elif value == "False":
+            return False
 
         # try to cast as float
         float_value = get_float_from_str(value)
         if float_value is not None:
             return float_value
 
-        # try to cast as datetime (first, because it is more restrictive than simple date)
+        # try to cast as date
         datetime_value = get_datetime_from_str(value)
         if datetime_value is not None:
             return datetime_value
-    else:
-        # log.info("%s is not a string, so no further cast is possible", value)
+
+        # finally, try to cast as integer
+        int_value = get_int_from_str(value)
+        if int_value is not None:
+            return int_value
+
+        # no cast could be applied, we return the value as is
         return value
-
-
-def normalize_value(input_string: str) -> str:
-    return input_string.upper().strip().replace(" ", "").replace("_", "")
+    else:
+        # this is already cast to the right type, nothing more to do
+        return value
 
 
 # MONGODB UTILS
@@ -278,19 +283,3 @@ def get_values_from_json_values(json_values):
         if is_not_nan(current_dict) and is_not_empty(current_dict):
             values.append(current_dict["value"])
     return values
-
-
-def convert_value(value):
-    if type(value) is str:
-        try:
-            return locale.atof(value)
-        except Exception:
-            return value
-    else:
-        # this is already cast to the right type, nothing more to do
-        return value
-
-
-# COMPUTE CONSTANTS
-def current_milli_time():
-    return int(time.time())

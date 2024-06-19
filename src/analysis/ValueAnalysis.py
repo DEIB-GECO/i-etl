@@ -3,7 +3,7 @@ import json
 from pandas import Series
 
 from src.utils.utils import get_int_from_str, is_not_nan, get_float_from_str, is_equal_insensitive, is_not_empty, \
-    get_datetime_from_str
+    get_mongodb_date_from_datetime
 from src.utils.setup_logger import log
 
 
@@ -38,7 +38,7 @@ class ValueAnalysis:
             else:
                 type_is_int = is_equal_insensitive(self.expected_type, "int")
                 type_is_float = is_equal_insensitive(self.expected_type, "float")
-                type_is_datetime = is_equal_insensitive(self.expected_type, "datetime64")
+                type_is_datetime = is_equal_insensitive(self.expected_type, "datetime64") or is_equal_insensitive(self.expected_type, "datetime")
                 type_is_str = is_equal_insensitive(self.expected_type, "str")
                 wrong_type = False  # when a mistyped value is encountered this values false
                 if not type_is_int and not type_is_float and not type_is_datetime and not type_is_str:
@@ -66,7 +66,7 @@ class ValueAnalysis:
                         for value in self.unique_values:
                             # check that all values can be cast to float or are NaN
                             value_is_not_nan = is_not_nan(value)
-                            datetime_value = get_datetime_from_str(value)
+                            datetime_value = get_mongodb_date_from_datetime(value)
                             if value_is_not_nan and datetime_value is None:
                                 log.debug("Could not convert %s to datetime value", value)
                                 wrong_type = True

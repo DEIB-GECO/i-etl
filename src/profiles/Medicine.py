@@ -1,7 +1,10 @@
+from datetime import datetime
+
 from src.datatypes.CodeableConcept import CodeableConcept
 from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
-from utils.Counter import Counter
+from src.utils.Counter import Counter
+from src.utils.utils import get_mongodb_date_from_datetime
 
 
 class Medicine(Resource):
@@ -17,5 +20,6 @@ class Medicine(Resource):
         return {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
-            "code": self.code.to_json()
+            "code": self.code.to_json(),
+            "createdAt": get_mongodb_date_from_datetime(datetime.now())
         }

@@ -1,10 +1,13 @@
+from datetime import datetime
+
 from src.datatypes.CodeableConcept import CodeableConcept
 from src.datatypes.Coding import Coding
 from src.datatypes.Reference import Reference
 from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
-from src.utils.constants import NONE_VALUE
 from src.utils.Counter import Counter
+from src.utils.utils import get_mongodb_date_from_datetime
+from src.utils.setup_logger import log
 
 
 class ExaminationRecord(Resource):
@@ -17,7 +20,6 @@ class ExaminationRecord(Resource):
         :param subject_ref: A Patient instance being the patient on which the record has been measured.
         :param hospital_ref: A Hospital instance being the hospital in which the record has been measured.
         :param sample_ref: A Sample instance being the sample on which the record has been measured.
-        :param status: A string in [registered, preliminary, final, amended] depicting the current record status.
         :param value: A string/int/float/CodeableConcept being the value of what is examined in that record.
         """
         # set up the resource ID
@@ -37,6 +39,9 @@ class ExaminationRecord(Resource):
         if isinstance(self.value, CodeableConcept) or isinstance(self.value, Coding) or isinstance(self.value, Reference):
             # complex type, we need to expand it with .to_json()
             expanded_value = self.value.to_json()
+        elif isinstance(self.value, datetime):
+            log.debug("The datetime value in ExaminationRecord is %s", self.value)
+            expanded_value = get_mongodb_date_from_datetime(self.value)
         else:
             # primitive type, no need to expand it
             expanded_value = self.value
@@ -48,7 +53,8 @@ class ExaminationRecord(Resource):
             "subject": self.subject.to_json(),
             "recordedBy": self.recorded_by.to_json(),
             "instantiate": self.instantiate.to_json(),
-            "basedOn": self.based_on.to_json()
+            "basedOn": self.based_on.to_json(),
+            "createdAt": get_mongodb_date_from_datetime(datetime.now())
         }
 
         return json_clinical_record

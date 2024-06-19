@@ -15,7 +15,7 @@ from src.profiles.Sample import Sample
 from src.utils.ExaminationCategory import ExaminationCategory
 from src.utils.HospitalNames import HospitalNames
 from src.utils.TableNames import TableNames
-from src.utils.utils import normalize_value, is_in_insensitive, cast_value, is_not_nan, \
+from src.utils.utils import normalize_value, is_in_insensitive, is_not_nan, \
     get_ontology_system, is_equal_insensitive, convert_value
 from src.utils.constants import NONE_VALUE, ID_COLUMNS, PHENOTYPIC_VARIABLES, NO_EXAMINATION_COLUMNS, BATCH_SIZE
 from src.utils.setup_logger import log
@@ -47,8 +47,13 @@ class Transform:
     def run(self):
         self.set_resource_counter_id()
         self.create_hospital(hospital_name=self.config.get_hospital_name())
+        self.load.load_json_in_table(table_name=TableNames.HOSPITAL.value, unique_variables=["name"])
+        log.info("Hospital count: %s", self.database.count_documents(TableNames.HOSPITAL.value, {}))
         self.create_examinations()
+        self.load.load_json_in_table(table_name=TableNames.EXAMINATION.value, unique_variables=["code"])
+        log.info("Examination count: %s", self.database.count_documents(TableNames.EXAMINATION.value, {}))
         self.create_samples()
+        # exit()
         self.create_patients()
         self.create_examination_records()
 
@@ -72,13 +77,13 @@ class Transform:
             self.counter.set(max_value)
 
     def create_hospital(self, hospital_name: str) -> None:
-        log.info("create hospital")
+        log.info("create hospital instance in memory")
         new_hospital = Hospital(id_value=NONE_VALUE, name=hospital_name, counter=self.counter)
         self.hospitals.append(new_hospital)
         self.database.write_in_file(data_array=self.hospitals, table_name=TableNames.HOSPITAL.value, count=1)
 
     def create_examinations(self):
-        log.info("create examinations")
+        log.info("create examination instances in memory")
         columns = self.extract.data.columns.values.tolist()
         count = 1
         for column_name in columns:
@@ -106,7 +111,7 @@ class Transform:
     def create_samples(self):
         if is_in_insensitive(value=ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.SAMPLE.value], list_of_compared=self.extract.data.columns):
             # this is a dataset with samples
-            log.info("create sample records")
+            log.info("create sample instances in memory")
             created_sample_barcodes = set()
             count = 1
             for index, row in self.extract.data.iterrows():
@@ -118,12 +123,13 @@ class Transform:
                         sample_barcode = row["samplebarcode"]
                         if sample_barcode not in created_sample_barcodes:
                             created_sample_barcodes.add(sample_barcode)
+                            # TODO Nelly: write a for loop based on SAMPLE_VARIABLES, instead of writing it by hand?
                             sampling = row["sampling"] if "sampling" in row else None
                             sample_quality = row["samplequality"] if "samplequality" in row else None
-                            time_collected = cast_value(value=row["samtimecollected"]) if "samtimecollected" in row else None
-                            time_received = cast_value(value=row["samtimereceived"]) if "samtimereceived" in row else None
-                            too_young = cast_value(value=row["tooyoung"]) if "tooyoung" in row else None
-                            bis = cast_value(value=row["bis"]) if "bis" in row else None
+                            time_collected = convert_value(value=row["samtimecollected"]) if "samtimecollected" in row else None
+                            time_received = convert_value(value=row["samtimereceived"]) if "samtimereceived" in row else None
+                            too_young = convert_value(value=row["tooyoung"]) if "tooyoung" in row else None
+                            bis = convert_value(value=row["bis"]) if "bis" in row else None
                             new_sample = Sample(sample_barcode, sampling=sampling, quality=sample_quality,
                                                 time_collected=time_collected, time_received=time_received,
                                                 too_young=too_young, bis=bis, counter=self.counter)
@@ -138,15 +144,13 @@ class Transform:
             self.database.write_in_file(data_array=self.samples, table_name=TableNames.SAMPLE.value, count=count)
 
     def create_examination_records(self):
-        log.info("create examination records")
+        log.info("create examination record instances in memory")
 
         # a. load some data from the database to compute references
-        self.load.load_json_in_table(table_name=TableNames.HOSPITAL.value, unique_variables=["name"])
         self.mapping_hospital_to_hospital_id = self.load.retrieve_identifiers(table_name=TableNames.HOSPITAL.value,
                                                                               projection="name")
         log.debug(self.mapping_hospital_to_hospital_id)
 
-        self.load.load_json_in_table(table_name=TableNames.EXAMINATION.value, unique_variables=["code"])
         self.mapping_column_to_examination_id = self.load.retrieve_identifiers(table_name=TableNames.EXAMINATION.value,
                                                                                projection="code.text")
         log.debug(self.mapping_column_to_examination_id)
@@ -164,7 +168,7 @@ class Transform:
                     pass
                 else:
                     if lower_column_name in self.mapping_column_to_examination_id:
-                        # log.info("I know a code for column %s", column_name)
+                        log.info("I know a code for column %s", column_name)
                         # we know a code for this column, so we can register the value of that examination
                         examination_id = self.mapping_column_to_examination_id[lower_column_name]
                         examination_ref = Reference(resource_identifier=examination_id, resource_type=TableNames.EXAMINATION.value)
@@ -200,7 +204,7 @@ class Transform:
         self.database.write_in_file(data_array=self.examination_records, table_name=TableNames.EXAMINATION_RECORD.value, count=count)
 
     def create_patients(self):
-        log.info("create patients")
+        log.info("create patient instances in memory")
         created_patient_ids = set()
         count = 1
         for index, row in self.extract.data.iterrows():
@@ -279,7 +283,7 @@ class Transform:
                     for key, val in mapping.items():
                         # for any key value pair that is not about the value or the explanation
                         # (i.e., loinc and snomed_ct columns), we create a Coding, which we add to the CodeableConcept
-                        # we need to do a loopp because there may be several ontology terms for a single mapping
+                        # we need to do a loop because there may be several ontology terms for a single mapping
                         if key != 'value' and key != 'explanation':
                             system = get_ontology_system(ontology=key)
                             code = normalize_value(input_string=val)

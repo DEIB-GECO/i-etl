@@ -1,7 +1,10 @@
+from datetime import datetime
+
 from src.datatypes.Reference import Reference
 from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
 from src.utils.Counter import Counter
+from src.utils.utils import get_mongodb_date_from_datetime
 
 
 class MedicineRecord(Resource):
@@ -24,5 +27,6 @@ class MedicineRecord(Resource):
             "quantity": self.quantity,
             "instantiates": self.instantiates.to_json(),
             "subject": self.subject.to_json(),
-            "recordedBy": self.recorded_by.to_json()
+            "recordedBy": self.recorded_by.to_json(),
+            "createdAt": get_mongodb_date_from_datetime(datetime.now())
         }

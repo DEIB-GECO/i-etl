@@ -8,8 +8,8 @@ from src.etl.Extract import Extract
 from src.etl.Load import Load
 from src.etl.Transform import Transform
 from src.utils.setup_logger import log
-from utils.HospitalNames import HospitalNames
-from utils.constants import LOCALES
+from src.utils.HospitalNames import HospitalNames
+from src.utils.constants import LOCALES
 
 
 class ETL:

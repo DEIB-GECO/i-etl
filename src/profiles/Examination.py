@@ -1,7 +1,10 @@
+from datetime import datetime
+
 from src.datatypes.CodeableConcept import CodeableConcept
 from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
-from src.utils.utils import get_codeable_concept_from_json, get_category_from_json, is_not_nan
+from src.utils.utils import get_codeable_concept_from_json, get_category_from_json, is_not_nan, \
+    get_mongodb_date_from_datetime
 from src.utils.Counter import Counter
 
 
@@ -28,7 +31,8 @@ class Examination(Resource):
             "resourceType": self.get_type(),
             "code": self.code.to_json(),
             "category": self.category.to_json(),
-            "permittedDatatype": self.permitted_data_types
+            "permittedDatatype": self.permitted_data_types,
+            "createdAt": get_mongodb_date_from_datetime(datetime.now())
         }
 
         return json_examination

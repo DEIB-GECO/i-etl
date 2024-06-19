@@ -1,7 +1,8 @@
-import json
+import bson
 import os
 import re
 
+from bson.json_util import loads
 from src.config.BetterConfig import BetterConfig
 from src.database.Database import Database
 from src.utils.TableNames import TableNames
@@ -24,13 +25,15 @@ class Load:
         self.load_json_in_table(table_name=TableNames.SAMPLE.value, unique_variables=["identifier"])
 
     def load_json_in_table(self, table_name: str, unique_variables):
+        log.info("insert data in %s", table_name)
         for filename in os.listdir(self.config.get_working_dir_current()):
             if re.search(table_name+"[0-9]+", filename) is not None:
                 # implementation note: we cannot simply use filename.startswith(table_name)
                 # because both Examination and ExaminationRecord start with Examination
                 # the solution is to use a regex
                 with open(os.path.join(self.config.get_working_dir_current(), filename), "r") as json_datafile:
-                    tuples = json.load(json_datafile)
+                    tuples = bson.json_util.loads(json_datafile.read())
+                    log.info(tuples)
                     log.debug("Table %s, file %s, loading %s tuples", table_name, filename, len(tuples))
                     self.database.upsert_batch_of_tuples(table_name=table_name,
                                                          unique_variables=unique_variables,

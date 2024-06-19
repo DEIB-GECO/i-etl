@@ -1,6 +1,9 @@
+from datetime import datetime
+
 from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
 from src.utils.Counter import Counter
+from src.utils.utils import get_mongodb_date_from_datetime
 
 
 class Hospital(Resource):
@@ -32,6 +35,7 @@ class Hospital(Resource):
         json_hospital = {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
-            "name": self.name
+            "name": self.name,
+            "createdAt": get_mongodb_date_from_datetime(datetime.now())
         }
         return json_hospital

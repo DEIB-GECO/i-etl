@@ -1,8 +1,11 @@
+from datetime import datetime
+
 from src.datatypes.Reference import Reference
 from src.profiles.Analysis import Analysis
 from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
 from src.utils.Counter import Counter
+from src.utils.utils import get_mongodb_date_from_datetime
 
 
 class GenomicData(Resource):
@@ -22,5 +25,6 @@ class GenomicData(Resource):
             "resourceType": self.get_type(),
             "analysis": self.analysis.to_json(),
             "subject": self.subject.to_json(),
-            "recordedBy": self.recorded_by.to_json()
+            "recordedBy": self.recorded_by.to_json(),
+            "createdAt": get_mongodb_date_from_datetime(datetime.now())
         }

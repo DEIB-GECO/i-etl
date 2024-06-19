@@ -1,5 +1,6 @@
 import json
 import os
+import traceback
 from datetime import datetime, timedelta
 from random import randrange
 
@@ -11,7 +12,7 @@ from pymongo.cursor import Cursor
 from src.config.BetterConfig import BetterConfig
 from src.utils.TableNames import TableNames
 from src.utils.utils import mongodb_project_one, mongodb_group_by, mongodb_match, mongodb_limit, mongodb_sort, \
-    mongodb_max, mongodb_unwind, mongodb_min
+    mongodb_max, mongodb_unwind, mongodb_min, get_mongodb_date_from_datetime
 from src.utils.constants import BATCH_SIZE
 from src.utils.setup_logger import log
 from src.utils.UpsertPolicy import UpsertPolicy
@@ -96,8 +97,6 @@ class Database:
         # (i) when the instance already exists in the DB, we get the resource after its update (but the update does nothing with the help of $setOnInsert)
         # (ii) when the instance does not exist yet, we insert it and the returned value is the inserted document
         # as in both (i) and (ii) we get a Document, we need to use a timestamp in order to know whether this was an update or an insert
-        timestamp = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-        one_tuple["insertedAt"] = timestamp
         if UpsertPolicy.DO_NOTHING:
             # insert the document if it does not exist
             # otherwise, do nothing
@@ -119,27 +118,21 @@ class Database:
         # in case there are more than 1000 tuples to upserts, we split them in batch of 1000
         # and send one bulk operation per batch. This allows to save time by not doing a db call per upsert
         # but do not overload the MongoDB with thousands of upserts.
-        log.debug("--- Table %s has tuples to be inserted: %s", table_name, len(tuples))
         # we use the bulk operation to send sets of BATCH_SIZE operations, each doing an upsert
         # this allows to have only on call to the database for each bulk operation (instead of one per upsert operation)
         operations = []
+        my_tuples = []
         for one_tuple in tuples:
             filter_dict = {}
-            used_rands = []
             for unique_variable in unique_variables:
-                # if unique_variable="name", getattr() returns the value of the variable labelled "name" in the object
                 filter_dict[unique_variable] = one_tuple[unique_variable]
-            rand_delta = randrange(0, 10)
-            while rand_delta in used_rands:
-                rand_delta = randrange(0, 10)
-            used_rands.append(rand_delta)
-            timestamp = datetime.now() + timedelta(days=rand_delta)
-            timestamp2 = timestamp.strftime("%m/%d/%Y, %H:%M:%S")
-            one_tuple["insertedAt"] = timestamp2
             update_stmt = {"$setOnInsert": one_tuple}
             operations.append(pymongo.UpdateOne(filter=filter_dict, update=update_stmt, upsert=True))
-        self.db[table_name].bulk_write(operations)  # TODO Nelly: check whether the upsert has succeeded or not
+            my_tuples.append(one_tuple)
         log.debug("Table %s: sending a bulk write of %s operations", table_name, len(operations))
+        result_upsert = self.db[table_name].bulk_write(operations)
+        log.info("")
+        log.info("In %s, %s inserted, %s upserted, %s modified tuples", table_name, result_upsert.inserted_count, result_upsert.upserted_count, result_upsert.modified_count)
 
     def compute_batches(self, tuples: list[dict]) -> list[list[dict]]:
         batch_tuples = []
@@ -166,13 +159,19 @@ class Database:
                 # this covers the case when the project is a nested key, e.g., code.text
                 projected_value = projected_value[key]
             mapping[projected_value] = result["identifier"]
+        log.debug(mapping)
         return mapping
 
     def write_in_file(self, data_array: list, table_name: str, count: int):
         if len(data_array) > 0:
             filename = os.path.join(self.config.get_working_dir_current(), table_name + str(count) + ".json")
             with open(filename, "w") as data_file:
-                json.dump([resource.to_json() for resource in data_array], data_file)
+                try:
+                    json.dump([resource.to_json() for resource in data_array], data_file)
+                except Exception:
+                    traceback.print_exc()
+                    log.error("The %s instances could not be converted to JSON. Stopping here.", table_name)
+                    exit()
         else:
             log.info("No data when writing file %s/%s", table_name, count)
 
