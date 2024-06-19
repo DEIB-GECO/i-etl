@@ -4,7 +4,7 @@ from src.profiles.Resource import Resource
 from src.utils.TableNames import TableNames
 from src.utils.Counter import Counter
 from src.utils.setup_logger import log
-from src.utils.utils import get_mongodb_date_from_datetime
+from src.utils.utils import get_mongodb_date_from_datetime, is_not_nan
 
 
 class Sample(Resource):
@@ -29,12 +29,22 @@ class Sample(Resource):
         json_sample = {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
-            "quality": self.quality,
-            "sampling": self.sampling,
-            "timeCollected": get_mongodb_date_from_datetime(self.time_collected),
-            "timeReceived": get_mongodb_date_from_datetime(self.time_collected),
-            "tooYoung": self.too_young,
-            "BIS": self.bis,
             "createdAt": get_mongodb_date_from_datetime(datetime.now())
         }
+
+        # we need to check whether each field is a NaN value or not because we do not want to add fields for NaN values
+        # we don't need to do it for ExaminationRecord instances because we create them only if the (single) value is not NaN
+        if is_not_nan(self.quality):
+            json_sample["quality"] = self.quality
+        if is_not_nan(self.sampling):
+            json_sample["sampling"] = self.sampling
+        if is_not_nan(self.time_collected):
+            json_sample["timeCollected"] = get_mongodb_date_from_datetime(self.time_collected)
+        if is_not_nan(self.time_collected):
+            json_sample["timeReceived"] = get_mongodb_date_from_datetime(self.time_collected)
+        if is_not_nan(self.too_young):
+            json_sample["tooYoung"] = self.too_young
+        if is_not_nan(self.bis):
+            json_sample["BIS"] = self.bis
+
         return json_sample
