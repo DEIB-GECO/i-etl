@@ -37,8 +37,6 @@ class Extract:
             self.run_variable_analysis()
 
     def load_metadata_file(self):
-        assert os.path.exists(self.config.get_metadata_filepath()), "The provided metadata file could not be found. Please check the filepath you specify when running this script."
-
         log.info("Metadata filepath is %s.", self.config.get_metadata_filepath())
 
         # index_col is False to not add a column with line numbers
@@ -134,13 +132,13 @@ class Extract:
                 parsed_dicts = []
                 for current_dict in current_dicts:
                     # if we can convert the JSON value to a float or an int, we do it, otherwise we let it as a string
-                    current_dict["value"] = convert_value(current_dict["value"])
+                    current_dict["value"] = convert_value(value=current_dict["value"])
                     # if we can also convert the snomed_ct / loinc code, we do it
                     # TODO Nelly: loop on all ontologies known in OntologyNames
                     if Ontologies.SNOMEDCT.value["name"] in current_dict:
-                        current_dict[Ontologies.SNOMEDCT.value["name"]] = convert_value(current_dict[Ontologies.SNOMEDCT.value])
+                        current_dict[Ontologies.SNOMEDCT.value["name"]] = convert_value(value=current_dict[Ontologies.SNOMEDCT.value])
                     if Ontologies.LOINC.value["name"] in current_dict:
-                        current_dict[Ontologies.LOINC.value["name"]] = convert_value(current_dict[Ontologies.LOINC.value])
+                        current_dict[Ontologies.LOINC.value["name"]] = convert_value(value=current_dict[Ontologies.LOINC.value])
                     parsed_dicts.append(current_dict)
                 self.mapped_values[row["name"]] = parsed_dicts
         log.debug(self.mapped_values)

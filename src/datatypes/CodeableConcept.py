@@ -25,18 +25,17 @@ class CodeableConcept:
         :return: Nothing.
         """
         if triple is not None:
-            self.codings.append(Coding(triple))
+            self.codings.append(Coding(triple=triple))
 
     def to_json(self) -> dict:
         """
         Produce the FHIR-compliant JSON representation of a CodeableConcept.
         :return: A dict being the JSON representation of the CodeableConcept.
         """
-        json_cc = {
+        return {
             "text": str(self.text),
             "coding": [coding.to_json() for coding in self.codings]
         }
-        return json_cc
 
     def __str__(self):
         return json.dumps(self.to_json())

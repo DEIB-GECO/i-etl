@@ -36,6 +36,6 @@ class Hospital(Resource):
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "name": self.name,
-            "createdAt": get_mongodb_date_from_datetime(datetime.now())
+            "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
         }
         return json_hospital

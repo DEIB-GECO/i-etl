@@ -27,11 +27,11 @@ class ETL:
         if self.config.get_use_en_locale():
             # this user explicitly asked for loading data with en_US locale
             log.debug("default locale: en_US")
-            locale.setlocale(locale.LC_NUMERIC, "en_US")
+            locale.setlocale(category=locale.LC_NUMERIC, locale="en_US")
         else:
             # we use the default locale assigned to each center based on their country
             log.debug("custom locale: %s", LOCALES[HospitalNames[self.config.get_hospital_name()].value])
-            locale.setlocale(locale.LC_NUMERIC, LOCALES[HospitalNames[self.config.get_hospital_name()].value])
+            locale.setlocale(category=locale.LC_NUMERIC, locale=LOCALES[HospitalNames[self.config.get_hospital_name()].value])
 
         log.info("Current locale is: %s", locale.getlocale(locale.LC_NUMERIC))
 
@@ -47,11 +47,12 @@ class ETL:
             # set the current path in the config because the ETL only knows files declared in the config
             if one_file.startswith("/"):
                 # this is an absolute filepath, so we keep it as is
-                self.config.set_current_filepath(one_file)
+                self.config.set_current_filepath(current_filepath=one_file)
             else:
                 # this is a relative filepath, we consider it to be relative to the project root (BETTER-fairificator)
                 # we need to add twice .. because the data files are never copied to the working dir (but remain in their place)
-                self.config.set_current_filepath(os.path.join(self.config.get_working_dir_current(), "..", "..", str(one_file)))
+                full_path = os.path.join(self.config.get_working_dir_current(), "..", "..", str(one_file))
+                self.config.set_current_filepath(current_filepath=full_path)
 
             log.info("--- Starting to ingest file '%s'", self.config.get_current_filepath())
             try:

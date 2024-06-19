@@ -41,7 +41,7 @@ class ExaminationRecord(Resource):
             expanded_value = self.value.to_json()
         elif isinstance(self.value, datetime):
             log.debug("The datetime value in ExaminationRecord is %s", self.value)
-            expanded_value = get_mongodb_date_from_datetime(self.value)
+            expanded_value = get_mongodb_date_from_datetime(current_datetime=self.value)
         else:
             # primitive type, no need to expand it
             expanded_value = self.value
@@ -54,7 +54,7 @@ class ExaminationRecord(Resource):
             "recordedBy": self.recorded_by.to_json(),
             "instantiate": self.instantiate.to_json(),
             "basedOn": self.based_on.to_json(),
-            "createdAt": get_mongodb_date_from_datetime(datetime.now())
+            "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
         }
 
         return json_clinical_record

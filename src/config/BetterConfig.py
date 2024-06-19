@@ -53,15 +53,15 @@ class BetterConfig:
         # the user gave parameters
         # set the Config internals with the user parameters (taken as Python main arguments)
         # otherwise (when no parameters are provided), the default config is used
-        self.set_hospital_name(args.hospital_name)
-        self.set_db_connection(args.connection)
-        self.set_db_name(args.database_name)
-        self.set_db_drop(args.drop)
+        self.set_hospital_name(hospital_name=args.hospital_name)
+        self.set_db_connection(db_connection=args.connection)
+        self.set_db_name(db_name=args.database_name)
+        self.set_db_drop(drop=args.drop)
 
         # create a new folder within the tmp dir to store the current execution tmp files and config
         # this folder is named after the DB name (instead of a timestamp, which will create one folder at each run)
         working_folder = os.path.join(self.get_working_dir(), self.get_db_name())
-        self.set_working_dir_current(working_folder)
+        self.set_working_dir_current(working_dir_current=working_folder)
         if os.path.exists(working_folder):
             shutil.rmtree(working_folder)  # empty the current working directory if it exists
         os.makedirs(working_folder)  # create the working folder (labelled with the DB name)
@@ -74,7 +74,7 @@ class BetterConfig:
             metadata_filename = "metadata-" + args.hospital_name + ".csv"
             metadata_filepath = os.path.join(self.get_working_dir_current(), metadata_filename)
             shutil.copyfile(args.metadata_filepath, metadata_filepath)
-            self.set_metadata_filepath(metadata_filepath)
+            self.set_metadata_filepath(metadata_filepath=metadata_filepath)
 
         # if there is a single file, this will put that file in a list
         # otherwise, when the user provides several files, it will split them in the array
@@ -87,7 +87,7 @@ class BetterConfig:
                           current_file)
                 exit()
         # we do not copy the data in our working dir because it is too large to be copied
-        self.set_data_filepaths(args.data_filepath)  # file 1,file 2, ...,file N
+        self.set_data_filepaths(data_filepaths=args.data_filepath)  # file 1,file 2, ...,file N
         log.debug(self.get_data_filepaths())
 
         # write more information about the current run in the config
@@ -97,14 +97,14 @@ class BetterConfig:
         self.add_platform()
         self.add_platform_version()
         self.add_user()
-        self.set_use_en_locale(args.use_en_locale)
+        self.set_use_en_locale(use_en_locale=args.use_en_locale)
 
         # and about the user parameters
         log.debug("self.args.extract = %s", args.extract)
-        self.set_extract(args.extract)
-        self.set_transform(args.transform)
-        self.set_load(args.load)
-        self.set_analysis(args.analysis)
+        self.set_extract(extract=args.extract)
+        self.set_transform(transform=args.transform)
+        self.set_load(load=args.load)
+        self.set_analysis(analyze=args.analysis)
 
         # save the config file in the current working directory
         self.write_to_file()

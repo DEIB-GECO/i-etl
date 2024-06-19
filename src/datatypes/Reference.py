@@ -16,12 +16,10 @@ class Reference:
         self.type = resource_type
 
     def to_json(self):
-        json_reference = {
+        return {
             "reference": self.reference,
             "type": self.type
         }
-
-        return json_reference
 
     def __str__(self):
         return json.dumps(self.to_json())

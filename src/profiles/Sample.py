@@ -29,7 +29,7 @@ class Sample(Resource):
         json_sample = {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
-            "createdAt": get_mongodb_date_from_datetime(datetime.now())
+            "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
         }
 
         # we need to check whether each field is a NaN value or not because we do not want to add fields for NaN values
@@ -39,9 +39,9 @@ class Sample(Resource):
         if is_not_nan(self.sampling):
             json_sample["sampling"] = self.sampling
         if is_not_nan(self.time_collected):
-            json_sample["timeCollected"] = get_mongodb_date_from_datetime(self.time_collected)
+            json_sample["timeCollected"] = get_mongodb_date_from_datetime(current_datetime=self.time_collected)
         if is_not_nan(self.time_collected):
-            json_sample["timeReceived"] = get_mongodb_date_from_datetime(self.time_collected)
+            json_sample["timeReceived"] = get_mongodb_date_from_datetime(current_datetime=self.time_collected)
         if is_not_nan(self.too_young):
             json_sample["tooYoung"] = self.too_young
         if is_not_nan(self.bis):

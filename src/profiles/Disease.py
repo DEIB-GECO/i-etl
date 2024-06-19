@@ -32,6 +32,6 @@ class Disease(Resource):
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "code": self.code.to_json(),
-            "createdAt": get_mongodb_date_from_datetime(datetime.now())
+            "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
         }
         return json_disease

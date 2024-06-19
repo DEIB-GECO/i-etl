@@ -21,7 +21,7 @@ class TestCounter(unittest.TestCase):
 
     def test_set(self):
         counter = Counter()
-        counter.set(100)
+        counter.set(new_value=100)
         self.assertEqual(counter.resource_id, 100)
 
         counter.increment()

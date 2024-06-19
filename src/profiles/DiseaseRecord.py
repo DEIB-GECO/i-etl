@@ -30,12 +30,12 @@ class DiseaseRecord(Resource):
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "clinicalStatus": self.clinical_status,
-            "recordedDate": get_mongodb_date_from_datetime(self.recorded_date),
+            "recordedDate": get_mongodb_date_from_datetime(current_datetime=self.recorded_date),
             "severity": self.severity.to_json(),
             "subject": self.subject.to_json(),
             "recordedBy": self.recorded_by.to_json(),
             "instantiates": self.instantiate.to_json(),
-            "createdAt": get_mongodb_date_from_datetime(datetime.now())
+            "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
         }
 
         return json_disease_record

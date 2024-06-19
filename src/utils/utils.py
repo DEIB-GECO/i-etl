@@ -26,37 +26,20 @@ def is_float(value) -> bool:
 
 
 def is_not_nan(value) -> bool:
-    return not is_float(value) or (is_float(value) and not math.isnan(float(value)))
+    return not is_float(value=value) or (is_float(value=value) and not math.isnan(float(value)))
 
 
-def assert_not_empty(variable, not_empty=True) -> None:
-    if is_not_empty(variable=variable, not_empty=not_empty):
-        pass
-    else:
-        message = "A variable " + variable + " is not supposed to be empty"
-        assert False, message
-
-
-def is_not_empty(variable, not_empty=True) -> bool:
+def is_not_empty(variable) -> bool:
     if isinstance(variable, int) or isinstance(variable, float):
         return True
     elif isinstance(variable, str):
         return variable != ""
     elif isinstance(variable, list):
-        if not_empty:
-            return variable is not None and variable != []
-        else:
-            return variable is not None
+        return variable is not None and variable != []
     elif isinstance(variable, dict):
-        if not_empty:
-            return variable is not None and variable != {}
-        else:
-            return variable is not None
+        return variable is not None and variable != {}
     elif isinstance(variable, tuple):
-        if not_empty:
-            return variable is not None and variable != ()
-        else:
-            return variable is not None
+        return variable is not None and variable != ()
     elif isinstance(variable, DataFrame):
         return not variable.empty
     elif isinstance(variable, set):
@@ -88,7 +71,7 @@ def is_equal_insensitive(value, compared):
 
 
 def get_ontology_system(ontology: str) -> str:
-    ontology = normalize_value(ontology)
+    ontology = normalize_value(input_string=ontology)
 
     for existing_ontology in Ontologies:
         if existing_ontology.value["name"] == ontology:
@@ -100,21 +83,6 @@ def get_ontology_system(ontology: str) -> str:
 
 def get_ontology_resource_uri(ontology_system: str, resource_code: str) -> str:
     return ontology_system + "/" + resource_code
-
-
-def get_codeable_concept_from_json(codeable_concept_as_json: dict):
-    cc = CodeableConcept()
-    cc.text = codeable_concept_as_json["text"]
-    for coding_as_json in codeable_concept_as_json["coding"]:
-        cc.add_coding((coding_as_json["system"], coding_as_json["code"], codeable_concept_as_json["display"]))
-    return cc
-
-
-def get_category_from_json(category_as_json: dict):
-    # the category is either PHENOTYPIC or CLINICAL, thus no loop for the codings is necessary
-    cc = CodeableConcept()
-    cc.add_coding(triple=(category_as_json["system"], category_as_json["code"], category_as_json["display"]))
-    return cc
 
 
 # NORMALIZE DATA
@@ -160,17 +128,17 @@ def convert_value(value):
             return False
 
         # try to cast as float
-        float_value = get_float_from_str(value)
+        float_value = get_float_from_str(str_value=value)
         if float_value is not None:
             return float_value
 
         # try to cast as date
-        datetime_value = get_datetime_from_str(value)
+        datetime_value = get_datetime_from_str(str_value=value)
         if datetime_value is not None:
             return datetime_value
 
         # finally, try to cast as integer
-        int_value = get_int_from_str(value)
+        int_value = get_int_from_str(str_value=value)
         if int_value is not None:
             return int_value
 
@@ -282,6 +250,6 @@ def mongodb_min(field: str) -> dict:
 def get_values_from_json_values(json_values):
     values = []
     for current_dict in json_values:
-        if is_not_nan(current_dict) and is_not_empty(current_dict):
+        if is_not_nan(value=current_dict) and is_not_empty(variable=current_dict):
             values.append(current_dict["value"])
     return values

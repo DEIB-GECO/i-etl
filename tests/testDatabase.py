@@ -10,14 +10,14 @@ class TestDatabase(unittest.TestCase):
         config = BetterConfig()
 
         # test with the correct (default) string
-        config.set_db_name(TEST_DB_NAME)
+        config.set_db_name(db_name=TEST_DB_NAME)
         database = Database(config=config)
         self.assertTrue(database.check_server_is_up())
         # database.close()
 
         # test with a wrong connection string
-        config.set_db_connection("a_random_connection_string")
-        config.set_db_name(TEST_DB_NAME)
+        config.set_db_connection(db_connection="a_random_connection_string")
+        config.set_db_name(db_name=TEST_DB_NAME)
         database = Database(config=config)
         self.assertFalse(database.check_server_is_up())
         # database.close()
@@ -25,16 +25,16 @@ class TestDatabase(unittest.TestCase):
     def test_drop(self):
         # check that, after drop, no db with the provided name exists
         config = BetterConfig()
-        config.set_db_name(TEST_DB_NAME)
+        config.set_db_name(db_name=TEST_DB_NAME)
         # TODO Nelly assert
 
     def test_reset(self):
         config = BetterConfig()
-        config.set_db_name(TEST_DB_NAME)
+        config.set_db_name(db_name=TEST_DB_NAME)
         # create a test database
         # and add only one triple to be sure that the db is created
         database = Database(config=config)
-        database.insert_one_tuple(TEST_TABLE_NAME, { "id": "1", "name": "Alice Doe"})
+        database.insert_one_tuple(table_name=TEST_TABLE_NAME, one_tuple={ "id": "1", "name": "Alice Doe"})
         list_dbs = database.client.list_databases()
         found = False
         for db in list_dbs:
@@ -69,14 +69,14 @@ class TestDatabase(unittest.TestCase):
 
     def test_insert_many_tuples(self):
         config = BetterConfig()
-        config.set_db_name(TEST_DB_NAME)
-        config.set_db_drop("True")
+        config.set_db_name(db_name=TEST_DB_NAME)
+        config.set_db_drop(drop="True")
 
         database = Database(config=config)
         tuples = [{"id": 1, "name": "Louise", "country": "FR", "job": "PhD student"},
                   {"id": 2, "name": "Francesca", "country": "IT", "university": True},
                   {"id": 3, "name": "Martin", "country": "DE", "age": 26}]
-        database.insert_many_tuples(TEST_TABLE_NAME, tuples)
+        database.insert_many_tuples(table_name=TEST_TABLE_NAME, tuples=tuples)
         docs = []
         for doc in database.db[TEST_TABLE_NAME].find({}):
             docs.append(doc)

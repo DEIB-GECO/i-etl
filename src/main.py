@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     config = BetterConfig()
-    config.set_from_parameters(args)
+    config.set_from_parameters(args=args)
     database = Database(config=config)
 
     etl = ETL(config=config, database=database)

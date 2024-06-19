@@ -1,7 +1,7 @@
 from src.datatypes.CodeableConcept import CodeableConcept
 from src.profiles.Resource import Resource
 from utils.Counter import Counter
-from utils.InputOutput import InputOutput
+from profiles.InputOutput import InputOutput
 
 
 class Analysis(Resource):

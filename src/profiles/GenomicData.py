@@ -26,5 +26,5 @@ class GenomicData(Resource):
             "analysis": self.analysis.to_json(),
             "subject": self.subject.to_json(),
             "recordedBy": self.recorded_by.to_json(),
-            "createdAt": get_mongodb_date_from_datetime(datetime.now())
+            "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
         }

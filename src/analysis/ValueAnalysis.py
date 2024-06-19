@@ -31,15 +31,15 @@ class ValueAnalysis:
         self.compare_values_with_expected_type()  # this will call compare values for categorical values
 
     def compare_values_with_expected_type(self):
-        if is_not_empty(self.expected_type):
-            if is_equal_insensitive(self.expected_type, "category"):
+        if is_not_empty(variable=self.expected_type):
+            if is_equal_insensitive(value=self.expected_type, compared="category"):
                 # for categorical values, we have a dedicated method to check whether the values match the expected ones
                 self.compare_values_with_accepted_values()
             else:
-                type_is_int = is_equal_insensitive(self.expected_type, "int")
-                type_is_float = is_equal_insensitive(self.expected_type, "float")
-                type_is_datetime = is_equal_insensitive(self.expected_type, "datetime64") or is_equal_insensitive(self.expected_type, "datetime")
-                type_is_str = is_equal_insensitive(self.expected_type, "str")
+                type_is_int = is_equal_insensitive(value=self.expected_type, compared="int")
+                type_is_float = is_equal_insensitive(value=self.expected_type, compared="float")
+                type_is_datetime = is_equal_insensitive(value=self.expected_type, compared="datetime64") or is_equal_insensitive(value=self.expected_type, compared="datetime")
+                type_is_str = is_equal_insensitive(value=self.expected_type, compared="str")
                 wrong_type = False  # when a mistyped value is encountered this values false
                 if not type_is_int and not type_is_float and not type_is_datetime and not type_is_str:
                     log.error("Unrecognized type variable '%s'.", self.expected_type)
@@ -49,31 +49,31 @@ class ValueAnalysis:
                     if type_is_int:
                         for value in self.unique_values:
                             # check that all values can be cast to int or are NaN
-                            value_is_not_nan = is_not_nan(value)
-                            int_value = get_int_from_str(value)
+                            value_is_not_nan = is_not_nan(value=value)
+                            int_value = get_int_from_str(str_value=value)
                             if value_is_not_nan and int_value is None:
                                 log.debug("Could not convert %s to int value", value)
                                 wrong_type = True
                     elif type_is_float:
                         for value in self.unique_values:
                             # check that all values can be cast to float or are NaN
-                            value_is_not_nan = is_not_nan(value)
-                            float_value = get_float_from_str(value)
+                            value_is_not_nan = is_not_nan(value=value)
+                            float_value = get_float_from_str(str_value=value)
                             if value_is_not_nan and float_value is None:
                                 log.debug("Could not convert %s to float value", value)
                                 wrong_type = True
                     elif type_is_datetime:
                         for value in self.unique_values:
                             # check that all values can be cast to float or are NaN
-                            value_is_not_nan = is_not_nan(value)
-                            datetime_value = get_mongodb_date_from_datetime(value)
+                            value_is_not_nan = is_not_nan(value=value)
+                            datetime_value = get_mongodb_date_from_datetime(current_datetime=value)
                             if value_is_not_nan and datetime_value is None:
                                 log.debug("Could not convert %s to datetime value", value)
                                 wrong_type = True
                     elif type_is_str:
                         for value in self.unique_values:
                             # check that all values can be cast to str or are NaN
-                            value_is_not_nan = is_not_nan(value)
+                            value_is_not_nan = is_not_nan(value=value)
                             if value_is_not_nan and not isinstance(value, str):
                                 log.debug("Could not convert %s to string value", value)
                                 wrong_type = True
@@ -91,12 +91,12 @@ class ValueAnalysis:
         # then, we compute the number of values matching an accepted values using the number of occurrences of each
         # in the LIST of values
         log.debug(self.accepted_values)
-        if is_not_empty(self.accepted_values):
+        if is_not_empty(variable=self.accepted_values):
             matching_values = []
             for value in self.unique_values:
                 # we only iterate on the distinct set of values, e.g., no need to compare twice 'Cesarean')
                 for accepted_value in self.accepted_values:
-                    if is_equal_insensitive(value, accepted_value):
+                    if is_equal_insensitive(value=value, compared=accepted_value):
                         matching_values.append(value)
                         break  # do not continue to check other accepted values as we found one
             if len(matching_values) < len(self.values):

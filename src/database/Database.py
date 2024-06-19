@@ -34,7 +34,7 @@ class Database:
         # mongodb+srv://<username>:<password>@<cluster>.qo5xs5j.mongodb.net/?retryWrites=true&w=majority&appName=<app_name>
         self.config = config
         self.client = MongoClient(host=self.config.get_db_connection(),
-                                  serverSelectionTimeoutMS=5000)  # timeout after 5 sec instead of 20
+                                  serverSelectionTimeoutMS=5000)  # timeout after 5 sec instead of 20 (the default)
         if config.get_db_drop():
             self.drop_db()
         self.db = self.client[self.config.get_db_name()]
@@ -119,17 +119,14 @@ class Database:
         # we use the bulk operation to send sets of BATCH_SIZE operations, each doing an upsert
         # this allows to have only on call to the database for each bulk operation (instead of one per upsert operation)
         operations = []
-        my_tuples = []
         for one_tuple in tuples:
             filter_dict = {}
             for unique_variable in unique_variables:
                 filter_dict[unique_variable] = one_tuple[unique_variable]
             update_stmt = {"$setOnInsert": one_tuple}
             operations.append(pymongo.UpdateOne(filter=filter_dict, update=update_stmt, upsert=True))
-            my_tuples.append(one_tuple)
         log.debug("Table %s: sending a bulk write of %s operations", table_name, len(operations))
         result_upsert = self.db[table_name].bulk_write(operations)
-        log.info("")
         log.info("In %s, %s inserted, %s upserted, %s modified tuples", table_name, result_upsert.inserted_count, result_upsert.upserted_count, result_upsert.modified_count)
 
     def compute_batches(self, tuples: list[dict]) -> list[list[dict]]:

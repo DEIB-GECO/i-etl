@@ -1,20 +1,24 @@
+import os.path
+
 from src.datatypes.CodeableConcept import CodeableConcept
 from src.profiles.Resource import Resource
 from src.utils.setup_logger import log
+from utils.Counter import Counter
+from utils.utils import get_datetime_from_str
 
 
 class InputOutput(Resource):
-    def __init__(self, id_value: str, file: str, type: CodeableConcept, date: str):
-        super().__init__(id_value)
+    def __init__(self, id_value: str, file: str, type: CodeableConcept, date: str, counter: Counter):
+        super().__init__(id_value=id_value, resource_type=self.get_type(), counter=counter)
 
-        if not is_filepath(file):
+        if not os.path.exists(file):
             # TODO Nelly: check also the file extension?
             log.error("%s is not a file path.", file)
             self.file = ""
         else:
             self.file = file
         self.type = type
-        if not is_date(date):
+        if get_datetime_from_str(str_value=date) is None:
             log.error("%s is not a date", date)
             self.date = ""
         else:

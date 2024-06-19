@@ -8,13 +8,11 @@ class Coding:
         self.display = triple[2]
 
     def to_json(self):
-        json_coding = {
+        return {
             "system": str(self.system),
             "code": str(self.code),
             "display": str(self.display)
         }
-
-        return json_coding
 
     def __str__(self):
         return json.dumps(self.to_json())

@@ -48,12 +48,11 @@ class Transform:
         self.set_resource_counter_id()
         self.create_hospital(hospital_name=self.config.get_hospital_name())
         self.load.load_json_in_table(table_name=TableNames.HOSPITAL.value, unique_variables=["name"])
-        log.info("Hospital count: %s", self.database.count_documents(TableNames.HOSPITAL.value, {}))
+        log.info("Hospital count: %s", self.database.count_documents(table_name=TableNames.HOSPITAL.value, filter_dict={}))
         self.create_examinations()
         self.load.load_json_in_table(table_name=TableNames.EXAMINATION.value, unique_variables=["code"])
-        log.info("Examination count: %s", self.database.count_documents(TableNames.EXAMINATION.value, {}))
+        log.info("Examination count: %s", self.database.count_documents(table_name=TableNames.EXAMINATION.value, filter_dict={}))
         self.create_samples()
-        # exit()
         self.create_patients()
         self.create_examination_records()
 
@@ -74,7 +73,7 @@ class Transform:
         # Resource.set_counter(max_value + 1)  # start 1 after the current counter to avoid resources with the same ID
         if max_value > -1:
             log.debug("will set the counter with %s", max_value)
-            self.counter.set(max_value)
+            self.counter.set(new_value=max_value)
 
     def create_hospital(self, hospital_name: str) -> None:
         log.info("create hospital instance in memory")
@@ -179,11 +178,7 @@ class Transform:
                         subject_ref = Reference(resource_identifier=patient_id.value, resource_type=TableNames.PATIENT.value)
                         sample_id = Identifier(id_value=row[ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.SAMPLE.value]], resource_type=TableNames.SAMPLE.value)  # TODO Nelly: Replace BUZZI by the current hospital
                         sample_ref = Reference(resource_identifier=sample_id.value, resource_type=TableNames.SAMPLE.value)
-                        # TODO Nelly: add the associated sample
-                        # TODO Pietro: harmonize values (upper-lower case, dates, etc)
-                        #  we should use codes (JSON-styled by Boris) whenever we can
-                        #  but for others we need normalization (WP6?)
-                        #  we could even clean more the data, e.g., do not allow "Italy" as ethnicity (caucasian, etc)
+                        # TODO Pietro: we could even clean more the data, e.g., do not allow "Italy" as ethnicity (caucasian, etc)
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
                         new_examination_record = ExaminationRecord(id_value=NONE_VALUE, examination_ref=examination_ref,
                                                                    subject_ref=subject_ref, hospital_ref=hospital_ref,
