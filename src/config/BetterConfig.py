@@ -29,6 +29,7 @@ class BetterConfig:
     # DATABASE section
     CONNECTION_KEY = "connection"
     DROP_KEY = "drop"
+    NO_INDEX_KEY = "no_index"
     # DATABASE and HOSPITAL sections
     NAME_KEY = "name"
     # SYSTEM section
@@ -58,6 +59,7 @@ class BetterConfig:
         self.set_db_connection(db_connection=args.connection)
         self.set_db_name(db_name=args.database_name)
         self.set_db_drop(drop=args.drop)
+        self.set_no_index(no_index=args.no_index)
 
         # create a new folder within the tmp dir to store the current execution tmp files and config
         # this folder is named after the DB name (instead of a timestamp, which will create one folder at each run)
@@ -161,6 +163,10 @@ class BetterConfig:
     def set_db_drop(self, drop: str) -> None:
         self.set_database_section()
         self.config.set(BetterConfig.DB_SECTION, BetterConfig.DROP_KEY, drop)
+
+    def set_no_index(self, no_index: str) -> None:
+        self.set_database_section()
+        self.config.set(BetterConfig.DB_SECTION, BetterConfig.NO_INDEX_KEY, no_index)
 
     def set_hospital_name(self, hospital_name: str) -> None:
         self.set_hospital_section()
@@ -278,6 +284,12 @@ class BetterConfig:
     def get_db_drop(self) -> bool:
         try:
             return self.config.get(BetterConfig.DB_SECTION, BetterConfig.DROP_KEY) == "True"
+        except Exception:
+            return False
+
+    def get_no_index(self) -> bool:
+        try:
+            return self.config.get(BetterConfig.DB_SECTION, BetterConfig.NO_INDEX_KEY) == "True"
         except Exception:
             return False
 

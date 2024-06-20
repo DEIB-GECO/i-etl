@@ -42,8 +42,13 @@ class ETL:
 
     def run(self) -> None:
         error_occurred = False
+        is_last_file = False
+        file_counter = 0
         for one_file in self.config.get_data_filepaths():
             log.debug(one_file)
+            file_counter = file_counter + 1
+            if file_counter == len(self.config.get_data_filepaths()):
+                is_last_file = True
             # set the current path in the config because the ETL only knows files declared in the config
             if one_file.startswith("/"):
                 # this is an absolute filepath, so we keep it as is
@@ -65,7 +70,8 @@ class ETL:
                                                metadata=self.extract.metadata, mapped_values=self.extract.metadata)
                     self.transform.run()
                 if self.config.get_load():
-                    self.load = Load(database=self.database, config=self.config)
+                    # create indexes only if this is the last file (otherwise, we would create useless intermediate indexes)
+                    self.load = Load(database=self.database, config=self.config, create_indexes=is_last_file)
                     self.load.run()
             except Exception:
                 traceback.print_exc()  # print the stack trace

@@ -217,6 +217,16 @@ class Database:
         """
         self.db[table_name].create_index(columns, unique=True)
 
+    def create_non_unique_index(self, table_name: str, columns: dict) -> None:
+        """
+        Create an index on a (set of) column(s) for which uniqueness is not guaranteed.
+        :param table_name: A string being the table name on which the index will be created.
+        :param columns: A dict being the set of columns to be included in the index. It may contain only one entry if
+        only one column should be unique. The parameter should be of the form { "colA": 1, ... }.
+        :return: Nothing.
+        """
+        self.db[table_name].create_index(columns, unique=False)
+
     def get_min_or_max_value(self, table_name: str, field: str, sort_order: int) -> int | float:
         operations = [
             mongodb_project_one(field=field, split_delimiter="/"),
