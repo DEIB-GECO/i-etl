@@ -7,7 +7,6 @@ from typing import Any
 from dateutil.parser import parse
 from pandas import DataFrame
 
-from src.datatypes.CodeableConcept import CodeableConcept
 from src.utils.Ontologies import Ontologies
 
 
@@ -60,7 +59,7 @@ def is_in_insensitive(value: Any, list_of_compared: list[Any]) -> bool:
         return False
 
 
-def is_equal_insensitive(value: Any, compared: Any) -> bool:
+def is_equal_insensitive(value: str | float, compared: str | float) -> bool:
     if not isinstance(value, str):
         return value == compared
     else:
@@ -119,7 +118,7 @@ def normalize_value(input_string: str) -> str:
     return input_string.upper().strip().replace(" ", "").replace("_", "")
 
 
-def convert_value(value: Any) -> Any:
+def convert_value(value: str | float | datetime) -> str | float | datetime:
     if isinstance(value, str):
         # try to convert as boolean
         if value == "True":

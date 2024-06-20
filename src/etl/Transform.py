@@ -1,4 +1,5 @@
 import math
+from datetime import datetime
 from typing import Any
 
 from src.datatypes.Identifier import Identifier
@@ -260,12 +261,12 @@ class Transform:
         return cc
 
     def is_column_name_phenotypic(self, column_name: str) -> bool:
-        for phen_variable in PHENOTYPIC_VARIABLES:
+        for phen_variable in PHENOTYPIC_VARIABLES.values():
             if is_equal_insensitive(value=phen_variable, compared=column_name):
                 return True
         return False
 
-    def fairify_value(self, column_name, value) -> Any:
+    def fairify_value(self, column_name, value) -> str | float | datetime:
         if column_name in self.extract.mapped_values:
             # we iterate over all the mappings of a given column
             for mapping in self.extract.mapped_values[column_name]:
