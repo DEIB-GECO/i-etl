@@ -1,8 +1,3 @@
-import bson
-import os
-import re
-
-from bson.json_util import loads
 from src.config.BetterConfig import BetterConfig
 from src.database.Database import Database
 from src.utils.TableNames import TableNames
@@ -18,29 +13,11 @@ class Load:
         # Insert resources that have not been inserted yet, i.e.,
         # anything else than Hospital, Examination and Disease instances
         log.debug("in the Load class")
-        self.load_json_in_table(table_name=TableNames.PATIENT.value, unique_variables=["identifier"])
+        self.database.load_json_in_table(table_name=TableNames.PATIENT.value, unique_variables=["identifier"])
 
-        self.load_json_in_table(table_name=TableNames.EXAMINATION_RECORD.value, unique_variables=["recordedBy", "subject", "basedOn", "instantiate"])
+        self.database.load_json_in_table(table_name=TableNames.EXAMINATION_RECORD.value, unique_variables=["recordedBy", "subject", "basedOn", "instantiate"])
 
-        self.load_json_in_table(table_name=TableNames.SAMPLE.value, unique_variables=["identifier"])
-
-    def load_json_in_table(self, table_name: str, unique_variables) -> None:
-        log.info("insert data in %s", table_name)
-        for filename in os.listdir(self.config.get_working_dir_current()):
-            if re.search(table_name+"[0-9]+", filename) is not None:
-                # implementation note: we cannot simply use filename.startswith(table_name)
-                # because both Examination and ExaminationRecord start with Examination
-                # the solution is to use a regex
-                with open(os.path.join(self.config.get_working_dir_current(), filename), "r") as json_datafile:
-                    tuples = bson.json_util.loads(json_datafile.read())
-                    log.info(tuples)
-                    log.debug("Table %s, file %s, loading %s tuples", table_name, filename, len(tuples))
-                    self.database.upsert_batch_of_tuples(table_name=table_name,
-                                                         unique_variables=unique_variables,
-                                                         tuples=tuples)
-
-    def retrieve_identifiers(self, table_name: str, projection: str) -> dict:
-        return self.database.retrieve_identifiers(table_name=table_name, projection=projection)
+        self.database.load_json_in_table(table_name=TableNames.SAMPLE.value, unique_variables=["identifier"])
 
     def create_db_indexes(self) -> None:
         self.database.create_unique_index(table_name=TableNames.PATIENT.value, columns={"metadata.csv_filepath": 1, "metadata.csv_line": 1})

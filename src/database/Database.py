@@ -1,7 +1,10 @@
 import json
 import os
+import re
 import traceback
 
+import bson
+from bson.json_util import loads
 import pymongo
 from pymongo import MongoClient
 from pymongo.command_cursor import CommandCursor
@@ -169,6 +172,21 @@ class Database:
                     exit()
         else:
             log.info("No data when writing file %s/%s", table_name, count)
+
+    def load_json_in_table(self, table_name: str, unique_variables) -> None:
+        log.info("insert data in %s", table_name)
+        for filename in os.listdir(self.config.get_working_dir_current()):
+            if re.search(table_name+"[0-9]+", filename) is not None:
+                # implementation note: we cannot simply use filename.startswith(table_name)
+                # because both Examination and ExaminationRecord start with Examination
+                # the solution is to use a regex
+                with open(os.path.join(self.config.get_working_dir_current(), filename), "r") as json_datafile:
+                    tuples = bson.json_util.loads(json_datafile.read())
+                    log.info(tuples)
+                    log.debug("Table %s, file %s, loading %s tuples", table_name, filename, len(tuples))
+                    self.upsert_batch_of_tuples(table_name=table_name,
+                                                         unique_variables=unique_variables,
+                                                         tuples=tuples)
 
     def find_operation(self, table_name: str, filter_dict: dict, projection: dict) -> Cursor:
         """

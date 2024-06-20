@@ -35,10 +35,10 @@ class ETL:
 
         log.info("Current locale is: %s", locale.getlocale(locale.LC_NUMERIC))
 
-        # flags to know what to do during the ETL process
-        self.extract = Extract(database=self.database, config=self.config)
-        self.load = Load(database=self.database, config=self.config)
-        self.transform = Transform(extract=self.extract, load=self.load, database=self.database, config=self.config)
+        # init ETL steps
+        self.extract = None
+        self.transform = None
+        self.load = None
 
     def run(self) -> None:
         error_occurred = False
@@ -57,10 +57,15 @@ class ETL:
             log.info("--- Starting to ingest file '%s'", self.config.get_current_filepath())
             try:
                 if self.config.get_extract():
+                    self.extract = Extract(database=self.database, config=self.config)
+
                     self.extract.run()
                 if self.config.get_transform():
+                    self.transform = Transform(database=self.database, config=self.config, data=self.extract.data,
+                                               metadata=self.extract.metadata, mapped_values=self.extract.metadata)
                     self.transform.run()
                 if self.config.get_load():
+                    self.load = Load(database=self.database, config=self.config)
                     self.load.run()
             except Exception:
                 traceback.print_exc()  # print the stack trace

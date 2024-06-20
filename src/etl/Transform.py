@@ -1,12 +1,10 @@
-import math
 from datetime import datetime
-from typing import Any
+
+from pandas import DataFrame
 
 from src.datatypes.Identifier import Identifier
 from src.config.BetterConfig import BetterConfig
 from src.database.Database import Database
-from src.etl.Extract import Extract
-from src.etl.Load import Load
 from src.datatypes.CodeableConcept import CodeableConcept
 from src.datatypes.Reference import Reference
 from src.profiles.Examination import Examination
@@ -26,12 +24,15 @@ from src.utils.Counter import Counter
 
 class Transform:
 
-    def __init__(self, extract: Extract, load: Load, database: Database, config: BetterConfig):
-        self.extract = extract
-        self.load = load
+    def __init__(self, database: Database, config: BetterConfig, data: DataFrame, metadata: DataFrame, mapped_values: dict):
         self.database = database
         self.config = config
         self.counter = Counter()
+
+        # get data, metadata and the mapped values computed in the Extract step
+        self.data = data
+        self.metadata = metadata
+        self.mapped_values = mapped_values
 
         # to record objects that will be further inserted in the database
         self.hospitals = []
@@ -49,10 +50,10 @@ class Transform:
     def run(self) -> None:
         self.set_resource_counter_id()
         self.create_hospital(hospital_name=self.config.get_hospital_name())
-        self.load.load_json_in_table(table_name=TableNames.HOSPITAL.value, unique_variables=["name"])
+        self.database.load_json_in_table(table_name=TableNames.HOSPITAL.value, unique_variables=["name"])
         log.info("Hospital count: %s", self.database.count_documents(table_name=TableNames.HOSPITAL.value, filter_dict={}))
         self.create_examinations()
-        self.load.load_json_in_table(table_name=TableNames.EXAMINATION.value, unique_variables=["code"])
+        self.database.load_json_in_table(table_name=TableNames.EXAMINATION.value, unique_variables=["code"])
         log.info("Examination count: %s", self.database.count_documents(table_name=TableNames.EXAMINATION.value, filter_dict={}))
         self.create_samples()
         self.create_patients()
@@ -85,7 +86,7 @@ class Transform:
 
     def create_examinations(self) -> None:
         log.info("create examination instances in memory")
-        columns = self.extract.data.columns.values.tolist()
+        columns = self.data.columns.values.tolist()
         count = 1
         for column_name in columns:
             lower_column_name = column_name.lower()
@@ -110,12 +111,12 @@ class Transform:
         self.database.write_in_file(data_array=self.examinations, table_name=TableNames.EXAMINATION.value, count=count)
 
     def create_samples(self) -> None:
-        if is_in_insensitive(value=ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.SAMPLE.value], list_of_compared=self.extract.data.columns):
+        if is_in_insensitive(value=ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.SAMPLE.value], list_of_compared=self.data.columns):
             # this is a dataset with samples
             log.info("create sample instances in memory")
             created_sample_barcodes = set()
             count = 1
-            for index, row in self.extract.data.iterrows():
+            for index, row in self.data.iterrows():
                 for column_name, value in row.items():
                     if value is None or value == "" or not is_not_nan(value):
                         # there is no value for that (sample) column, thus we skip it
@@ -148,17 +149,17 @@ class Transform:
         log.info("create examination record instances in memory")
 
         # a. load some data from the database to compute references
-        self.mapping_hospital_to_hospital_id = self.load.retrieve_identifiers(table_name=TableNames.HOSPITAL.value,
+        self.mapping_hospital_to_hospital_id = self.database.retrieve_identifiers(table_name=TableNames.HOSPITAL.value,
                                                                               projection="name")
         log.debug(self.mapping_hospital_to_hospital_id)
 
-        self.mapping_column_to_examination_id = self.load.retrieve_identifiers(table_name=TableNames.EXAMINATION.value,
+        self.mapping_column_to_examination_id = self.database.retrieve_identifiers(table_name=TableNames.EXAMINATION.value,
                                                                                projection="code.text")
         log.debug(self.mapping_column_to_examination_id)
 
         # b. Create ExaminationRecord instance
         count = 1
-        for index, row in self.extract.data.iterrows():
+        for index, row in self.data.iterrows():
             # create examination records by associating observations to patients (and possibly the sample)
             for column_name, value in row.items():
                 lower_column_name = column_name.lower()
@@ -204,7 +205,7 @@ class Transform:
         log.info("create patient instances in memory")
         created_patient_ids = set()
         count = 1
-        for index, row in self.extract.data.iterrows():
+        for index, row in self.data.iterrows():
             patient_id = row[ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.PATIENT.value]]
             if patient_id not in created_patient_ids:
                 # the patient does not exist yet, we will create it
@@ -220,7 +221,7 @@ class Transform:
         self.database.write_in_file(data_array=self.patients, table_name=TableNames.PATIENT.value, count=count)
 
     def create_codeable_concept_from_column(self, column_name: str) -> CodeableConcept | None:
-        rows = self.extract.metadata.loc[self.extract.metadata['name'] == column_name]
+        rows = self.metadata.loc[self.metadata['name'] == column_name]
         if len(rows) == 1:
             row = rows.iloc[0]
             cc = CodeableConcept()
@@ -266,10 +267,10 @@ class Transform:
                 return True
         return False
 
-    def fairify_value(self, column_name, value) -> str | float | datetime:
-        if column_name in self.extract.mapped_values:
+    def fairify_value(self, column_name, value) -> str | float | datetime | CodeableConcept:
+        if column_name in self.mapped_values:
             # we iterate over all the mappings of a given column
-            for mapping in self.extract.mapped_values[column_name]:
+            for mapping in self.mapped_values[column_name]:
                 # we get the value of the mapping, e.g., F, or M, or NA
                 mapped_value = mapping['value']
                 # if the sample value is equal to the mapping value, we have found a match,

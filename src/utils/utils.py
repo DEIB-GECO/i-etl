@@ -118,7 +118,7 @@ def normalize_value(input_string: str) -> str:
     return input_string.upper().strip().replace(" ", "").replace("_", "")
 
 
-def convert_value(value: str | float | datetime) -> str | float | datetime:
+def convert_value(value: str | float | bool | datetime) -> str | float | bool | datetime:
     if isinstance(value, str):
         # try to convert as boolean
         if value == "True":
