@@ -12,3 +12,4 @@ class TableNames(Enum):
     GENOMIC_DATA = "GenomicData"
     MEDICINE = "Medicine"
     MEDICINE_RECORD = "MedicineRecord"
+    EXECUTION = "Execution"

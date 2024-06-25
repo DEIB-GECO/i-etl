@@ -18,15 +18,13 @@ class BasicStatistics:
         # # 3. comment the 3 lines above
         # # uncomment lines below
         examination_url = ""  # TODO build_url(EXAMINATION_TABLE_NAME, 88)  # premature baby
-        cursor = self.database.get_value_distribution_of_examination(TableNames.EXAMINATION_RECORD.value, examination_url,
-                                                                     -1)
+        cursor = self.database.get_value_distribution_of_examination(examination_url, -1)
         plot = DistributionPlot(cursor, examination_url, "Premature Baby",
                                 False)  # do not print the cursor before, otherwise it would consume it
         plot.draw()
 
         examination_url = ""  # TODO build_url(EXAMINATION_TABLE_NAME, 77)  # ethnicity
-        cursor = self.database.get_value_distribution_of_examination(TableNames.EXAMINATION_RECORD.value, examination_url,
-                                                                     20)
+        cursor = self.database.get_value_distribution_of_examination(examination_url, 20)
         plot = DistributionPlot(cursor, examination_url, "Ethnicity",
                                 True)  # do not print the cursor before, otherwise it would consume it
         plot.draw()

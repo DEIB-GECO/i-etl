@@ -291,6 +291,22 @@ class Database:
         # .collation({"locale": "en_US", "numericOrdering": "true"})
         return self.db[TableNames.EXAMINATION_RECORD.value].aggregate(pipeline)
 
+    def get_resource_counter_id(self) -> int:
+        max_value = -1
+        for table_name in TableNames:
+            if table_name.value == TableNames.PATIENT.value or table_name.value == TableNames.SAMPLE.value:
+                # pass because Patient and Sample resources have their ID assigned by hospitals, not the FAIRificator
+                pass
+            else:
+                current_max_identifier = self.get_max_value(table_name=table_name.value, field="identifier.value")
+                if current_max_identifier is not None:
+                    if current_max_identifier > max_value:
+                        max_value = current_max_identifier
+                else:
+                    # the table is not created yet (this happens when we start from a fresh new DB, thus we skip this it)
+                    pass
+        return max_value
+
     def __str__(self) -> str:
         return "Database " + self.config.get_db_name()
 

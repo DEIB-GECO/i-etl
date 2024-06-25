@@ -60,23 +60,7 @@ class Transform:
         self.create_examination_records()
 
     def set_resource_counter_id(self) -> None:
-        max_value = -1
-        for table_name in TableNames:
-            if table_name.value == TableNames.PATIENT.value or table_name.value == TableNames.SAMPLE.value:
-                # pass because Patient and Sample resources have their ID assigned by hospitals, not the FAIRificator
-                pass
-            else:
-                current_max_identifier = self.database.get_max_value(table_name=table_name.value, field="identifier.value")
-                if current_max_identifier is not None:
-                    if current_max_identifier > max_value:
-                        max_value = current_max_identifier
-                else:
-                    # the table is not created yet (this happens when we start from a fresh new DB, thus we skip this it)
-                    pass
-        # Resource.set_counter(max_value + 1)  # start 1 after the current counter to avoid resources with the same ID
-        if max_value > -1:
-            log.debug("will set the counter with %s", max_value)
-            self.counter.set(new_value=max_value)
+        self.counter.set_with_database(database=self.database)
 
     def create_hospital(self, hospital_name: str) -> None:
         log.info("create hospital instance in memory")
