@@ -4,6 +4,7 @@ import re
 
 import pandas as pd
 
+from MetadataColumns import MetadataColumns
 from src.analysis.ValueAnalysis import ValueAnalysis
 from src.analysis.VariableAnalysis import VariableAnalysis
 from src.config.BetterConfig import BetterConfig
@@ -53,21 +54,21 @@ class Extract:
         # For any metadata file, we need to keep only the variables that concern the current dataset
         filename = os.path.basename(self.config.get_data_filepaths()[0])
         log.debug(filename)
-        log.debug(self.metadata["dataset"].unique())
-        if filename not in self.metadata["dataset"].unique():
+        log.debug(self.metadata[MetadataColumns.DATASET_NAME.value].unique())
+        if filename not in self.metadata[MetadataColumns.DATASET_NAME.value].unique():
             log.error("The current dataset is not described in the provided metadata file.")
             exit()
         else:
-            self.metadata = self.metadata[self.metadata["dataset"] == filename]
+            self.metadata = self.metadata[self.metadata[MetadataColumns.DATASET_NAME.value] == filename]
 
         # lower case all column names to avoid inconsistencies
-        self.metadata['name'] = self.metadata['name'].apply(lambda x: x.lower())
+        self.metadata[MetadataColumns.COLUMN_NAME.value] = self.metadata[MetadataColumns.COLUMN_NAME.value].apply(lambda x: x.lower())
 
         # remove spaces in ontology names and codes
-        self.metadata["ontology"] = self.metadata["ontology"].apply(lambda value: str(value).replace(" ", ""))
-        self.metadata["ontology_code"] = self.metadata["ontology_code"].apply(lambda value: str(value).replace(" ", ""))
-        self.metadata["secondary_ontology"] = self.metadata["secondary_ontology"].apply(lambda value: str(value).replace(" ", ""))
-        self.metadata["secondary_ontology_code"] = self.metadata["secondary_ontology_code"].apply(lambda value: str(value).replace(" ", ""))
+        self.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value] = self.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value].apply(lambda value: str(value).replace(" ", ""))
+        self.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value] = self.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value].apply(lambda value: str(value).replace(" ", ""))
+        self.metadata[MetadataColumns.SEC_ONTOLOGY_SYSTEM.value] = self.metadata[MetadataColumns.SEC_ONTOLOGY_SYSTEM.value].apply(lambda value: str(value).replace(" ", ""))
+        self.metadata[MetadataColumns.SEC_ONTOLOGY_CODE.value] = self.metadata[MetadataColumns.SEC_ONTOLOGY_CODE.value].apply(lambda value: str(value).replace(" ", ""))
 
         # the non-NaN JSON_values values are of the form: "{...}, {...}, ..."
         # thus, we need to
@@ -76,16 +77,16 @@ class Extract:
         # Note: we cannot simply add brackets around the dicts because it would add a string with the dicts in the list
         # we cannot either use json.loads on row["JSON_values"] because it is not parsable (it lacks the brackets)
         for index, row in self.metadata.iterrows():
-            if is_not_nan(row["JSON_values"]):
+            if is_not_nan(row[MetadataColumns.JSON_VALUES.value]):
                 values_dicts = []
-                json_dicts = re.split('}, {', row["JSON_values"])
+                json_dicts = re.split('}, {', row[MetadataColumns.JSON_VALUES.value])
                 for json_dict in json_dicts:
                     if not json_dict.startswith("{"):
                         json_dict = "{" + json_dict
                     if not json_dict.endswith("}"):
                         json_dict = json_dict + "}"
                     values_dicts.append(json.loads(json_dict))
-                self.metadata.loc[index, "JSON_values"] = json.dumps(values_dicts)  # set the new JSON values as a string
+                self.metadata.loc[index, MetadataColumns.JSON_VALUES.value] = json.dumps(values_dicts)  # set the new JSON values as a string
 
         log.info("%s columns and %s lines in the metadata file.", len(self.metadata.columns), len(self.metadata))
 
@@ -127,8 +128,8 @@ class Extract:
         self.mapped_values = {}
 
         for index, row in self.metadata.iterrows():
-            if is_not_nan(row["JSON_values"]):
-                current_dicts = json.loads(row["JSON_values"])
+            if is_not_nan(row[MetadataColumns.JSON_VALUES.value]):
+                current_dicts = json.loads(row[MetadataColumns.JSON_VALUES.value])
                 parsed_dicts = []
                 for current_dict in current_dicts:
                     # if we can convert the JSON value to a float or an int, we do it, otherwise we let it as a string
@@ -147,8 +148,9 @@ class Extract:
         self.mapped_types = {}
 
         for index, row in self.metadata.iterrows():
-            if is_not_nan(row["vartype"]):
-                self.mapped_types[row["name"]] = row["vartype"]  # we associate the column name to its expected type
+            if is_not_nan(row[MetadataColumns.VAR_TYPE.value]):
+                # we associate the column name to its expected type
+                self.mapped_types[row[MetadataColumns.COLUMN_NAME.value]] = row[MetadataColumns.VAR_TYPE.value]
         log.debug(self.mapped_types)
 
     def run_value_analysis(self) -> None:

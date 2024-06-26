@@ -2,6 +2,7 @@ from datetime import datetime
 
 from pandas import DataFrame
 
+from MetadataColumns import MetadataColumns
 from src.datatypes.Identifier import Identifier
 from src.config.BetterConfig import BetterConfig
 from src.database.Database import Database
@@ -215,7 +216,7 @@ class Transform:
             cc_tuple = self.create_code_from_metadata(row=row, ontology_column="secondary_ontology", code_column="secondary_ontology_code")
             if cc_tuple is not None:
                 cc.add_coding(triple=cc_tuple)
-            cc.text = row["name"]  # the column name (display inside codings will have name+description)
+            cc.text = row[MetadataColumns.COLUMN_NAME.value]  # the column name (display inside codings will have name+description)
             return cc
         elif len(rows) == 0:
             # log.warn("Did not find the column '%s' in the metadata", column_name)

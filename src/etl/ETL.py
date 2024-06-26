@@ -2,6 +2,7 @@ import locale
 import os
 import traceback
 
+from Counter import Counter
 from src.database.Execution import Execution
 from src.config.BetterConfig import BetterConfig
 from src.database.Database import Database
@@ -82,8 +83,11 @@ class ETL:
         # saving the execution parameters in the database before closing the execution
         log.info("Saving execution parameters in the database.")
         # we ensure to have an existing counter, otherwise we create a new one and set it to the max current id
-        # (in Execution class)
-        counter_transform = self.transform.counter if self.transform is not None else None
+        if self.transform is not None:
+            counter_transform = self.transform.counter
+        else:
+            counter_transform = Counter()
+            counter_transform.set_with_database(database=self.database)
         execution = Execution(config=self.config, database=self.database, counter=counter_transform)
         execution.store_in_database()
 
