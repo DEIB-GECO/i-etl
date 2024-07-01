@@ -1,5 +1,5 @@
-from src.database.Database import Database
-from src.utils.setup_logger import log
+from database.Database import Database
+from utils.setup_logger import log
 
 
 class Counter:

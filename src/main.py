@@ -10,11 +10,11 @@ from database.Database import Database
 
 sys.path.append('.')  # add the current project to the python path to be runnable in cmd-line
 
-from src.config.BetterConfig import BetterConfig
-from src.etl.ETL import ETL
-from src.utils.HospitalNames import HospitalNames
-from src.utils.constants import DEFAULT_DB_NAME
-from src.utils.setup_logger import log
+from config.BetterConfig import BetterConfig
+from etl.ETL import ETL
+from utils.HospitalNames import HospitalNames
+from utils.constants import DEFAULT_DB_NAME
+from utils.setup_logger import log
 
 
 if __name__ == '__main__':

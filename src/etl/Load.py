@@ -1,9 +1,9 @@
 import traceback
 
-from src.config.BetterConfig import BetterConfig
-from src.database.Database import Database
-from src.utils.TableNames import TableNames
-from src.utils.setup_logger import log
+from config.BetterConfig import BetterConfig
+from database.Database import Database
+from utils.TableNames import TableNames
+from utils.setup_logger import log
 
 
 class Load:

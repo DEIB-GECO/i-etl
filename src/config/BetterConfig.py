@@ -1,16 +1,17 @@
 import configparser
 import getpass
+import os
 import os.path
 import platform
 import shutil
-
+from argparse import Namespace
 from datetime import datetime
 
 import pymongo
-from argparse import Namespace
 
-from src.utils.constants import DEFAULT_CONFIG_FILE, DEFAULT_DB_NAME
-from src.utils.setup_logger import log
+from utils.constants import DEFAULT_CONFIG_FILE
+from utils.setup_logger import log
+from utils.utils import is_not_empty
 
 
 class BetterConfig:
@@ -131,46 +132,76 @@ class BetterConfig:
     # below, define methods for each parameter in the config
     # keep it up-to-date wrt the config file
     def set_working_dir(self, working_dir: str) -> None:
-        self.set_files_section()
-        self.config.set(BetterConfig.FILES_SECTION, BetterConfig.WORKING_DIR_KEY, working_dir)
+        if is_not_empty(working_dir):
+            self.set_files_section()
+            self.config.set(BetterConfig.FILES_SECTION, BetterConfig.WORKING_DIR_KEY, working_dir)
+        else:
+            log.error("The working dir cannot be set in the config because it is None or empty.")
 
     def set_working_dir_current(self, working_dir_current: str) -> None:
-        self.set_files_section()
-        self.config.set(BetterConfig.FILES_SECTION, BetterConfig.WORKING_DIR_CURRENT_KEY, working_dir_current)
+        if is_not_empty(working_dir_current):
+            self.set_files_section()
+            self.config.set(BetterConfig.FILES_SECTION, BetterConfig.WORKING_DIR_CURRENT_KEY, working_dir_current)
+        else:
+            log.error("The current working dir cannot be set in the config because it is None or empty.")
 
     def set_metadata_filepath(self, metadata_filepath: str) -> None:
-        self.set_files_section()
-        self.config.set(BetterConfig.FILES_SECTION, BetterConfig.METADATA_FILEPATH_KEY, metadata_filepath)
+        if is_not_empty(metadata_filepath):
+            self.set_files_section()
+            self.config.set(BetterConfig.FILES_SECTION, BetterConfig.METADATA_FILEPATH_KEY, metadata_filepath)
+        else:
+            log.error("The metadata filepath cannot be set in the config because it is None or empty.")
 
     def set_current_filepath(self, current_filepath: str) -> None:
-        self.set_files_section()
-        self.config.set(BetterConfig.FILES_SECTION, BetterConfig.CURRENT_FILEPATH_KEY, current_filepath)
+        if is_not_empty(current_filepath):
+            self.set_files_section()
+            self.config.set(BetterConfig.FILES_SECTION, BetterConfig.CURRENT_FILEPATH_KEY, current_filepath)
+        else:
+            log.error("The current filepath cannot be set in the config because it is None or empty.")
 
     def set_data_filepaths(self, data_filepaths: str) -> None:
         # data_filepaths is a set of data filepaths, concatenated with commas (,)
         # this is what we get from the user input parameters
-        self.set_files_section()
-        self.config.set(BetterConfig.FILES_SECTION, BetterConfig.DATA_FILEPATHS_KEY, data_filepaths)
+        if is_not_empty(data_filepaths):
+            self.set_files_section()
+            self.config.set(BetterConfig.FILES_SECTION, BetterConfig.DATA_FILEPATHS_KEY, data_filepaths)
+        else:
+            log.error("The data filepaths cannot be set in the config because it is None or empty.")
 
     def set_db_connection(self, db_connection: str) -> None:
-        self.set_database_section()
-        self.config.set(BetterConfig.DB_SECTION, BetterConfig.CONNECTION_KEY, db_connection)
+        if is_not_empty(db_connection):
+            self.set_database_section()
+            self.config.set(BetterConfig.DB_SECTION, BetterConfig.CONNECTION_KEY, db_connection)
+        else:
+            log.error("The db connection string cannot be set in the config because it is None or empty.")
 
     def set_db_name(self, db_name: str) -> None:
-        self.set_database_section()
-        self.config.set(BetterConfig.DB_SECTION, BetterConfig.NAME_KEY, db_name)
+        if is_not_empty(db_name):
+            self.set_database_section()
+            self.config.set(BetterConfig.DB_SECTION, BetterConfig.NAME_KEY, db_name)
+        else:
+            log.error("The db name string cannot be set in the config because it is None or empty.")
 
     def set_db_drop(self, drop: str) -> None:
-        self.set_database_section()
-        self.config.set(BetterConfig.DB_SECTION, BetterConfig.DROP_KEY, drop)
+        if is_not_empty(drop):
+            self.set_database_section()
+            self.config.set(BetterConfig.DB_SECTION, BetterConfig.DROP_KEY, drop)
+        else:
+            log.error("The drop parameter cannot be set in the config because it is None or empty.")
 
     def set_no_index(self, no_index: str) -> None:
-        self.set_database_section()
-        self.config.set(BetterConfig.DB_SECTION, BetterConfig.NO_INDEX_KEY, no_index)
+        if is_not_empty(no_index):
+            self.set_database_section()
+            self.config.set(BetterConfig.DB_SECTION, BetterConfig.NO_INDEX_KEY, no_index)
+        else:
+            log.error("The no_index parameter cannot be set in the config because it is None or empty.")
 
     def set_hospital_name(self, hospital_name: str) -> None:
-        self.set_hospital_section()
-        self.config.set(BetterConfig.HOSPITAL_SECTION, BetterConfig.NAME_KEY, hospital_name)
+        if is_not_empty(hospital_name):
+            self.set_hospital_section()
+            self.config.set(BetterConfig.HOSPITAL_SECTION, BetterConfig.NAME_KEY, hospital_name)
+        else:
+            log.error("The hospital name parameter cannot be set in the config because it is None or empty.")
 
     def add_python_version(self) -> None:
         self.set_system_section()
@@ -388,4 +419,3 @@ class BetterConfig:
             BetterConfig.SYSTEM_SECTION + "/" + BetterConfig.PLATFORM_VERSION_KEY: self.get_platform_version(),
             BetterConfig.SYSTEM_SECTION + "/" + BetterConfig.USER_KEY: self.get_user()
         }
-    

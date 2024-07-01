@@ -1,12 +1,12 @@
 from datetime import datetime
 
-from src.config.BetterConfig import BetterConfig
-from src.database.Database import Database
-from src.analysis.ExecutionAnalysis import ExecutionAnalysis
-from src.profiles.Resource import Resource
-from src.utils.Counter import Counter
-from src.utils.TableNames import TableNames
-from src.utils.constants import NONE_VALUE
+from analysis.ExecutionAnalysis import ExecutionAnalysis
+from config.BetterConfig import BetterConfig
+from database.Database import Database
+from profiles.Resource import Resource
+from utils.Counter import Counter
+from utils.TableNames import TableNames
+from utils.constants import NONE_VALUE
 
 
 class Execution(Resource):

@@ -1,11 +1,11 @@
 from datetime import datetime
 
-from MetadataColumns import MetadataColumns
-from src.datatypes.CodeableConcept import CodeableConcept
-from src.profiles.Resource import Resource
-from src.utils.TableNames import TableNames
-from src.utils.utils import is_not_nan, get_mongodb_date_from_datetime
-from src.utils.Counter import Counter
+from utils.MetadataColumns import MetadataColumns
+from datatypes.CodeableConcept import CodeableConcept
+from profiles.Resource import Resource
+from utils.TableNames import TableNames
+from utils.utils import is_not_nan, get_mongodb_date_from_datetime
+from utils.Counter import Counter
 
 
 class Examination(Resource):

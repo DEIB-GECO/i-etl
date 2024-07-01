@@ -7,7 +7,7 @@ from typing import Any
 from dateutil.parser import parse
 from pandas import DataFrame
 
-from src.utils.Ontologies import Ontologies
+from utils.Ontologies import Ontologies
 
 
 # ASSERTIONS

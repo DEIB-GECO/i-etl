@@ -1,25 +1,23 @@
-import unittest
-
-from src.config.BetterConfig import BetterConfig
-from src.database.Database import Database
-from src.utils.constants import TEST_DB_NAME, TEST_TABLE_NAME
+from config.BetterConfig import BetterConfig
+from database.Database import Database
+from utils.constants import TEST_DB_NAME, TEST_TABLE_NAME
 
 
-class TestDatabase(unittest.TestCase):
+class TestDatabase:
     def test_check_server_is_up(self):
         config = BetterConfig()
 
         # test with the correct (default) string
         config.set_db_name(db_name=TEST_DB_NAME)
         database = Database(config=config)
-        self.assertTrue(database.check_server_is_up())
+        assert database.check_server_is_up()
         # database.close()
 
         # test with a wrong connection string
         config.set_db_connection(db_connection="a_random_connection_string")
         config.set_db_name(db_name=TEST_DB_NAME)
         database = Database(config=config)
-        self.assertFalse(database.check_server_is_up())
+        assert not database.check_server_is_up()
         # database.close()
 
     def test_drop(self):
@@ -40,7 +38,7 @@ class TestDatabase(unittest.TestCase):
         for db in list_dbs:
             if db['name'] == TEST_DB_NAME:
                 found = True
-        self.assertTrue(found)
+        assert found
         database.drop_db()
         # check the DB does not exist anymore after drop
         list_dbs = database.client.list_databases()
@@ -48,7 +46,7 @@ class TestDatabase(unittest.TestCase):
         for db in list_dbs:
             if db['name'] == TEST_DB_NAME:
                 found = True
-        self.assertFalse(found)
+        assert not found
         # database.close()
 
     def my_test(self):
@@ -81,5 +79,5 @@ class TestDatabase(unittest.TestCase):
         for doc in database.db[TEST_TABLE_NAME].find({}):
             docs.append(doc)
 
-        self.assertEqual(len(tuples), len(docs))
+        assert len(tuples) == len(docs)
         # TODO Nelly: test more

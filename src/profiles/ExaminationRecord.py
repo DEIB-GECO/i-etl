@@ -1,13 +1,13 @@
 from datetime import datetime
 
-from src.datatypes.CodeableConcept import CodeableConcept
-from src.datatypes.Coding import Coding
-from src.datatypes.Reference import Reference
-from src.profiles.Resource import Resource
-from src.utils.TableNames import TableNames
-from src.utils.Counter import Counter
-from src.utils.utils import get_mongodb_date_from_datetime
-from src.utils.setup_logger import log
+from datatypes.CodeableConcept import CodeableConcept
+from datatypes.Coding import Coding
+from datatypes.Reference import Reference
+from profiles.Resource import Resource
+from utils.TableNames import TableNames
+from utils.Counter import Counter
+from utils.utils import get_mongodb_date_from_datetime
+from utils.setup_logger import log
 
 
 class ExaminationRecord(Resource):

@@ -1,10 +1,9 @@
 import json
 
-from src.datatypes.Identifier import Identifier
-from src.utils.TableNames import TableNames
-from src.utils.setup_logger import log
-from src.utils import constants
-from src.utils.Counter import Counter
+from datatypes.Identifier import Identifier
+from utils.TableNames import TableNames
+from utils import constants
+from utils.Counter import Counter
 
 
 class Resource:

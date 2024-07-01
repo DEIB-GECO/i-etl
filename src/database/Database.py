@@ -10,13 +10,13 @@ from pymongo import MongoClient
 from pymongo.command_cursor import CommandCursor
 from pymongo.cursor import Cursor
 
-from src.config.BetterConfig import BetterConfig
-from src.utils.TableNames import TableNames
-from src.utils.utils import mongodb_project_one, mongodb_group_by, mongodb_match, mongodb_sort, \
-    mongodb_max, mongodb_unwind, mongodb_min
-from src.utils.constants import BATCH_SIZE
-from src.utils.setup_logger import log
-from src.utils.UpsertPolicy import UpsertPolicy
+from config.BetterConfig import BetterConfig
+from utils.TableNames import TableNames
+from utils.UpsertPolicy import UpsertPolicy
+from utils.constants import BATCH_SIZE
+from utils.setup_logger import log
+from utils.utils import mongodb_match, mongodb_unwind, mongodb_project_one, mongodb_min, mongodb_max, mongodb_group_by, \
+    mongodb_sort
 
 
 class Database:
@@ -45,6 +45,11 @@ class Database:
         log.debug("the connection string is: %s", self.config.get_db_connection())
         log.debug("the new MongoClient is: %s", self.client)
         log.debug("the database is: %s", self.db)
+
+        if self.check_server_is_up():
+            log.info("The MongoDB client could be set up properly.")
+        else:
+            log.error("The MongoDB client could not be set up properly. The given connection string was %s.", self.config.get_db_connection())
 
     def check_server_is_up(self) -> bool:
         """

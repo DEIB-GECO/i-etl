@@ -4,16 +4,16 @@ import re
 
 import pandas as pd
 
-from MetadataColumns import MetadataColumns
-from src.analysis.ValueAnalysis import ValueAnalysis
-from src.analysis.VariableAnalysis import VariableAnalysis
-from src.config.BetterConfig import BetterConfig
-from src.database.Database import Database
-from src.utils.HospitalNames import HospitalNames
-from src.utils.Ontologies import Ontologies
-from src.utils.utils import is_not_nan, convert_value, get_values_from_json_values
-from src.utils.constants import METADATA_VARIABLES
-from src.utils.setup_logger import log
+from analysis.ValueAnalysis import ValueAnalysis
+from analysis.VariableAnalysis import VariableAnalysis
+from config.BetterConfig import BetterConfig
+from database.Database import Database
+from utils.HospitalNames import HospitalNames
+from utils.MetadataColumns import MetadataColumns
+from utils.Ontologies import Ontologies
+from utils.constants import METADATA_VARIABLES
+from utils.setup_logger import log
+from utils.utils import is_not_nan, convert_value, get_values_from_json_values
 
 
 class Extract:

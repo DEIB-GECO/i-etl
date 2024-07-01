@@ -2,16 +2,16 @@ import locale
 import os
 import traceback
 
-from Counter import Counter
-from src.database.Execution import Execution
-from src.config.BetterConfig import BetterConfig
-from src.database.Database import Database
-from src.etl.Extract import Extract
-from src.etl.Load import Load
-from src.etl.Transform import Transform
-from src.utils.setup_logger import log
-from src.utils.HospitalNames import HospitalNames
-from src.utils.constants import LOCALES
+from config.BetterConfig import BetterConfig
+from database.Database import Database
+from database.Execution import Execution
+from etl.Extract import Extract
+from etl.Load import Load
+from etl.Transform import Transform
+from utils.Counter import Counter
+from utils.HospitalNames import HospitalNames
+from utils.constants import LOCALES
+from utils.setup_logger import log
 
 
 class ETL:

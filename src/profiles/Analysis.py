@@ -1,5 +1,5 @@
-from src.datatypes.CodeableConcept import CodeableConcept
-from src.profiles.Resource import Resource
+from datatypes.CodeableConcept import CodeableConcept
+from profiles.Resource import Resource
 from utils.Counter import Counter
 from profiles.InputOutput import InputOutput
 

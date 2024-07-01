@@ -1,6 +1,6 @@
-from src.analysis.DistributionPlot import DistributionPlot
-from src.database.Database import Database
-from src.utils.TableNames import TableNames
+from analysis.DistributionPlot import DistributionPlot
+from database.Database import Database
+from utils.TableNames import TableNames
 
 
 class BasicStatistics:

@@ -1,6 +1,6 @@
 import json
 
-from src.datatypes.Coding import Coding
+from datatypes.Coding import Coding
 
 
 class CodeableConcept:

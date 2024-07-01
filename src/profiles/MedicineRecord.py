@@ -1,10 +1,10 @@
 from datetime import datetime
 
-from src.datatypes.Reference import Reference
-from src.profiles.Resource import Resource
-from src.utils.TableNames import TableNames
-from src.utils.Counter import Counter
-from src.utils.utils import get_mongodb_date_from_datetime
+from datatypes.Reference import Reference
+from profiles.Resource import Resource
+from utils.TableNames import TableNames
+from utils.Counter import Counter
+from utils.utils import get_mongodb_date_from_datetime
 
 
 class MedicineRecord(Resource):

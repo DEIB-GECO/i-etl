@@ -1,7 +1,7 @@
-from src.utils.HospitalNames import HospitalNames
-from src.utils.Ontologies import Ontologies
-from src.utils.TableNames import TableNames
-from src.utils.utils import get_ontology_resource_uri
+from utils.HospitalNames import HospitalNames
+from utils.Ontologies import Ontologies
+from utils.TableNames import TableNames
+from utils.utils import get_ontology_resource_uri
 
 NONE_VALUE = "NONE"
 

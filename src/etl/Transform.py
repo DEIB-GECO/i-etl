@@ -2,25 +2,25 @@ from datetime import datetime
 
 from pandas import DataFrame
 
-from MetadataColumns import MetadataColumns
-from src.datatypes.Identifier import Identifier
-from src.config.BetterConfig import BetterConfig
-from src.database.Database import Database
-from src.datatypes.CodeableConcept import CodeableConcept
-from src.datatypes.Reference import Reference
-from src.profiles.Examination import Examination
-from src.profiles.ExaminationRecord import ExaminationRecord
-from src.profiles.Hospital import Hospital
-from src.profiles.Patient import Patient
-from src.profiles.Sample import Sample
-from src.utils.ExaminationCategory import ExaminationCategory
-from src.utils.HospitalNames import HospitalNames
-from src.utils.TableNames import TableNames
-from src.utils.utils import normalize_value, is_in_insensitive, is_not_nan, \
-    get_ontology_system, is_equal_insensitive, convert_value
-from src.utils.constants import NONE_VALUE, ID_COLUMNS, PHENOTYPIC_VARIABLES, NO_EXAMINATION_COLUMNS, BATCH_SIZE
-from src.utils.setup_logger import log
-from src.utils.Counter import Counter
+from config.BetterConfig import BetterConfig
+from database.Database import Database
+from datatypes.CodeableConcept import CodeableConcept
+from datatypes.Identifier import Identifier
+from datatypes.Reference import Reference
+from profiles.Examination import Examination
+from profiles.ExaminationRecord import ExaminationRecord
+from profiles.Hospital import Hospital
+from profiles.Patient import Patient
+from profiles.Sample import Sample
+from utils.Counter import Counter
+from utils.ExaminationCategory import ExaminationCategory
+from utils.HospitalNames import HospitalNames
+from utils.MetadataColumns import MetadataColumns
+from utils.TableNames import TableNames
+from utils.constants import NONE_VALUE, NO_EXAMINATION_COLUMNS, BATCH_SIZE, ID_COLUMNS, PHENOTYPIC_VARIABLES
+from utils.setup_logger import log
+from utils.utils import is_in_insensitive, is_not_nan, convert_value, get_ontology_system, normalize_value, \
+    is_equal_insensitive
 
 
 class Transform:

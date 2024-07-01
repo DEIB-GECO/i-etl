@@ -1,6 +1,6 @@
 from enum import Enum
 
-from src.utils.Ontologies import Ontologies
+from utils.Ontologies import Ontologies
 
 
 class ExaminationCategory(Enum):

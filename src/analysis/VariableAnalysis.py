@@ -1,8 +1,8 @@
 import json
 
-from MetadataColumns import MetadataColumns
-from src.utils.utils import is_not_nan
-from src.utils.setup_logger import log
+from utils.MetadataColumns import MetadataColumns
+from utils.utils import is_not_nan
+from utils.setup_logger import log
 
 
 class VariableAnalysis:

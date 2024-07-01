@@ -1,12 +1,12 @@
-# from src.database.Database import Database
-# from src.etl.Extract import Extract
-# from src.datatypes.CodeableConcept import CodeableConcept
-# from src.profiles.Examination import Examination
-# from src.profiles.Hospital import Hospital
-# from src.profiles.Patient import Patient
-# from src.utils.ExaminationCategory import ExaminationCategory
-# from src.utils.Ontologies import Ontologies
-# from src.utils.TableNames import TableNames
+# from database.Database import Database
+# from etl.Extract import Extract
+# from datatypes.CodeableConcept import CodeableConcept
+# from profiles.Examination import Examination
+# from profiles.Hospital import Hospital
+# from profiles.Patient import Patient
+# from utils.ExaminationCategory import ExaminationCategory
+# from utils.Ontologies import Ontologies
+# from utils.TableNames import TableNames
 #
 #
 # class TestExtract:

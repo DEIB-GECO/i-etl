@@ -1,8 +1,8 @@
 import os.path
 
-from src.datatypes.CodeableConcept import CodeableConcept
-from src.profiles.Resource import Resource
-from src.utils.setup_logger import log
+from datatypes.CodeableConcept import CodeableConcept
+from profiles.Resource import Resource
+from utils.setup_logger import log
 from utils.Counter import Counter
 from utils.utils import get_datetime_from_str
 
