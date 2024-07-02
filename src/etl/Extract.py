@@ -6,8 +6,8 @@ import pandas as pd
 
 from analysis.ValueAnalysis import ValueAnalysis
 from analysis.VariableAnalysis import VariableAnalysis
-from config.BetterConfig import BetterConfig
 from database.Database import Database
+from database.Execution import Execution
 from utils.HospitalNames import HospitalNames
 from utils.MetadataColumns import MetadataColumns
 from utils.Ontologies import Ontologies
@@ -18,13 +18,13 @@ from utils.utils import is_not_nan, convert_value, get_values_from_json_values
 
 class Extract:
 
-    def __init__(self, database: Database, config: BetterConfig):
+    def __init__(self, database: Database, execution: Execution):
         self.metadata = None
         self.data = None
         self.mapped_values = {}  # accepted values for some categorical columns (column "JSON_values" in metadata)
         self.mapped_types = {}  # expected data type for columns (column "vartype" in metadata)
 
-        self.config = config
+        self.execution = execution
         self.database = database
 
     def run(self) -> None:
@@ -33,31 +33,30 @@ class Extract:
         self.compute_mapped_values()
         self.compute_mapped_types()
 
-        if self.config.get_analysis():
+        if self.execution.get_analyze():
             self.run_value_analysis()
             self.run_variable_analysis()
 
     def load_metadata_file(self) -> None:
-        log.info("Metadata filepath is %s.", self.config.get_metadata_filepath())
+        log.info("Metadata filepath is %s.", self.execution.get_metadata_filepath())
 
         # index_col is False to not add a column with line numbers
-        self.metadata = pd.read_csv(self.config.get_metadata_filepath(), index_col=False)
+        self.metadata = pd.read_csv(self.execution.get_metadata_filepath(), index_col=False)
 
         # For UC2 and UC3 metadata files, we need to keep only the variables for the current hospital
         # and remove the columns for other hospitals
-        if self.config.get_hospital_name() not in [HospitalNames.IT_BUZZI_UC1.value, HospitalNames.RS_IMGGE.value, HospitalNames.ES_HSJD.value]:
+        if self.execution.get_hospital_name() not in [HospitalNames.IT_BUZZI_UC1.value, HospitalNames.RS_IMGGE.value, HospitalNames.ES_HSJD.value]:
             # for those metadata files, we need to split them to obtain one per
             self.preprocess_metadata_file()
         else:
             pass
 
         # For any metadata file, we need to keep only the variables that concern the current dataset
-        filename = os.path.basename(self.config.get_data_filepaths()[0])
+        filename = os.path.basename(self.execution.get_data_filepaths()[0])
         log.debug(filename)
         log.debug(self.metadata[MetadataColumns.DATASET_NAME.value].unique())
         if filename not in self.metadata[MetadataColumns.DATASET_NAME.value].unique():
-            log.error("The current dataset is not described in the provided metadata file.")
-            exit()
+            raise ValueError("The current dataset (%s) is not described in the provided metadata file.", filename)
         else:
             self.metadata = self.metadata[self.metadata[MetadataColumns.DATASET_NAME.value] == filename]
 
@@ -95,29 +94,29 @@ class Extract:
         self.metadata.rename(columns=lambda x: x.upper().replace(" ", "_"), inplace=True)
 
         # 2. for each hospital, get its associated metadata
-        log.debug("working on hospital %s", self.config.get_hospital_name())
+        log.debug("working on hospital %s", self.execution.get_hospital_name())
         # a. we remove columns that are talking about other hospitals, and keep metadata variables + the column for the current hospital
         columns_to_keep = []
         columns_to_keep.extend([meta_variable.upper().replace(" ", "_") for meta_variable in METADATA_VARIABLES])
-        columns_to_keep.append(self.config.get_hospital_name())
+        columns_to_keep.append(self.execution.get_hospital_name())
         log.debug(self.metadata.columns)
         log.debug(columns_to_keep)
         self.metadata = self.metadata[columns_to_keep]
         # b. we filter metadata that is not part of the current hospital (to avoid having the whole metadata for each hospital)
-        self.metadata = self.metadata[self.metadata[self.config.get_hospital_name()] == 1]
+        self.metadata = self.metadata[self.metadata[self.execution.get_hospital_name()] == 1]
         # c. we remove the column for the hospital, now that we have filtered the rows using it
-        log.debug("will drop %s in %s", self.config.get_hospital_name(), self.metadata.columns)
-        self.metadata = self.metadata.drop(self.config.get_hospital_name(), axis=1)
+        log.debug("will drop %s in %s", self.execution.get_hospital_name(), self.metadata.columns)
+        self.metadata = self.metadata.drop(self.execution.get_hospital_name(), axis=1)
         log.debug(self.metadata)
 
     def load_data_file(self) -> None:
-        log.info(self.config.get_current_filepath())
-        assert os.path.exists(self.config.get_current_filepath()), "The provided samples file could not be found. Please check the filepath you specify when running this script."
+        log.info(self.execution.get_current_filepath())
+        assert os.path.exists(self.execution.get_current_filepath()), "The provided samples file could not be found. Please check the filepath you specify when running this script."
 
-        log.info("Data filepath is %s.", self.config.get_current_filepath())
+        log.info("Data filepath is %s.", self.execution.get_current_filepath())
 
         # index_col is False to not add a column with line numbers
-        self.data = pd.read_csv(self.config.get_current_filepath(), index_col=False)
+        self.data = pd.read_csv(self.execution.get_current_filepath(), index_col=False)
 
         # lower case all column names to avoid inconsistencies
         self.data.columns = self.data.columns.str.lower()

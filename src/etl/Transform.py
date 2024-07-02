@@ -2,8 +2,8 @@ from datetime import datetime
 
 from pandas import DataFrame
 
-from config.BetterConfig import BetterConfig
 from database.Database import Database
+from database.Execution import Execution
 from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Identifier import Identifier
 from datatypes.Reference import Reference
@@ -25,9 +25,9 @@ from utils.utils import is_in_insensitive, is_not_nan, convert_value, get_ontolo
 
 class Transform:
 
-    def __init__(self, database: Database, config: BetterConfig, data: DataFrame, metadata: DataFrame, mapped_values: dict):
+    def __init__(self, database: Database, execution: Execution, data: DataFrame, metadata: DataFrame, mapped_values: dict):
         self.database = database
-        self.config = config
+        self.execution = execution
         self.counter = Counter()
 
         # get data, metadata and the mapped values computed in the Extract step
@@ -50,7 +50,7 @@ class Transform:
 
     def run(self) -> None:
         self.set_resource_counter_id()
-        self.create_hospital(hospital_name=self.config.get_hospital_name())
+        self.create_hospital(hospital_name=self.execution.get_hospital_name())
         self.database.load_json_in_table(table_name=TableNames.HOSPITAL.value, unique_variables=["name"])
         log.info("Hospital count: %s", self.database.count_documents(table_name=TableNames.HOSPITAL.value, filter_dict={}))
         self.create_examinations()

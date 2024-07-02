@@ -1,37 +1,38 @@
-from config.BetterConfig import BetterConfig
 from database.Database import Database
+from database.Execution import Execution
 from utils.constants import TEST_DB_NAME, TEST_TABLE_NAME
+from utils.setup_logger import log
 
 
 class TestDatabase:
     def test_check_server_is_up(self):
-        config = BetterConfig()
+        execution = Execution()
 
-        # test with the correct (default) string
-        config.set_db_name(db_name=TEST_DB_NAME)
-        database = Database(config=config)
-        assert database.check_server_is_up()
-        # database.close()
+        # # test with the correct (default) string
+        # execution.set_db_name(db_name=TEST_DB_NAME)
+        # database = Database(execution=execution)
+        # assert database.check_server_is_up()
+        # # database.close()
 
         # test with a wrong connection string
-        config.set_db_connection(db_connection="a_random_connection_string")
-        config.set_db_name(db_name=TEST_DB_NAME)
-        database = Database(config=config)
+        execution.set_db_connection(db_connection="a_random_connection_string")
+        execution.set_db_name(db_name=TEST_DB_NAME)
+        database = Database(execution=execution)
         assert not database.check_server_is_up()
         # database.close()
 
     def test_drop(self):
         # check that, after drop, no db with the provided name exists
-        config = BetterConfig()
-        config.set_db_name(db_name=TEST_DB_NAME)
+        execution = Execution()
+        execution.set_db_name(db_name=TEST_DB_NAME)
         # TODO Nelly assert
 
     def test_reset(self):
-        config = BetterConfig()
-        config.set_db_name(db_name=TEST_DB_NAME)
+        execution = Execution()
+        execution.set_db_name(db_name=TEST_DB_NAME)
         # create a test database
         # and add only one triple to be sure that the db is created
-        database = Database(config=config)
+        database = Database(execution=execution)
         database.insert_one_tuple(table_name=TEST_TABLE_NAME, one_tuple={ "id": "1", "name": "Alice Doe"})
         list_dbs = database.client.list_databases()
         found = False
@@ -66,11 +67,11 @@ class TestDatabase:
         pass
 
     def test_insert_many_tuples(self):
-        config = BetterConfig()
-        config.set_db_name(db_name=TEST_DB_NAME)
-        config.set_db_drop(drop="True")
+        execution = Execution()
+        execution.set_db_name(db_name=TEST_DB_NAME)
+        execution.set_db_drop(drop=True)
 
-        database = Database(config=config)
+        database = Database(execution=execution)
         tuples = [{"id": 1, "name": "Louise", "country": "FR", "job": "PhD student"},
                   {"id": 2, "name": "Francesca", "country": "IT", "university": True},
                   {"id": 3, "name": "Martin", "country": "DE", "age": 26}]

@@ -1,6 +1,5 @@
 from analysis.DistributionPlot import DistributionPlot
 from database.Database import Database
-from utils.TableNames import TableNames
 
 
 class BasicStatistics:

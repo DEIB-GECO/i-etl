@@ -1,8 +1,7 @@
-from database.Database import Database
 
 
 class ExecutionAnalysis:
-    def __init__(self, database: Database):
+    def __init__(self):
         pass
 
     def run(self):

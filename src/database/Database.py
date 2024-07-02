@@ -9,8 +9,9 @@ import pymongo
 from pymongo import MongoClient
 from pymongo.command_cursor import CommandCursor
 from pymongo.cursor import Cursor
+from pymongo.errors import ServerSelectionTimeoutError
 
-from config.BetterConfig import BetterConfig
+from database.Execution import Execution
 from utils.TableNames import TableNames
 from utils.UpsertPolicy import UpsertPolicy
 from utils.constants import BATCH_SIZE
@@ -25,31 +26,42 @@ class Database:
     auxiliary functions to make interactions with the database object (insert, select, ...).
     """
 
-    def __init__(self, config: BetterConfig):
+    def __init__(self, execution: Execution):
         """
         Initiate a new connection to a MongoDB client, reachable based on the given connection string, and initialize
         class members.
         """
-        self.config = config
+        self.execution = execution
+        self.client = None
+        self.db = None
 
-        # mongodb://localhost:27017/
-        # mongodb://127.0.0.1:27017/
-        # mongodb+srv://<username>:<password>@<cluster>.qo5xs5j.mongodb.net/?retryWrites=true&w=majority&appName=<app_name>
-        self.config = config
-        self.client = MongoClient(host=self.config.get_db_connection(),
-                                  serverSelectionTimeoutMS=5000)  # timeout after 5 sec instead of 20 (the default)
-        if config.get_db_drop():
+        # 1. connect to the Mongo client
+        try:
+            # mongodb://localhost:27017/
+            # mongodb://127.0.0.1:27017/
+            # mongodb+srv://<username>:<password>@<cluster>.qo5xs5j.mongodb.net/?retryWrites=true&w=majority&appName=<app_name>
+            self.client = MongoClient(host=self.execution.get_db_connection(), serverSelectionTimeoutMS=5000)  # timeout after 5 sec instead of 20 (the default)
+            log.debug(self.execution.get_db_connection())
+            log.debug(self.client)
+        except Exception as e:
+            log.error(e)
+            return
+
+        # 2 check if the client is running well
+        if self.check_server_is_up():
+            log.info("The MongoDB client, located at %s, could be accessed properly.", self.execution.get_db_connection())
+        else:
+            log.error("The MongoDB client could not be accessed properly.")
+            return
+
+        # 3. access the database
+        if self.execution.get_db_drop():
             self.drop_db()
-        self.db = self.client[self.config.get_db_name()]
+        self.db = self.client[self.execution.get_db_name()]
 
-        log.debug("the connection string is: %s", self.config.get_db_connection())
+        log.debug("the connection string is: %s", self.execution.get_db_connection())
         log.debug("the new MongoClient is: %s", self.client)
         log.debug("the database is: %s", self.db)
-
-        if self.check_server_is_up():
-            log.info("The MongoDB client could be set up properly.")
-        else:
-            log.error("The MongoDB client could not be set up properly. The given connection string was %s.", self.config.get_db_connection())
 
     def check_server_is_up(self) -> bool:
         """
@@ -69,8 +81,8 @@ class Database:
         Drop the current database.
         :return: Nothing.
         """
-        log.info("WARNING: The database %s will be dropped!", self.config.get_db_name())
-        self.client.drop_database(name_or_database=self.config.get_db_name())
+        log.info("WARNING: The database %s will be dropped!", self.execution.get_db_name())
+        self.client.drop_database(name_or_database=self.execution.get_db_name())
 
     def close(self) -> None:
         self.client.close()
@@ -167,25 +179,23 @@ class Database:
 
     def write_in_file(self, data_array: list, table_name: str, count: int) -> None:
         if len(data_array) > 0:
-            filename = os.path.join(self.config.get_working_dir_current(), table_name + str(count) + ".json")
+            filename = os.path.join(self.execution.get_working_dir_current(), table_name + str(count) + ".json")
             with open(filename, "w") as data_file:
                 try:
                     json.dump([resource.to_json() for resource in data_array], data_file)
-                except Exception:
-                    traceback.print_exc()
-                    log.error("The %s instances could not be converted to JSON. Stopping here.", table_name)
-                    exit()
+                except Exception as e:
+                    log.error(e)
         else:
             log.info("No data when writing file %s/%s", table_name, count)
 
     def load_json_in_table(self, table_name: str, unique_variables) -> None:
         log.info("insert data in %s", table_name)
-        for filename in os.listdir(self.config.get_working_dir_current()):
+        for filename in os.listdir(self.execution.get_working_dir_current()):
             if re.search(table_name+"[0-9]+", filename) is not None:
                 # implementation note: we cannot simply use filename.startswith(table_name)
                 # because both Examination and ExaminationRecord start with Examination
                 # the solution is to use a regex
-                with open(os.path.join(self.config.get_working_dir_current(), filename), "r") as json_datafile:
+                with open(os.path.join(self.execution.get_working_dir_current(), filename), "r") as json_datafile:
                     tuples = bson.json_util.loads(json_datafile.read())
                     log.info(tuples)
                     log.debug("Table %s, file %s, loading %s tuples", table_name, filename, len(tuples))
@@ -313,7 +323,7 @@ class Database:
         return max_value
 
     def __str__(self) -> str:
-        return "Database " + self.config.get_db_name()
+        return "Database " + self.execution.get_db_name()
 
     def get_db(self):
         # TODO Nelly: missing hint for return

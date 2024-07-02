@@ -51,8 +51,8 @@ NO_EXAMINATION_COLUMNS = {"line", "unnamed", "id", "samplebarcode", "sampling", 
 
 BATCH_SIZE = 50
 
-DEFAULT_CONFIG_FILE = "properties.ini"
-
+WORKING_DIR = "working-dir"
+DEFAULT_DB_CONNECTION = "mongodb://localhost:27017/"
 DEFAULT_DB_NAME = "better_default"
 TEST_DB_NAME = "better_test"
 TEST_TABLE_NAME = "test"
