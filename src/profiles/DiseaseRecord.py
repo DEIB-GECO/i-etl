@@ -15,12 +15,12 @@ class DiseaseRecord(Resource):
         super().__init__(id_value, self.get_type(), counter=counter)
 
         # set up the resource attributes
-        self.clinical_status = clinical_status
-        self.recorded_date = recorded_date
-        self.severity = severity
-        self.subject = subject_ref
-        self.recorded_by = hospital_ref
-        self.instantiate = disease_ref
+        self._clinical_status = clinical_status
+        self._recorded_date = recorded_date
+        self._severity = severity
+        self._subject = subject_ref
+        self._recorded_by = hospital_ref
+        self._instantiate = disease_ref
 
     def get_type(self) -> str:
         return TableNames.DISEASE_RECORD.value
@@ -29,11 +29,11 @@ class DiseaseRecord(Resource):
         return {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
-            "clinicalStatus": self.clinical_status,
-            "recordedDate": get_mongodb_date_from_datetime(current_datetime=self.recorded_date),
-            "severity": self.severity.to_json(),
-            "subject": self.subject.to_json(),
-            "recordedBy": self.recorded_by.to_json(),
-            "instantiates": self.instantiate.to_json(),
+            "clinicalStatus": self._clinical_status,
+            "recordedDate": get_mongodb_date_from_datetime(current_datetime=self._recorded_date),
+            "severity": self._severity.to_json(),
+            "subject": self._subject.to_json(),
+            "recordedBy": self._recorded_by.to_json(),
+            "instantiates": self._instantiate.to_json(),
             "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
         }

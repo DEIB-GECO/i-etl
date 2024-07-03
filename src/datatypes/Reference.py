@@ -12,13 +12,13 @@ class Reference:
         Create a new reference to another resource.
         :param resource_identifier:
         """
-        self.reference = resource_identifier
-        self.type = resource_type
+        self._reference = resource_identifier
+        self._type = resource_type
 
     def to_json(self) -> dict:
         return {
-            "reference": self.reference,
-            "type": self.type
+            "reference": self._reference,
+            "type": self._type
         }
 
     def __str__(self) -> str:

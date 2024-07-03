@@ -13,20 +13,24 @@ class Resource:
         :param id_value:
         :param resource_type:
         """
-        self.identifier = None  # change the FHIR model to have an identifier which is simply a string
+        self._identifier = None  # change the FHIR model to have an identifier which is simply a string
         if id_value == constants.NONE_VALUE:
             if resource_type == TableNames.PATIENT.value or resource_type == TableNames.SAMPLE.value:
                 # Patient instances should always have an ID (given by the hospitals)
                 raise ValueError("Patient and Sample instances should have an ID.")
             else:
                 # We assign an ID to the new resource
-                self.identifier = Identifier(id_value=str(counter.increment()), resource_type=resource_type)
+                self._identifier = Identifier(id_value=str(counter.increment()), resource_type=resource_type)
         else:
             # This case covers when we retrieve resources from the DB, and we reconstruct them in-memory:
             # they already have an identifier, thus we simply reconstruct it with the value
-            self.identifier = Identifier(id_value=id_value, resource_type=resource_type)
+            self._identifier = Identifier(id_value=id_value, resource_type=resource_type)
 
-        self.timestamp = None  # TODO Nelly: add insertedAt to the Resource class?
+        self._timestamp = None  # TODO Nelly: add insertedAt to the Resource class?
+
+    @property
+    def identifier(self) -> Identifier:
+        return self._identifier
 
     def get_type(self):
         raise NotImplementedError("The method get_resource_type() has to be overridden in every child class.")

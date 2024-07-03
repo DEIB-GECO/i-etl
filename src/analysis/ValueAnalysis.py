@@ -94,7 +94,7 @@ class ValueAnalysis:
         if is_not_empty(variable=self.accepted_values):
             matching_values = []
             for value in self.unique_values:
-                # we only iterate on the distinct set of values, e.g., no need to compare twice 'Cesarean')
+                # we only iterate on the distinct set of values, e.g., no need to compare twice 'Cesarean'
                 for accepted_value in self.accepted_values:
                     if is_equal_insensitive(value=value, compared=accepted_value):
                         matching_values.append(value)

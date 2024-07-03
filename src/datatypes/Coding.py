@@ -3,15 +3,15 @@ import json
 
 class Coding:
     def __init__(self, triple: tuple):
-        self.system = triple[0]
-        self.code = triple[1]
-        self.display = triple[2]
+        self._system = triple[0]
+        self._code = triple[1]
+        self._display = triple[2]
 
     def to_json(self) -> dict:
         return {
-            "system": str(self.system),
-            "code": str(self.code),
-            "display": str(self.display)
+            "system": str(self._system),
+            "code": str(self._code),
+            "display": str(self._display)
         }
 
     def __str__(self) -> str:

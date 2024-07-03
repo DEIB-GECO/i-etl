@@ -1,5 +1,3 @@
-import logging
-
 from profiles.Hospital import Hospital
 from utils.TableNames import TableNames
 from utils.constants import NONE_VALUE
@@ -28,7 +26,7 @@ class TestHospital:
         assert hospital1.get_type() == TableNames.HOSPITAL.value
 
         hospital2 = Hospital(id_value=NONE_VALUE, name="MyHospital", counter=counter)
-        assert hospital2  is not None
+        assert hospital2 is not None
         assert hospital2.get_type() == TableNames.HOSPITAL.value
 
     def test_to_json(self):

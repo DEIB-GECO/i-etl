@@ -26,65 +26,65 @@ from utils.utils import is_in_insensitive, is_not_nan, convert_value, get_ontolo
 class Transform:
 
     def __init__(self, database: Database, execution: Execution, data: DataFrame, metadata: DataFrame, mapped_values: dict):
-        self.database = database
-        self.execution = execution
-        self.counter = Counter()
+        self._database = database
+        self._execution = execution
+        self._counter = Counter()
 
         # get data, metadata and the mapped values computed in the Extract step
-        self.data = data
-        self.metadata = metadata
-        self.mapped_values = mapped_values
+        self._data = data
+        self._metadata = metadata
+        self._mapped_values = mapped_values
 
         # to record objects that will be further inserted in the database
-        self.hospitals = []
-        self.patients = []
-        self.examinations = []
-        self.examination_records = []
-        self.samples = []
+        self._hospitals = []
+        self._patients = []
+        self._examinations = []
+        self._examination_records = []
+        self._samples = []
 
         # to keep track off what is in the CSV and which objects (their identifiers) have been created out of it
         # this will also allow us to get resource identifiers of the referred resources
-        self.mapping_hospital_to_hospital_id = {}  # map the hospital names to their IDs
-        self.mapping_column_to_examination_id = {}  # map the column names to their Examination IDs
-        self.mapping_disease_to_disease_id = {}  # map the disease names to their Disease IDs
+        self._mapping_hospital_to_hospital_id = {}  # map the hospital names to their IDs
+        self._mapping_column_to_examination_id = {}  # map the column names to their Examination IDs
+        self._mapping_disease_to_disease_id = {}  # map the disease names to their Disease IDs
 
     def run(self) -> None:
         self.set_resource_counter_id()
-        self.create_hospital(hospital_name=self.execution.get_hospital_name())
-        self.database.load_json_in_table(table_name=TableNames.HOSPITAL.value, unique_variables=["name"])
-        log.info(f"Hospital count: {self.database.count_documents(table_name=TableNames.HOSPITAL.value, filter_dict={})}")
+        self.create_hospital(hospital_name=self._execution.hospital_name)
+        self._database.load_json_in_table(table_name=TableNames.HOSPITAL.value, unique_variables=["name"])
+        log.info(f"Hospital count: {self._database.count_documents(table_name=TableNames.HOSPITAL.value, filter_dict={})}")
         self.create_examinations()
-        self.database.load_json_in_table(table_name=TableNames.EXAMINATION.value, unique_variables=["code"])
-        log.info(f"Examination count: {self.database.count_documents(table_name=TableNames.EXAMINATION.value, filter_dict={})}")
+        self._database.load_json_in_table(table_name=TableNames.EXAMINATION.value, unique_variables=["code"])
+        log.info(f"Examination count: {self._database.count_documents(table_name=TableNames.EXAMINATION.value, filter_dict={})}")
         self.create_samples()
         self.create_patients()
         self.create_examination_records()
 
     def set_resource_counter_id(self) -> None:
-        self.counter.set_with_database(database=self.database)
+        self._counter.set_with_database(database=self._database)
 
     def create_hospital(self, hospital_name: str) -> None:
         log.info(f"create hospital instance in memory")
-        new_hospital = Hospital(id_value=NONE_VALUE, name=hospital_name, counter=self.counter)
-        self.hospitals.append(new_hospital)
-        self.database.write_in_file(data_array=self.hospitals, table_name=TableNames.HOSPITAL.value, count=1)
+        new_hospital = Hospital(id_value=NONE_VALUE, name=hospital_name, counter=self._counter)
+        self._hospitals.append(new_hospital)
+        self._database.write_in_file(data_array=self._hospitals, table_name=TableNames.HOSPITAL.value, count=1)
 
     def create_examinations(self) -> None:
         log.info(f"create examination instances in memory")
-        columns = self.data.columns.values.tolist()
+        columns = self._data.columns.values.tolist()
         count = 1
         for column_name in columns:
             lower_column_name = column_name.lower()
             if lower_column_name not in NO_EXAMINATION_COLUMNS:
                 cc = self.create_codeable_concept_from_column(column_name=lower_column_name)
-                if cc is not None and cc.codings != []:
+                if cc is not None and cc.has_no_coding():
                     category = self.determine_examination_category(column_name=lower_column_name)
-                    new_examination = Examination(id_value=NONE_VALUE, code=cc, category=category, permitted_data_types=[], counter=self.counter)
+                    new_examination = Examination(id_value=NONE_VALUE, code=cc, category=category, permitted_data_types=[], counter=self._counter)
                     # log.info("adding a new examination about %s: %s", cc.text, new_examination)
-                    self.examinations.append(new_examination)
-                    if len(self.examinations) >= BATCH_SIZE:
-                        self.database.write_in_file(data_array=self.examinations, table_name=TableNames.EXAMINATION.value, count=count)
-                        self.examinations = []
+                    self._examinations.append(new_examination)
+                    if len(self._examinations) >= BATCH_SIZE:
+                        self._database.write_in_file(data_array=self._examinations, table_name=TableNames.EXAMINATION.value, count=count)
+                        self._examinations = []
                         count = count + 1
                 else:
                     # This should never happen as all variables will end up to have a code
@@ -93,15 +93,15 @@ class Transform:
             else:
                 log.debug(f"I am skipping column {lower_column_name} because it has been marked as not being part of examination instances.")
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
-        self.database.write_in_file(data_array=self.examinations, table_name=TableNames.EXAMINATION.value, count=count)
+        self._database.write_in_file(data_array=self._examinations, table_name=TableNames.EXAMINATION.value, count=count)
 
     def create_samples(self) -> None:
-        if is_in_insensitive(value=ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.SAMPLE.value], list_of_compared=self.data.columns):
+        if is_in_insensitive(value=ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.SAMPLE.value], list_of_compared=self._data.columns):
             # this is a dataset with samples
             log.info(f"create sample instances in memory")
             created_sample_barcodes = set()
             count = 1
-            for index, row in self.data.iterrows():
+            for index, row in self._data.iterrows():
                 for column_name, value in row.items():
                     if value is None or value == "" or not is_not_nan(value):
                         # there is no value for that (sample) column, thus we skip it
@@ -119,47 +119,45 @@ class Transform:
                             bis = convert_value(value=row["bis"]) if "bis" in row else None
                             new_sample = Sample(sample_barcode, sampling=sampling, quality=sample_quality,
                                                 time_collected=time_collected, time_received=time_received,
-                                                too_young=too_young, bis=bis, counter=self.counter)
+                                                too_young=too_young, bis=bis, counter=self._counter)
                             created_sample_barcodes.add(sample_barcode)
-                            self.samples.append(new_sample)
-                            if len(self.samples) >= BATCH_SIZE:
-                                self.database.write_in_file(data_array=self.samples, table_name=TableNames.SAMPLE.value, count=count)
-                                self.samples = []
+                            self._samples.append(new_sample)
+                            if len(self._samples) >= BATCH_SIZE:
+                                self._database.write_in_file(data_array=self._samples, table_name=TableNames.SAMPLE.value, count=count)
+                                self._samples = []
                                 count = count + 1
                                 # no need to load Sample instances because they are referenced using their ID,
                                 # which was provided by the hospital (thus is known by the dataset)
-            self.database.write_in_file(data_array=self.samples, table_name=TableNames.SAMPLE.value, count=count)
+            self._database.write_in_file(data_array=self._samples, table_name=TableNames.SAMPLE.value, count=count)
 
     def create_examination_records(self) -> None:
         log.info(f"create examination record instances in memory")
 
         # a. load some data from the database to compute references
-        self.mapping_hospital_to_hospital_id = self.database.retrieve_identifiers(table_name=TableNames.HOSPITAL.value,
-                                                                              projection="name")
-        log.debug(f"{self.mapping_hospital_to_hospital_id}")
+        self._mapping_hospital_to_hospital_id = self._database.retrieve_identifiers(table_name=TableNames.HOSPITAL.value, projection="name")
+        log.debug(f"{self._mapping_hospital_to_hospital_id}")
 
-        self.mapping_column_to_examination_id = self.database.retrieve_identifiers(table_name=TableNames.EXAMINATION.value,
-                                                                               projection="code.text")
-        log.debug(f"{self.mapping_column_to_examination_id}")
+        self._mapping_column_to_examination_id = self._database.retrieve_identifiers(table_name=TableNames.EXAMINATION.value, projection="code.text")
+        log.debug(f"{self._mapping_column_to_examination_id}")
 
         # b. Create ExaminationRecord instance
         count = 1
-        for index, row in self.data.iterrows():
+        for index, row in self._data.iterrows():
             # create examination records by associating observations to patients (and possibly the sample)
             for column_name, value in row.items():
-                lower_column_name = column_name.lower()
+                lower_column_name = column_name.lower()  # TODO Nelly: unresolved attribute reference lower for class Hashable
                 if lower_column_name in NO_EXAMINATION_COLUMNS or value is None or value == "" or not is_not_nan(value):
                     # (i) either, there is no examination for that column
                     # (ii) or, there is no value for that examination
                     # if both cases, no need to create an ExaminationRecord instance
                     pass
                 else:
-                    if lower_column_name in self.mapping_column_to_examination_id:
+                    if lower_column_name in self._mapping_column_to_examination_id:
                         # log.info("I know a code for column %s", column_name)
                         # we know a code for this column, so we can register the value of that examination
-                        examination_id = self.mapping_column_to_examination_id[lower_column_name]
+                        examination_id = self._mapping_column_to_examination_id[lower_column_name]
                         examination_ref = Reference(resource_identifier=examination_id, resource_type=TableNames.EXAMINATION.value)
-                        hospital_id = self.mapping_hospital_to_hospital_id[HospitalNames.IT_BUZZI_UC1.value]
+                        hospital_id = self._mapping_hospital_to_hospital_id[HospitalNames.IT_BUZZI_UC1.value]
                         hospital_ref = Reference(resource_identifier=hospital_id, resource_type=TableNames.HOSPITAL.value)
                         # for patient and sample instances, no need to go through a mapping because they have an ID assigned by the hospital
                         patient_id = Identifier(id_value=row[ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.PATIENT.value]], resource_type=TableNames.PATIENT.value)  # TODO Nelly: Replace BUZZI by the current hospital
@@ -171,12 +169,12 @@ class Transform:
                         new_examination_record = ExaminationRecord(id_value=NONE_VALUE, examination_ref=examination_ref,
                                                                    subject_ref=subject_ref, hospital_ref=hospital_ref,
                                                                    sample_ref=sample_ref, value=fairified_value,
-                                                                   counter=self.counter)
-                        self.examination_records.append(new_examination_record)
-                        if len(self.examination_records) >= BATCH_SIZE:
-                            self.database.write_in_file(data_array=self.examination_records, table_name=TableNames.EXAMINATION_RECORD.value, count=count)
+                                                                   counter=self._counter)
+                        self._examination_records.append(new_examination_record)
+                        if len(self._examination_records) >= BATCH_SIZE:
+                            self._database.write_in_file(data_array=self._examination_records, table_name=TableNames.EXAMINATION_RECORD.value, count=count)
                             # no need to load ExaminationRecords instances because they are never referenced
-                            self.examination_records = []
+                            self._examination_records = []
                             count = count + 1
                     else:
                         # Ideally, there will be no column left without a code
@@ -184,29 +182,29 @@ class Transform:
                         # TODO Nelly: this is not true, 3 columns in Buzzi are still not mapped
                         pass
 
-        self.database.write_in_file(data_array=self.examination_records, table_name=TableNames.EXAMINATION_RECORD.value, count=count)
+        self._database.write_in_file(data_array=self._examination_records, table_name=TableNames.EXAMINATION_RECORD.value, count=count)
 
     def create_patients(self) -> None:
         log.info(f"create patient instances in memory")
         created_patient_ids = set()
         count = 1
-        for index, row in self.data.iterrows():
+        for index, row in self._data.iterrows():
             patient_id = row[ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.PATIENT.value]]
             if patient_id not in created_patient_ids:
                 # the patient does not exist yet, we will create it
-                new_patient = Patient(id_value=str(patient_id), counter=self.counter)
+                new_patient = Patient(id_value=str(patient_id), counter=self._counter)
                 created_patient_ids.add(patient_id)
-                self.patients.append(new_patient)
-                if len(self.patients) >= BATCH_SIZE:
-                    self.database.write_in_file(data_array=self.patients, table_name=TableNames.PATIENT.value, count=count)  # this will save the data if it has reached BATCH_SIZE
-                    self.patients = []
+                self._patients.append(new_patient)
+                if len(self._patients) >= BATCH_SIZE:
+                    self._database.write_in_file(data_array=self._patients, table_name=TableNames.PATIENT.value, count=count)  # this will save the data if it has reached BATCH_SIZE
+                    self._patients = []
                     count = count + 1
                     # no need to load Patient instances because they are referenced using their ID,
                     # which was provided by the hospital (thus is known by the dataset)
-        self.database.write_in_file(data_array=self.patients, table_name=TableNames.PATIENT.value, count=count)
+        self._database.write_in_file(data_array=self._patients, table_name=TableNames.PATIENT.value, count=count)
 
     def create_codeable_concept_from_column(self, column_name: str) -> CodeableConcept | None:
-        rows = self.metadata.loc[self.metadata['name'] == column_name]
+        rows = self._metadata.loc[self._metadata['name'] == column_name]
         if len(rows) == 1:
             row = rows.iloc[0]
             cc = CodeableConcept()
@@ -253,9 +251,9 @@ class Transform:
         return False
 
     def fairify_value(self, column_name, value) -> str | float | datetime | CodeableConcept:
-        if column_name in self.mapped_values:
+        if column_name in self._mapped_values:
             # we iterate over all the mappings of a given column
-            for mapping in self.mapped_values[column_name]:
+            for mapping in self._mapped_values[column_name]:
                 # we get the value of the mapping, e.g., F, or M, or NA
                 mapped_value = mapping['value']
                 # if the sample value is equal to the mapping value, we have found a match,

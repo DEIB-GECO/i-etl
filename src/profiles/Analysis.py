@@ -9,11 +9,11 @@ class Analysis(Resource):
                  genome_build: CodeableConcept, the_input: InputOutput, the_output: InputOutput, counter: Counter):
         super().__init__(id_value, self.get_type(), counter)
 
-        self.method_type = method_type
-        self.change_type = change_type
-        self.genome_build = genome_build
-        self.input = the_input
-        self.output = the_output
+        self._method_type = method_type
+        self._change_type = change_type
+        self._genome_build = genome_build
+        self._input = the_input
+        self._output = the_output
 
     def get_type(self) -> str:
         # do not use a TableName here as we do not create a specific table for them,
@@ -24,9 +24,9 @@ class Analysis(Resource):
         return {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
-            "methodType": self.method_type.to_json(),
-            "changeType": self.change_type.to_json(),
-            "genomeBuild": self.genome_build.to_json(),
-            "input": self.input.to_json(),
-            "output": self.output.to_json()
+            "methodType": self._method_type.to_json(),
+            "changeType": self._change_type.to_json(),
+            "genomeBuild": self._genome_build.to_json(),
+            "input": self._input.to_json(),
+            "output": self._output.to_json()
         }

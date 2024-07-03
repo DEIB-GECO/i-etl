@@ -5,7 +5,6 @@ import pytest
 from database.Database import Database
 from database.Execution import Execution
 from utils.constants import TEST_DB_NAME, TEST_TABLE_NAME
-from utils.setup_logger import log
 from utils.constants import DEFAULT_DB_CONNECTION
 
 
@@ -31,7 +30,8 @@ class TestDatabase(unittest.TestCase):
         }
         TestDatabase.execution.set_up(args, False)
         with pytest.raises(ConnectionError):
-            database = Database(execution=TestDatabase.execution)  # this should return an exception (broken connection) because check_server_is_up() will return one
+            database = Database(
+                execution=TestDatabase.execution)  # this should return an exception (broken connection) because check_server_is_up() will return one
         # database.close()
 
     def test_drop(self):
@@ -44,7 +44,7 @@ class TestDatabase(unittest.TestCase):
         # create a test database
         # and add only one triple to be sure that the db is created
         database = Database(execution=TestDatabase.execution)
-        database.insert_one_tuple(table_name=TEST_TABLE_NAME, one_tuple={ "id": "1", "name": "Alice Doe"})
+        database.insert_one_tuple(table_name=TEST_TABLE_NAME, one_tuple={"id": "1", "name": "Alice Doe"})
         assert database.db_exists(TEST_DB_NAME) is True
         database.drop_db()
         # check the DB does not exist anymore after drop

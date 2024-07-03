@@ -26,33 +26,33 @@ class ExaminationRecord(Resource):
         super().__init__(id_value=id_value, resource_type=self.get_type(), counter=counter)
 
         # set up the resource attributes
-        self.value = value
-        self.subject = subject_ref
-        self.recorded_by = hospital_ref
-        self.instantiate = examination_ref
-        self.based_on = sample_ref
+        self._value = value
+        self._subject = subject_ref
+        self._recorded_by = hospital_ref
+        self._instantiate = examination_ref
+        self._based_on = sample_ref
 
     def get_type(self) -> str:
         return TableNames.EXAMINATION_RECORD.value
 
     def to_json(self) -> dict:
-        if isinstance(self.value, CodeableConcept) or isinstance(self.value, Coding) or isinstance(self.value, Reference):
+        if isinstance(self._value, CodeableConcept) or isinstance(self._value, Coding) or isinstance(self._value, Reference):
             # complex type, we need to expand it with .to_json()
-            expanded_value = self.value.to_json()
-        elif isinstance(self.value, datetime):
-            log.debug(f"The datetime value in ExaminationRecord is {self.value}")
-            expanded_value = get_mongodb_date_from_datetime(current_datetime=self.value)
+            expanded_value = self._value.to_json()
+        elif isinstance(self._value, datetime):
+            log.debug(f"The datetime value in ExaminationRecord is {self._value}")
+            expanded_value = get_mongodb_date_from_datetime(current_datetime=self._value)
         else:
             # primitive type, no need to expand it
-            expanded_value = self.value
+            expanded_value = self._value
 
         return {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "value": expanded_value,
-            "subject": self.subject.to_json(),
-            "recordedBy": self.recorded_by.to_json(),
-            "instantiate": self.instantiate.to_json(),
-            "basedOn": self.based_on.to_json(),
+            "subject": self._subject.to_json(),
+            "recordedBy": self._recorded_by.to_json(),
+            "instantiate": self._instantiate.to_json(),
+            "basedOn": self._based_on.to_json(),
             "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
         }

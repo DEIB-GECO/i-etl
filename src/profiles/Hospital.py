@@ -18,7 +18,7 @@ class Hospital(Resource):
         super().__init__(id_value=id_value, resource_type=self.get_type(), counter=counter)
 
         # set up the resource attributes
-        self.name = name
+        self._name = name
 
     def get_type(self) -> str:
         """
@@ -35,6 +35,6 @@ class Hospital(Resource):
         return {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
-            "name": self.name,
+            "name": self._name,
             "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
         }

@@ -15,8 +15,11 @@ class CodeableConcept:
         """
         Instantiate a new CodeableConcept, empty or with a coding (represented as a tuple).
         """
-        self.codings = []
-        self.text = ""
+        self._codings = []
+        self._text = ""
+
+    def has_no_coding(self) -> bool:
+        return self._codings is None or self._codings == []
 
     def add_coding(self, triple: tuple) -> None:
         """
@@ -25,7 +28,7 @@ class CodeableConcept:
         :return: Nothing.
         """
         if triple is not None:
-            self.codings.append(Coding(triple=triple))
+            self._codings.append(Coding(triple=triple))
 
     def to_json(self) -> dict:
         """
@@ -33,8 +36,8 @@ class CodeableConcept:
         :return: A dict being the JSON representation of the CodeableConcept.
         """
         return {
-            "text": str(self.text),
-            "coding": [coding.to_json() for coding in self.codings]
+            "text": str(self._text),
+            "coding": [coding.to_json() for coding in self._codings]
         }
 
     def __str__(self) -> str:

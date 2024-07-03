@@ -1,15 +1,13 @@
 import json
 import os
 import re
-import traceback
 
 import bson
-from bson.json_util import loads
 import pymongo
+from bson.json_util import loads
 from pymongo import MongoClient
 from pymongo.command_cursor import CommandCursor
 from pymongo.cursor import Cursor
-from pymongo.errors import ServerSelectionTimeoutError
 
 from database.Execution import Execution
 from utils.TableNames import TableNames
@@ -33,9 +31,9 @@ class Database:
         Initiate a new connection to a MongoDB client, reachable based on the given connection string, and initialize
         class members.
         """
-        self.execution = execution
-        self.client = None
-        self.db = None
+        self._execution = execution
+        self._client = None
+        self._db = None
 
         # 1. connect to the Mongo client
         try:
@@ -46,50 +44,49 @@ class Database:
             # and it no longer raises pymongo (ConnectionFailure, ConfigurationError) errors.
             # Instead, the constructor returns immediately and launches the connection process on background threads.
             # You can check if the server is available with a ping.
-            self.client = MongoClient(host=self.execution.get_db_connection(), serverSelectionTimeoutMS=Database.SERVER_TIMEOUT)  # timeout after 5 sec instead of 20 (the default)
-            log.debug(f"{self.execution.get_db_connection()}")
-            log.debug(f"{self.client}")
+            self._client = MongoClient(host=self._execution.db_connection, serverSelectionTimeoutMS=Database.SERVER_TIMEOUT)  # timeout after 5 sec instead of 20 (the default)
+            log.debug(f"{self._execution.db_connection}")
+            log.debug(f"{self._client}")
         except Exception:
-            raise ConnectionError(f"Could not connect to the MongoDB client located at {self.execution.get_db_connection()} and with a timeout of {Database.SERVER_TIMEOUT} ms.")
+            raise ConnectionError(f"Could not connect to the MongoDB client located at {self._execution.db_connection} and with a timeout of {Database.SERVER_TIMEOUT} ms.")
 
         # 2 check if the client is running well
         self.check_server_is_up()
         # if we reach this point, the MongoDB client runs correctly.
-        log.info(f"The MongoDB client, located at {self.execution.get_db_connection()}, could be accessed properly.")
+        log.info(f"The MongoDB client, located at {self._execution.db_connection}, could be accessed properly.")
 
         # 3. access the database
-        if self.execution.get_db_drop():
+        if self._execution.db_drop:
             self.drop_db()
-        self.db = self.client[self.execution.get_db_name()]
+        self._db = self._client[self._execution.db_name]
 
-        log.debug(f"the connection string is: {self.execution.get_db_connection()}")
-        log.debug(f"the new MongoClient is: {self.client}")
-        log.debug(f"the database is: {self.db}")
+        log.debug(f"the connection string is: {self._execution.db_connection}")
+        log.debug(f"the new MongoClient is: {self._client}")
+        log.debug(f"the database is: {self._db}")
 
     def check_server_is_up(self) -> None:
         """
         Send a ping to confirm a successful connection.
         :return: A boolean being whether the MongoDB client is up.
         """
-        #
         try:
-            self.client.admin.command('ping')
+            self._client.admin.command('ping')
         except Exception:
-            raise ConnectionError(f"The MongoDB client located at {self.execution.get_db_connection()} could not be accessed properly.")
+            raise ConnectionError(f"The MongoDB client located at {self._execution.db_connection} could not be accessed properly.")
 
     def drop_db(self) -> None:
         """
         Drop the current database.
         :return: Nothing.
         """
-        log.info(f"WARNING: The database {self.execution.get_db_name()} will be dropped!", )
-        self.client.drop_database(name_or_database=self.execution.get_db_name())
+        log.info(f"WARNING: The database {self._execution.db_name} will be dropped!", )
+        self._client.drop_database(name_or_database=self._execution.db_name)
 
     def close(self) -> None:
-        self.client.close()
+        self._client.close()
 
     def insert_one_tuple(self, table_name: str, one_tuple: dict) -> None:
-        self.db[table_name].insert_one(one_tuple)
+        self._db[table_name].insert_one(one_tuple)
 
     def insert_many_tuples(self, table_name: str, tuples: list[dict]) -> None:
         """
@@ -97,7 +94,7 @@ class Database:
         :param table_name: A string being the table name in which to insert the tuples.
         :param tuples: A list of dicts being the tuples to insert.
         """
-        self.db[table_name].insert_many(tuples, ordered=False)
+        self._db[table_name].insert_many(tuples, ordered=False)
 
     def upsert_one_tuple(self, table_name: str, unique_variables: list[str], one_tuple: dict) -> None:
         # filter_dict should only contain the fields on which we want a Resource to be unique,
@@ -124,7 +121,7 @@ class Database:
             # insert the document if it does not exist
             # otherwise, replace it
             update_stmt = {"$set": one_tuple}
-        self.db[table_name].find_one_and_update(filter=filter_dict, update=update_stmt, upsert=True)
+        self._db[table_name].find_one_and_update(filter=filter_dict, update=update_stmt, upsert=True)
 
     def upsert_batch_of_tuples(self, table_name: str, unique_variables: list[str], tuples: list[dict]) -> None:
         """
@@ -147,7 +144,7 @@ class Database:
             update_stmt = {"$setOnInsert": one_tuple}
             operations.append(pymongo.UpdateOne(filter=filter_dict, update=update_stmt, upsert=True))
         log.debug(f"Table {table_name}: sending a bulk write of {len(operations)} operations")
-        result_upsert = self.db[table_name].bulk_write(operations)
+        result_upsert = self._db[table_name].bulk_write(operations)
         log.info(f"In {table_name}, {result_upsert.inserted_count} inserted, {result_upsert.upserted_count} upserted, {result_upsert.modified_count} modified tuples")
 
     def compute_batches(self, tuples: list[dict]) -> list[list[dict]]:
@@ -180,23 +177,23 @@ class Database:
 
     def write_in_file(self, data_array: list, table_name: str, count: int) -> None:
         if len(data_array) > 0:
-            filename = os.path.join(self.execution.get_working_dir_current(), table_name + str(count) + ".json")
+            filename = os.path.join(self._execution.working_dir_current, table_name + str(count) + ".json")
             with open(filename, "w") as data_file:
                 try:
                     json.dump([resource.to_json() for resource in data_array], data_file)
-                except Exception as e:
-                    raise Exception(f"Could not dump the {len(data_array)} JSON resources in the file located at {filename}.")
+                except Exception:
+                    raise ValueError(f"Could not dump the {len(data_array)} JSON resources in the file located at {filename}.")
         else:
             log.info(f"No data when writing file '{table_name}/{count}.json'")
 
     def load_json_in_table(self, table_name: str, unique_variables) -> None:
         log.info(f"insert data in {table_name}")
-        for filename in os.listdir(self.execution.get_working_dir_current()):
+        for filename in os.listdir(self._execution.working_dir_current):
             if re.search(table_name+"[0-9]+", filename) is not None:
                 # implementation note: we cannot simply use filename.startswith(table_name)
                 # because both Examination and ExaminationRecord start with Examination
                 # the solution is to use a regex
-                with open(os.path.join(self.execution.get_working_dir_current(), filename), "r") as json_datafile:
+                with open(os.path.join(self._execution.working_dir_current, filename), "r") as json_datafile:
                     tuples = bson.json_util.loads(json_datafile.read())
                     log.info(tuples)
                     log.debug(f"Table {table_name}, file {filename}, loading {len(tuples)} tuples")
@@ -212,7 +209,7 @@ class Database:
         :param projection: A dict being the set of projections (selections) to apply on the data in the given table.
         :return: A Cursor on the results, i.e., filtered data.
         """
-        return self.db[table_name].find(filter_dict, projection)
+        return self._db[table_name].find(filter_dict, projection)
 
     def count_documents(self, table_name: str, filter_dict: dict) -> int:
         """
@@ -221,7 +218,7 @@ class Database:
         :param filter_dict: A dict being the set of filters to be applied on the documents.
         :return: An integer being the number of documents matched by the given filter.
         """
-        return self.db[table_name].count_documents(filter_dict)
+        return self._db[table_name].count_documents(filter_dict)
 
     def create_unique_index(self, table_name: str, columns: dict) -> None:
         """
@@ -231,7 +228,7 @@ class Database:
         only one column should be unique. The parameter should be of the form { "colA": 1, ... }.
         :return: Nothing.
         """
-        self.db[table_name].create_index(columns, unique=True)
+        self._db[table_name].create_index(columns, unique=True)
 
     def create_non_unique_index(self, table_name: str, columns: dict) -> None:
         """
@@ -241,7 +238,7 @@ class Database:
         only one column should be unique. The parameter should be of the form { "colA": 1, ... }.
         :return: Nothing.
         """
-        self.db[table_name].create_index(columns, unique=False)
+        self._db[table_name].create_index(columns, unique=False)
 
     def get_min_or_max_value(self, table_name: str, field: str, sort_order: int) -> int | float:
         operations = [
@@ -255,7 +252,7 @@ class Database:
         else:
             operations.append(mongodb_max(field=field))
 
-        cursor = self.db[table_name].aggregate(operations)
+        cursor = self._db[table_name].aggregate(operations)
 
         for result in cursor:
             log.debug(f"{result}")
@@ -279,7 +276,7 @@ class Database:
         to that examination url.
         :return: A float value being the average value for the given examination url.
         """
-        cursor = self.db[TableNames.EXAMINATION_RECORD.value].aggregate([
+        cursor = self._db[TableNames.EXAMINATION_RECORD.value].aggregate([
             mongodb_match(field="instantiate.reference", value=examination_url, is_regex=False),
             mongodb_project_one(field="value", split_delimiter=""),
             mongodb_group_by(group_key=None, group_by_name="avg_val", operator="$avg", field="$value")
@@ -305,9 +302,9 @@ class Database:
             mongodb_sort(field="_id", sort_order=1)
         ]
         # .collation({"locale": "en_US", "numericOrdering": "true"})
-        return self.db[TableNames.EXAMINATION_RECORD.value].aggregate(pipeline)
+        return self._db[TableNames.EXAMINATION_RECORD.value].aggregate(pipeline)
 
-    def get_resource_counter_id(self) -> int:
+    def get_max_resource_counter_id(self) -> int:
         max_value = -1
         for table_name in TableNames:
             if table_name.value == TableNames.PATIENT.value or table_name.value == TableNames.SAMPLE.value:
@@ -319,19 +316,20 @@ class Database:
                     if current_max_identifier > max_value:
                         max_value = current_max_identifier
                 else:
-                    # the table is not created yet (this happens when we start from a fresh new DB, thus we skip this it)
+                    # the table is not created yet (this happens when we start from a fresh new DB, thus we skip this)
                     pass
         return max_value
 
     def __str__(self) -> str:
-        return "Database " + self.execution.get_db_name()
+        return "Database " + self._execution.db_name
 
-    def get_db(self):
+    @property
+    def db(self):
         # TODO Nelly: missing hint for return
-        return self.db
+        return self._db
 
     def db_exists(self, db_name: str) -> bool:
-        list_dbs = self.client.list_databases()
+        list_dbs = self._client.list_databases()
         for db in list_dbs:
             if db['name'] == db_name:
                 return True

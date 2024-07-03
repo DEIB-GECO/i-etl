@@ -8,11 +8,15 @@ class Identifier:
             # the provided id_value is already of the form type/id, thus we do not need to append the resource type
             # this happens when we build (instance) resources from the existing data in the database
             # the stored if is already of the form type/id
-            self.value = id_value
+            self._value = id_value
         else:
-            self.value = resource_type + "/" + id_value
+            self._value = resource_type + "/" + id_value
+
+    @property
+    def value(self) -> str:
+        return self._value
 
     def to_json(self) -> dict:
         return {
-            "value": self.value
+            "value": self._value
         }

@@ -15,9 +15,9 @@ class Examination(Resource):
         super().__init__(id_value=id_value, resource_type=self.get_type(), counter=counter)
 
         # set up the resource attributes
-        self.code = code
-        self.category = category
-        self.permitted_data_types = permitted_data_types
+        self._code = code
+        self._category = category
+        self._permitted_data_types = permitted_data_types
 
     def get_type(self) -> str:
         return TableNames.EXAMINATION.value
@@ -26,9 +26,9 @@ class Examination(Resource):
         return {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
-            "code": self.code.to_json(),
-            "category": self.category.to_json(),
-            "permittedDatatype": self.permitted_data_types,
+            "code": self._code.to_json(),
+            "category": self._category.to_json(),
+            "permittedDatatype": self._permitted_data_types,
             "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
         }
 

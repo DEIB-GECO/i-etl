@@ -1,10 +1,6 @@
-import logging
 import os.path
-import pathlib
 import sys
 import argparse
-import shutil
-import traceback
 
 from database.Database import Database
 from database.Execution import Execution
@@ -59,4 +55,7 @@ if __name__ == '__main__':
         # else:
         #    log.error("The initial setup of the database has failed. Writing logs in files before exiting.")
     except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         log.error(f"{type(e).__name__} exception: {e}")
+        raise

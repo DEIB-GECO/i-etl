@@ -111,7 +111,7 @@ def get_datetime_from_str(str_value: str) -> datetime:
 
 
 def get_mongodb_date_from_datetime(current_datetime: datetime) -> dict:
-    return { "$date": current_datetime.strftime('%Y-%m-%dT%H:%M:%SZ') }
+    return {"$date": current_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')}
 
 
 def normalize_value(input_string: str) -> str:
@@ -181,7 +181,7 @@ def mongodb_project_one(field: str, split_delimiter: str) -> dict:
                 field: {
                     # we prepend a $ to the fild so that MongoDB understand that
                     # it needs to parse the actual value of the filed
-                    "$split": ["$"+field, split_delimiter]
+                    "$split": ["$" + field, split_delimiter]
                 }
             }
         }
@@ -224,7 +224,7 @@ def mongodb_max(field: str) -> dict:
             "_id": field,
             "max": {
                 "$max": {
-                    "$toLong": "$"+field  # to make the field interpreted
+                    "$toLong": "$" + field  # to make the field interpreted
                 }
             }
         }
@@ -237,11 +237,12 @@ def mongodb_min(field: str) -> dict:
             "_id": field,
             "min": {
                 "$min": {
-                    "$toLong": "$"+field  # to make the field interpreted
+                    "$toLong": "$" + field  # to make the field interpreted
                 }
             }
         }
     }
+
 
 # LIST AND DICT CONVERSIONS
 
