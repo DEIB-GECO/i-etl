@@ -42,7 +42,7 @@ class ValueAnalysis:
                 type_is_str = is_equal_insensitive(value=self.expected_type, compared="str")
                 wrong_type = False  # when a mistyped value is encountered this values false
                 if not type_is_int and not type_is_float and not type_is_datetime and not type_is_str:
-                    log.error("Unrecognized type variable '%s'.", self.expected_type)
+                    log.error(f"Unrecognized type variable '{self.expected_type}'")
                     self.nb_unrecognized_data_types += 1
                 else:
                     # for primitive types, we check that all values can be converted to the expected type (or are NaN)
@@ -52,7 +52,7 @@ class ValueAnalysis:
                             value_is_not_nan = is_not_nan(value=value)
                             int_value = get_int_from_str(str_value=value)
                             if value_is_not_nan and int_value is None:
-                                log.debug("Could not convert %s to int value", value)
+                                log.debug(f"Could not convert {value} to int value")
                                 wrong_type = True
                     elif type_is_float:
                         for value in self.unique_values:
@@ -60,7 +60,7 @@ class ValueAnalysis:
                             value_is_not_nan = is_not_nan(value=value)
                             float_value = get_float_from_str(str_value=value)
                             if value_is_not_nan and float_value is None:
-                                log.debug("Could not convert %s to float value", value)
+                                log.debug(f"Could not convert {value} to float value")
                                 wrong_type = True
                     elif type_is_datetime:
                         for value in self.unique_values:
@@ -68,29 +68,29 @@ class ValueAnalysis:
                             value_is_not_nan = is_not_nan(value=value)
                             datetime_value = get_mongodb_date_from_datetime(current_datetime=value)
                             if value_is_not_nan and datetime_value is None:
-                                log.debug("Could not convert %s to datetime value", value)
+                                log.debug(f"Could not convert {value} to datetime value", )
                                 wrong_type = True
                     elif type_is_str:
                         for value in self.unique_values:
                             # check that all values can be cast to str or are NaN
                             value_is_not_nan = is_not_nan(value=value)
                             if value_is_not_nan and not isinstance(value, str):
-                                log.debug("Could not convert %s to string value", value)
+                                log.debug(f"Could not convert {value} to string value")
                                 wrong_type = True
 
                     if wrong_type:
                         # some wrong types have been detected
-                        log.error("Some wrong type have been detected for %s", self.column_name)
+                        log.error(f"Some wrong type have been detected for {self.column_name}")
                         self.nb_wrongly_typed_values_in_column += 1
                     else:
                         # no wrong type has been detected
-                        log.debug("No wrong type detected for %s", self.column_name)
+                        log.debug(f"No wrong type detected for {self.column_name}")
 
     def compare_values_with_accepted_values(self):
         # we only compare the SET of values with the SET of accepted values
         # then, we compute the number of values matching an accepted values using the number of occurrences of each
         # in the LIST of values
-        log.debug(self.accepted_values)
+        log.debug(f"{self.accepted_values}")
         if is_not_empty(variable=self.accepted_values):
             matching_values = []
             for value in self.unique_values:
@@ -107,13 +107,13 @@ class ValueAnalysis:
                 nb_values = len(self.values)
                 self.nb_empty_values = self.values.isna().sum()
                 self.ratio_empty_values = self.nb_empty_values / len(self.values)
-                log.debug("Number of empty values: %s (%s)", self.nb_empty_values, self.ratio_empty_values)
+                log.debug(f"Number of empty values: {self.nb_empty_values} ({self.ratio_empty_values})")
                 self.ratio_values_matching_accepted = total_nb_mathing_value/nb_values
-                log.debug("Ratio of values matching an accepted value: %s/%s=%s", total_nb_mathing_value, nb_values, self.ratio_values_matching_accepted)
+                log.debug(f"Ratio of values matching an accepted value: {total_nb_mathing_value}/{nb_values}={self.ratio_values_matching_accepted}")
                 self.ratio_non_empty_values_matching_accepted = total_nb_mathing_value/(nb_values - self.nb_empty_values)
-                log.debug("Ratio of non-empty values matching an accepted value: %s/(%s-%s)=%s", total_nb_mathing_value, nb_values, self.nb_empty_values, self.ratio_non_empty_values_matching_accepted)
+                log.debug(f"Ratio of non-empty values matching an accepted value: {total_nb_mathing_value}/({nb_values}-{self.nb_empty_values})={self.ratio_non_empty_values_matching_accepted}")
         else:
-            log.debug("No categorical values are expected...")
+            log.debug(f"No categorical values are expected...")
 
     def write_results_in_file(self):
         pass

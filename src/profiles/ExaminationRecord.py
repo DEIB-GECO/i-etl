@@ -40,7 +40,7 @@ class ExaminationRecord(Resource):
             # complex type, we need to expand it with .to_json()
             expanded_value = self.value.to_json()
         elif isinstance(self.value, datetime):
-            log.debug("The datetime value in ExaminationRecord is %s", self.value)
+            log.debug(f"The datetime value in ExaminationRecord is {self.value}")
             expanded_value = get_mongodb_date_from_datetime(current_datetime=self.value)
         else:
             # primitive type, no need to expand it

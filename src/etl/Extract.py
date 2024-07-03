@@ -38,10 +38,10 @@ class Extract:
             self.run_variable_analysis()
 
     def load_metadata_file(self) -> None:
-        log.info("Metadata filepath is %s.", self.execution.get_metadata_filepath())
+        log.info(f"Metadata filepath is {self.execution.get_clinical_metadata_filepath()}")
 
         # index_col is False to not add a column with line numbers
-        self.metadata = pd.read_csv(self.execution.get_metadata_filepath(), index_col=False)
+        self.metadata = pd.read_csv(self.execution.get_clinical_metadata_filepath(), index_col=False)
 
         # For UC2 and UC3 metadata files, we need to keep only the variables for the current hospital
         # and remove the columns for other hospitals
@@ -52,11 +52,11 @@ class Extract:
             pass
 
         # For any metadata file, we need to keep only the variables that concern the current dataset
-        filename = os.path.basename(self.execution.get_data_filepaths()[0])
-        log.debug(filename)
-        log.debug(self.metadata[MetadataColumns.DATASET_NAME.value].unique())
+        filename = os.path.basename(self.execution.get_clinical_filepaths()[0])
+        log.debug(f"{filename}")
+        log.debug(f"{self.metadata[MetadataColumns.DATASET_NAME.value].unique()}")
         if filename not in self.metadata[MetadataColumns.DATASET_NAME.value].unique():
-            raise ValueError("The current dataset (%s) is not described in the provided metadata file.", filename)
+            raise ValueError(f"The current dataset ({filename}) is not described in the provided metadata file.")
         else:
             self.metadata = self.metadata[self.metadata[MetadataColumns.DATASET_NAME.value] == filename]
 
@@ -87,33 +87,33 @@ class Extract:
                     values_dicts.append(json.loads(json_dict))
                 self.metadata.loc[index, MetadataColumns.JSON_VALUES.value] = json.dumps(values_dicts)  # set the new JSON values as a string
 
-        log.info("%s columns and %s lines in the metadata file.", len(self.metadata.columns), len(self.metadata))
+        log.info(f"{len(self.metadata.columns)} columns and {len(self.metadata)} lines in the metadata file.")
 
     def preprocess_metadata_file(self) -> None:
         # 1. capitalize and replace spaces in column names
         self.metadata.rename(columns=lambda x: x.upper().replace(" ", "_"), inplace=True)
 
         # 2. for each hospital, get its associated metadata
-        log.debug("working on hospital %s", self.execution.get_hospital_name())
+        log.debug(f"working on hospital {self.execution.get_hospital_name()}")
         # a. we remove columns that are talking about other hospitals, and keep metadata variables + the column for the current hospital
         columns_to_keep = []
         columns_to_keep.extend([meta_variable.upper().replace(" ", "_") for meta_variable in METADATA_VARIABLES])
         columns_to_keep.append(self.execution.get_hospital_name())
-        log.debug(self.metadata.columns)
-        log.debug(columns_to_keep)
+        log.debug(f"{self.metadata.columns}")
+        log.debug(f"{columns_to_keep}")
         self.metadata = self.metadata[columns_to_keep]
         # b. we filter metadata that is not part of the current hospital (to avoid having the whole metadata for each hospital)
         self.metadata = self.metadata[self.metadata[self.execution.get_hospital_name()] == 1]
         # c. we remove the column for the hospital, now that we have filtered the rows using it
-        log.debug("will drop %s in %s", self.execution.get_hospital_name(), self.metadata.columns)
+        log.debug(f"will drop {self.execution.get_hospital_name()} in {self.metadata.columns}")
         self.metadata = self.metadata.drop(self.execution.get_hospital_name(), axis=1)
-        log.debug(self.metadata)
+        log.debug(f"{self.metadata}")
 
     def load_data_file(self) -> None:
-        log.info(self.execution.get_current_filepath())
+        log.info(f"{self.execution.get_current_filepath()}")
         assert os.path.exists(self.execution.get_current_filepath()), "The provided samples file could not be found. Please check the filepath you specify when running this script."
 
-        log.info("Data filepath is %s.", self.execution.get_current_filepath())
+        log.info(f"Data filepath is {self.execution.get_current_filepath()}")
 
         # index_col is False to not add a column with line numbers
         self.data = pd.read_csv(self.execution.get_current_filepath(), index_col=False)
@@ -121,7 +121,7 @@ class Extract:
         # lower case all column names to avoid inconsistencies
         self.data.columns = self.data.columns.str.lower()
 
-        log.info("%s columns and %s lines in the data file.", len(self.data.columns), len(self.data))
+        log.info(f"{len(self.data.columns)} columns and {len(self.data)} lines in the data file.")
 
     def compute_mapped_values(self) -> None:
         self.mapped_values = {}
@@ -141,7 +141,7 @@ class Extract:
                         current_dict[Ontologies.LOINC.value["name"]] = convert_value(value=current_dict[Ontologies.LOINC.value])
                     parsed_dicts.append(current_dict)
                 self.mapped_values[row["name"]] = parsed_dicts
-        log.debug(self.mapped_values)
+        log.debug(f"{self.mapped_values}")
 
     def compute_mapped_types(self) -> None:
         self.mapped_types = {}
@@ -150,10 +150,10 @@ class Extract:
             if is_not_nan(row[MetadataColumns.VAR_TYPE.value]):
                 # we associate the column name to its expected type
                 self.mapped_types[row[MetadataColumns.COLUMN_NAME.value]] = row[MetadataColumns.VAR_TYPE.value]
-        log.debug(self.mapped_types)
+        log.debug(f"{self.mapped_types}")
 
     def run_value_analysis(self) -> None:
-        log.debug(self.mapped_values)
+        log.debug(f"{self.mapped_values}")
         # for each column in the sample data (and not in the metadata because some (empty) data columns are not
         # present in the metadata file), we compare the set of values it takes against the accepted set of values
         # (available in the mapped_values variable)
@@ -178,9 +178,9 @@ class Extract:
             value_analysis = ValueAnalysis(column_name=column, values=values, expected_type=expected_type, accepted_values=accepted_values)
             value_analysis.run_analysis()
             if value_analysis.nb_unrecognized_data_types > 0 or (0 < value_analysis.ratio_non_empty_values_matching_accepted < 1):
-                log.info("%s: %s", column, value_analysis)
+                log.info(f"{column}: {value_analysis}")
 
     def run_variable_analysis(self) -> None:
         variable_analysis = VariableAnalysis(samples=self.data, metadata=self.metadata)
         variable_analysis.run_analysis()
-        log.info(variable_analysis)
+        log.info(f"{variable_analysis}")

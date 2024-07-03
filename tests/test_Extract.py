@@ -16,7 +16,7 @@
 #
 #     # def test_load_existing_data_in_memory(self):
 #     #     data_filepath = "data/test/manual.csv"
-#     #     metadata_filepath = "data/test/metadata.csv"
+#     #     clinical_metadata_filepath = "data/test/metadata.csv"
 #     #     database = Database("mongodb://localhost:27017/", "unit_tests")
 #     #     patient1, patient2, patient3 = Patient("123"), Patient("456"), Patient("789")
 #     #     hospital1, hospital2 = Hospital("1", "Hospital A"), Hospital("2", "Hospital B")
@@ -25,7 +25,7 @@
 #     #     database.insert_many_tuples(table_name=TableNames.PATIENT.value, tuples=[patient1.to_json(), patient2.to_json(), patient3.to_json()])
 #     #     database.insert_many_tuples(table_name=TableNames.HOSPITAL.value, tuples=[hospital1.to_json(), hospital2.to_json()])
 #     #     database.insert_many_tuples(table_name=TableNames.EXAMINATION.value, tuples=[examination1.to_json(), examination2.to_json()])
-#     #     extract = Extract(data_filepath, metadata_filepath, database, False)
+#     #     extract = Extract(data_filepath, clinical_metadata_filepath, database, False)
 #     #     extract.load_existing_data_in_memory()
 #
 #     # def test_load_metadata_file(self):

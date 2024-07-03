@@ -33,20 +33,20 @@ class VariableAnalysis:
         print(total_number_variables_with_data)
         total_number_variables_with_data = len(count_values_per_column.loc[lambda x: (x > 0)])
         print(total_number_variables_with_data)
-        log.info("total_number_variables_with_data = %s", total_number_variables_with_data)
+        log.info(f"total_number_variables_with_data = {total_number_variables_with_data}")
         self.ratio_variable_no_ontology = nb_variables_without_ontology / total_number_variables_with_data
-        log.debug("Number of variables without ontology: %s/%s=%s", nb_variables_without_ontology, total_number_variables_with_data, self.ratio_variable_no_ontology)
+        log.debug(f"Number of variables without ontology: {nb_variables_without_ontology}/{total_number_variables_with_data}={self.ratio_variable_no_ontology}")
 
     def compute_nb_categorical_features_without_mapping(self):
         self.nb_categorical_features_without_mapping = 0
         for index, metadata_variable in self.metadata.iterrows():
             if metadata_variable[MetadataColumns.VAR_TYPE.value] == "category":
                 if not is_not_nan(metadata_variable[MetadataColumns.JSON_VALUES.value]):
-                    log.debug(metadata_variable[MetadataColumns.COLUMN_NAME.value])
+                    log.debug(f"{metadata_variable[MetadataColumns.COLUMN_NAME.value]}")
                     self.nb_categorical_features_without_mapping += 1
                 self.total_nb_categorical_features += 1
         self.ratio_categorical_feature_with_no_mapping = self.nb_categorical_features_without_mapping / self.total_nb_categorical_features
-        log.debug("Ratio of categorical feature having no mapping: %s/%s=%s", self.nb_categorical_features_without_mapping, self.total_nb_categorical_features, self.ratio_categorical_feature_with_no_mapping)
+        log.debug(f"Ratio of categorical feature having no mapping: {self.nb_categorical_features_without_mapping}/{self.total_nb_categorical_features}={self.ratio_categorical_feature_with_no_mapping}")
 
     def to_json(self):
         return {

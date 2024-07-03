@@ -13,13 +13,13 @@ class InputOutput(Resource):
 
         if not os.path.exists(file):
             # TODO Nelly: check also the file extension?
-            log.error("%s is not a file path.", file)
+            log.error(f"{file} is not a file path.")
             self.file = ""
         else:
             self.file = file
         self.type = type
         if get_datetime_from_str(str_value=date) is None:
-            log.error("%s is not a date", date)
+            log.error(f"{date} is not a date")
             self.date = ""
         else:
             self.date = date

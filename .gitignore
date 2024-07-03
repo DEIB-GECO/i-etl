@@ -36,4 +36,7 @@ datasets/data
 datasets/metadata
 
 # log files
-*.log
+**/*.log
+
+# The whole working directory
+working-dir

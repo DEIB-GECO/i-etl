@@ -22,14 +22,14 @@ class ETL:
         # set the locale
         if self.execution.get_use_en_locale():
             # this user explicitly asked for loading data with en_US locale
-            log.debug("default locale: en_US")
+            log.debug(f"default locale: en_US")
             locale.setlocale(category=locale.LC_NUMERIC, locale="en_US")
         else:
             # we use the default locale assigned to each center based on their country
-            log.debug("custom locale: %s", LOCALES[HospitalNames[self.execution.get_hospital_name()].value])
+            log.debug(f"custom locale: {LOCALES[HospitalNames[self.execution.get_hospital_name()].value]}")
             locale.setlocale(category=locale.LC_NUMERIC, locale=LOCALES[HospitalNames[self.execution.get_hospital_name()].value])
 
-        log.info("Current locale is: %s", locale.getlocale(locale.LC_NUMERIC))
+        log.info(f"Current locale is: {locale.getlocale(locale.LC_NUMERIC)}")
 
         # init ETL steps
         self.extract = None
@@ -39,12 +39,12 @@ class ETL:
     def run(self) -> None:
         is_last_file = False
         file_counter = 0
-        log.debug(self.execution.get_data_filepaths())
-        log.debug(type(self.execution.get_data_filepaths()))
-        for one_file in self.execution.get_data_filepaths():
-            log.debug(one_file)
+        log.debug(f"{self.execution.get_clinical_filepaths()}")
+        log.debug(f"{type(self.execution.get_clinical_filepaths())}")
+        for one_file in self.execution.get_clinical_filepaths():
+            log.debug(f"{one_file}")
             file_counter = file_counter + 1
-            if file_counter == len(self.execution.get_data_filepaths()):
+            if file_counter == len(self.execution.get_clinical_filepaths()):
                 is_last_file = True
             # set the current path in the config because the ETL only knows files declared in the config
             if one_file.startswith("/"):
@@ -56,7 +56,7 @@ class ETL:
                 full_path = os.path.join(self.execution.get_working_dir_current(), "..", "..", "..", str(one_file))
                 self.execution.set_current_filepath(current_filepath=full_path)
 
-            log.info("--- Starting to ingest file '%s'", self.execution.get_current_filepath())
+            log.info(f"--- Starting to ingest file '{self.execution.get_current_filepath()}'")
             if self.execution.get_extract():
                 self.extract = Extract(database=self.database, execution=self.execution)
 

@@ -21,8 +21,8 @@ class DistributionPlot:
         self.compute_x_and_y_from_cursor("_id", "total")
 
     def draw(self):
-        log.debug(self.x)
-        log.debug(self.y)
+        log.debug(f"{self.x}")
+        log.debug(f"{self.y}")
         # generate colors and assign one of them to each bar
         df = pd.Series(np.random.randint(10, 50, len(self.y)), index=np.arange(1, len(self.y) + 1))
         cmap = plt.cm.tab10
@@ -42,10 +42,10 @@ class DistributionPlot:
         plt.show()
 
     def compute_x_and_y_from_cursor(self, x_axis: str, y_axis: str):
-        log.debug(self.cursor)
+        log.debug(f"{self.cursor}")
         self.x = []
         self.y = []
         for element in self.cursor:
-            log.debug(element)
+            log.debug(f"{element}")
             self.x.append(str(element[x_axis]))
             self.y.append(element[y_axis])

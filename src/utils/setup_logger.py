@@ -1,13 +1,12 @@
 import logging
-from time import strftime
 
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s, %(levelname)-5s [%(module)s:%(funcName)s:%(lineno)d] %(message)s',
     datefmt='%Y-%m-%d:%H:%M:%S',
     handlers=[
-        logging.FileHandler('log-{}.log'.format(strftime('%Y-%m-%d:%H:%M:%S'))),
         logging.StreamHandler()
+        # we will add a FileHandler in the Execution class when we know the db name (user input)
     ]
 )
 log = logging.getLogger()

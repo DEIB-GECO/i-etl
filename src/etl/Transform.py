@@ -52,10 +52,10 @@ class Transform:
         self.set_resource_counter_id()
         self.create_hospital(hospital_name=self.execution.get_hospital_name())
         self.database.load_json_in_table(table_name=TableNames.HOSPITAL.value, unique_variables=["name"])
-        log.info("Hospital count: %s", self.database.count_documents(table_name=TableNames.HOSPITAL.value, filter_dict={}))
+        log.info(f"Hospital count: {self.database.count_documents(table_name=TableNames.HOSPITAL.value, filter_dict={})}")
         self.create_examinations()
         self.database.load_json_in_table(table_name=TableNames.EXAMINATION.value, unique_variables=["code"])
-        log.info("Examination count: %s", self.database.count_documents(table_name=TableNames.EXAMINATION.value, filter_dict={}))
+        log.info(f"Examination count: {self.database.count_documents(table_name=TableNames.EXAMINATION.value, filter_dict={})}")
         self.create_samples()
         self.create_patients()
         self.create_examination_records()
@@ -64,13 +64,13 @@ class Transform:
         self.counter.set_with_database(database=self.database)
 
     def create_hospital(self, hospital_name: str) -> None:
-        log.info("create hospital instance in memory")
+        log.info(f"create hospital instance in memory")
         new_hospital = Hospital(id_value=NONE_VALUE, name=hospital_name, counter=self.counter)
         self.hospitals.append(new_hospital)
         self.database.write_in_file(data_array=self.hospitals, table_name=TableNames.HOSPITAL.value, count=1)
 
     def create_examinations(self) -> None:
-        log.info("create examination instances in memory")
+        log.info(f"create examination instances in memory")
         columns = self.data.columns.values.tolist()
         count = 1
         for column_name in columns:
@@ -91,14 +91,14 @@ class Transform:
                     # TODO Nelly: this is not true: TooYoung, AnswerIX and BIS have no ontology code as of today (May, 29th 2024)
                     pass
             else:
-                log.debug("I am skipping column %s because it has been marked as not being part of examination instances.", lower_column_name)
+                log.debug(f"I am skipping column {lower_column_name} because it has been marked as not being part of examination instances.")
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
         self.database.write_in_file(data_array=self.examinations, table_name=TableNames.EXAMINATION.value, count=count)
 
     def create_samples(self) -> None:
         if is_in_insensitive(value=ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.SAMPLE.value], list_of_compared=self.data.columns):
             # this is a dataset with samples
-            log.info("create sample instances in memory")
+            log.info(f"create sample instances in memory")
             created_sample_barcodes = set()
             count = 1
             for index, row in self.data.iterrows():
@@ -131,16 +131,16 @@ class Transform:
             self.database.write_in_file(data_array=self.samples, table_name=TableNames.SAMPLE.value, count=count)
 
     def create_examination_records(self) -> None:
-        log.info("create examination record instances in memory")
+        log.info(f"create examination record instances in memory")
 
         # a. load some data from the database to compute references
         self.mapping_hospital_to_hospital_id = self.database.retrieve_identifiers(table_name=TableNames.HOSPITAL.value,
                                                                               projection="name")
-        log.debug(self.mapping_hospital_to_hospital_id)
+        log.debug(f"{self.mapping_hospital_to_hospital_id}")
 
         self.mapping_column_to_examination_id = self.database.retrieve_identifiers(table_name=TableNames.EXAMINATION.value,
                                                                                projection="code.text")
-        log.debug(self.mapping_column_to_examination_id)
+        log.debug(f"{self.mapping_column_to_examination_id}")
 
         # b. Create ExaminationRecord instance
         count = 1
@@ -187,7 +187,7 @@ class Transform:
         self.database.write_in_file(data_array=self.examination_records, table_name=TableNames.EXAMINATION_RECORD.value, count=count)
 
     def create_patients(self) -> None:
-        log.info("create patient instances in memory")
+        log.info(f"create patient instances in memory")
         created_patient_ids = set()
         count = 1
         for index, row in self.data.iterrows():

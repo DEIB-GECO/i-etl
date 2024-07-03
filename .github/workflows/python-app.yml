@@ -30,4 +30,4 @@ jobs:
         source .venv-better-fairificator/bin/activate
         # python3 -m unittest discover
         # pytest tests 
-        python -m pytest
+        python -m pytest --log-cli-level=DEBUG  # force to print all logs, even in tests

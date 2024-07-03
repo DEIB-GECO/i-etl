@@ -1,3 +1,5 @@
+import logging
+
 from profiles.Hospital import Hospital
 from utils.TableNames import TableNames
 from utils.constants import NONE_VALUE
@@ -5,6 +7,7 @@ from utils.Counter import Counter
 
 
 class TestHospital:
+
     def test_constructor(self):
         counter = Counter()
         hospital1 = Hospital(id_value="123", name="MyHospital", counter=counter)
