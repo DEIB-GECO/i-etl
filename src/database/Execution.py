@@ -193,8 +193,12 @@ class Execution:
         return self._clinical_filepaths
 
     @property
-    def current_file_path(self) -> str:
+    def current_filepath(self) -> str:
         return self._current_filepath
+
+    @current_filepath.setter
+    def current_filepath(self, current_filepath) -> None:
+        self._current_filepath = current_filepath
 
     @property
     def use_en_locale(self) -> bool:

@@ -21,7 +21,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_check_server_is_up(self):
         # test with the correct (default) string
-        database = Database(execution=TestDatabase.execution)  # this should return no exception (successful connection)
+        _ = Database(execution=TestDatabase.execution)  # this should return no exception (successful connection)
         # database.close()
 
         # test with a wrong connection string
@@ -30,8 +30,7 @@ class TestDatabase(unittest.TestCase):
         }
         TestDatabase.execution.set_up(args, False)
         with pytest.raises(ConnectionError):
-            database = Database(
-                execution=TestDatabase.execution)  # this should return an exception (broken connection) because check_server_is_up() will return one
+            _ = Database(execution=TestDatabase.execution)  # this should return an exception (broken connection) because check_server_is_up() will return one
         # database.close()
 
     def test_drop(self):

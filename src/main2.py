@@ -1,8 +1,6 @@
 import bson
 from pymongo.mongo_client import MongoClient
-import datetime
 from bson.json_util import loads
-import json
 
 if __name__ == '__main__':
     # d1 = datetime.datetime.strptime("2018-10-13T11:56:52.000Z", "%Y-%m-%dT%H:%M:%S.000Z")
