@@ -8,7 +8,7 @@ from utils.utils import get_mongodb_date_from_datetime
 
 
 class Disease(Resource):
-    def __init__(self, id_value: str, status: str, code: CodeableConcept, counter: Counter):
+    def __init__(self, id_value: int, status: str, code: CodeableConcept, counter: Counter):
         """
         Create a new Disease instance.
         This is different from a DiseaseRecord:

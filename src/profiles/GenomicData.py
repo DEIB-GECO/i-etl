@@ -9,7 +9,7 @@ from utils.utils import get_mongodb_date_from_datetime
 
 
 class GenomicData(Resource):
-    def __init__(self, id_value: str, analysis: Analysis, subject_ref: Reference, hospital_ref: Reference, counter: Counter):
+    def __init__(self, id_value: int, analysis: Analysis, subject_ref: Reference, hospital_ref: Reference, counter: Counter):
         super().__init__(id_value=id_value, resource_type=self.get_type(), counter=counter)
 
         self._analysis = analysis

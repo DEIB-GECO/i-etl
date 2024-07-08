@@ -3,7 +3,7 @@ from utils.Ontologies import Ontologies
 from utils.TableNames import TableNames
 from utils.utils import get_ontology_resource_uri
 
-NONE_VALUE = "NONE"
+NO_ID = -1
 
 METADATA_VARIABLES = ["ontology", "ontology_code", "ontology_comment", "secondary_ontology", "secondary_ontology_code",
                       "secondary_ontology_comment", "snomed_vartype", "dataset", "name", "description", "vartype",

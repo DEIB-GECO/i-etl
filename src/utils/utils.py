@@ -167,24 +167,12 @@ def mongodb_match(field: str, value: Any, is_regex: bool) -> dict:
         }
 
 
-def mongodb_project_one(field: str, split_delimiter: str) -> dict:
-    if split_delimiter is None:
-        return {
-            "$project": {
-                field: 1
-            }
+def mongodb_project_one(field: str) -> dict:
+    return {
+        "$project": {
+            field: 1
         }
-    else:
-        # also split the projected value
-        return {
-            "$project": {
-                field: {
-                    # we prepend a $ to the fild so that MongoDB understand that
-                    # it needs to parse the actual value of the filed
-                    "$split": ["$" + field, split_delimiter]
-                }
-            }
-        }
+    }
 
 
 def mongodb_sort(field: str, sort_order: int) -> dict:

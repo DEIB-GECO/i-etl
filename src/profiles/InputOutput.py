@@ -8,7 +8,7 @@ from utils.utils import get_datetime_from_str
 
 
 class InputOutput(Resource):
-    def __init__(self, id_value: str, file: str, type: CodeableConcept, date: str, counter: Counter):
+    def __init__(self, id_value: int, file: str, type: CodeableConcept, date: str, counter: Counter):
         super().__init__(id_value=id_value, resource_type=self.get_type(), counter=counter)
 
         if not os.path.exists(file):

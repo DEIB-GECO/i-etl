@@ -9,7 +9,7 @@ from utils.Counter import Counter
 
 
 class Examination(Resource):
-    def __init__(self, id_value: str, code: CodeableConcept, category: CodeableConcept,
+    def __init__(self, id_value: int, code: CodeableConcept, category: CodeableConcept,
                  permitted_data_types: list[str], counter: Counter):
         # set up the resource ID
         super().__init__(id_value=id_value, resource_type=self.get_type(), counter=counter)

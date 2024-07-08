@@ -242,9 +242,9 @@ class Database:
 
     def get_min_or_max_value(self, table_name: str, field: str, sort_order: int) -> int | float:
         operations = [
-            mongodb_project_one(field=field, split_delimiter="/"),
-            mongodb_unwind(field=field),
-            mongodb_match(field=field, value="[0-9]+", is_regex=True)
+            mongodb_project_one(field=field),
+            # mongodb_unwind(field=field),
+            # mongodb_match(field=field, value="[0-9]+", is_regex=True)
         ]
 
         if sort_order == 1:
@@ -278,7 +278,7 @@ class Database:
         """
         cursor = self._db[TableNames.EXAMINATION_RECORD.value].aggregate([
             mongodb_match(field="instantiate.reference", value=examination_url, is_regex=False),
-            mongodb_project_one(field="value", split_delimiter=""),
+            mongodb_project_one(field="value"),
             mongodb_group_by(group_key=None, group_by_name="avg_val", operator="$avg", field="$value")
         ])
 
@@ -296,7 +296,7 @@ class Database:
         """
         pipeline = [
             mongodb_match(field="instantiate.reference", value=examination_url, is_regex=False),
-            mongodb_project_one(field="value", split_delimiter=""),
+            mongodb_project_one(field="value"),
             mongodb_group_by(group_key="$value", group_by_name="total", operator="$sum", field=1),
             mongodb_match(field="total", value={"$gt": min_value}, is_regex=False),
             mongodb_sort(field="_id", sort_order=1)

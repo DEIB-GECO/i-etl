@@ -5,7 +5,7 @@ from profiles.InputOutput import InputOutput
 
 
 class Analysis(Resource):
-    def __init__(self, id_value: str, method_type: CodeableConcept, change_type: CodeableConcept,
+    def __init__(self, id_value: int, method_type: CodeableConcept, change_type: CodeableConcept,
                  genome_build: CodeableConcept, the_input: InputOutput, the_output: InputOutput, counter: Counter):
         super().__init__(id_value, self.get_type(), counter)
 

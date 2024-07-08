@@ -8,7 +8,7 @@ from utils.utils import get_mongodb_date_from_datetime
 
 
 class MedicineRecord(Resource):
-    def __init__(self, id_value: str, quantity, medicine_ref: Reference, patient_ref: Reference,
+    def __init__(self, id_value: int, quantity, medicine_ref: Reference, patient_ref: Reference,
                  hospital_ref: Reference, counter: Counter):
         super().__init__(id_value, self.get_type(), counter=counter)
 

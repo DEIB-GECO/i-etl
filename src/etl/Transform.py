@@ -17,7 +17,7 @@ from utils.ExaminationCategory import ExaminationCategory
 from utils.HospitalNames import HospitalNames
 from utils.MetadataColumns import MetadataColumns
 from utils.TableNames import TableNames
-from utils.constants import NONE_VALUE, NO_EXAMINATION_COLUMNS, BATCH_SIZE, ID_COLUMNS, PHENOTYPIC_VARIABLES
+from utils.constants import NO_ID, NO_EXAMINATION_COLUMNS, BATCH_SIZE, ID_COLUMNS, PHENOTYPIC_VARIABLES
 from utils.setup_logger import log
 from utils.utils import is_in_insensitive, is_not_nan, convert_value, get_ontology_system, normalize_value, \
     is_equal_insensitive
@@ -65,7 +65,7 @@ class Transform:
 
     def create_hospital(self, hospital_name: str) -> None:
         log.info(f"create hospital instance in memory")
-        new_hospital = Hospital(id_value=NONE_VALUE, name=hospital_name, counter=self._counter)
+        new_hospital = Hospital(id_value=NO_ID, name=hospital_name, counter=self._counter)
         self._hospitals.append(new_hospital)
         self._database.write_in_file(data_array=self._hospitals, table_name=TableNames.HOSPITAL.value, count=1)
 
@@ -79,7 +79,7 @@ class Transform:
                 cc = self.create_codeable_concept_from_column(column_name=lower_column_name)
                 if cc is not None and cc.has_no_coding():
                     category = self.determine_examination_category(column_name=lower_column_name)
-                    new_examination = Examination(id_value=NONE_VALUE, code=cc, category=category, permitted_data_types=[], counter=self._counter)
+                    new_examination = Examination(id_value=NO_ID, code=cc, category=category, permitted_data_types=[], counter=self._counter)
                     # log.info("adding a new examination about %s: %s", cc.text, new_examination)
                     self._examinations.append(new_examination)
                     if len(self._examinations) >= BATCH_SIZE:
@@ -166,7 +166,7 @@ class Transform:
                         sample_ref = Reference(resource_identifier=sample_id.value, resource_type=TableNames.SAMPLE.value)
                         # TODO Pietro: we could even clean more the data, e.g., do not allow "Italy" as ethnicity (caucasian, etc)
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
-                        new_examination_record = ExaminationRecord(id_value=NONE_VALUE, examination_ref=examination_ref,
+                        new_examination_record = ExaminationRecord(id_value=NO_ID, examination_ref=examination_ref,
                                                                    subject_ref=subject_ref, hospital_ref=hospital_ref,
                                                                    sample_ref=sample_ref, value=fairified_value,
                                                                    counter=self._counter)
@@ -192,7 +192,7 @@ class Transform:
             patient_id = row[ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.PATIENT.value]]
             if patient_id not in created_patient_ids:
                 # the patient does not exist yet, we will create it
-                new_patient = Patient(id_value=str(patient_id), counter=self._counter)
+                new_patient = Patient(id_value=patient_id, counter=self._counter)
                 created_patient_ids.add(patient_id)
                 self._patients.append(new_patient)
                 if len(self._patients) >= BATCH_SIZE:

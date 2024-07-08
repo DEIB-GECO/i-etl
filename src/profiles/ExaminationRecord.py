@@ -11,7 +11,7 @@ from utils.setup_logger import log
 
 
 class ExaminationRecord(Resource):
-    def __init__(self, id_value: str, examination_ref: Reference, subject_ref: Reference,
+    def __init__(self, id_value: int, examination_ref: Reference, subject_ref: Reference,
                  hospital_ref: Reference, sample_ref: Reference, value, counter: Counter):
         """
         A new ClinicalRecord instance, either built from existing data or from scratch.

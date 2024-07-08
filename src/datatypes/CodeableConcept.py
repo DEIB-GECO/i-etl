@@ -40,6 +40,14 @@ class CodeableConcept:
             "coding": [coding.to_json() for coding in self._codings]
         }
 
+    @property
+    def text(self) -> str:
+        return self._text
+
+    @text.setter
+    def text(self, new_text: str) -> None:
+        self._text = new_text
+
     def __str__(self) -> str:
         return json.dumps(self.to_json())
 

@@ -7,7 +7,7 @@ from utils.utils import get_mongodb_date_from_datetime
 
 
 class Hospital(Resource):
-    def __init__(self, id_value: str, name: str, counter: Counter):
+    def __init__(self, id_value: int, name: str, counter: Counter):
         """
         A new hospital instance, either built from existing data or from scratch.
         :param id_value: A stringified integer being the BETTER id of that resource.

@@ -7,7 +7,7 @@ from utils.utils import get_mongodb_date_from_datetime, is_not_nan
 
 
 class Sample(Resource):
-    def __init__(self, id_value: str, quality: str, sampling: str, time_collected: datetime, time_received: datetime,
+    def __init__(self, id_value: int, quality: str, sampling: str, time_collected: datetime, time_received: datetime,
                  too_young: bool, bis: bool, counter: Counter):
         # set up the resource ID
         # this corresponds to the SampleBarcode in Buzzi data

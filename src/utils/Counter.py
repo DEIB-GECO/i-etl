@@ -14,8 +14,7 @@ class Counter:
         self._resource_id = new_value
 
     def set_with_database(self, database: Database) -> None:
-        max_value = database.get_max_resource_counter_id()
-        # Resource.set_counter(max_value + 1)  # start 1 after the current counter to avoid resources with the same ID
+        max_value = database.get_max_resource_counter_id() + 1  # start 1 after the current counter to avoid resources with the same ID
         if max_value > -1:
             self.set(max_value)
             log.debug(f"The resource counter is now set to {self._resource_id}.")

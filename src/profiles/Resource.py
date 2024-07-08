@@ -7,20 +7,20 @@ from utils.Counter import Counter
 
 
 class Resource:
-    def __init__(self, id_value: str, resource_type: str, counter: Counter):
+    def __init__(self, id_value: int, resource_type: str, counter: Counter):
         """
 
         :param id_value:
         :param resource_type:
         """
         self._identifier = None  # change the FHIR model to have an identifier which is simply a string
-        if id_value == constants.NONE_VALUE:
+        if id_value == constants.NO_ID:
             if resource_type == TableNames.PATIENT.value or resource_type == TableNames.SAMPLE.value:
                 # Patient instances should always have an ID (given by the hospitals)
                 raise ValueError("Patient and Sample instances should have an ID.")
             else:
                 # We assign an ID to the new resource
-                self._identifier = Identifier(id_value=str(counter.increment()), resource_type=resource_type)
+                self._identifier = Identifier(id_value=counter.increment(), resource_type=resource_type)
         else:
             # This case covers when we retrieve resources from the DB, and we reconstruct them in-memory:
             # they already have an identifier, thus we simply reconstruct it with the value
