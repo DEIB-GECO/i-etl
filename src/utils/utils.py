@@ -7,8 +7,6 @@ from typing import Any
 from dateutil.parser import parse
 from pandas import DataFrame
 
-from utils.Ontologies import Ontologies
-
 
 # ASSERTIONS
 
@@ -64,24 +62,6 @@ def is_equal_insensitive(value: str | float, compared: str | float) -> bool:
         return value == compared
     else:
         return value.casefold() == compared.casefold()
-
-
-# GET PREDEFINED VALUES
-
-
-def get_ontology_system(ontology: str) -> str:
-    ontology = normalize_value(input_string=ontology)
-
-    for existing_ontology in Ontologies:
-        if existing_ontology.value["name"] == ontology:
-            return existing_ontology.value["url"]  # return the ontology URI associated to that ontology
-    # at the end of the loop, no enum value could match the given ontology
-    # thus we need to raise an error
-    raise ValueError("The given ontology system '%s' is not known.", ontology)
-
-
-def get_ontology_resource_uri(ontology_system: str, resource_code: str) -> str:
-    return ontology_system + "/" + resource_code
 
 
 # NORMALIZE DATA

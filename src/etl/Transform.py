@@ -16,10 +16,11 @@ from utils.Counter import Counter
 from utils.ExaminationCategory import ExaminationCategory
 from utils.HospitalNames import HospitalNames
 from utils.MetadataColumns import MetadataColumns
+from utils.Ontologies import Ontologies
 from utils.TableNames import TableNames
 from utils.constants import NO_ID, NO_EXAMINATION_COLUMNS, BATCH_SIZE, ID_COLUMNS, PHENOTYPIC_VARIABLES
 from utils.setup_logger import log
-from utils.utils import is_in_insensitive, is_not_nan, convert_value, get_ontology_system, normalize_value, \
+from utils.utils import is_in_insensitive, is_not_nan, convert_value, normalize_value, \
     is_equal_insensitive
 
 
@@ -229,7 +230,7 @@ class Transform:
             # no ontology code has been provided for that variable name, let's skip it
             return None
         else:
-            ontology = get_ontology_system(ontology=ontology)  # get the URI of the ontology system instead of its string name
+            ontology = Ontologies.get_ontology_system(ontology=ontology)  # get the URI of the ontology system instead of its string name
             code = normalize_value(input_string=row[code_column])  # get the ontology code in the metadata for the given column and normalize it (just in case)
             display = Examination.get_label(row=row)
             # log.info("Found exactly an ontology code for the column '%s', i.e., %s", column_name, code)
@@ -268,7 +269,7 @@ class Transform:
                         # (i.e., loinc and snomed_ct columns), we create a Coding, which we add to the CodeableConcept
                         # we need to do a loop because there may be several ontology terms for a single mapping
                         if key != 'value' and key != 'explanation':
-                            system = get_ontology_system(ontology=key)
+                            system = Ontologies.get_ontology_system(ontology=key)
                             code = normalize_value(input_string=val)
                             display = mapping['explanation']
                             cc.add_coding(triple=(system, code, display))

@@ -1,7 +1,6 @@
 from utils.HospitalNames import HospitalNames
 from utils.Ontologies import Ontologies
 from utils.TableNames import TableNames
-from utils.utils import get_ontology_resource_uri
 
 NO_ID = -1
 
@@ -29,16 +28,16 @@ LOCALES = {
 }
 
 PHENOTYPIC_VARIABLES = {
-    get_ontology_resource_uri(ontology_system=Ontologies.SNOMEDCT.value["url"], resource_code="184099003"): "DateOfBirth",
-    get_ontology_resource_uri(ontology_system=Ontologies.LOINC.value["url"], resource_code="21112-8"): "DateOfBirth",
-    get_ontology_resource_uri(ontology_system=Ontologies.SNOMEDCT.value["url"], resource_code="734000001"): "Sex",
-    get_ontology_resource_uri(ontology_system=Ontologies.LOINC.value["url"], resource_code="46098-0"): "Sex",
-    get_ontology_resource_uri(ontology_system=Ontologies.LOINC.value["url"], resource_code="68997-6"): "City",
-    get_ontology_resource_uri(ontology_system=Ontologies.LOINC.value["url"], resource_code="49051-6"): "GestationalAge",
-    get_ontology_resource_uri(ontology_system=Ontologies.LOINC.value["url"], resource_code="46463-6"): "Etnicity",
-    get_ontology_resource_uri(ontology_system=Ontologies.SNOMEDCT.value["url"], resource_code="28030000"): "Twins",
-    get_ontology_resource_uri(ontology_system=Ontologies.SNOMEDCT.value["url"], resource_code="206167009"): "Premature",
-    get_ontology_resource_uri(ontology_system=Ontologies.SNOMEDCT.value["url"], resource_code="236973005"): "BirthMethod"
+    Ontologies.get_ontology_resource_uri(ontology_system=Ontologies.SNOMEDCT.value["url"], resource_code="184099003"): "DateOfBirth",
+    Ontologies.get_ontology_resource_uri(ontology_system=Ontologies.LOINC.value["url"], resource_code="21112-8"): "DateOfBirth",
+    Ontologies.get_ontology_resource_uri(ontology_system=Ontologies.SNOMEDCT.value["url"], resource_code="734000001"): "Sex",
+    Ontologies.get_ontology_resource_uri(ontology_system=Ontologies.LOINC.value["url"], resource_code="46098-0"): "Sex",
+    Ontologies.get_ontology_resource_uri(ontology_system=Ontologies.LOINC.value["url"], resource_code="68997-6"): "City",
+    Ontologies.get_ontology_resource_uri(ontology_system=Ontologies.LOINC.value["url"], resource_code="49051-6"): "GestationalAge",
+    Ontologies.get_ontology_resource_uri(ontology_system=Ontologies.LOINC.value["url"], resource_code="46463-6"): "Etnicity",
+    Ontologies.get_ontology_resource_uri(ontology_system=Ontologies.SNOMEDCT.value["url"], resource_code="28030000"): "Twins",
+    Ontologies.get_ontology_resource_uri(ontology_system=Ontologies.SNOMEDCT.value["url"], resource_code="206167009"): "Premature",
+    Ontologies.get_ontology_resource_uri(ontology_system=Ontologies.SNOMEDCT.value["url"], resource_code="236973005"): "BirthMethod"
 }
 
 SAMPLE_VARIABLES = ["Sampling", "SampleQuality", "SamTimeCollected", "SamTimeReceived", "TooYoung", "BIS"]
