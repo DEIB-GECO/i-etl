@@ -16,37 +16,15 @@ ID_COLUMNS = {
     }
 }
 
-LOCALES = {
-    HospitalNames.IT_BUZZI_UC1.value: "it_IT",
-    HospitalNames.RS_IMGGE: "sr_RS",
-    HospitalNames.ES_HSJD: "es_ES",
-    HospitalNames.IT_BUZZI_UC3: "it_IT",
-    HospitalNames.ES_TERRASSA: "es_ES",
-    HospitalNames.DE_UKK: "de_DE",
-    HospitalNames.ES_LAFE: "es_ES",
-    HospitalNames.IL_HMC: "en_IL"
-}
-
-PHENOTYPIC_VARIABLES = {
-    Ontologies.get_ontology_resource_uri(ontology_system=Ontologies.SNOMEDCT.value["url"], resource_code="184099003"): "DateOfBirth",
-    Ontologies.get_ontology_resource_uri(ontology_system=Ontologies.LOINC.value["url"], resource_code="21112-8"): "DateOfBirth",
-    Ontologies.get_ontology_resource_uri(ontology_system=Ontologies.SNOMEDCT.value["url"], resource_code="734000001"): "Sex",
-    Ontologies.get_ontology_resource_uri(ontology_system=Ontologies.LOINC.value["url"], resource_code="46098-0"): "Sex",
-    Ontologies.get_ontology_resource_uri(ontology_system=Ontologies.LOINC.value["url"], resource_code="68997-6"): "City",
-    Ontologies.get_ontology_resource_uri(ontology_system=Ontologies.LOINC.value["url"], resource_code="49051-6"): "GestationalAge",
-    Ontologies.get_ontology_resource_uri(ontology_system=Ontologies.LOINC.value["url"], resource_code="46463-6"): "Etnicity",
-    Ontologies.get_ontology_resource_uri(ontology_system=Ontologies.SNOMEDCT.value["url"], resource_code="28030000"): "Twins",
-    Ontologies.get_ontology_resource_uri(ontology_system=Ontologies.SNOMEDCT.value["url"], resource_code="206167009"): "Premature",
-    Ontologies.get_ontology_resource_uri(ontology_system=Ontologies.SNOMEDCT.value["url"], resource_code="236973005"): "BirthMethod"
-}
+PHENOTYPIC_VARIABLES = ["DateOfBirth", "DateOfBirth", "Sex", "City", "GestationalAge", "Etnicity", "Twins", "Premature", "BirthMethod"]
 
 SAMPLE_VARIABLES = ["Sampling", "SampleQuality", "SamTimeCollected", "SamTimeReceived", "TooYoung", "BIS"]
 
 
 # curly braces here specify a set, i.e., set()
 # all values here ARE EXPECTED TO BE LOWER CASE to facilitate comparison (and make it efficient)
-NO_EXAMINATION_COLUMNS = {"line", "unnamed", "id", "samplebarcode", "sampling", "samplequality", "samtimecollected",
-                          "samtimereceived"}
+NO_EXAMINATION_COLUMNS = ["line", "unnamed", "id", "samplebarcode", "sampling", "samplequality", "samtimecollected",
+                          "samtimereceived"]
 
 BATCH_SIZE = 50
 

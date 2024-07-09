@@ -6,8 +6,8 @@ from database.Execution import Execution
 from etl.Extract import Extract
 from etl.Load import Load
 from etl.Transform import Transform
+from utils.DatasetsLocales import DatasetsLocales
 from utils.HospitalNames import HospitalNames
-from utils.constants import LOCALES
 from utils.setup_logger import log
 
 
@@ -23,8 +23,8 @@ class ETL:
             locale.setlocale(category=locale.LC_NUMERIC, locale="en_US")
         else:
             # we use the default locale assigned to each center based on their country
-            log.debug(f"custom locale: {LOCALES[HospitalNames[self._execution.hospital_name].value]}")
-            locale.setlocale(category=locale.LC_NUMERIC, locale=LOCALES[HospitalNames[self._execution.hospital_name].value])
+            log.debug(f"custom locale: {DatasetsLocales[HospitalNames[self._execution.hospital_name].value].value}")
+            locale.setlocale(category=locale.LC_NUMERIC, locale=DatasetsLocales[HospitalNames[self._execution.hospital_name].value].value)
 
         log.info(f"Current locale is: {locale.getlocale(locale.LC_NUMERIC)}")
 

@@ -246,7 +246,7 @@ class Transform:
         return cc
 
     def is_column_name_phenotypic(self, column_name: str) -> bool:
-        for phen_variable in PHENOTYPIC_VARIABLES.values():
+        for phen_variable in PHENOTYPIC_VARIABLES:
             if is_equal_insensitive(value=phen_variable, compared=column_name):
                 return True
         return False
