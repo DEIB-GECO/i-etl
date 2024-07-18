@@ -21,7 +21,8 @@ class Sample(Resource):
         self._too_young = too_young
         self._bis = bis
 
-    def get_type(self) -> str:
+    @classmethod
+    def get_type(cls) -> str:
         return TableNames.SAMPLE.value
 
     def to_json(self) -> dict:

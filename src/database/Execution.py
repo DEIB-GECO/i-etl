@@ -9,28 +9,24 @@ from datetime import datetime
 import pymongo
 
 from utils import setup_logger
+from utils.UpsertPolicy import UpsertPolicy
 from utils.constants import WORKING_DIR, DEFAULT_DB_CONNECTION
 from utils.setup_logger import log
 
 
 class Execution:
-    # parameters related to the project structure and the input/output files
-    # parameters related to the database
-    # parameters related to the UC hospital
     HOSPITAL_NAME_KEY = "hospital_name"
-    # parameters related to the execution context (python, pymongo, etc.)
-    PYTHON_VERSION_KEY = "python_version"
-    PYMONGO_VERSION_KEY = "pymongo_version"
-    EXECUTION_DATE_KEY = "execution_date"
-    PLATFORM_KEY = "platform"
-    PLATFORM_VERSION_KEY = "platform_version"
-    USER_KEY = "user"
-    USE_EN_LOCALE_KEY = "locale"
-    # parameters related to the ETL pipeline
-    EXTRACT_KEY = "extract"
-    TRANSFORM_KEY = "transform"
-    LOAD_KEY = "load"
-    ANALYSIS_KEY = "analysis"
+    USE_EN_LOCALE_KEY = "use_en_locale"
+    DB_CONNECTION_KEY = "db_connection"
+    DB_NAME_KEY = "db_name"
+    DB_DROP_KEY = "db_drop"
+    DB_UPSERT_POLICY_KEY = "db_upsert_policy"
+    IS_EXTRACT_KEY = "extract"
+    IS_ANALYZE_KEY = "analyze"
+    IS_TRANSFORM_KEY = "transform"
+    IS_LOAD_KEY = "load"
+    CLINICAL_METADATA_PATH_KEY = "clinical_metadata_path"
+    CLINICAL_DATA_PATHS_KEY = "clinical_data_paths"
 
     def __init__(self, db_name: str):
         self._execution_date = datetime.now().isoformat()
@@ -51,6 +47,7 @@ class Execution:
         self._db_connection = DEFAULT_DB_CONNECTION  # user input
         self._db_drop = True  # user input
         self._db_no_index = False  # user input
+        self._db_upsert_policy = UpsertPolicy.DO_NOTHING.value  # user input
         # parameters related to the UC hospital
         self._hospital_name = None  # this will be given as input by users
         # parameters related to the execution context (python, pymongo, etc.)
@@ -69,36 +66,40 @@ class Execution:
         self.set_up(args.__dict__, True)
 
     def set_up(self, args_as_dict: dict, setup_data_files: bool) -> None:
+        log.debug("in set_up")
         # A. set up user parameters
-        if "hospital_name" in args_as_dict:
-            self._hospital_name = args_as_dict["hospital_name"]
-        if "use_en_locale" in args_as_dict:
-            self._use_en_locale = args_as_dict["use_en_locale"]
-        if "db_connection" in args_as_dict:
-            self._db_connection = args_as_dict["db_connection"]
+        if Execution.HOSPITAL_NAME_KEY in args_as_dict:
+            self._hospital_name = args_as_dict[Execution.HOSPITAL_NAME_KEY]
+        if Execution.USE_EN_LOCALE_KEY in args_as_dict:
+            self._use_en_locale = args_as_dict[Execution.USE_EN_LOCALE_KEY]
+        if Execution.DB_CONNECTION_KEY in args_as_dict:
+            self._db_connection = args_as_dict[Execution.DB_CONNECTION_KEY]
+        if Execution.DB_UPSERT_POLICY_KEY in args_as_dict:
+            self._db_upsert_policy = args_as_dict[Execution.DB_UPSERT_POLICY_KEY]
         # the boolean parameters need to be compared to True (and not False),
         # even if the default value is false, because:
         # "True" == "True" -> true
         # "False" == "False" -> true but here we want False
-        if "db_drop" in args_as_dict:
-            self._db_drop = args_as_dict["db_drop"] == "True"
-        if "db_no_index" in args_as_dict:
-            self._db_no_index = args_as_dict["db_no_index"] == "True"
-        if "extract" in args_as_dict:
-            self._is_extract = args_as_dict["extract"] == "True"
-        if "analysis" in args_as_dict:
-            self._is_analyze = args_as_dict["analyze"] == "True"
-        if "transform" in args_as_dict:
-            self._is_transform = args_as_dict["transform"] == "True"
-        if "load" in args_as_dict:
-            self._is_load = args_as_dict["load"] == "True"
+        if Execution.DB_DROP_KEY in args_as_dict:
+            self._db_drop = args_as_dict[Execution.DB_DROP_KEY] == "True" or args_as_dict[Execution.DB_DROP_KEY] is True
+        if Execution.IS_EXTRACT_KEY in args_as_dict:
+            self._is_extract = args_as_dict[Execution.IS_EXTRACT_KEY] == "True" or args_as_dict[Execution.IS_EXTRACT_KEY] is True
+        if Execution.IS_ANALYZE_KEY in args_as_dict:
+            self._is_analyze = args_as_dict[Execution.IS_ANALYZE_KEY] == "True" or args_as_dict[Execution.IS_ANALYZE_KEY] is True
+        if Execution.IS_TRANSFORM_KEY in args_as_dict:
+            self._is_transform = args_as_dict[Execution.IS_TRANSFORM_KEY] == "True" or args_as_dict[Execution.IS_TRANSFORM_KEY] is True
+        if Execution.IS_LOAD_KEY in args_as_dict:
+            self._is_load = args_as_dict[Execution.IS_LOAD_KEY] == "True" or args_as_dict[Execution.IS_LOAD_KEY] is True
 
         # B. set up the data and metadata files
         if setup_data_files:
-            if "clinical_metadata_filepath" in args_as_dict:
-                self._clinical_metadata_filepath = args_as_dict["clinical_metadata_filepath"]
-            if "clinical_filepaths" in args_as_dict:
-                self._clinical_filepaths = args_as_dict["clinical_filepaths"]
+            log.debug("I will also set up data files")
+            if Execution.CLINICAL_METADATA_PATH_KEY in args_as_dict:
+                self._clinical_metadata_filepath = args_as_dict[Execution.CLINICAL_METADATA_PATH_KEY]
+            log.debug(self._clinical_metadata_filepath)
+            if Execution.CLINICAL_DATA_PATHS_KEY in args_as_dict:
+                self._clinical_filepaths = args_as_dict[Execution.CLINICAL_DATA_PATHS_KEY]
+            log.debug(self._clinical_filepaths)
             self.setup_data_files()
 
     def create_current_working_dir(self):
@@ -128,29 +129,27 @@ class Execution:
         setup_logger.log.addHandler(filehandler)  # add the filehandler located in the working dir
 
     def setup_data_files(self):
+        log.debug("In setup_data_files")
         # get metadata and data filepaths
-        if self._clinical_metadata_filepath is None or not os.path.isfile(self._clinical_metadata_filepath):
-            raise FileNotFoundError("The specified metadata file '%s' does not exist.", self._clinical_metadata_filepath)
-        else:
+        try:
             new_metadata_filename = "metadata-" + self._hospital_name + ".csv"
             new_clinical_metadata_filepath = os.path.join(self._working_dir_current, new_metadata_filename)
             shutil.copyfile(self._clinical_metadata_filepath, new_clinical_metadata_filepath)
             self._clinical_metadata_filepath = new_clinical_metadata_filepath
+        except Exception:
+            raise FileNotFoundError(f"The specified metadata file {self._clinical_metadata_filepath} does not exist.")
 
         # if there is a single file, this will put that file in a list
         # otherwise, when the user provides several files, it will split them in an array
         log.debug(f"{self._clinical_filepaths}")
-        if self.clinical_filepaths is None:
-            raise FileNotFoundError("No clinical data file has been provided.")
-        else:
-            split_files = self._clinical_filepaths.split(",")
-            log.debug(f"{split_files}")
-            for current_file in split_files:
-                if not os.path.isfile(current_file):
-                    raise FileNotFoundError("The specified data file " + current_file + " does not exist.")
-            # we do not copy the data in our working dir because it is too large to be copied
-            self._clinical_filepaths = split_files  # file 1,file 2, ...,file N
-            log.debug(f"{self._clinical_filepaths}")
+        split_files = self._clinical_filepaths.split(",")
+        log.debug(f"{split_files}")
+        for current_file in split_files:
+            if not os.path.isfile(current_file):
+                raise FileNotFoundError("The specified data file " + current_file + " does not exist.")
+        # we do not copy the data in our working dir because it is too large to be copied
+        self._clinical_filepaths = split_files  # file 1,file 2, ...,file N
+        log.debug(f"{self._clinical_filepaths}")
 
     def has_no_none_attributes(self) -> bool:
         return (self._working_dir is not None
@@ -213,8 +212,12 @@ class Execution:
         return self._db_drop
 
     @property
-    def no_index(self) -> bool:
+    def db_no_index(self) -> bool:
         return self._db_no_index
+
+    @property
+    def db_upsert_policy(self) -> str:
+        return self._db_upsert_policy
 
     @property
     def hospital_name(self) -> str:
@@ -242,13 +245,13 @@ class Execution:
             "user_parameters": {
                 "working_dir": self._working_dir,
                 "working_dir_current": self._working_dir_current,
-                "clinical_metadata_filepath": self._clinical_metadata_filepath,
-                "clinical_filepaths": self._clinical_filepaths,
+                Execution.CLINICAL_METADATA_PATH_KEY: self._clinical_metadata_filepath,
+                Execution.CLINICAL_DATA_PATHS_KEY: self._clinical_filepaths,
                 "current_filepath": self._current_filepath,
-                "db_connection": self._db_connection,
-                "db_name": self._db_name,
-                "db_drop": self._db_drop,
-                "hospital_name": self._hospital_name,
+                Execution.DB_CONNECTION_KEY: self._db_connection,
+                Execution.DB_NAME_KEY: self._db_name,
+                Execution.DB_DROP_KEY: self._db_drop,
+                Execution.HOSPITAL_NAME_KEY: self._hospital_name,
             },
             "execution_context": {
                 "python_version": self._python_version,

@@ -14,15 +14,18 @@ class Load:
         # Insert resources that have not been inserted yet, i.e.,
         # anything else than Hospital, Examination and Disease instances
         log.debug(f"in the Load class")
+        self.load_remaining_data()
+
+        # if everything has been loaded, we can create indexes
+        if self._create_indexes and not self._execution.db_no_index:
+            self.create_db_indexes()
+
+    def load_remaining_data(self) -> None:
         self._database.load_json_in_table(table_name=TableNames.PATIENT.value, unique_variables=["identifier"])
 
         self._database.load_json_in_table(table_name=TableNames.EXAMINATION_RECORD.value, unique_variables=["recordedBy", "subject", "basedOn", "instantiate"])
 
         self._database.load_json_in_table(table_name=TableNames.SAMPLE.value, unique_variables=["identifier"])
-
-        # if everything has been loaded, we can create indexes
-        if self._create_indexes and not self._execution.no_index:
-            self.create_db_indexes()
 
     def create_db_indexes(self) -> None:
         log.info(f"Creating indexes.")

@@ -1,5 +1,7 @@
 import json
 
+from utils.setup_logger import log
+
 
 class Reference:
     """

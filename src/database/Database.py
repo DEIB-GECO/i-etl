@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import re
@@ -12,10 +13,9 @@ from pymongo.cursor import Cursor
 from database.Execution import Execution
 from utils.TableNames import TableNames
 from utils.UpsertPolicy import UpsertPolicy
-from utils.constants import BATCH_SIZE
 from utils.setup_logger import log
-from utils.utils import mongodb_match, mongodb_unwind, mongodb_project_one, mongodb_min, mongodb_max, mongodb_group_by, \
-    mongodb_sort
+from utils.utils import mongodb_match, mongodb_unwind, mongodb_project_one, mongodb_group_by, \
+    mongodb_sort, mongodb_limit
 
 
 class Database:
@@ -56,6 +56,7 @@ class Database:
         log.info(f"The MongoDB client, located at {self._execution.db_connection}, could be accessed properly.")
 
         # 3. access the database
+        log.info(f"drop db is: {self._execution.db_drop}")
         if self._execution.db_drop:
             self.drop_db()
         self._db = self._client[self._execution.db_name]
@@ -79,8 +80,9 @@ class Database:
         Drop the current database.
         :return: Nothing.
         """
-        log.info(f"WARNING: The database {self._execution.db_name} will be dropped!", )
-        self._client.drop_database(name_or_database=self._execution.db_name)
+        if self._execution.db_drop:
+            log.info(f"WARNING: The database {self._execution.db_name} will be dropped!", )
+            self._client.drop_database(name_or_database=self._execution.db_name)
 
     def close(self) -> None:
         self._client.close()
@@ -88,13 +90,23 @@ class Database:
     def insert_one_tuple(self, table_name: str, one_tuple: dict) -> None:
         self._db[table_name].insert_one(one_tuple)
 
-    def insert_many_tuples(self, table_name: str, tuples: list[dict]) -> None:
+    def insert_many_tuples(self, table_name: str, tuples: list[dict] | tuple) -> None:
         """
         Insert the given tuples in the specified table.
         :param table_name: A string being the table name in which to insert the tuples.
         :param tuples: A list of dicts being the tuples to insert.
         """
-        self._db[table_name].insert_many(tuples, ordered=False)
+        _ = self._db[table_name].insert_many(tuples, ordered=False)
+
+    def create_update_stmt(self, the_tuple: dict):
+        if self._execution.db_upsert_policy == UpsertPolicy.DO_NOTHING.value:
+            # insert the document if it does not exist
+            # otherwise, do nothing
+            return {"$setOnInsert": the_tuple}
+        else:
+            # insert the document if it does not exist
+            # otherwise, replace it
+            return {"$set": the_tuple}
 
     def upsert_one_tuple(self, table_name: str, unique_variables: list[str], one_tuple: dict) -> None:
         # filter_dict should only contain the fields on which we want a Resource to be unique,
@@ -105,64 +117,49 @@ class Database:
         # use $setOnInsert instead of $set to not modify the existing tuple if it already exists in the DB
         filter_dict = {}
         for unique_variable in unique_variables:
-            filter_dict[unique_variable] = one_tuple[unique_variable]
-        # return_document:
-        # If ReturnDocument.BEFORE (the default), returns the original document before it was replaced, or None if no document matches.
-        # If ReturnDocument.AFTER, returns the replaced or inserted document.
-        # We choose: AFTER so that
-        # (i) when the instance already exists in the DB, we get the resource after its update (but the update does nothing with the help of $setOnInsert)
-        # (ii) when the instance does not exist yet, we insert it and the returned value is the inserted document
-        # as in both (i) and (ii) we get a Document, we need to use a timestamp in order to know whether this was an update or an insert
-        if UpsertPolicy.DO_NOTHING:
-            # insert the document if it does not exist
-            # otherwise, do nothing
-            update_stmt = {"$setOnInsert": one_tuple}
-        else:
-            # insert the document if it does not exist
-            # otherwise, replace it
-            update_stmt = {"$set": one_tuple}
+            try:
+                filter_dict[unique_variable] = one_tuple[unique_variable]
+            except Exception:
+                raise KeyError(f"The tuple does not contains the attribute '{unique_variable}, thus the upsert cannot refer to it.")
+        update_stmt = self.create_update_stmt(the_tuple=one_tuple)
         self._db[table_name].find_one_and_update(filter=filter_dict, update=update_stmt, upsert=True)
 
-    def upsert_batch_of_tuples(self, table_name: str, unique_variables: list[str], tuples: list[dict]) -> None:
+    def upsert_one_batch_of_tuples(self, table_name: str, unique_variables: list[str], the_batch: list[dict]) -> dict:
         """
 
         :param unique_variables:
         :param table_name:
-        :param tuples:
-        :return: An integer being the number of upserted tuples.
+        :param the_batch:
+        :return: The `filter_dict` to know exactly which fields have been used for the upsert (some of the given fields in unique_variables may not exist in some instances)
         """
         # in case there are more than 1000 tuples to upserts, we split them in batch of 1000
-        # and send one bulk operation per batch. This allows to save time by not doing a db call per upsert
-        # but do not overload the MongoDB with thousands of upserts.
-        # we use the bulk operation to send sets of BATCH_SIZE operations, each doing an upsert
-        # this allows to have only on call to the database for each bulk operation (instead of one per upsert operation)
+        # and send one bulk operation per batch. This allows to save time by not doing a db call per upsert.
+        # we use the bulk operation to send sets of BATCH_SIZE operations, each operation doing an upsert
+        # this allows to have only one call to the database for each bulk operation (instead of one per upsert operation)
         operations = []
-        for one_tuple in tuples:
+        filter_dict = {}
+        for one_tuple in the_batch:
             filter_dict = {}
             for unique_variable in unique_variables:
-                filter_dict[unique_variable] = one_tuple[unique_variable]
-            update_stmt = {"$setOnInsert": one_tuple}
+                if unique_variable in one_tuple:
+                    # only BUZZI ExaminationRecord instances have a "basedOn" attribute for the Samples
+                    # others do not have the "basedOn", so we need to check whether that attribute is present or not
+                    filter_dict[unique_variable] = one_tuple[unique_variable]
+            update_stmt = self.create_update_stmt(the_tuple=one_tuple)
             operations.append(pymongo.UpdateOne(filter=filter_dict, update=update_stmt, upsert=True))
         log.debug(f"Table {table_name}: sending a bulk write of {len(operations)} operations")
-        result_upsert = self._db[table_name].bulk_write(operations)
+        # July 18th, 2024: bulk_write modifies the hospital lists in Transform (avan if I use deep copies everywhere)
+        # It changes (only?) the createdAt value with +1/100, e.g., 2024-07-18T14:34:32Z becomes 2024-07-18T14:34:33Z
+        # in the tests I use a delta to compare datetime
+        result_upsert = self._db[table_name].bulk_write(copy.deepcopy(operations))
         log.info(f"In {table_name}, {result_upsert.inserted_count} inserted, {result_upsert.upserted_count} upserted, {result_upsert.modified_count} modified tuples")
-
-    def compute_batches(self, tuples: list[dict]) -> list[list[dict]]:
-        batch_tuples = []
-        if len(tuples) <= BATCH_SIZE:
-            batch_tuples.append(tuples)
-        else:
-            # +1 to take the elements remaining after X thousands,
-            # e.g., in 4321, we need one more iteration to gt the 321 remaining elements in a batch
-            nb_batch = (len(tuples) // BATCH_SIZE) + 1
-            for i in range(0, nb_batch):
-                left_index = i * BATCH_SIZE
-                right_index = (i + 1) * BATCH_SIZE
-                batch = tuples[left_index: right_index]
-                batch_tuples.append(batch)
-        return batch_tuples
+        return filter_dict
 
     def retrieve_identifiers(self, table_name: str, projection: str) -> dict:
+        # projection contains the field name to which we want to associate identifiers,
+        # e.g., if we have { "identifier": "1", "name": "Alice" } and {"identifier": "2", "name": "Bob" }
+        # we would obtain the following mapping: { "Alice": "1", "Bob": "2" }
+        # this is used for now to associate each column name to its Examination id, and each hospital to its Hospital id
         projection_as_dict = {projection: 1, "identifier": 1}
         cursor = self.find_operation(table_name=table_name, filter_dict={}, projection=projection_as_dict)
         mapping = {}
@@ -175,17 +172,6 @@ class Database:
         log.debug(f"{mapping}")
         return mapping
 
-    def write_in_file(self, data_array: list, table_name: str, count: int) -> None:
-        if len(data_array) > 0:
-            filename = os.path.join(self._execution.working_dir_current, table_name + str(count) + ".json")
-            with open(filename, "w") as data_file:
-                try:
-                    json.dump([resource.to_json() for resource in data_array], data_file)
-                except Exception:
-                    raise ValueError(f"Could not dump the {len(data_array)} JSON resources in the file located at {filename}.")
-        else:
-            log.info(f"No data when writing file '{table_name}/{count}.json'")
-
     def load_json_in_table(self, table_name: str, unique_variables) -> None:
         log.info(f"insert data in {table_name}")
         for filename in os.listdir(self._execution.working_dir_current):
@@ -195,11 +181,10 @@ class Database:
                 # the solution is to use a regex
                 with open(os.path.join(self._execution.working_dir_current, filename), "r") as json_datafile:
                     tuples = bson.json_util.loads(json_datafile.read())
-                    log.info(tuples)
                     log.debug(f"Table {table_name}, file {filename}, loading {len(tuples)} tuples")
-                    self.upsert_batch_of_tuples(table_name=table_name,
-                                                         unique_variables=unique_variables,
-                                                         tuples=tuples)
+                    _ = self.upsert_one_batch_of_tuples(table_name=table_name,
+                                                        unique_variables=unique_variables,
+                                                        the_batch=tuples)
 
     def find_operation(self, table_name: str, filter_dict: dict, projection: dict) -> Cursor:
         """
@@ -241,26 +226,28 @@ class Database:
         self._db[table_name].create_index(columns, unique=False)
 
     def get_min_or_max_value(self, table_name: str, field: str, sort_order: int) -> int | float:
-        operations = [
-            mongodb_project_one(field=field),
-            # mongodb_unwind(field=field),
-            # mongodb_match(field=field, value="[0-9]+", is_regex=True)
-        ]
-
-        if sort_order == 1:
-            operations.append(mongodb_min(field=field))
+        operations = []
+        field_split = field.split(".")
+        last_field = field_split[-1]
+        if "." in field:
+            # this field is a nested one, we only keep the deepest one,
+            # e.g. for { "identifier": {"value": 1}} we keep { "value": 1}
+            operations.append(mongodb_project_one(field=field, projected_value=last_field))
+            operations.append(mongodb_sort(field=last_field, sort_order=sort_order))
+            operations.append(mongodb_limit(1))
         else:
-            operations.append(mongodb_max(field=field))
+            operations.append(mongodb_project_one(field=field, projected_value=None))
+            operations.append(mongodb_sort(field=field, sort_order=sort_order))
+            operations.append(mongodb_limit(1))
 
         cursor = self._db[table_name].aggregate(operations)
 
         for result in cursor:
-            log.debug(f"{result}")
             # There should be only one result, so we can return directly the min or max value
-            if sort_order == 1:
-                return result["min"]
+            if "." in field:
+                return result[last_field]
             else:
-                return result["max"]
+                return result[field]
 
     def get_max_value(self, table_name: str, field: str) -> int | float:
         return self.get_min_or_max_value(table_name=table_name, field=field, sort_order=-1)
@@ -278,7 +265,7 @@ class Database:
         """
         cursor = self._db[TableNames.EXAMINATION_RECORD.value].aggregate([
             mongodb_match(field="instantiate.reference", value=examination_url, is_regex=False),
-            mongodb_project_one(field="value"),
+            mongodb_project_one(field="value", projected_value=None),
             mongodb_group_by(group_key=None, group_by_name="avg_val", operator="$avg", field="$value")
         ])
 
@@ -296,7 +283,7 @@ class Database:
         """
         pipeline = [
             mongodb_match(field="instantiate.reference", value=examination_url, is_regex=False),
-            mongodb_project_one(field="value"),
+            mongodb_project_one(field="value", projected_value=None),
             mongodb_group_by(group_key="$value", group_by_name="total", operator="$sum", field=1),
             mongodb_match(field="total", value={"$gt": min_value}, is_regex=False),
             mongodb_sort(field="_id", sort_order=1)

@@ -21,7 +21,7 @@ class TestHospital:
 
     def test_get_type(self):
         counter = Counter()
-        hospital1 = Hospital(id_value="123", name="MyHospital", counter=counter)
+        hospital1 = Hospital(id_value=123, name="MyHospital", counter=counter)
         assert hospital1 is not None
         assert hospital1.get_type() == TableNames.HOSPITAL.value
 

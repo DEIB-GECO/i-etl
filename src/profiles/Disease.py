@@ -24,7 +24,8 @@ class Disease(Resource):
         # set up the resource attributes
         self._code = code
 
-    def get_type(self) -> str:
+    @classmethod
+    def get_type(cls) -> str:
         return TableNames.DISEASE.value
 
     def to_json(self) -> dict:

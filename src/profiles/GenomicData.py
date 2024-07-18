@@ -16,7 +16,8 @@ class GenomicData(Resource):
         self._subject = subject_ref
         self._recorded_by = hospital_ref
 
-    def get_type(self) -> str:
+    @classmethod
+    def get_type(cls) -> str:
         return TableNames.GENOMIC_DATA.value
 
     def to_json(self) -> dict:

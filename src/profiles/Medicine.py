@@ -13,7 +13,8 @@ class Medicine(Resource):
 
         self._code = code
 
-    def get_type(self) -> str:
+    @classmethod
+    def get_type(cls) -> str:
         return TableNames.MEDICINE.value
 
     def to_json(self) -> dict:

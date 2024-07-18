@@ -13,22 +13,26 @@ class CodeableConcept:
     """
     def __init__(self):
         """
-        Instantiate a new CodeableConcept, empty or with a coding (represented as a tuple).
+        Instantiate a new (empty) CodeableConcept
         """
         self._codings = []
         self._text = ""
 
-    def has_no_coding(self) -> bool:
-        return self._codings is None or self._codings == []
+    def has_codings(self) -> bool:
+        return self._codings is not None and len(self._codings) > 0
 
-    def add_coding(self, triple: tuple) -> None:
+    def add_coding(self, coding: Coding) -> None:
+        if coding is not None:
+            self._codings.append(coding)
+
+    def add_codings(self, set_of_dicts: list[dict]) -> None:
         """
-        Add a new Coding to the list of Codings representing the concept.
-        :param triple: A tuple being the coding representing a concept. It is of the form: (system, code, display).
-        :return: Nothing.
+        Add a set of new Codings to the list of Codings representing the concept.
         """
-        if triple is not None:
-            self._codings.append(Coding(triple=triple))
+        if set_of_dicts is not None:
+            for one_dict in set_of_dicts:
+                # system is the ontology url, not the ontology name
+                self._codings.append(Coding(system=one_dict["system"], code=one_dict["code"], display=one_dict["display"]))
 
     def to_json(self) -> dict:
         """
@@ -47,6 +51,10 @@ class CodeableConcept:
     @text.setter
     def text(self, new_text: str) -> None:
         self._text = new_text
+
+    @property
+    def codings(self):
+        return self._codings
 
     def __str__(self) -> str:
         return json.dumps(self.to_json())

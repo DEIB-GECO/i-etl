@@ -1,0 +1,6 @@
+{
+  "sex": [
+    {"value": "m", "explanation": "Male", "snomedct": "24815:3007"},
+    {"value": "f", "explanation": "Female", "snomedct": "248152002"}
+  ]
+}

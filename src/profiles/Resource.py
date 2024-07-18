@@ -32,7 +32,8 @@ class Resource:
     def identifier(self) -> Identifier:
         return self._identifier
 
-    def get_type(self):
+    @classmethod
+    def get_type(cls):
         raise NotImplementedError("The method get_resource_type() has to be overridden in every child class.")
 
     def to_json(self):

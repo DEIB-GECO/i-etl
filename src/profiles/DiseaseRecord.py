@@ -22,7 +22,8 @@ class DiseaseRecord(Resource):
         self._recorded_by = hospital_ref
         self._instantiate = disease_ref
 
-    def get_type(self) -> str:
+    @classmethod
+    def get_type(cls) -> str:
         return TableNames.DISEASE_RECORD.value
 
     def to_json(self) -> dict:

@@ -19,7 +19,8 @@ class Examination(Resource):
         self._category = category
         self._permitted_data_types = permitted_data_types
 
-    def get_type(self) -> str:
+    @classmethod
+    def get_type(cls) -> str:
         return TableNames.EXAMINATION.value
 
     def to_json(self) -> dict:
@@ -33,11 +34,15 @@ class Examination(Resource):
         }
 
     @classmethod
-    def get_label(cls, row) -> str:
-        display = row[MetadataColumns.COLUMN_NAME.value]
-        if is_not_nan(row[MetadataColumns.SIGNIFICATION_EN.value]):
+    def get_display(cls, column_name: str, column_description: str) -> str:
+        display = column_name  # row[MetadataColumns.COLUMN_NAME.value]
+        if is_not_nan(column_description):  # row[MetadataColumns.SIGNIFICATION_EN.value]):
             # by default the display is the variable name
             # if we also have a description, we append it to the display
             # e.g., "BTD (human biotinidase activity)"
-            display = display + " (" + str(row[MetadataColumns.SIGNIFICATION_EN.value]) + ")"
+            display = f"{display} ({str(column_description)})"
         return display
+
+    @property
+    def code(self):
+        return self._code

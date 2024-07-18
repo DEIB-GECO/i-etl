@@ -16,7 +16,8 @@ class Patient(Resource):
         # set up the resource ID
         super().__init__(id_value=id_value, resource_type=self.get_type(), counter=counter)
 
-    def get_type(self) -> str:
+    @classmethod
+    def get_type(cls) -> str:
         """
         Get the resource type, i.e., Patient.
         :return: A string being the resource type, i.e., Patient.

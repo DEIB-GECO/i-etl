@@ -14,8 +14,8 @@ class TestPatient:
         assert patient1.identifier is not None
         assert patient1.identifier.value == 123
 
-        # TODO Nelly: check how to verify that a Patient cannot be created with a NON_VALUE id
-        # I tried with self.assertRaises(ValueError, Patient(NONE_VALUE, TableNames.PATIENT.value))
+        # TODO Nelly: check how to verify that a Patient cannot be created with a NO_ID id
+        # I tried with self.assertRaises(ValueError, Patient(NO_ID, TableNames.PATIENT.value))
         # but this still raises the Exception and does not pass the test
 
     def test_get_type(self):

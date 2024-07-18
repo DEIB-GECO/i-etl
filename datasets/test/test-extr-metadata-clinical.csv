@@ -1,0 +1,9 @@
+"ontology","ontology_code","ontology_comment","secondary_ontology","secondary_ontology_code","secondary_ontology_comment","snomed_vartype","test h1","TEST H2","test_H3","dataset","name","Significato_it","description","vartype","dimension","details","JSON_values","Multiplicity","Doubts"
+,,,,,,,1,0,0,"test-extracted-clinical-data.csv","id","The Patient ID","The Patient ID","integer",,,,,
+"loinc",1234,"bla",,,,"float",1,0,0,"test-extracted-clinical-data.csv","molecule_a","The molecule Alpha","The molecule Alpha","float","mg/L","How much moleculeA is in the blood",,,
+,,"Bla 2",,,,"float",1,0,0,"test-extracted-clinical-data.csv","molecule_b","The molecule Beta","The molecule Beta","integer",,,,,
+"snomedct","123:678","Bla 3",,,,"float",1,0,0,"test-extracted-clinical-data.csv","molecule_g","The molecule Gamma","The molecule Gamma","boolean",,"Whether moleculeG is present",,,
+"snomedct","123:789","Bla 4",,,,,1,0,0,"test-extracted-clinical-data.csv","sex","The sex at birth","The sex at birth","category",,"The sex of patient at birth","{""value"": ""m"", ""explanation"": ""Male"", ""snomedct"": ""24815:3007""}, {""value"": ""f"", ""explanation"": ""Female"", ""snomedct"": ""248152002""}",,
+"loinc","45678","Bla 5","snomedct","345:678","Bla 5-2",,1,0,0,"test-extracted-clinical-data.csv","ethnicity","The ethnicity","The ethnicity","str",,,,,
+"snomedct","456:7z9","Bla 6",,,,,1,0,0,"test-extracted-clinical-data.csv","date_of_birth","The date of birth","The date of birth","datetime",,,,,
+"snomedct","124678","Bla 7","snomedct","123:456","Bla 7-2",,1,0,0,"test-extracted-clinical-data.csv","molecule_y","The molecule Yota","The molecule Yota","str",,,,,

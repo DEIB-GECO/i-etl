@@ -50,8 +50,8 @@ class ETL:
             else:
                 # this is a relative filepath, we consider it to be relative to the project root (BETTER-fairificator)
                 # we need to add three times ".." because the data files are never copied to the working dir (but remain in their place)
-                full_path = os.path.join(self._execution.working_dir_current, "..", "..", "..", str(one_file))
-                self._execution.current_filepath = full_path
+                # NOPE: full_path = os.path.join(self._execution.working_dir_current, "..", "..", "..", str(one_file))
+                self._execution.current_filepath = one_file
 
             log.info(f"--- Starting to ingest file '{self._execution.current_filepath}'")
             if self._execution.is_extract:

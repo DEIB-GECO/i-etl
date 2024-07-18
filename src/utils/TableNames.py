@@ -13,3 +13,4 @@ class TableNames(Enum):
     MEDICINE = "Medicine"
     MEDICINE_RECORD = "MedicineRecord"
     EXECUTION = "Execution"
+    TEST = "Test"

@@ -32,7 +32,8 @@ class ExaminationRecord(Resource):
         self._instantiate = examination_ref
         self._based_on = sample_ref
 
-    def get_type(self) -> str:
+    @classmethod
+    def get_type(cls) -> str:
         return TableNames.EXAMINATION_RECORD.value
 
     def to_json(self) -> dict:
@@ -46,13 +47,19 @@ class ExaminationRecord(Resource):
             # primitive type, no need to expand it
             expanded_value = self._value
 
-        return {
+        examination_record_json = {
             "identifier": self.identifier.to_json(),
             "resourceType": self.get_type(),
             "value": expanded_value,
             "subject": self._subject.to_json(),
             "recordedBy": self._recorded_by.to_json(),
             "instantiate": self._instantiate.to_json(),
-            "basedOn": self._based_on.to_json(),
             "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
         }
+
+        if self._based_on is not None:
+            # there wre samples in this dataset (BUZZI)
+            # we add the field "basedOn, otherwise we do not add it
+            examination_record_json["basedOn"] = self._based_on.to_json()
+
+        return examination_record_json

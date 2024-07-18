@@ -17,7 +17,8 @@ class MedicineRecord(Resource):
         self._subject = patient_ref
         self._recorded_by = hospital_ref
 
-    def get_type(self) -> str:
+    @classmethod
+    def get_type(cls) -> str:
         return TableNames.MEDICINE_RECORD.value
 
     def to_json(self) -> dict:

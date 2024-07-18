@@ -11,7 +11,7 @@ class Hospital(Resource):
         """
         A new hospital instance, either built from existing data or from scratch.
         :param id_value: A stringified integer being the BETTER id of that resource.
-        This is initially NONE_VALUE if we create a new Hospital from scratch.
+        This is initially NO_ID if we create a new Hospital from scratch.
         :param name: A string being the name of the hospital.
         """
         # set up the resource ID
@@ -20,7 +20,8 @@ class Hospital(Resource):
         # set up the resource attributes
         self._name = name
 
-    def get_type(self) -> str:
+    @classmethod
+    def get_type(cls) -> str:
         """
         Get the resource type, i.e., Hospital.
         :return: A string being the resource type, i.e., Hospital.
