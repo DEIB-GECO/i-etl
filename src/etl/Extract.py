@@ -1,4 +1,3 @@
-import copy
 import json
 import os
 import re
@@ -10,13 +9,13 @@ from analysis.ValueAnalysis import ValueAnalysis
 from analysis.VariableAnalysis import VariableAnalysis
 from database.Database import Database
 from database.Execution import Execution
-from utils.HospitalNames import HospitalNames
-from utils.MetadataColumns import MetadataColumns
-from utils.Ontologies import Ontologies
+from enums.HospitalNames import HospitalNames
+from enums.MetadataColumns import MetadataColumns
+from enums.Ontologies import Ontologies
 from utils.setup_logger import log
 from utils.utils import is_not_nan, get_values_from_json_values, normalize_column_name, \
     normalize_ontology_system, normalize_ontology_code, normalize_column_value, normalize_hospital_name, \
-    normalize_var_type
+    normalize_var_type, read_csv_file_as_string
 
 
 class Extract:
@@ -45,14 +44,15 @@ class Extract:
         log.info(f"Metadata filepath is {self._execution.clinical_metadata_filepath}")
 
         # index_col is False to not add a column with line numbers
-        self._metadata = pd.read_csv(self._execution.clinical_metadata_filepath, index_col=False, dtype=str, keep_default_na=True)  # keep all metadata as str
+        self._metadata = read_csv_file_as_string(self._execution.clinical_metadata_filepath)  # keep all metadata as str
         log.debug(self._metadata.dtypes)
-        log.debug(self._metadata.to_string())
+        # log.debug(self._metadata.to_string())
+
         log.info("Will preprocess metadata")
 
         # 1. normalize the header, e.g., "Significato it" becomes "significato_it"
         self._metadata.rename(columns=lambda x: normalize_column_name(column_name=x), inplace=True)
-        log.debug(self._metadata.to_string())
+        # log.debug(self._metadata.to_string())
         # we will also specifically normalize the hospital names if they are in the header (UC 2 and UC 3) when counting how many they are (see below)
 
         # 2. Get the metadata associated to the current hospital (but any dataset within that hospital)
@@ -70,7 +70,7 @@ class Extract:
                 log.info(f"rename {column_name} into {normalized_hospital_name}")
                 self._metadata.rename(columns={column_name: normalized_hospital_name}, inplace=True)
         log.debug(f"nb_hospitals_in_columns: {nb_hospitals_in_columns}")
-        log.debug(self._metadata.to_string())
+        # log.debug(self._metadata.to_string())
         if nb_hospitals_in_columns > 1:
             # there are more than one hospital described in this metadata
             # a. we filter the unnecessary hospital columns (for UC2 and UC3 there are several hospitals in the same metadata file)
@@ -80,17 +80,15 @@ class Extract:
             log.debug(f"{self._metadata.columns}")
             log.debug(f"{columns_to_keep}")
             self._metadata = self._metadata[columns_to_keep]
-            log.debug(self._metadata.to_string())
             # b. we remove the column for the hospital, now that we have filtered the rows using it
             log.debug(f"will drop {normalize_hospital_name(self._execution.hospital_name)} in {self.metadata.columns}")
             self._metadata = self._metadata.drop(normalize_hospital_name(self._execution.hospital_name), axis=1)
-            log.debug(self._metadata.to_string())
         else:
             # we have 0 or 1 column specifying the hospital name,
             # so the metadata is only for the current hospital
             # thus, nothing more to do
             pass
-        log.debug(self._metadata.to_string())
+        # log.debug(self._metadata.to_string())
 
         # 3. We keep the metadata of the current dataset
         # TODO Nelly: store the clinical metadata into self_clinical_metadata (a subset of self._metadata); similarly for images and genomic data
@@ -102,22 +100,22 @@ class Extract:
             raise ValueError(f"The current dataset ({filename}) is not described in the provided metadata file.")
         else:
             self._metadata = self._metadata[self._metadata[MetadataColumns.DATASET_NAME.value] == filename]
+        # log.debug(self._metadata.to_string())
 
-        log.debug(self._metadata.to_string())
         # normalize ontology system names and codes
         self._metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value] = self._metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value].apply(lambda value: normalize_ontology_system(ontology_system=value))
         self._metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value] = self._metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value].apply(lambda value: normalize_ontology_code(ontology_code=value))
         self._metadata[MetadataColumns.SEC_ONTOLOGY_SYSTEM.value] = self._metadata[MetadataColumns.SEC_ONTOLOGY_SYSTEM.value].apply(lambda value: normalize_ontology_system(ontology_system=value))
         self._metadata[MetadataColumns.SEC_ONTOLOGY_CODE.value] = self._metadata[MetadataColumns.SEC_ONTOLOGY_CODE.value].apply(lambda value: normalize_ontology_code(ontology_code=value))
-        log.debug(self._metadata.to_string())
+        # log.debug(self._metadata.to_string())
 
         # we also normalize column names described in the metadata, inc. "sex", "dateOfBirth", "Ethnicity", etc
         self._metadata[MetadataColumns.COLUMN_NAME.value] = self._metadata[MetadataColumns.COLUMN_NAME.value].apply(lambda x: normalize_column_name(column_name=x))
-        log.debug(self._metadata.to_string())
+        # log.debug(self._metadata.to_string())
 
         # normalize the var_type
         self._metadata[MetadataColumns.VAR_TYPE.value] = self._metadata[MetadataColumns.VAR_TYPE.value].apply(lambda x: normalize_var_type(var_type=x))
-        log.debug(self._metadata.to_string())
+        # log.debug(self._metadata.to_string())
 
         # normalize the dict of accepted JSON values
         # the non-NaN JSON_values values are of the form: "{...}, {...}, ..."
@@ -156,13 +154,13 @@ class Extract:
                             normalized_json_dict[ontology_system] = ontology_code
                     values_dicts.append(normalized_json_dict)
                 self._metadata.loc[index, MetadataColumns.JSON_VALUES.value] = json.dumps(values_dicts)  # set the new JSON values as a string (required by pandas)
-        log.debug(self._metadata.to_string())
+        # log.debug(self._metadata.to_string())
 
         # reindex the remaining metadata rows, starting from 0
         # because when dropping rows, rows keep their original indexes
         # to ease tests, we reindex starting from 0
         self._metadata.reset_index(drop=True, inplace=True)
-        log.debug(self._metadata.to_string())
+        # log.debug(self._metadata.to_string())
 
         log.info(f"{len(self._metadata.columns)} columns and {len(self._metadata)} lines in the metadata file.")
 
@@ -173,9 +171,10 @@ class Extract:
         log.info(f"Data filepath is {self._execution.current_filepath}")
 
         # index_col is False to not add a column with line numbers
-        self._data = pd.read_csv(self._execution.current_filepath, index_col=False, dtype=str, keep_default_na=True)  # keep all data as str (we will cast later)
+        # we also keep all data as str (we will cast later)
+        self._data = read_csv_file_as_string(filepath=self._execution.current_filepath)
 
-        # normalize column names ("sex", "dateOfBirth", "Ethnicity", etc), to match column names described in the metadata
+        # normalize column names ("sex", "dateOfBirth", "Ethnicity", etc) to match column names described in the metadata
         self._data.rename(columns=lambda x: normalize_column_name(column_name=x), inplace=True)
         # we also normalize the data values
         # they will be cast to the right type (int, float, datetime) in the Transform step

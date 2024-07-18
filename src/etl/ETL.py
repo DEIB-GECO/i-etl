@@ -1,13 +1,12 @@
 import locale
-import os
 
 from database.Database import Database
 from database.Execution import Execution
 from etl.Extract import Extract
 from etl.Load import Load
 from etl.Transform import Transform
-from utils.DatasetsLocales import DatasetsLocales
-from utils.HospitalNames import HospitalNames
+from enums.DatasetsLocales import DatasetsLocales
+from enums.HospitalNames import HospitalNames
 from utils.setup_logger import log
 
 

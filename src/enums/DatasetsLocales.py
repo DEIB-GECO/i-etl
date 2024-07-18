@@ -1,7 +1,5 @@
 from enum import Enum
 
-from utils.HospitalNames import HospitalNames
-
 
 class DatasetsLocales(Enum):
     # use-case 1

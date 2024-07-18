@@ -1,13 +1,13 @@
 import json
 
 from datatypes.Identifier import Identifier
-from utils.TableNames import TableNames
+from enums.TableNames import TableNames
 from utils import constants
 from utils.Counter import Counter
 
 
 class Resource:
-    def __init__(self, id_value: int, resource_type: str, counter: Counter):
+    def __init__(self, id_value: str, resource_type: str, counter: Counter):
         """
 
         :param id_value:
@@ -17,10 +17,11 @@ class Resource:
         if id_value == constants.NO_ID:
             if resource_type == TableNames.PATIENT.value or resource_type == TableNames.SAMPLE.value:
                 # Patient instances should always have an ID (given by the hospitals)
+                # this may contain chars, so we need to keep them as strings
                 raise ValueError("Patient and Sample instances should have an ID.")
             else:
                 # We assign an ID to the new resource
-                self._identifier = Identifier(id_value=counter.increment(), resource_type=resource_type)
+                self._identifier = Identifier(id_value=str(counter.increment()), resource_type=resource_type)
         else:
             # This case covers when we retrieve resources from the DB, and we reconstruct them in-memory:
             # they already have an identifier, thus we simply reconstruct it with the value

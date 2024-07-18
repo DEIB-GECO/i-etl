@@ -3,19 +3,17 @@ from datetime import datetime
 from datatypes.CodeableConcept import CodeableConcept
 from profiles.Resource import Resource
 from utils.Counter import Counter
-from utils.TableNames import TableNames
+from enums.TableNames import TableNames
 from utils.utils import get_mongodb_date_from_datetime
 
 
 class Disease(Resource):
-    def __init__(self, id_value: int, status: str, code: CodeableConcept, counter: Counter):
+    def __init__(self, id_value: str, code: CodeableConcept, counter: Counter):
         """
         Create a new Disease instance.
         This is different from a DiseaseRecord:
         - a Disease instance models a disease definition
         - a DiseaseRecord instance models that Patient P has Disease D
-
-        :param status: a value in [draft, active, retired, unknown] to specify whether this disease definition can still be used.
         :param code: the set of ontology terms (LOINC, ICD, ...) referring to that disease.
         """
         # set up the resource ID

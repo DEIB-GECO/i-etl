@@ -1,6 +1,6 @@
 from database.Database import Database
 from database.Execution import Execution
-from utils.TableNames import TableNames
+from enums.TableNames import TableNames
 from utils.setup_logger import log
 
 

@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import inflection
+import pandas as pd
 from dateutil.parser import parse
 from pandas import DataFrame
 
@@ -338,7 +339,7 @@ def wrong_number_of_docs(number: int):
     return f"The expected number of documents is {number}."
 
 
-# WRITE IN FILES
+# READ/WRITE IN FILES
 def write_in_file(resource_list: list, current_working_dir: str, table_name: str, count: int) -> None:
     filename = get_json_resource_file(current_working_dir=current_working_dir, table_name=table_name, count=count)
     if len(resource_list) > 0:
@@ -356,6 +357,10 @@ def get_json_resource_file(current_working_dir: str, table_name: str, count: int
     return os.path.join(current_working_dir, table_name + str(count) + ".json")
 
 
+def read_csv_file_as_string(filepath: str) -> pd.DataFrame:
+    return pd.read_csv(filepath, index_col=False, dtype=str, keep_default_na=True)
+
+
 # ARRAYS
 def get_examination_by_text_in_list(examinations_list: list, examination_text: str) -> dict:
     """
@@ -370,7 +375,7 @@ def get_examination_by_text_in_list(examinations_list: list, examination_text: s
     return {}
 
 
-def get_examination_records_by_patient_id_in_list(examination_records_list: list, patient_id: int) -> list[dict]:
+def get_examination_records_by_patient_id_in_list(examination_records_list: list, patient_id: str) -> list[dict]:
     """
     :param examination_records_list: list of ExaminationRecord resources
     """

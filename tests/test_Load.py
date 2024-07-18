@@ -6,9 +6,9 @@ from datetime import datetime
 from database.Database import Database
 from database.Execution import Execution
 from etl.Load import Load
-from utils.HospitalNames import HospitalNames
-from utils.Ontologies import Ontologies
-from utils.TableNames import TableNames
+from enums.HospitalNames import HospitalNames
+from enums.Ontologies import Ontologies
+from enums.TableNames import TableNames
 from utils.constants import DEFAULT_DB_CONNECTION, TEST_DB_NAME
 from utils.utils import get_mongodb_date_from_datetime
 

@@ -4,12 +4,12 @@ import argparse
 
 from database.Database import Database
 from database.Execution import Execution
-from utils.UpsertPolicy import UpsertPolicy
+from enums.UpsertPolicy import UpsertPolicy
 
 sys.path.append('.')  # add the current project to the python path to be runnable in cmd-line
 
 from etl.ETL import ETL
-from utils.HospitalNames import HospitalNames
+from enums.HospitalNames import HospitalNames
 from utils.setup_logger import log
 
 if __name__ == '__main__':

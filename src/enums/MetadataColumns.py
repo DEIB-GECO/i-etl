@@ -4,7 +4,6 @@ from utils.utils import normalize_column_name
 
 
 class MetadataColumns(Enum):
-    # we user .lower() on each column name to avoid inconsistencies, such as in Significato_it
     FIRST_ONTOLOGY_SYSTEM = normalize_column_name(column_name="ontology")
     FIRST_ONTOLOGY_CODE = normalize_column_name(column_name="ontology_code")
     FIRST_ONTOLOGY_COMMENT = normalize_column_name(column_name="ontology_comment")

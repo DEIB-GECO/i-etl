@@ -8,10 +8,11 @@ import pytest
 
 from database.Database import Database
 from database.Execution import Execution
+from datatypes.Identifier import Identifier
 from profiles.ResourceTest import ResourceTest
 from utils.Counter import Counter
-from utils.TableNames import TableNames
-from utils.UpsertPolicy import UpsertPolicy
+from enums.TableNames import TableNames
+from enums.UpsertPolicy import UpsertPolicy
 from utils.constants import TEST_DB_NAME, NO_ID
 from utils.constants import DEFAULT_DB_CONNECTION
 from utils.utils import compare_tuples, wrong_number_of_docs, write_in_file
@@ -400,35 +401,35 @@ class TestDatabase(unittest.TestCase):
 
     def test_retrieve_identifiers_1(self):
         database = Database(TestDatabase.execution)
-        my_tuple = {"identifier": 123, "name": "Nelly"}
-        my_original_tuple = copy.deepcopy(my_tuple)
+        my_id = Identifier(id_value="123", resource_type=TableNames.PATIENT.value)
+        my_tuple = {"identifier": my_id.to_json(), "name": "Nelly"}
         database.db[TableNames.TEST.value].insert_one(my_tuple)
         the_doc = database.retrieve_identifiers(table_name=TableNames.TEST.value, projection="name")
-        expected_doc = {"Nelly": 123}
+        expected_doc = {"Nelly": "123"}
         assert the_doc == expected_doc
 
     def test_retrieve_identifiers_10(self):
         database = Database(TestDatabase.execution)
-        my_tuples = [{"identifier": i, "value": i+random.randint(0, 100)} for i in range(0, 10)]
+        my_tuples = [{"identifier": Identifier(id_value=str(i), resource_type=TableNames.PATIENT.value).to_json(), "value": i+random.randint(0, 100)} for i in range(0, 10)]
         my_original_tuples = copy.deepcopy(my_tuples)
         database.db[TableNames.TEST.value].insert_many(my_tuples)
         docs = database.retrieve_identifiers(table_name=TableNames.TEST.value, projection="value")
         expected_docs = {}
         for doc in my_original_tuples:
-            expected_docs[doc["value"]] = doc["identifier"]
+            expected_docs[doc["value"]] = doc["identifier"]["value"]
         assert len(docs) == len(expected_docs), wrong_number_of_docs(len(expected_docs))
         for key, value in expected_docs.items():
             compare_tuples(original_tuple={key: value}, inserted_tuple={key: docs[key]})
 
     def test_retrieve_identifiers_wrong_key(self):
         database = Database(TestDatabase.execution)
-        my_tuple = {"identifier": 123, "name": "Nelly"}
+        my_id = Identifier(id_value="123", resource_type=TableNames.PATIENT.value)
+        my_tuple = {"identifier": my_id.to_json(), "name": "Nelly"}
         database.db[TableNames.TEST.value].insert_one(my_tuple)
         with pytest.raises(KeyError):
             _ = database.retrieve_identifiers(table_name=TableNames.TEST.value, projection="name2")
 
     def test_write_in_file(self):
-        database = Database(TestDatabase.execution)
         counter = Counter()
         my_tuples = [
             ResourceTest(id_value=NO_ID, resource_type=TableNames.TEST.value, counter=counter),

@@ -1,5 +1,5 @@
 from profiles.Patient import Patient
-from utils.TableNames import TableNames
+from enums.TableNames import TableNames
 from utils.Counter import Counter
 
 
@@ -10,9 +10,9 @@ class TestPatient:
         :return: None.
         """
         counter = Counter()
-        patient1 = Patient(id_value=123, counter=counter)
+        patient1 = Patient(id_value="123", counter=counter)
         assert patient1.identifier is not None
-        assert patient1.identifier.value == 123
+        assert patient1.identifier.value == "123"
 
         # TODO Nelly: check how to verify that a Patient cannot be created with a NO_ID id
         # I tried with self.assertRaises(ValueError, Patient(NO_ID, TableNames.PATIENT.value))
@@ -24,16 +24,16 @@ class TestPatient:
         :return: None.
         """
         counter = Counter()
-        patient1 = Patient(123, counter=counter)
+        patient1 = Patient("123", counter=counter)
         assert patient1.get_type() == TableNames.PATIENT.value
 
     def test_to_json(self):
         counter = Counter()
-        patient1 = Patient(123, counter=counter)
+        patient1 = Patient("123", counter=counter)
         patient1_json = patient1.to_json()
 
         assert patient1_json is not None
         assert "identifier" in patient1_json
-        assert patient1_json["identifier"]["value"] == 123
+        assert patient1_json["identifier"]["value"] == "123"
         assert "resourceType" in patient1_json
         assert patient1_json["resourceType"] == TableNames.PATIENT.value

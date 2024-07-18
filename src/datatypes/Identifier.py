@@ -1,5 +1,5 @@
 class Identifier:
-    def __init__(self, id_value: int, resource_type: str):
+    def __init__(self, id_value: str, resource_type: str):
         self._value = id_value
     # def __init__(self, id_value: str, resource_type: str):
         # if not isinstance(id_value, str):
@@ -15,7 +15,9 @@ class Identifier:
         #     self._value = resource_type + "/" + id_value
 
     @property
-    def value(self) -> int:
+    def value(self) -> str:
+        # many of the identifiers used by hospitals are strings like "12456789DASE", or such
+        # we will not be able to convert them, thus we need to keep them as strings
         return self._value
 
     # @property

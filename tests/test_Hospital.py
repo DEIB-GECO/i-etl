@@ -1,5 +1,5 @@
 from profiles.Hospital import Hospital
-from utils.TableNames import TableNames
+from enums.TableNames import TableNames
 from utils.constants import NO_ID
 from utils.Counter import Counter
 
@@ -8,20 +8,20 @@ class TestHospital:
 
     def test_constructor(self):
         counter = Counter()
-        hospital1 = Hospital(id_value=123, name="MyHospital", counter=counter)
+        hospital1 = Hospital(id_value="123", name="MyHospital", counter=counter)
 
         assert hospital1 is not None
         assert hospital1.identifier is not None
-        assert hospital1.identifier.value == 123
+        assert hospital1.identifier.value == "123"
 
         hospital2 = Hospital(id_value=NO_ID, name="MyHospital", counter=counter)
         assert hospital2 is not None
         assert hospital2.identifier is not None
-        assert hospital2.identifier.value == 1
+        assert hospital2.identifier.value == "1"
 
     def test_get_type(self):
         counter = Counter()
-        hospital1 = Hospital(id_value=123, name="MyHospital", counter=counter)
+        hospital1 = Hospital(id_value="123", name="MyHospital", counter=counter)
         assert hospital1 is not None
         assert hospital1.get_type() == TableNames.HOSPITAL.value
 
@@ -31,11 +31,11 @@ class TestHospital:
 
     def test_to_json(self):
         counter = Counter()
-        hospital1 = Hospital(id_value=123, name="MyHospital", counter=counter)
+        hospital1 = Hospital(id_value="123", name="MyHospital", counter=counter)
         hospital1_json = hospital1.to_json()
 
         assert hospital1_json is not None
         assert "identifier" in hospital1_json
-        assert hospital1_json["identifier"]["value"] == 123
+        assert hospital1_json["identifier"]["value"] == "123"
         assert "resourceType" in hospital1_json
         assert hospital1_json["resourceType"] == TableNames.HOSPITAL.value

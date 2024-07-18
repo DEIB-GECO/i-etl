@@ -9,7 +9,7 @@ class Reference:
     This allows to refer to other resources using their BETTER ID
     (not the local_id, which is proper to each hospital, but instead the id
     """
-    def __init__(self, resource_identifier: int, resource_type: str):
+    def __init__(self, resource_identifier: str, resource_type: str):
         """
         Create a new reference to another resource.
         :param resource_identifier:

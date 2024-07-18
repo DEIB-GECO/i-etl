@@ -1,5 +1,4 @@
 import copy
-import json
 import os
 import re
 
@@ -11,10 +10,10 @@ from pymongo.command_cursor import CommandCursor
 from pymongo.cursor import Cursor
 
 from database.Execution import Execution
-from utils.TableNames import TableNames
-from utils.UpsertPolicy import UpsertPolicy
+from enums.TableNames import TableNames
+from enums.UpsertPolicy import UpsertPolicy
 from utils.setup_logger import log
-from utils.utils import mongodb_match, mongodb_unwind, mongodb_project_one, mongodb_group_by, \
+from utils.utils import mongodb_match, mongodb_project_one, mongodb_group_by, \
     mongodb_sort, mongodb_limit
 
 
@@ -168,7 +167,7 @@ class Database:
             for key in projection.split("."):
                 # this covers the case when the project is a nested key, e.g., code.text
                 projected_value = projected_value[key]
-            mapping[projected_value] = result["identifier"]
+            mapping[projected_value] = result["identifier"]["value"]
         log.debug(f"{mapping}")
         return mapping
 

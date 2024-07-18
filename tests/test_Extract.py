@@ -5,9 +5,9 @@ import unittest
 from database.Database import Database
 from database.Execution import Execution
 from etl.Extract import Extract
-from utils.HospitalNames import HospitalNames
-from utils.MetadataColumns import MetadataColumns
-from utils.TheTestFiles import TheTestFiles
+from enums.HospitalNames import HospitalNames
+from enums.MetadataColumns import MetadataColumns
+from enums.TheTestFiles import TheTestFiles
 from utils.constants import DEFAULT_DB_CONNECTION, TEST_DB_NAME
 from utils.setup_logger import log
 from utils.utils import is_not_nan

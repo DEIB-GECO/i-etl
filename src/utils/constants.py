@@ -1,13 +1,13 @@
-from utils.HospitalNames import HospitalNames
-from utils.TableNames import TableNames
+from enums.HospitalNames import HospitalNames
+from enums.TableNames import TableNames
 from utils.utils import normalize_column_name
 
-NO_ID = -1
+NO_ID = "-1"
 
 ID_COLUMNS = {
     HospitalNames.IT_BUZZI_UC1.value: {
         TableNames.PATIENT.value: normalize_column_name("id"),
-        TableNames.SAMPLE.value: normalize_column_name("sampleBarcode")
+        TableNames.SAMPLE.value: normalize_column_name("SampleBarcode")
     },
     HospitalNames.TEST_H1.value: {
         TableNames.PATIENT.value: normalize_column_name("id")
@@ -26,15 +26,6 @@ PHENOTYPIC_VARIABLES = [
     normalize_column_name("Twins"),
     normalize_column_name("Premature"),
     normalize_column_name("BirthMethod")
-]
-
-SAMPLE_VARIABLES = [
-    normalize_column_name("Sampling"),
-    normalize_column_name("SampleQuality"),
-    normalize_column_name("SamTimeCollected"),
-    normalize_column_name("SamTimeReceived"),
-    normalize_column_name("TooYoung"),
-    normalize_column_name("BIS")
 ]
 
 

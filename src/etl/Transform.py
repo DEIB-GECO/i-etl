@@ -9,21 +9,22 @@ from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Coding import Coding
 from datatypes.Identifier import Identifier
 from datatypes.Reference import Reference
+from enums.SampleColumns import SampleColumns
 from profiles.Examination import Examination
 from profiles.ExaminationRecord import ExaminationRecord
 from profiles.Hospital import Hospital
 from profiles.Patient import Patient
 from profiles.Sample import Sample
 from utils.Counter import Counter
-from utils.ExaminationCategory import ExaminationCategory
-from utils.HospitalNames import HospitalNames
-from utils.MetadataColumns import MetadataColumns
-from utils.Ontologies import Ontologies
-from utils.TableNames import TableNames
+from enums.ExaminationCategory import ExaminationCategory
+from enums.HospitalNames import HospitalNames
+from enums.MetadataColumns import MetadataColumns
+from enums.Ontologies import Ontologies
+from enums.TableNames import TableNames
 from utils.constants import NO_ID, NO_EXAMINATION_COLUMNS, BATCH_SIZE, ID_COLUMNS, PHENOTYPIC_VARIABLES
 from utils.setup_logger import log
-from utils.utils import is_in_insensitive, is_not_nan, is_equal_insensitive, normalize_ontology_code, cast_value, \
-    write_in_file, get_categorical_value_display
+from utils.utils import is_in_insensitive, is_not_nan, normalize_ontology_code, cast_value, \
+    write_in_file, get_categorical_value_display, normalize_column_name
 
 
 class Transform:
@@ -105,39 +106,35 @@ class Transform:
         self._database.load_json_in_table(table_name=TableNames.EXAMINATION.value, unique_variables=["code"])
 
     def create_samples(self) -> None:
-        if is_in_insensitive(value=ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.SAMPLE.value], list_of_compared=self._data.columns):
+        if ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.SAMPLE.value] in self._data.columns:
             # this is a dataset with samples
             log.info(f"create sample instances in memory")
             created_sample_barcodes = set()
             count = 1
             for index, row in self._data.iterrows():
-                for column_name, value in row.items():
-                    if value is None or value == "" or not is_not_nan(value):
-                        # there is no value for that (sample) column, thus we skip it
-                        pass
-                    else:
-                        sample_barcode = row["samplebarcode"]
-                        if sample_barcode not in created_sample_barcodes:
-                            created_sample_barcodes.add(sample_barcode)
-                            # TODO Nelly: write a for loop based on SAMPLE_VARIABLES, instead of writing it by hand?
-                            sampling = row["sampling"] if "sampling" in row else None
-                            sample_quality = row["samplequality"] if "samplequality" in row else None
-                            time_collected = cast_value(value=row["samtimecollected"]) if "samtimecollected" in row else None
-                            time_received = cast_value(value=row["samtimereceived"]) if "samtimereceived" in row else None
-                            too_young = cast_value(value=row["tooyoung"]) if "tooyoung" in row else None
-                            bis = cast_value(value=row["bis"]) if "bis" in row else None
-                            new_sample = Sample(sample_barcode, sampling=sampling, quality=sample_quality,
-                                                time_collected=time_collected, time_received=time_received,
-                                                too_young=too_young, bis=bis, counter=self._counter)
-                            created_sample_barcodes.add(sample_barcode)
-                            self._samples.append(new_sample)
-                            if len(self._samples) >= BATCH_SIZE:
-                                write_in_file(resource_list=self._samples, current_working_dir=self._execution.working_dir_current, table_name=TableNames.SAMPLE.value, count=count)
-                                self._samples = []
-                                count = count + 1
-                                # no need to load Sample instances because they are referenced using their ID,
-                                # which was provided by the hospital (thus is known by the dataset)
+                sample_barcode = row[SampleColumns.SAMPLE_BAR_CODE.value]
+                if sample_barcode not in created_sample_barcodes:
+                    sampling = row[SampleColumns.SAMPLING.value] if SampleColumns.SAMPLING.value in row else None
+                    sample_quality = row[SampleColumns.SAMPLE_QUALITY.value] if SampleColumns.SAMPLE_QUALITY.value in row else None
+                    time_collected = cast_value(value=row[SampleColumns.SAMPLE_COLLECTED.value]) if SampleColumns.SAMPLE_COLLECTED.value in row else None
+                    time_received = cast_value(value=row[SampleColumns.SAMPLE_RECEIVED.value]) if SampleColumns.SAMPLE_RECEIVED.value in row else None
+                    too_young = cast_value(value=row[SampleColumns.SAMPLE_TOO_YOUNG.value]) if SampleColumns.SAMPLE_TOO_YOUNG.value in row else None
+                    bis = cast_value(value=row[SampleColumns.SAMPLE_BIS.value]) if SampleColumns.SAMPLE_BIS.value in row else None
+                    new_sample = Sample(sample_barcode, sampling=sampling, quality=sample_quality,
+                                        time_collected=time_collected, time_received=time_received,
+                                        too_young=too_young, bis=bis, counter=self._counter)
+                    created_sample_barcodes.add(sample_barcode)
+                    self._samples.append(new_sample)
+                    if len(self._samples) >= BATCH_SIZE:
+                        write_in_file(resource_list=self._samples, current_working_dir=self._execution.working_dir_current, table_name=TableNames.SAMPLE.value, count=count)
+                        self._samples = []
+                        count = count + 1
+                        # no need to load Sample instances because they are referenced using their ID,
+                        # which was provided by the hospital (thus is known by the dataset)
             write_in_file(resource_list=self._samples, current_working_dir=self._execution.working_dir_current, table_name=TableNames.SAMPLE.value, count=count)
+            log.debug(f"Created distinct {len(created_sample_barcodes)} samples in total.")
+        else:
+            log.debug("This hospital should not have samples. Skipping it.")
 
     def create_examination_records(self) -> None:
         log.info(f"create examination record instances in memory")
@@ -163,15 +160,17 @@ class Transform:
                         # log.info("I know a code for column %s", column_name)
                         # we know a code for this column, so we can register the value of that examination
                         examination_id = self._mapping_column_to_examination_id[column_name]
-                        examination_ref = Reference(resource_identifier=examination_id["value"], resource_type=TableNames.EXAMINATION.value)
+                        examination_ref = Reference(resource_identifier=examination_id, resource_type=TableNames.EXAMINATION.value)
                         hospital_id = self._mapping_hospital_to_hospital_id[self._execution.hospital_name]
-                        hospital_ref = Reference(resource_identifier=hospital_id["value"], resource_type=TableNames.HOSPITAL.value)
+                        hospital_ref = Reference(resource_identifier=hospital_id, resource_type=TableNames.HOSPITAL.value)
                         # for patient and sample instances, no need to go through a mapping because they have an ID assigned by the hospital
                         # TODO NELLY: if Buzzi decides to remove patient ids, we will have to number them with a Counter
                         #  and to create mappings (as for Hospital and Examination resources)
                         id_column_for_patients = ID_COLUMNS[self._execution.hospital_name][TableNames.PATIENT.value]
                         patient_id = Identifier(id_value=row[id_column_for_patients], resource_type=TableNames.PATIENT.value)
+                        log.debug(f"patient_id = {patient_id.to_json()} of type {type(patient_id)}")
                         patient_ref = Reference(resource_identifier=patient_id.value, resource_type=TableNames.PATIENT.value)
+                        log.debug(f"patient_ref = {patient_ref.to_json()} of type {type(patient_ref)}")
                         id_column_for_samples = ID_COLUMNS[self._execution.hospital_name][TableNames.SAMPLE.value] if TableNames.SAMPLE.value in ID_COLUMNS[self._execution.hospital_name] else ""
                         sample_ref = None
                         if id_column_for_samples != "":
@@ -201,9 +200,9 @@ class Transform:
         created_patient_ids = set()
         count = 1
         for index, row in self._data.iterrows():
-            log.debug(row.to_string())
             log.debug(row["id"])
             patient_id = row[ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.PATIENT.value]]
+            log.info(f"patient id in data: {patient_id} of type {type(patient_id)}")
             if patient_id not in created_patient_ids:
                 # the patient does not exist yet, we will create it
                 new_patient = Patient(id_value=patient_id, counter=self._counter)

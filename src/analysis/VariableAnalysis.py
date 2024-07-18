@@ -1,6 +1,6 @@
 import json
 
-from utils.MetadataColumns import MetadataColumns
+from enums.MetadataColumns import MetadataColumns
 from utils.utils import is_not_nan
 from utils.setup_logger import log
 

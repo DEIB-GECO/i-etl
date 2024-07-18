@@ -1,5 +1,3 @@
-import copy
-import re
 import inflection
 
 import bson
@@ -7,8 +5,7 @@ from dateutil.parser import parse
 from pymongo.mongo_client import MongoClient
 from bson.json_util import loads
 
-from utils.HospitalNames import HospitalNames
-from utils.utils import normalize_hospital_name, get_mongodb_date_from_datetime
+from utils.utils import get_mongodb_date_from_datetime, normalize_column_value, read_csv_file_as_string
 
 
 def to_snake_case(name):
@@ -118,5 +115,28 @@ if __name__ == '__main__':
     # print(convert_to_datetime("2024-03-08 15:45:00"))
     # print(convert_to_datetime("2024-03-08 15:45:00.245"))
 
-    print({"a": 2, "b": 1} == {"b": 1, "a": 2})
+    # print({"a": 2, "b": 1} == {"b": 1, "a": 2})
+
+    data = read_csv_file_as_string("../datasets/my_data.csv")
+    print(data)
+
+    print("#####")
+    for index, row in data.iterrows():
+        print(f"row: \n{row.to_string()}")
+        for i_col in range(len(data.columns)):
+            column = data.columns[i_col]
+            print(f"line {index}, column {column}: value is {row.iloc[i_col]} and is of type {type(row.iloc[i_col])}")
+        print()
+
+    for column in data:
+        data[column] = data[column].apply(lambda x: normalize_column_value(column_value=x))
+
+    print("#####")
+    for index, row in data.iterrows():
+        print(f"row: \n{row.to_string()}")
+        for i_col in range(len(data.columns)):
+            column = data.columns[i_col]
+            print(f"line {index}, column {column}: value is {row.iloc[i_col]} and is of type {type(row.iloc[i_col])}")
+        print()
+
     print("Done.")

@@ -9,7 +9,7 @@ from datetime import datetime
 import pymongo
 
 from utils import setup_logger
-from utils.UpsertPolicy import UpsertPolicy
+from enums.UpsertPolicy import UpsertPolicy
 from utils.constants import WORKING_DIR, DEFAULT_DB_CONNECTION
 from utils.setup_logger import log
 

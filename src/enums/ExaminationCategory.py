@@ -2,7 +2,7 @@ from enum import Enum
 
 from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Coding import Coding
-from utils.Ontologies import Ontologies
+from enums.Ontologies import Ontologies
 
 
 class ExaminationCategory(Enum):

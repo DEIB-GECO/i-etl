@@ -4,14 +4,14 @@ from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Coding import Coding
 from datatypes.Reference import Reference
 from profiles.Resource import Resource
-from utils.TableNames import TableNames
+from enums.TableNames import TableNames
 from utils.Counter import Counter
 from utils.utils import get_mongodb_date_from_datetime
 from utils.setup_logger import log
 
 
 class ExaminationRecord(Resource):
-    def __init__(self, id_value: int, examination_ref: Reference, subject_ref: Reference,
+    def __init__(self, id_value: str, examination_ref: Reference, subject_ref: Reference,
                  hospital_ref: Reference, sample_ref: Reference, value, counter: Counter):
         """
         A new ClinicalRecord instance, either built from existing data or from scratch.
@@ -58,8 +58,8 @@ class ExaminationRecord(Resource):
         }
 
         if self._based_on is not None:
-            # there wre samples in this dataset (BUZZI)
-            # we add the field "basedOn, otherwise we do not add it
+            # there are samples in this dataset (BUZZI)
+            # we add the field "basedOn", otherwise we do not add it
             examination_record_json["basedOn"] = self._based_on.to_json()
 
         return examination_record_json

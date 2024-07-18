@@ -11,17 +11,17 @@ from datatypes.Coding import Coding
 from etl.Transform import Transform
 from profiles.Examination import Examination
 from profiles.Hospital import Hospital
-from utils.ExaminationCategory import ExaminationCategory
-from utils.HospitalNames import HospitalNames
-from utils.MetadataColumns import MetadataColumns
-from utils.Ontologies import Ontologies
-from utils.TableNames import TableNames
-from utils.TheTestFiles import TheTestFiles
+from enums.ExaminationCategory import ExaminationCategory
+from enums.HospitalNames import HospitalNames
+from enums.MetadataColumns import MetadataColumns
+from enums.Ontologies import Ontologies
+from enums.TableNames import TableNames
+from enums.TheTestFiles import TheTestFiles
 from utils.constants import DEFAULT_DB_CONNECTION, TEST_DB_NAME
 from utils.setup_logger import log
 from utils.utils import compare_tuples, get_json_resource_file, get_examination_by_text_in_list, \
     get_examination_records_by_patient_id_in_list, normalize_ontology_system, normalize_ontology_code, is_not_nan, \
-    get_mongodb_date_from_datetime, cast_value
+    cast_value, read_csv_file_as_string
 
 
 # personalized setup called at the beginning of each test
@@ -37,8 +37,8 @@ def my_setup(hospital_name: str, extracted_metadata_path: str, extracted_data_pa
     # I load:
     # - the data and metadata from two CSV files that I obtained by running the Extract step
     # - and mapped_values as a JSON file that I obtained from the same Extract object
-    metadata = pd.read_csv(extracted_metadata_path)
-    data = pd.read_csv(extracted_data_paths)
+    metadata = read_csv_file_as_string(extracted_metadata_path)
+    data = read_csv_file_as_string(extracted_data_paths)
     mapped_values = json.load(open(extracted_mapped_values_path))
     transform = Transform(database=database, execution=TestTransform.execution, data=data, metadata=metadata, mapped_values=mapped_values)
     return transform
@@ -88,7 +88,7 @@ class TestTransform(unittest.TestCase):
         assert type(transform.hospitals[0]) is Hospital
         current_json_hospital = transform.hospitals[0].to_json()
         assert len(current_json_hospital.keys()) == 1 + 3  # name + inherited (identifier, resourceType, createdAt)
-        assert current_json_hospital["identifier"]["value"] == 1
+        assert current_json_hospital["identifier"]["value"] == "1"
         assert current_json_hospital["name"] == HospitalNames.TEST_H1.value
         assert current_json_hospital["createdAt"] is not None
         assert current_json_hospital["resourceType"] == Hospital.get_type()
@@ -213,15 +213,19 @@ class TestTransform(unittest.TestCase):
         # assert that ExaminationRecord instances have been correctly created for a given data row
         # we take the seventh row
         log.debug(transform.examination_records)
-        patient_id = 999999994
+        patient_id = "999999994"
         examination_records_patient = get_examination_records_by_patient_id_in_list(examination_records_list=transform.examination_records, patient_id=patient_id)
         log.debug(json.dumps(examination_records_patient))
         assert len(examination_records_patient) == 5
         assert examination_records_patient[0]["resourceType"] == TableNames.EXAMINATION_RECORD.value
         assert examination_records_patient[0]["value"] == -0.003  # the value as been converted to an integer
-        assert examination_records_patient[0]["subject"]["reference"] == patient_id  # this is also an integer
-        assert examination_records_patient[0]["recordedBy"]["reference"] == 1
-        assert examination_records_patient[0]["instantiate"]["reference"] == 2  # Examination 2 about molecule_a
+        log.debug(examination_records_patient[0]["subject"]["reference"])
+        log.debug(type(examination_records_patient[0]["subject"]["reference"]))
+        log.debug(str(patient_id))
+        log.debug(type(str(patient_id)))
+        assert examination_records_patient[0]["subject"]["reference"] == str(patient_id)  # this has not been converted to an integer
+        assert examination_records_patient[0]["recordedBy"]["reference"] == "1"
+        assert examination_records_patient[0]["instantiate"]["reference"] == "2"  # Examination 2 about molecule_a
         pattern_date = re.compile("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2,3}Z")
         assert pattern_date.match(examination_records_patient[0]["createdAt"]["$date"])  # check the date is in datetime (CEST) form
 
@@ -260,7 +264,7 @@ class TestTransform(unittest.TestCase):
         sorted_patients = sorted(transform.patients, key=lambda d: d.to_json()["identifier"]["value"], reverse=True)
         log.debug(sorted_patients)
         for i in range(0, len(sorted_patients)):
-            assert sorted_patients[i].to_json()["identifier"]["value"] == 999999999-i
+            assert sorted_patients[i].to_json()["identifier"]["value"] == str(999999999-i)
 
     def test_create_codeable_concept_from_column(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1.value,

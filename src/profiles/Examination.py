@@ -1,15 +1,14 @@
 from datetime import datetime
 
-from utils.MetadataColumns import MetadataColumns
 from datatypes.CodeableConcept import CodeableConcept
 from profiles.Resource import Resource
-from utils.TableNames import TableNames
+from enums.TableNames import TableNames
 from utils.utils import is_not_nan, get_mongodb_date_from_datetime
 from utils.Counter import Counter
 
 
 class Examination(Resource):
-    def __init__(self, id_value: int, code: CodeableConcept, category: CodeableConcept,
+    def __init__(self, id_value: str, code: CodeableConcept, category: CodeableConcept,
                  permitted_data_types: list[str], counter: Counter):
         # set up the resource ID
         super().__init__(id_value=id_value, resource_type=self.get_type(), counter=counter)
