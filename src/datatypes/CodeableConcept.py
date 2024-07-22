@@ -1,5 +1,7 @@
 import json
 
+import jsonpickle
+
 from datatypes.Coding import Coding
 
 
@@ -15,15 +17,15 @@ class CodeableConcept:
         """
         Instantiate a new (empty) CodeableConcept
         """
-        self._codings = []
-        self._text = ""
+        self.coding = []  # coding is a set of Coding - unfortunately FHIR is not consistent with singular/plural...
+        self.text = ""
 
     def has_codings(self) -> bool:
-        return self._codings is not None and len(self._codings) > 0
+        return self.coding is not None and len(self.coding) > 0
 
-    def add_coding(self, coding: Coding) -> None:
-        if coding is not None:
-            self._codings.append(coding)
+    def add_coding(self, one_coding: Coding) -> None:
+        if one_coding is not None:
+            self.coding.append(one_coding)
 
     def add_codings(self, set_of_dicts: list[dict]) -> None:
         """
@@ -32,32 +34,16 @@ class CodeableConcept:
         if set_of_dicts is not None:
             for one_dict in set_of_dicts:
                 # system is the ontology url, not the ontology name
-                self._codings.append(Coding(system=one_dict["system"], code=one_dict["code"], display=one_dict["display"]))
+                self.coding.append(Coding(system=one_dict["system"], code=one_dict["code"], display=one_dict["display"]))
 
-    def to_json(self) -> dict:
-        """
-        Produce the FHIR-compliant JSON representation of a CodeableConcept.
-        :return: A dict being the JSON representation of the CodeableConcept.
-        """
-        return {
-            "text": str(self._text),
-            "coding": [coding.to_json() for coding in self._codings]
-        }
-
-    @property
-    def text(self) -> str:
-        return self._text
-
-    @text.setter
-    def text(self, new_text: str) -> None:
-        self._text = new_text
-
-    @property
-    def codings(self):
-        return self._codings
+    def to_json(self):
+        # encode create a stringified JSON object of the class
+        # and decode transforms the stringified JSON to a "real" JSON object
+        return jsonpickle.decode(jsonpickle.encode(self, unpicklable=False))
 
     def __str__(self) -> str:
-        return json.dumps(self.to_json())
+        return jsonpickle.encode(self, unpicklable=False)
 
     def __repr__(self) -> str:
-        return json.dumps(self.to_json())
+        return jsonpickle.encode(self, unpicklable=False)
+

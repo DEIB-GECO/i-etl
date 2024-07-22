@@ -8,8 +8,8 @@ from utils.utils import get_datetime_from_str
 
 
 class InputOutput(Resource):
-    def __init__(self, id_value: int, file: str, type: CodeableConcept, date: str, counter: Counter):
-        super().__init__(id_value=id_value, resource_type=self.get_type(), counter=counter)
+    def __init__(self, id_value: str, file: str, type: CodeableConcept, date: str, counter: Counter):
+        super().__init__(id_value=id_value, resource_type="InputOutput", counter=counter)
 
         if not os.path.exists(file):
             # TODO Nelly: check also the file extension?
@@ -23,18 +23,3 @@ class InputOutput(Resource):
             self.date = ""
         else:
             self.date = date
-
-    @classmethod
-    def get_type(cls) -> str:
-        # do not use a TableName here as we do not create a specific table for them,
-        # instead we nest them (as JSON dicts) in Analysis input and output
-        return "InputOutput"  # TODO NELLY: make it a constant
-
-    def to_json(self) -> dict:
-        return {
-            "identifier": self.identifier.to_json(),
-            "resourceType": self.get_type(),
-            "file": self.file,
-            "type": self.type,
-            "date": self.date
-        }

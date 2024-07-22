@@ -14,23 +14,4 @@ class Patient(Resource):
         This ID is shared by the different patent sample, and SHOULD be shared by the hospitals.
         """
         # set up the resource ID
-        super().__init__(id_value=id_value, resource_type=self.get_type(), counter=counter)
-
-    @classmethod
-    def get_type(cls) -> str:
-        """
-        Get the resource type, i.e., Patient.
-        :return: A string being the resource type, i.e., Patient.
-        """
-        return TableNames.PATIENT.value
-
-    def to_json(self) -> dict:
-        """
-        Get the JSON representation of the resource.
-        :return: A JSON dict being the Patient with all its attributes.
-        """
-        return {
-            "identifier": self.identifier.to_json(),
-            "resourceType": self.get_type(),
-            "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
-        }
+        super().__init__(id_value=id_value, resource_type=TableNames.PATIENT.value, counter=counter)

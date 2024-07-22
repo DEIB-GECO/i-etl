@@ -25,7 +25,7 @@ class TestPatient:
         """
         counter = Counter()
         patient1 = Patient("123", counter=counter)
-        assert patient1.get_type() == TableNames.PATIENT.value
+        assert patient1.resource_type == TableNames.PATIENT.value
 
     def test_to_json(self):
         counter = Counter()
@@ -33,7 +33,4 @@ class TestPatient:
         patient1_json = patient1.to_json()
 
         assert patient1_json is not None
-        assert "identifier" in patient1_json
-        assert patient1_json["identifier"]["value"] == "123"
-        assert "resourceType" in patient1_json
-        assert patient1_json["resourceType"] == TableNames.PATIENT.value
+        assert patient1_json == {"identifier": {"value": "123"}, "resource_type": TableNames.PATIENT.value, "timestamp": patient1.timestamp}

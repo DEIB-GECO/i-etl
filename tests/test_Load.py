@@ -69,10 +69,10 @@ def my_setup(create_indexes: bool) -> Load:
     # insert the data that is inserted during the Transform step
     with open(path_examinations, 'w') as f:
         json.dump(examinations, f)
-    load._database.db["Examination"].insert_many(examinations)
+    load.database.db["Examination"].insert_many(examinations)
     with open(path_hospital, 'w') as f:
         json.dump(hospital, f)
-    load._database.db["Hospital"].insert_one(hospital)
+    load.database.db["Hospital"].insert_one(hospital)
     # for other files, it will be inserted with the function load_remaining_data()
     with open(path_examination_records, 'w') as f:
         json.dump(examination_records, f)
@@ -92,11 +92,11 @@ class TestLoad(unittest.TestCase):
         load = my_setup(create_indexes=True)
         load.load_remaining_data()
 
-        assert load._database.db["Patient"].count_documents(filter={}) == 3
-        assert load._database.db["Examination"].count_documents(filter={}) == 2
-        assert load._database.db["ExaminationRecord"].count_documents(filter={}) == 1
-        assert load._database.db["Hospital"].count_documents(filter={}) == 1
-        assert load._database.db["Sample"].count_documents(filter={}) == 0
+        assert load.database.db["Patient"].count_documents(filter={}) == 3
+        assert load.database.db["Examination"].count_documents(filter={}) == 2
+        assert load.database.db["ExaminationRecord"].count_documents(filter={}) == 1
+        assert load.database.db["Hospital"].count_documents(filter={}) == 1
+        assert load.database.db["Sample"].count_documents(filter={}) == 0
 
     def test_create_db_indexes(self):
         load = my_setup(create_indexes=True)
@@ -107,7 +107,7 @@ class TestLoad(unittest.TestCase):
         #    - one on identifier.value
         #    - one on createdAt
         for table_name in TableNames:
-            index_cursor = load._database.db[table_name.value].list_indexes()
+            index_cursor = load.database.db[table_name.value].list_indexes()
             print("\nindex_cursor TYPE:", type(index_cursor))
             count_indexes = 0
             # indexes are of the form

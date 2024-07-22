@@ -57,16 +57,6 @@ def is_not_empty(variable: Any) -> bool:
         return variable is not None
 
 
-def is_in_insensitive(value: Any, list_of_compared: list[Any]) -> bool:
-    if not isinstance(value, str):
-        return value in list_of_compared
-    else:
-        for compared in list_of_compared:
-            if value.casefold() == compared.casefold():
-                return True
-        return False
-
-
 def is_equal_insensitive(value: str | float, compared: str | float) -> bool:
     if not isinstance(value, str):
         return value == compared

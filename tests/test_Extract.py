@@ -195,7 +195,7 @@ class TestExtract(unittest.TestCase):
         extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH.value,
                            data_paths=TheTestFiles.TEST_ORIG_CLINICAL_PATH.value,
                            hospital_name=HospitalNames.TEST_H1.value)
-        extract._execution.current_filepath = TheTestFiles.TEST_ORIG_CLINICAL_PATH.value  # set the test data as the currently processed file
+        extract.execution.current_filepath = TheTestFiles.TEST_ORIG_CLINICAL_PATH.value  # set the test data as the currently processed file
         extract.load_data_file()
 
         # a. general size checks
@@ -222,7 +222,7 @@ class TestExtract(unittest.TestCase):
         extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH.value,
                            data_paths=TheTestFiles.TEST_ORIG_GENOMICS_PATH.value,
                            hospital_name=HospitalNames.TEST_H3.value)
-        extract._execution.current_filepath = TheTestFiles.TEST_ORIG_GENOMICS_PATH.value  # set the test data as the currently processed file
+        extract.execution.current_filepath = TheTestFiles.TEST_ORIG_GENOMICS_PATH.value  # set the test data as the currently processed file
         extract.load_data_file()
 
         # a. general size checks

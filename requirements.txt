@@ -19,3 +19,4 @@ tzdata==2024.1
 
 argparse~=1.4.0
 inflection~=0.5.1
+jsonpickle~=3.2.2

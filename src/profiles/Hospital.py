@@ -1,8 +1,11 @@
 from datetime import datetime
 
+import jsonpickle
+
 from profiles.Resource import Resource
 from enums.TableNames import TableNames
 from utils.Counter import Counter
+from utils.setup_logger import log
 from utils.utils import get_mongodb_date_from_datetime
 
 
@@ -15,27 +18,7 @@ class Hospital(Resource):
         :param name: A string being the name of the hospital.
         """
         # set up the resource ID
-        super().__init__(id_value=id_value, resource_type=self.get_type(), counter=counter)
+        super().__init__(id_value=id_value, resource_type=TableNames.HOSPITAL.value, counter=counter)
 
         # set up the resource attributes
-        self._name = name
-
-    @classmethod
-    def get_type(cls) -> str:
-        """
-        Get the resource type, i.e., Hospital.
-        :return: A string being the resource type, i.e., Hospital.
-        """
-        return TableNames.HOSPITAL.value
-
-    def to_json(self) -> dict:
-        """
-        Get the JSON representation of the resource.
-        :return: A JSON dict being the Hospital with all its attributes.
-        """
-        return {
-            "identifier": self.identifier.to_json(),
-            "resourceType": self.get_type(),
-            "name": self._name,
-            "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
-        }
+        self.name = name

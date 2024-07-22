@@ -1,5 +1,7 @@
 import json
 
+import jsonpickle
+
 from utils.setup_logger import log
 
 
@@ -14,17 +16,16 @@ class Reference:
         Create a new reference to another resource.
         :param resource_identifier:
         """
-        self._reference = resource_identifier
-        self._type = resource_type
+        self.reference = resource_identifier
+        self.type = resource_type
 
-    def to_json(self) -> dict:
-        return {
-            "reference": self._reference,
-            "type": self._type
-        }
+    def to_json(self):
+        # encode create a stringified JSON object of the class
+        # and decode transforms the stringified JSON to a "real" JSON object
+        return jsonpickle.decode(jsonpickle.encode(self, unpicklable=False))
 
     def __str__(self) -> str:
-        return json.dumps(self.to_json())
+        return jsonpickle.encode(self, unpicklable=False)
 
     def __repr__(self) -> str:
-        return json.dumps(self.to_json())
+        return jsonpickle.encode(self, unpicklable=False)

@@ -12,11 +12,11 @@ class ExaminationCategory(Enum):
     @classmethod
     def get_phenotypic(cls) -> CodeableConcept:
         cc = CodeableConcept()
-        cc.add_coding(coding=ExaminationCategory.CATEGORY_PHENOTYPIC.value)
+        cc.add_coding(one_coding=ExaminationCategory.CATEGORY_PHENOTYPIC.value)
         return cc
 
     @classmethod
     def get_clinical(cls) -> CodeableConcept:
         cc = CodeableConcept()
-        cc.add_coding(coding=ExaminationCategory.CATEGORY_CLINICAL.value)
+        cc.add_coding(one_coding=ExaminationCategory.CATEGORY_CLINICAL.value)
         return cc

@@ -9,28 +9,14 @@ from utils.Counter import Counter
 
 class Examination(Resource):
     def __init__(self, id_value: str, code: CodeableConcept, category: CodeableConcept,
-                 permitted_data_types: list[str], counter: Counter):
+                 permitted_datatype: str, counter: Counter):
         # set up the resource ID
-        super().__init__(id_value=id_value, resource_type=self.get_type(), counter=counter)
+        super().__init__(id_value=id_value, resource_type=TableNames.EXAMINATION.value, counter=counter)
 
         # set up the resource attributes
-        self._code = code
-        self._category = category
-        self._permitted_data_types = permitted_data_types
-
-    @classmethod
-    def get_type(cls) -> str:
-        return TableNames.EXAMINATION.value
-
-    def to_json(self) -> dict:
-        return {
-            "identifier": self.identifier.to_json(),
-            "resourceType": self.get_type(),
-            "code": self._code.to_json(),
-            "category": self._category.to_json(),
-            "permittedDatatype": self._permitted_data_types,
-            "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
-        }
+        self.code = code
+        self.category = category
+        self.permitted_datatype = permitted_datatype  # TODO Nelly: assert that datatype is a "real" data type
 
     @classmethod
     def get_display(cls, column_name: str, column_description: str) -> str:
@@ -41,7 +27,3 @@ class Examination(Resource):
             # e.g., "BTD (human biotinidase activity)"
             display = f"{display} ({str(column_description)})"
         return display
-
-    @property
-    def code(self):
-        return self._code

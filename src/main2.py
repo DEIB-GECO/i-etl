@@ -1,11 +1,20 @@
+import copy
+
 import inflection
 
 import bson
+import jsonpickle
 from dateutil.parser import parse
 from pymongo.mongo_client import MongoClient
 from bson.json_util import loads
 
-from utils.utils import get_mongodb_date_from_datetime, normalize_column_value, read_csv_file_as_string
+from datatypes.Reference import Reference
+from enums.HospitalNames import HospitalNames
+from profiles.ExaminationRecord import ExaminationRecord
+from profiles.Hospital import Hospital
+from utils.Counter import Counter
+from utils.utils import get_mongodb_date_from_datetime, normalize_column_value, read_csv_file_as_string, \
+    normalize_hospital_name
 
 
 def to_snake_case(name):
@@ -18,7 +27,7 @@ def to_snake_case(name):
     # return name.lower()
 
 
-def load_json_from_file_as_bson():
+def main_load_json_from_file_as_bson():
     # d1 = datetime.datetime.strptime("2018-10-13T11:56:52.000Z", "%Y-%m-%dT%H:%M:%S.000Z")
     # d2 = datetime.datetime.strptime("2017-10-13T10:53:53.000Z", "%Y-%m-%dT%H:%M:%S.000Z")
     # d3 = datetime.datetime.strptime("2022-09-13T10:53:53.000Z", "%Y-%m-%dT%H:%M:%S.000Z")
@@ -57,6 +66,23 @@ def compare_unordered_list(list_a: list[str], list_b: list[str]) -> bool:
     return list_a == list_b
 
 
+def main_python_parameters():
+    a = 1
+    print(a)
+    change_int_in_fct(a)
+    print(a)
+
+    b = ["a string"]
+    print(b)
+    change_tab_in_fct(b)
+    print(b)
+
+    c = [{"key": "an object"}]
+    print(c)
+    change_tab_with_objects_in_fct(c)
+    print(c)
+
+
 def convert_to_datetime(my_value: str):
     try:
         datetime_value = parse(my_value)
@@ -67,59 +93,45 @@ def convert_to_datetime(my_value: str):
         return None
 
 
-if __name__ == '__main__':
-    # load_json_from_file_as_bson()
+def main_compare_unordered_list():
+    list_a = ["a", "b", "c"]
+    list_b = ["c", "a", "b"]
+    list_c = ["a", "b", "c"]
+    list_d = copy.deepcopy(list_b)
+    list_d.sort()
+    print(compare_unordered_list(list_a, list_b))
+    print(compare_unordered_list(list_a, list_c))
+    print(compare_unordered_list(list_a, list_d))
 
-    # a = 1
-    # print(a)
-    # change_int_in_fct(a)
-    # print(a)
-    #
-    # b = ["a string"]
-    # print(b)
-    # change_tab_in_fct(b)
-    # print(b)
-    #
-    # c = [{"key": "an object"}]
-    # print(c)
-    # change_tab_with_objects_in_fct(c)
-    # print(c)
 
-    # list_a = ["a", "b", "c"]
-    # list_b = ["c", "a", "b"]
-    # list_c = ["a", "b", "c"]
-    # list_d = copy.deepcopy(list_b)
-    # list_d.sort()
-    # print(compare_unordered_list(list_a, list_b))
-    # print(compare_unordered_list(list_a, list_c))
-    # print(compare_unordered_list(list_a, list_d))
+def main_convert_to_datetime():
+    print(convert_to_datetime("abc"))
+    print(convert_to_datetime("white"))
+    print(convert_to_datetime("2024-03-08"))
+    print(convert_to_datetime("2024-03-08 15:45:00"))
+    print(convert_to_datetime("2024-03-08 15:45:00.245"))
 
-    # print(to_snake_case("nelly"))
-    # print(to_snake_case("Nelly"))
-    # print(to_snake_case("NELly"))
-    # print(to_snake_case("theNELly"))
-    # print(to_snake_case("NELLY"))
-    # print(to_snake_case("getHTTPResponseCode"))
-    # print(to_snake_case("molecule_a"))
-    # print(to_snake_case("Molecule_a"))
-    # print(to_snake_case("molecule_A"))
-    # print(to_snake_case("Molecule_A"))
-    # print(to_snake_case(" Molecule_A"))
-    # print(to_snake_case(" Nelly "))
-    # print(to_snake_case(" Nel ly "))
-    # print(normalize_hospital_name(HospitalNames.IT_BUZZI_UC1.value))
 
-    # print(convert_to_datetime("abc"))
-    # print(convert_to_datetime("white"))
-    # print(convert_to_datetime("2024-03-08"))
-    # print(convert_to_datetime("2024-03-08 15:45:00"))
-    # print(convert_to_datetime("2024-03-08 15:45:00.245"))
+def main_to_snake_case():
+    print(to_snake_case("nelly"))
+    print(to_snake_case("Nelly"))
+    print(to_snake_case("NELly"))
+    print(to_snake_case("theNELly"))
+    print(to_snake_case("NELLY"))
+    print(to_snake_case("getHTTPResponseCode"))
+    print(to_snake_case("molecule_a"))
+    print(to_snake_case("Molecule_a"))
+    print(to_snake_case("molecule_A"))
+    print(to_snake_case("Molecule_A"))
+    print(to_snake_case(" Molecule_A"))
+    print(to_snake_case(" Nelly "))
+    print(to_snake_case(" Nel ly "))
+    print(normalize_hospital_name(HospitalNames.IT_BUZZI_UC1.value))
 
-    # print({"a": 2, "b": 1} == {"b": 1, "a": 2})
 
+def main_read_pandas_csv():
     data = read_csv_file_as_string("../datasets/my_data.csv")
     print(data)
-
     print("#####")
     for index, row in data.iterrows():
         print(f"row: \n{row.to_string()}")
@@ -138,5 +150,35 @@ if __name__ == '__main__':
             column = data.columns[i_col]
             print(f"line {index}, column {column}: value is {row.iloc[i_col]} and is of type {type(row.iloc[i_col])}")
         print()
+
+
+def main_json_pickle():
+    json_string = jsonpickle.dumps(Hospital(id_value="1", name="my hospital", counter=Counter()), unpicklable=False)
+    print(type(json_string))
+    print(json_string)
+    json_string = jsonpickle.encode(ExaminationRecord(id_value="1",
+                                                      examination_ref=Reference(resource_type="Examination", resource_identifier="123"),
+                                                      subject_ref=Reference(resource_type="Patient", resource_identifier="123"),
+                                                      hospital_ref=Reference(resource_type="Hospital", resource_identifier="123"),
+                                                      sample_ref=Reference(resource_type="Sample", resource_identifier="123"),
+                                                      value=0.02,
+                                                      counter=Counter()), unpicklable=False)
+    print(json_string)
+    print(type(json_string))
+
+    json_object = jsonpickle.decode(jsonpickle.encode(Hospital(id_value="1", name="my hospital", counter=Counter()), unpicklable=False))
+    print(json_object)
+    print(type(json_object))
+
+
+if __name__ == '__main__':
+    # main_load_json_from_file_as_bson()
+    # main_python_parameters()
+    # main_compare_unordered_list()
+    # main_to_snake_case()
+    # main_convert_to_datetime()
+    # print({"a": 2, "b": 1} == {"b": 1, "a": 2})
+    # main_read_pandas_csv()
+    main_json_pickle()
 
     print("Done.")

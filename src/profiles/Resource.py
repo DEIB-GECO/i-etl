@@ -1,9 +1,14 @@
 import json
+from datetime import datetime
+
+import jsonpickle
 
 from datatypes.Identifier import Identifier
 from enums.TableNames import TableNames
 from utils import constants
 from utils.Counter import Counter
+from utils.setup_logger import log
+from utils.utils import get_mongodb_date_from_datetime, is_not_nan
 
 
 class Resource:
@@ -13,7 +18,7 @@ class Resource:
         :param id_value:
         :param resource_type:
         """
-        self._identifier = None  # change the FHIR model to have an identifier which is simply a string
+        self.identifier = None  # change the FHIR model to have an identifier which is simply a string
         if id_value == constants.NO_ID:
             if resource_type == TableNames.PATIENT.value or resource_type == TableNames.SAMPLE.value:
                 # Patient instances should always have an ID (given by the hospitals)
@@ -21,27 +26,37 @@ class Resource:
                 raise ValueError("Patient and Sample instances should have an ID.")
             else:
                 # We assign an ID to the new resource
-                self._identifier = Identifier(id_value=str(counter.increment()), resource_type=resource_type)
+                self.identifier = Identifier(id_value=str(counter.increment()), resource_type=resource_type)
         else:
             # This case covers when we retrieve resources from the DB, and we reconstruct them in-memory:
             # they already have an identifier, thus we simply reconstruct it with the value
-            self._identifier = Identifier(id_value=id_value, resource_type=resource_type)
+            self.identifier = Identifier(id_value=id_value, resource_type=resource_type)
 
-        self._timestamp = None  # TODO Nelly: add insertedAt to the Resource class?
+        self.resource_type = resource_type
+        self.timestamp = get_mongodb_date_from_datetime(current_datetime=datetime.now())
 
-    @property
-    def identifier(self) -> Identifier:
-        return self._identifier
-
-    @classmethod
-    def get_type(cls):
-        raise NotImplementedError("The method get_resource_type() has to be overridden in every child class.")
+    def __getstate__(self):
+        # we need to check whether each field is a NaN value because we do not want to add fields for NaN values
+        state = self.__dict__.copy()
+        # trick: we need to work on the copy of the keys to not directly work on them
+        # otherwise, Concurrent modification error
+        for key in list(state.keys()):
+            if state[key] is None or not is_not_nan(state[key]):
+                del state[key]
+            else:
+                # we may also need to convert datetime within MongoDB-style dates
+                if isinstance(state[key], datetime):
+                    state[key] = get_mongodb_date_from_datetime(state[key])
+        return state
 
     def to_json(self):
-        raise NotImplementedError("The method to_json() has to be overridden in every child class.")
+        # encode create a stringified JSON object of the class
+        # and decode transforms the stringified JSON to a "real" JSON object
+        log.debug(jsonpickle.decode(jsonpickle.encode(self, unpicklable=False)))
+        return jsonpickle.decode(jsonpickle.encode(self, unpicklable=False))
 
     def __str__(self) -> str:
-        return json.dumps(self.to_json())
+        return jsonpickle.encode(self, unpicklable=False)
 
     def __repr__(self) -> str:
-        return json.dumps(self.to_json())
+        return jsonpickle.encode(self, unpicklable=False)

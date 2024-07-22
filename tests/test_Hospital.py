@@ -2,6 +2,7 @@ from profiles.Hospital import Hospital
 from enums.TableNames import TableNames
 from utils.constants import NO_ID
 from utils.Counter import Counter
+from utils.utils import get_mongodb_date_from_datetime
 
 
 class TestHospital:
@@ -23,11 +24,11 @@ class TestHospital:
         counter = Counter()
         hospital1 = Hospital(id_value="123", name="MyHospital", counter=counter)
         assert hospital1 is not None
-        assert hospital1.get_type() == TableNames.HOSPITAL.value
+        assert hospital1.resource_type == TableNames.HOSPITAL.value
 
         hospital2 = Hospital(id_value=NO_ID, name="MyHospital", counter=counter)
         assert hospital2 is not None
-        assert hospital2.get_type() == TableNames.HOSPITAL.value
+        assert hospital2.resource_type == TableNames.HOSPITAL.value
 
     def test_to_json(self):
         counter = Counter()
@@ -35,7 +36,8 @@ class TestHospital:
         hospital1_json = hospital1.to_json()
 
         assert hospital1_json is not None
-        assert "identifier" in hospital1_json
-        assert hospital1_json["identifier"]["value"] == "123"
-        assert "resourceType" in hospital1_json
-        assert hospital1_json["resourceType"] == TableNames.HOSPITAL.value
+        assert hospital1_json == {
+            "identifier": {"value": "123"},
+            "resource_type": TableNames.HOSPITAL.value,
+            "name": "MyHospital",
+            "timestamp": hospital1.timestamp}

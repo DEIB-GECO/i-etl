@@ -1,36 +1,24 @@
 import json
 
+import jsonpickle
+
 from utils.setup_logger import log
 
 
 class Coding:
     def __init__(self, system: str, code: str, display: str):
         log.debug(f"Create a new Coding with ontology being {system}")
-        self._system = system  # this is the ontology url, not the ontology name
-        self._code = code
-        self._display = display
+        self.system = system  # this is the ontology url, not the ontology name
+        self.code = code
+        self.display = display
 
-    def to_json(self) -> dict:
-        return {
-            "system": str(self._system),
-            "code": str(self._code),
-            "display": str(self._display)
-        }
+    def to_json(self):
+        # encode create a stringified JSON object of the class
+        # and decode transforms the stringified JSON to a "real" JSON object
+        return jsonpickle.decode(jsonpickle.encode(self, unpicklable=False))
 
     def __str__(self) -> str:
-        return json.dumps(self.to_json())
+        return jsonpickle.encode(self, unpicklable=False)
 
     def __repr__(self) -> str:
-        return json.dumps(self.to_json())
-
-    @property
-    def system(self):
-        return self._system
-
-    @property
-    def code(self):
-        return self._code
-
-    @property
-    def display(self):
-        return self._display
+        return jsonpickle.encode(self, unpicklable=False)

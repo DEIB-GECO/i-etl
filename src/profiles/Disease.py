@@ -17,19 +17,7 @@ class Disease(Resource):
         :param code: the set of ontology terms (LOINC, ICD, ...) referring to that disease.
         """
         # set up the resource ID
-        super().__init__(id_value=id_value, resource_type=self.get_type(), counter=counter)
+        super().__init__(id_value=id_value, resource_type=TableNames.DISEASE.value, counter=counter)
 
         # set up the resource attributes
-        self._code = code
-
-    @classmethod
-    def get_type(cls) -> str:
-        return TableNames.DISEASE.value
-
-    def to_json(self) -> dict:
-        return {
-            "identifier": self.identifier.to_json(),
-            "resourceType": self.get_type(),
-            "code": self._code.to_json(),
-            "createdAt": get_mongodb_date_from_datetime(current_datetime=datetime.now())
-        }
+        self.code = code

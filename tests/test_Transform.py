@@ -87,11 +87,11 @@ class TestTransform(unittest.TestCase):
         assert len(transform.hospitals) == 1
         assert type(transform.hospitals[0]) is Hospital
         current_json_hospital = transform.hospitals[0].to_json()
-        assert len(current_json_hospital.keys()) == 1 + 3  # name + inherited (identifier, resourceType, createdAt)
+        assert len(current_json_hospital.keys()) == 1 + 3  # name + inherited (identifier, resource_type, timestamp)
         assert current_json_hospital["identifier"]["value"] == "1"
         assert current_json_hospital["name"] == HospitalNames.TEST_H1.value
-        assert current_json_hospital["createdAt"] is not None
-        assert current_json_hospital["resourceType"] == Hospital.get_type()
+        assert current_json_hospital["timestamp"] is not None
+        assert current_json_hospital["resource_type"] == TableNames.HOSPITAL.value
 
         # b. check that the in-file hospital is correct
         hospital_file = get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, table_name=TableNames.HOSPITAL.value, count=1)
@@ -120,7 +120,7 @@ class TestTransform(unittest.TestCase):
         examination_a = get_examination_by_text_in_list(transform.examinations, "molecule_a")
         assert len(examination_a) == 3 + 3  # 3 inherited + 3 proper fields
         assert "identifier" in examination_a
-        assert examination_a["resourceType"] == Examination.get_type()
+        assert examination_a["resource_type"] == TableNames.EXAMINATION.value
         assert examination_a["code"] == {
             "text": "molecule_a",
             "coding": [
@@ -132,26 +132,26 @@ class TestTransform(unittest.TestCase):
             ]
         }
         assert examination_a["category"] == ExaminationCategory.get_clinical().to_json()
-        assert examination_a["permittedDatatype"] == []
+        assert examination_a["permitted_datatype"] == ""
 
         # examination about molecule_b
         examination_b = get_examination_by_text_in_list(transform.examinations, "molecule_b")
         assert len(examination_b) == 3 + 3  # 3 inherited + 3 proper fields
         assert "identifier" in examination_b
-        assert examination_b["resourceType"] == Examination.get_type()
+        assert examination_b["resource_type"] == TableNames.EXAMINATION.value
         assert examination_b["code"] == {
             "text": "molecule_b",
             "coding": []
         }
         assert examination_b["category"] == ExaminationCategory.get_clinical().to_json()
-        assert examination_b["permittedDatatype"] == []
+        assert examination_b["permitted_datatype"] == ""
 
         # examination about ethnicity
         # "loinc/45678" and "snomedct/345:678"
         examination_ethnicity = get_examination_by_text_in_list(transform.examinations, "ethnicity")
         assert len(examination_ethnicity) == 3 + 3  # 3 inherited + 3 proper fields
         assert "identifier" in examination_ethnicity
-        assert examination_ethnicity["resourceType"] == Examination.get_type()
+        assert examination_ethnicity["resource_type"] == TableNames.EXAMINATION.value
         assert examination_ethnicity["code"] == {
             "text": "ethnicity",
             "coding": [
@@ -167,7 +167,7 @@ class TestTransform(unittest.TestCase):
             ]
         }
         assert examination_ethnicity["category"] == ExaminationCategory.get_phenotypic().to_json()
-        assert examination_ethnicity["permittedDatatype"] == []  # TODO NElly: add datatypes
+        assert examination_ethnicity["permitted_datatype"] == ""  # TODO NElly: add datatypes
 
         # check that there are no duplicates in Examination instances
         # for this, we get the set of their names (in the field "text")
@@ -217,17 +217,17 @@ class TestTransform(unittest.TestCase):
         examination_records_patient = get_examination_records_by_patient_id_in_list(examination_records_list=transform.examination_records, patient_id=patient_id)
         log.debug(json.dumps(examination_records_patient))
         assert len(examination_records_patient) == 5
-        assert examination_records_patient[0]["resourceType"] == TableNames.EXAMINATION_RECORD.value
+        assert examination_records_patient[0]["resource_type"] == TableNames.EXAMINATION_RECORD.value
         assert examination_records_patient[0]["value"] == -0.003  # the value as been converted to an integer
         log.debug(examination_records_patient[0]["subject"]["reference"])
         log.debug(type(examination_records_patient[0]["subject"]["reference"]))
         log.debug(str(patient_id))
         log.debug(type(str(patient_id)))
         assert examination_records_patient[0]["subject"]["reference"] == str(patient_id)  # this has not been converted to an integer
-        assert examination_records_patient[0]["recordedBy"]["reference"] == "1"
+        assert examination_records_patient[0]["recorded_by"]["reference"] == "1"
         assert examination_records_patient[0]["instantiate"]["reference"] == "2"  # Examination 2 about molecule_a
         pattern_date = re.compile("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2,3}Z")
-        assert pattern_date.match(examination_records_patient[0]["createdAt"]["$date"])  # check the date is in datetime (CEST) form
+        assert pattern_date.match(examination_records_patient[0]["timestamp"]["$date"])  # check the date is in datetime (CEST) form
 
         # check that all values are cast to the expected type
         assert examination_records_patient[0]["value"] == -0.003  # the value as been converted to an integer
@@ -235,9 +235,9 @@ class TestTransform(unittest.TestCase):
         assert examination_records_patient[3]["value"] == "black"
         assert examination_records_patient[4]["value"] == {"$date": "2021-12-22T11:58:38Z"}  # the value as been converted to a MongoDB-style datetime
         cc_female = CodeableConcept()
-        cc_female.add_coding(coding=Coding(system=normalize_ontology_system(ontology_system=Ontologies.SNOMEDCT.value["url"]),
-                                           code=normalize_ontology_code(ontology_code="248152002"),
-                                           display="f (Female)"))
+        cc_female.add_coding(one_coding=Coding(system=normalize_ontology_system(ontology_system=Ontologies.SNOMEDCT.value["url"]),
+                                               code=normalize_ontology_code(ontology_code="248152002"),
+                                               display="f (Female)"))
         assert examination_records_patient[2]["value"] == cc_female.to_json()  # the value as been replaced by its ontology code (sex is a categorical value)r
 
         # check the selected ExaminationRecord instances more generally:
@@ -274,26 +274,26 @@ class TestTransform(unittest.TestCase):
         # no associated ontology code
         cc = transform.create_codeable_concept_from_column("molecule_b")
         assert cc is not None
-        assert cc.codings is not None
-        assert len(cc.codings) == 0
+        assert cc.coding is not None
+        assert len(cc.coding) == 0
         assert cc.text == "molecule_b"
 
         # one associated ontology code
         cc = transform.create_codeable_concept_from_column("molecule_a")
         assert cc is not None
-        assert cc.codings is not None
-        assert len(cc.codings) == 1
+        assert cc.coding is not None
+        assert len(cc.coding) == 1
         assert cc.text == "molecule_a"
-        assert cc.codings[0].to_json() == Coding(system=Ontologies.LOINC.value["url"], code="1234", display="molecule_a (The molecule Alpha)").to_json()
+        assert cc.coding[0].to_json() == Coding(system=Ontologies.LOINC.value["url"], code="1234", display="molecule_a (The molecule Alpha)").to_json()
 
         # two associated ontology codes
         cc = transform.create_codeable_concept_from_column("ethnicity")
         assert cc is not None
-        assert cc.codings is not None
-        assert len(cc.codings) == 2
+        assert cc.coding is not None
+        assert len(cc.coding) == 2
         assert cc.text == "ethnicity"
-        assert cc.codings[0].to_json() == Coding(system=Ontologies.LOINC.value["url"], code="45678", display="ethnicity (The ethnicity)").to_json()
-        assert cc.codings[1].to_json() == Coding(system=Ontologies.SNOMEDCT.value["url"], code="345:678", display="ethnicity (The ethnicity)").to_json()
+        assert cc.coding[0].to_json() == Coding(system=Ontologies.LOINC.value["url"], code="45678", display="ethnicity (The ethnicity)").to_json()
+        assert cc.coding[1].to_json() == Coding(system=Ontologies.SNOMEDCT.value["url"], code="345:678", display="ethnicity (The ethnicity)").to_json()
 
     def test_create_coding_from_metadata(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1.value,
@@ -309,7 +309,7 @@ class TestTransform(unittest.TestCase):
         assert coding is not None
         assert coding.system == Ontologies.SNOMEDCT.value["url"]
         assert coding.code == "123:678"
-        assert coding._display == "molecule_g (The molecule Gamma)"
+        assert coding.display == "molecule_g (The molecule Gamma)"
 
         # two associated ontology codes (ethnicity line)
         # but this method creates one coding at a time
@@ -325,47 +325,47 @@ class TestTransform(unittest.TestCase):
         assert coding2.display == "ethnicity (The ethnicity)"
 
     def test_determine_examination_category(self):
-        transform = my_setup(hospital_name=HospitalNames.TEST_H1.value,
-                             extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_CLINICAL_PATH.value,
-                             extracted_data_paths=TheTestFiles.TEST_EXTR_CLINICAL_DATA_PATH.value,
-                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH.value)
+        _ = my_setup(hospital_name=HospitalNames.TEST_H1.value,
+                     extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_CLINICAL_PATH.value,
+                     extracted_data_paths=TheTestFiles.TEST_EXTR_CLINICAL_DATA_PATH.value,
+                     extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH.value)
 
         # clinical variables
-        cc = transform.determine_examination_category(column_name="molecule_a")
+        cc = Transform.determine_examination_category(column_name="molecule_a")
         assert cc is not None
         assert cc.to_json() == ExaminationCategory.get_clinical().to_json()
 
-        cc = transform.determine_examination_category(column_name="molecule_b")
+        cc = Transform.determine_examination_category(column_name="molecule_b")
         assert cc is not None
         assert cc.to_json() == ExaminationCategory.get_clinical().to_json()
 
-        cc = transform.determine_examination_category(column_name="molecule_g")
+        cc = Transform.determine_examination_category(column_name="molecule_g")
         assert cc is not None
         assert cc.to_json() == ExaminationCategory.get_clinical().to_json()
 
         # phenotypic variables
-        cc = transform.determine_examination_category(column_name="ethnicity")
+        cc = Transform.determine_examination_category(column_name="ethnicity")
         assert cc is not None
         assert cc.to_json() == ExaminationCategory.get_phenotypic().to_json()
 
-        cc = transform.determine_examination_category(column_name="sex")
+        cc = Transform.determine_examination_category(column_name="sex")
         assert cc is not None
         assert cc.to_json() == ExaminationCategory.get_phenotypic().to_json()
 
     def test_is_column_phenotypic(self):
-        transform = my_setup(hospital_name=HospitalNames.TEST_H1.value,
-                             extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_CLINICAL_PATH.value,
-                             extracted_data_paths=TheTestFiles.TEST_EXTR_CLINICAL_DATA_PATH.value,
-                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH.value)
+        _ = my_setup(hospital_name=HospitalNames.TEST_H1.value,
+                     extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_CLINICAL_PATH.value,
+                     extracted_data_paths=TheTestFiles.TEST_EXTR_CLINICAL_DATA_PATH.value,
+                     extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH.value)
 
         # clinical variables
-        assert transform.is_column_name_phenotypic(column_name="molecule_a") is False
-        assert transform.is_column_name_phenotypic(column_name="molecule_b") is False
-        assert transform.is_column_name_phenotypic(column_name="molecule_g") is False
+        assert Transform.is_column_name_phenotypic(column_name="molecule_a") is False
+        assert Transform.is_column_name_phenotypic(column_name="molecule_b") is False
+        assert Transform.is_column_name_phenotypic(column_name="molecule_g") is False
 
         # phenotypic variables
-        assert transform.is_column_name_phenotypic(column_name="ethnicity") is True
-        assert transform.is_column_name_phenotypic(column_name="sex") is True
+        assert Transform.is_column_name_phenotypic(column_name="ethnicity") is True
+        assert Transform.is_column_name_phenotypic(column_name="sex") is True
 
     def test_fairify_value(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1.value,
@@ -378,7 +378,7 @@ class TestTransform(unittest.TestCase):
         assert transform.fairify_value(column_name="molecule_b", value=transform.data.iloc[0][2]) == 100
         assert transform.fairify_value(column_name="molecule_g", value=transform.data.iloc[0][3]) is True
         cc_female = CodeableConcept()
-        cc_female.add_coding(Coding(system=Ontologies.SNOMEDCT.value["url"], code="248152002", display="f (Female)"))
+        cc_female.add_coding(one_coding=Coding(system=Ontologies.SNOMEDCT.value["url"], code="248152002", display="f (Female)"))
         assert transform.fairify_value(column_name="sex", value=transform.data.iloc[0][4]).to_json() == cc_female.to_json()
         assert transform.fairify_value(column_name="ethnicity", value=transform.data.iloc[0][5]) == "white"
         assert not is_not_nan(transform.fairify_value(column_name="date_of_birth", value=transform.data.iloc[0][6]))
