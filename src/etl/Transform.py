@@ -9,7 +9,7 @@ from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Coding import Coding
 from datatypes.Identifier import Identifier
 from datatypes.Reference import Reference
-from enums.ColumnsToRemove import ColumnsToRemove
+from enums.ColumnsToIgnore import ColumnsToIgnore
 from enums.PhenotypicColumns import PhenotypicColumns
 from enums.SampleColumns import SampleColumns
 from profiles.LaboratoryFeature import LaboratoryFeature
@@ -56,9 +56,9 @@ class Transform:
     def run(self) -> None:
         self.set_resource_counter_id()
         self.create_hospital(hospital_name=self.execution.hospital_name)
-        log.info(f"Hospital count: {self.database.count_documents(table_name=TableNames.HOSPITAL.value, filter_dict={})}")
+        log.info(f"Hospital count: {self.database.count_documents(table_name=TableNames.HOSPITAL, filter_dict={})}")
         self.create_laboratory_features()
-        log.info(f"Examination count: {self.database.count_documents(table_name=TableNames.LABORATORY_FEATURE.value, filter_dict={})}")
+        log.info(f"Examination count: {self.database.count_documents(table_name=TableNames.LABORATORY_FEATURE, filter_dict={})}")
         self.create_samples()
         self.create_patients()
         self.create_laboratory_records()
@@ -70,19 +70,19 @@ class Transform:
         log.info(f"create hospital instance in memory")
         new_hospital = Hospital(id_value=NO_ID, name=hospital_name, counter=self.counter)
         self.hospitals.append(new_hospital)
-        write_in_file(resource_list=self.hospitals, current_working_dir=self.execution.working_dir_current, table_name=TableNames.HOSPITAL.value, count=1)
-        self.database.load_json_in_table(table_name=TableNames.HOSPITAL.value, unique_variables=["name"])
+        write_in_file(resource_list=self.hospitals, current_working_dir=self.execution.working_dir_current, table_name=TableNames.HOSPITAL, count=1)
+        self.database.load_json_in_table(table_name=TableNames.HOSPITAL, unique_variables=["name"])
 
     def create_laboratory_features(self) -> None:
         log.info(f"create Lab. Feat. instances in memory")
         count = 1
-        index_for_column_name = self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME.value)
-        log.debug(f"The index of {MetadataColumns.COLUMN_NAME.value} is {index_for_column_name}")
+        index_for_column_name = self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)
+        log.debug(f"The index of {MetadataColumns.COLUMN_NAME} is {index_for_column_name}")
         for row_index, row in self.metadata.iterrows():
-            column_name = row[MetadataColumns.COLUMN_NAME.value]  # this has to be accessed with int indexes, not column str name
+            column_name = row[MetadataColumns.COLUMN_NAME]  # this has to be accessed with int indexes, not column str name
             log.debug(f"Row about {column_name}")
-            log.debug(ColumnsToRemove.values())
-            if column_name not in SampleColumns.values() and column_name not in ColumnsToRemove.values():
+            log.debug(ColumnsToIgnore.values())
+            if column_name not in SampleColumns.values() and column_name not in ColumnsToIgnore.values():
                 cc = self.create_codeable_concept_from_row(column_name=column_name)
                 log.debug(cc)
                 if cc is not None:
@@ -94,7 +94,7 @@ class Transform:
                     log.info("adding a new examination about %s: %s", cc.text, new_examination)
                     self.laboratory_features.append(new_examination)
                     if len(self.laboratory_features) >= BATCH_SIZE:
-                        write_in_file(resource_list=self.laboratory_features, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_FEATURE.value, count=count)
+                        write_in_file(resource_list=self.laboratory_features, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_FEATURE, count=count)
                         self.laboratory_features = []
                         count = count + 1
                 else:
@@ -104,36 +104,36 @@ class Transform:
             else:
                 log.debug(f"I am skipping column {column_name} because it has been marked as not being part of examination instances.")
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
-        write_in_file(resource_list=self.laboratory_features, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_FEATURE.value, count=count)
-        self.database.load_json_in_table(table_name=TableNames.LABORATORY_FEATURE.value, unique_variables=["code"])
+        write_in_file(resource_list=self.laboratory_features, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_FEATURE, count=count)
+        self.database.load_json_in_table(table_name=TableNames.LABORATORY_FEATURE, unique_variables=["code"])
 
     def create_samples(self) -> None:
-        if ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.SAMPLE.value] in self.data.columns:
+        if ID_COLUMNS[HospitalNames.IT_BUZZI_UC1][TableNames.SAMPLE] in self.data.columns:
             # this is a dataset with samples
             log.info(f"create Sample instances in memory")
             created_sample_barcodes = set()
             count = 1
             for index, row in self.data.iterrows():
-                sample_barcode = row[SampleColumns.SAMPLE_BAR_CODE.value]
+                sample_barcode = row[SampleColumns.SAMPLE_BAR_CODE]
                 if sample_barcode not in created_sample_barcodes:
-                    sampling = row[SampleColumns.SAMPLING.value] if SampleColumns.SAMPLING.value in row else None
-                    sample_quality = row[SampleColumns.SAMPLE_QUALITY.value] if SampleColumns.SAMPLE_QUALITY.value in row else None
-                    time_collected = cast_value(value=row[SampleColumns.SAMPLE_COLLECTED.value]) if SampleColumns.SAMPLE_COLLECTED.value in row else None
-                    time_received = cast_value(value=row[SampleColumns.SAMPLE_RECEIVED.value]) if SampleColumns.SAMPLE_RECEIVED.value in row else None
-                    too_young = cast_value(value=row[SampleColumns.SAMPLE_TOO_YOUNG.value]) if SampleColumns.SAMPLE_TOO_YOUNG.value in row else None
-                    bis = cast_value(value=row[SampleColumns.SAMPLE_BIS.value]) if SampleColumns.SAMPLE_BIS.value in row else None
+                    sampling = row[SampleColumns.SAMPLING] if SampleColumns.SAMPLING in row else None
+                    sample_quality = row[SampleColumns.SAMPLE_QUALITY] if SampleColumns.SAMPLE_QUALITY in row else None
+                    time_collected = cast_value(value=row[SampleColumns.SAMPLE_COLLECTED]) if SampleColumns.SAMPLE_COLLECTED in row else None
+                    time_received = cast_value(value=row[SampleColumns.SAMPLE_RECEIVED]) if SampleColumns.SAMPLE_RECEIVED in row else None
+                    too_young = cast_value(value=row[SampleColumns.SAMPLE_TOO_YOUNG]) if SampleColumns.SAMPLE_TOO_YOUNG in row else None
+                    bis = cast_value(value=row[SampleColumns.SAMPLE_BIS]) if SampleColumns.SAMPLE_BIS in row else None
                     new_sample = Sample(sample_barcode, sampling=sampling, quality=sample_quality,
                                         time_collected=time_collected, time_received=time_received,
                                         too_young=too_young, bis=bis, counter=self.counter)
                     created_sample_barcodes.add(sample_barcode)
                     self.samples.append(new_sample)
                     if len(self.samples) >= BATCH_SIZE:
-                        write_in_file(resource_list=self.samples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.SAMPLE.value, count=count)
+                        write_in_file(resource_list=self.samples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.SAMPLE, count=count)
                         self.samples = []
                         count = count + 1
                         # no need to load Sample instances because they are referenced using their ID,
                         # which was provided by the hospital (thus is known by the dataset)
-            write_in_file(resource_list=self.samples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.SAMPLE.value, count=count)
+            write_in_file(resource_list=self.samples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.SAMPLE, count=count)
             log.debug(f"Created distinct {len(created_sample_barcodes)} samples in total.")
         else:
             log.debug("This hospital should not have samples. Skipping it.")
@@ -142,10 +142,10 @@ class Transform:
         log.info(f"create Lab. Rec. instances in memory")
 
         # a. load some data from the database to compute references
-        self.mapping_hospital_to_hospital_id = self.database.retrieve_identifiers(table_name=TableNames.HOSPITAL.value, projection="name")
+        self.mapping_hospital_to_hospital_id = self.database.retrieve_identifiers(table_name=TableNames.HOSPITAL, projection="name")
         log.debug(f"{self.mapping_hospital_to_hospital_id}")
 
-        self.mapping_column_to_labfeat_id = self.database.retrieve_identifiers(table_name=TableNames.LABORATORY_FEATURE.value, projection="code.text")
+        self.mapping_column_to_labfeat_id = self.database.retrieve_identifiers(table_name=TableNames.LABORATORY_FEATURE, projection="code.text")
         log.debug(f"{self.mapping_column_to_labfeat_id}")
 
         # b. Create ExaminationRecord instance, and write them in temporary (JSON) files
@@ -162,22 +162,22 @@ class Transform:
                         # log.info("I know a code for column %s", column_name)
                         # we know a code for this column, so we can register the value of that examination
                         examination_id = self.mapping_column_to_labfeat_id[column_name]
-                        examination_ref = Reference(resource_identifier=examination_id, resource_type=TableNames.LABORATORY_FEATURE.value)
+                        examination_ref = Reference(resource_identifier=examination_id, resource_type=TableNames.LABORATORY_FEATURE)
                         hospital_id = self.mapping_hospital_to_hospital_id[self.execution.hospital_name]
-                        hospital_ref = Reference(resource_identifier=hospital_id, resource_type=TableNames.HOSPITAL.value)
+                        hospital_ref = Reference(resource_identifier=hospital_id, resource_type=TableNames.HOSPITAL)
                         # for patient and sample instances, no need to go through a mapping because they have an ID assigned by the hospital
                         # TODO NELLY: if Buzzi decides to remove patient ids, we will have to number them with a Counter
                         #  and to create mappings (as for Hospital and Examination resources)
-                        id_column_for_patients = ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT.value]
-                        patient_id = Identifier(id_value=row[id_column_for_patients], resource_type=TableNames.PATIENT.value)
+                        id_column_for_patients = ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]
+                        patient_id = Identifier(id_value=row[id_column_for_patients], resource_type=TableNames.PATIENT)
                         log.debug(f"patient_id = {patient_id.to_json()} of type {type(patient_id)}")
-                        patient_ref = Reference(resource_identifier=patient_id.value, resource_type=TableNames.PATIENT.value)
+                        patient_ref = Reference(resource_identifier=patient_id.value, resource_type=TableNames.PATIENT)
                         log.debug(f"patient_ref = {patient_ref.to_json()} of type {type(patient_ref)}")
-                        id_column_for_samples = ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE.value] if TableNames.SAMPLE.value in ID_COLUMNS[self.execution.hospital_name] else ""
+                        id_column_for_samples = ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE] if TableNames.SAMPLE in ID_COLUMNS[self.execution.hospital_name] else ""
                         sample_ref = None
                         if id_column_for_samples != "":
-                            sample_id = Identifier(id_value=row[id_column_for_samples], resource_type=TableNames.SAMPLE.value)
-                            sample_ref = Reference(resource_identifier=sample_id.value, resource_type=TableNames.SAMPLE.value)
+                            sample_id = Identifier(id_value=row[id_column_for_samples], resource_type=TableNames.SAMPLE)
+                            sample_ref = Reference(resource_identifier=sample_id, resource_type=TableNames.SAMPLE)
                         # TODO Nelly: we could even clean more the data, e.g., do not allow "Italy" as ethnicity (caucasian, etc)
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
                         new_laboratory_record = LaboratoryRecord(id_value=NO_ID, examination_ref=examination_ref,
@@ -186,7 +186,7 @@ class Transform:
                                                                   counter=self.counter)
                         self.laboratory_records.append(new_laboratory_record)
                         if len(self.laboratory_records) >= BATCH_SIZE:
-                            write_in_file(resource_list=self.laboratory_records, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_RECORD.value, count=count)
+                            write_in_file(resource_list=self.laboratory_records, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_RECORD, count=count)
                             # no need to load ExaminationRecords instances because they are never referenced
                             self.laboratory_records = []
                             count = count + 1
@@ -195,7 +195,7 @@ class Transform:
                         # this represents the case when a column has not been converted to an Examination resource
                         pass
 
-        write_in_file(resource_list=self.laboratory_records, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_RECORD.value, count=count)
+        write_in_file(resource_list=self.laboratory_records, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_RECORD, count=count)
 
     def create_patients(self) -> None:
         log.info(f"create patient instances in memory")
@@ -203,7 +203,7 @@ class Transform:
         count = 1
         for index, row in self.data.iterrows():
             log.debug(row["id"])
-            patient_id = row[ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT.value]]
+            patient_id = row[ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]]
             log.info(f"patient id in data: {patient_id} of type {type(patient_id)}")
             if patient_id not in created_patient_ids:
                 # the patient does not exist yet, we will create it
@@ -211,36 +211,36 @@ class Transform:
                 created_patient_ids.add(patient_id)
                 self.patients.append(new_patient)
                 if len(self.patients) >= BATCH_SIZE:
-                    write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current, table_name=TableNames.PATIENT.value, count=count)  # this will save the data if it has reached BATCH_SIZE
+                    write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current, table_name=TableNames.PATIENT, count=count)  # this will save the data if it has reached BATCH_SIZE
                     self.patients = []
                     count = count + 1
                     # no need to load Patient instances because they are referenced using their ID,
                     # which was provided by the hospital (thus is known by the dataset)
-        write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current, table_name=TableNames.PATIENT.value, count=count)
+        write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current, table_name=TableNames.PATIENT, count=count)
 
     def create_codeable_concept_from_row(self, column_name: str) -> CodeableConcept | None:
         cc = CodeableConcept()
-        rows = self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME.value] == column_name]
+        rows = self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name]
         log.debug(rows)
         if len(rows) == 1:
             row = rows.iloc[0]
-            if is_not_nan(row[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value]):
-                coding = Coding(system=Ontologies.get_ontology_system(row[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value]),
-                                code=row[MetadataColumns.FIRST_ONTOLOGY_CODE.value],
-                                name=row[MetadataColumns.COLUMN_NAME.value],
-                                description=row[MetadataColumns.SIGNIFICATION_EN.value])
+            if is_not_nan(row[MetadataColumns.FIRST_ONTOLOGY_SYSTEM]):
+                coding = Coding(system=Ontologies.get_ontology_system(row[MetadataColumns.FIRST_ONTOLOGY_SYSTEM]),
+                                code=row[MetadataColumns.FIRST_ONTOLOGY_CODE],
+                                name=row[MetadataColumns.COLUMN_NAME],
+                                description=row[MetadataColumns.SIGNIFICATION_EN])
                 cc.add_coding(one_coding=coding)
-            if is_not_nan(row[MetadataColumns.SEC_ONTOLOGY_SYSTEM.value]):
-                coding = Coding(system=Ontologies.get_ontology_system(row[MetadataColumns.SEC_ONTOLOGY_SYSTEM.value]),
-                                code=row[MetadataColumns.SEC_ONTOLOGY_CODE.value],
-                                name=row[MetadataColumns.COLUMN_NAME.value],
-                                description=row[MetadataColumns.SIGNIFICATION_EN.value])
+            if is_not_nan(row[MetadataColumns.SEC_ONTOLOGY_SYSTEM]):
+                coding = Coding(system=Ontologies.get_ontology_system(row[MetadataColumns.SEC_ONTOLOGY_SYSTEM]),
+                                code=row[MetadataColumns.SEC_ONTOLOGY_CODE],
+                                name=row[MetadataColumns.COLUMN_NAME],
+                                description=row[MetadataColumns.SIGNIFICATION_EN])
                 cc.add_coding(one_coding=coding)
             # NB July 18th 2024: for the text of a CC, this HAS TO be the column name ONLY (and not the column name and the description).
             # this is because we build a mapping between column names (variables) and their identifiers
             # if there is also the description in the text, then no column name would match the CC text.
-            # NOPE   cc.text = Examination.get_display(column_name=row[MetadataColumns.COLUMN_NAME.value], column_description=row[MetadataColumns.SIGNIFICATION_EN.value])  # the column name + description
-            cc.text = row[MetadataColumns.COLUMN_NAME.value]
+            # NOPE   cc.text = Examination.get_display(column_name=row[MetadataColumns.COLUMN_NAME], column_description=row[MetadataColumns.SIGNIFICATION_EN])  # the column name + description
+            cc.text = row[MetadataColumns.COLUMN_NAME]
             return cc
         elif len(rows) == 0:
             # log.warn("Did not find the column '%s' in the metadata", column_name)

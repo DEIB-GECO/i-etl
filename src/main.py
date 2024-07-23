@@ -20,7 +20,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--"+Execution.HOSPITAL_NAME_KEY,
                         help="Set the hospital name among " + str(),
-                        choices={hn.value for hn in HospitalNames},
+                        choices={hn for hn in HospitalNames.values()},
                         required=True)
     parser.add_argument("--"+Execution.CLINICAL_METADATA_PATH_KEY,
                         help="Set the absolute path to the metadata file.",
@@ -60,7 +60,7 @@ if __name__ == '__main__':
                         required=True)
     parser.add_argument("--"+Execution.DB_UPSERT_POLICY_KEY,
                         help="Whether to update or do nothing when upserting tuples.",
-                        choices=[upsert_policy.value for upsert_policy in UpsertPolicy],
+                        choices=[upsert_policy for upsert_policy in UpsertPolicy.values()],
                         required=True)
 
     args = parser.parse_args()

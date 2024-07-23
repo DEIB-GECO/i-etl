@@ -9,4 +9,4 @@ class GenomicFeature(Feature):
     def __init__(self, id_value: str, code: CodeableConcept, permitted_datatype: str, counter: Counter):
         # set up the resource ID
         super().__init__(id_value=id_value, code=code, permitted_datatype=permitted_datatype,
-                         resource_type=TableNames.GENOMIC_FEATURE.value, counter=counter)
+                         resource_type=TableNames.GENOMIC_FEATURE, counter=counter)

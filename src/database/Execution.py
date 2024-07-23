@@ -47,7 +47,7 @@ class Execution:
         self._db_connection = DEFAULT_DB_CONNECTION  # user input
         self._db_drop = True  # user input
         self._db_no_index = False  # user input
-        self._db_upsert_policy = UpsertPolicy.DO_NOTHING.value  # user input
+        self._db_upsert_policy = UpsertPolicy.DO_NOTHING  # user input
         # parameters related to the UC hospital
         self._hospital_name = None  # this will be given as input by users
         # parameters related to the execution context (python, pymongo, etc.)

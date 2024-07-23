@@ -33,9 +33,9 @@ class TestExtract(unittest.TestCase):
     execution = Execution(TEST_DB_NAME)
 
     def test_load_metadata_file_H1_D1(self):
-        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH.value,
-                           data_paths=TheTestFiles.TEST_ORIG_CLINICAL_PATH.value,
-                           hospital_name=HospitalNames.TEST_H1.value)
+        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
+                           data_paths=TheTestFiles.TEST_ORIG_CLINICAL_PATH,
+                           hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()
 
         log.debug(extract.metadata.columns)
@@ -46,56 +46,56 @@ class TestExtract(unittest.TestCase):
         assert len(extract.metadata) == 8, "The expected number of lines is 8."
 
         # b. checking the first line completely
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value][1] == "loinc"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value][1] == "1234"
-        assert not is_not_nan(extract.metadata[MetadataColumns.SEC_ONTOLOGY_SYSTEM.value][1])  # this should be nan as the cell is empty
-        assert not is_not_nan(extract.metadata[MetadataColumns.SEC_ONTOLOGY_CODE.value][1])  # this should be empty too
-        assert extract.metadata[MetadataColumns.COLUMN_NAME.value][1] == "molecule_a"  # all lower case
-        assert extract.metadata[MetadataColumns.SIGNIFICATION_EN.value][1] == "The molecule Alpha"  # kept as it is in the metadata for more clarity
-        assert extract.metadata[MetadataColumns.VAR_TYPE.value][1] == "float"
-        assert not is_not_nan(extract.metadata[MetadataColumns.JSON_VALUES.value][1])  # empty cell thus nan
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM][1] == "loinc"
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][1] == "1234"
+        assert not is_not_nan(extract.metadata[MetadataColumns.SEC_ONTOLOGY_SYSTEM][1])  # this should be nan as the cell is empty
+        assert not is_not_nan(extract.metadata[MetadataColumns.SEC_ONTOLOGY_CODE][1])  # this should be empty too
+        assert extract.metadata[MetadataColumns.COLUMN_NAME][1] == "molecule_a"  # all lower case
+        assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][1] == "The molecule Alpha"  # kept as it is in the metadata for more clarity
+        assert extract.metadata[MetadataColumns.VAR_TYPE][1] == "float"
+        assert not is_not_nan(extract.metadata[MetadataColumns.JSON_VALUES][1])  # empty cell thus nan
         # test JSON values in the fourth line (sex)
         # pandas dataframe does not allow json objects, so we have to store them as JSON-like string
         expected_json_values = [{"value": "m", "explanation": "Male", "snomedct": "24815:3007"}, {"value": "f", "explanation": "Female", "snomedct": "248152002"}]
-        assert extract.metadata[MetadataColumns.JSON_VALUES.value][4] == json.dumps(expected_json_values)
+        assert extract.metadata[MetadataColumns.JSON_VALUES][4] == json.dumps(expected_json_values)
 
         # c. test the first (Patient ID) line, because there are no ontologies for this one
-        assert extract.metadata[MetadataColumns.COLUMN_NAME.value][0] == "id"  # normalized column name
-        assert extract.metadata[MetadataColumns.SIGNIFICATION_EN.value][0] == "The Patient ID"  # non-normalized description
+        assert extract.metadata[MetadataColumns.COLUMN_NAME][0] == "id"  # normalized column name
+        assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][0] == "The Patient ID"  # non-normalized description
 
         # d. test normalization of ontology codes
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value][1] == "loinc"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value][5] == "loinc"
-        assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value][2])
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value][3] == "snomedct"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value][4] == "snomedct"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value][6] == "snomedct"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value][7] == "snomedct"
-        assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value][0])
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM][1] == "loinc"
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM][5] == "loinc"
+        assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM][2])
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM][3] == "snomedct"
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM][4] == "snomedct"
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM][6] == "snomedct"
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM][7] == "snomedct"
+        assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM][0])
 
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value][1] == "1234"
-        assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value][2])
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value][3] == "123:678"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value][4] == "123:789"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value][5] == "45678"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value][6] == "456:7z9"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value][7] == "124678"
-        assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value][0])
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][1] == "1234"
+        assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][2])
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][3] == "123:678"
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][4] == "123:789"
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][5] == "45678"
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][6] == "456:7z9"
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][7] == "124678"
+        assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][0])
 
         # e. more general checks
         # DATASET: this should be the dataset name, and there should be no other datasets in that column
-        unique_dataset_names = list(extract.metadata[MetadataColumns.DATASET_NAME.value].unique())
+        unique_dataset_names = list(extract.metadata[MetadataColumns.DATASET_NAME].unique())
         log.debug(unique_dataset_names)
-        log.debug(TheTestFiles.TEST_ORIG_CLINICAL_PATH.value.split(os.sep)[-1])
+        log.debug(TheTestFiles.TEST_ORIG_CLINICAL_PATH.split(os.sep)[-1])
         assert len(unique_dataset_names) == 1
-        assert unique_dataset_names[0] == TheTestFiles.TEST_ORIG_CLINICAL_PATH.value.split(os.sep)[-1]
+        assert unique_dataset_names[0] == TheTestFiles.TEST_ORIG_CLINICAL_PATH.split(os.sep)[-1]
 
         log.debug(extract.metadata.to_string())
 
     def test_load_metadata_file_H1_D2(self):
-        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH.value,
-                           data_paths=TheTestFiles.TEST_ORIG_DISEASE_PATH.value,
-                           hospital_name=HospitalNames.TEST_H1.value)
+        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
+                           data_paths=TheTestFiles.TEST_ORIG_DISEASE_PATH,
+                           hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()
 
         log.debug(extract.metadata.columns)
@@ -108,45 +108,45 @@ class TestExtract(unittest.TestCase):
         log.debug(extract.metadata.to_string())
 
         # b. checking the first line completely
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value][2] == "omim"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value][2] == "1245/983"
-        assert not is_not_nan(extract.metadata[MetadataColumns.SEC_ONTOLOGY_SYSTEM.value][2])  # this should be nan as the cell is empty
-        assert not is_not_nan(extract.metadata[MetadataColumns.SEC_ONTOLOGY_CODE.value][2])  # this should be empty too
-        assert extract.metadata[MetadataColumns.COLUMN_NAME.value][2] == "disease_form"  # all lower case, with an underscore
-        assert extract.metadata[MetadataColumns.SIGNIFICATION_EN.value][2] == "The form of the disease"  # kept as it is in the metadata for more clarity
-        assert extract.metadata[MetadataColumns.VAR_TYPE.value][2] == "category"  # all lower case
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM][2] == "omim"
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][2] == "1245/983"
+        assert not is_not_nan(extract.metadata[MetadataColumns.SEC_ONTOLOGY_SYSTEM][2])  # this should be nan as the cell is empty
+        assert not is_not_nan(extract.metadata[MetadataColumns.SEC_ONTOLOGY_CODE][2])  # this should be empty too
+        assert extract.metadata[MetadataColumns.COLUMN_NAME][2] == "disease_form"  # all lower case, with an underscore
+        assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][2] == "The form of the disease"  # kept as it is in the metadata for more clarity
+        assert extract.metadata[MetadataColumns.VAR_TYPE][2] == "category"  # all lower case
         # test JSON values in the second line (disease form)
         # pandas dataframe does not allow json objects, so we have to store them as JSON-like string
         expected_json_values = [{"value": "start", "explanation": "< 1 year", "pubchem": "023468"}, {"value": "middle", "explanation": "1 year <= ... <= 3 years", "pubchem": "203:468"}, {"value": "end", "explanation": "> 3 years", "pubchem": "4097625"}]
-        assert extract.metadata[MetadataColumns.JSON_VALUES.value][2] == json.dumps(expected_json_values)
+        assert extract.metadata[MetadataColumns.JSON_VALUES][2] == json.dumps(expected_json_values)
 
         # c. test the first (Patient ID) line, because there are no ontologies for this one
-        assert extract.metadata[MetadataColumns.COLUMN_NAME.value][0] == "id"  # normalized column name
-        assert extract.metadata[MetadataColumns.SIGNIFICATION_EN.value][0] == "The Patient ID"  # non-normalized description
+        assert extract.metadata[MetadataColumns.COLUMN_NAME][0] == "id"  # normalized column name
+        assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][0] == "The Patient ID"  # non-normalized description
 
         # d. test normalization of ontology codes
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value][1] == "omim"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value][2] == "omim"
-        assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value][0])
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM][1] == "omim"
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM][2] == "omim"
+        assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM][0])
 
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value][1] == "1569-456"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value][2] == "1245/983"
-        assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value][0])
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][1] == "1569-456"
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][2] == "1245/983"
+        assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][0])
 
         # e. more general checks
         # DATASET: this should be the dataset name, and there should be no other datasets in that column
-        unique_dataset_names = list(extract.metadata[MetadataColumns.DATASET_NAME.value].unique())
+        unique_dataset_names = list(extract.metadata[MetadataColumns.DATASET_NAME].unique())
         log.debug(unique_dataset_names)
-        log.debug(TheTestFiles.TEST_ORIG_DISEASE_PATH.value.split(os.sep)[-1])
+        log.debug(TheTestFiles.TEST_ORIG_DISEASE_PATH.split(os.sep)[-1])
         assert len(unique_dataset_names) == 1
-        assert unique_dataset_names[0] == TheTestFiles.TEST_ORIG_DISEASE_PATH.value.split(os.sep)[-1]
+        assert unique_dataset_names[0] == TheTestFiles.TEST_ORIG_DISEASE_PATH.split(os.sep)[-1]
 
         log.debug(extract.metadata.to_string())
 
     def test_load_metadata_file_H3_D1(self):
-        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH.value,
-                           data_paths=TheTestFiles.TEST_ORIG_GENOMICS_PATH.value,
-                           hospital_name=HospitalNames.TEST_H3.value)
+        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
+                           data_paths=TheTestFiles.TEST_ORIG_GENOMICS_PATH,
+                           hospital_name=HospitalNames.TEST_H3)
         extract.load_metadata_file()
 
         log.debug(extract.metadata.columns)
@@ -159,43 +159,43 @@ class TestExtract(unittest.TestCase):
         log.debug(extract.metadata.to_string())
 
         # b. checking the first line completely
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value][2] == "loinc"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value][2] == "3265970"
-        assert not is_not_nan(extract.metadata[MetadataColumns.SEC_ONTOLOGY_SYSTEM.value][2])  # this should be nan as the cell is empty
-        assert not is_not_nan(extract.metadata[MetadataColumns.SEC_ONTOLOGY_CODE.value][2])  # this should be empty too
-        assert extract.metadata[MetadataColumns.COLUMN_NAME.value][2] == "is_inherited"  # all lower case, with an underscore
-        assert extract.metadata[MetadataColumns.SIGNIFICATION_EN.value][2] == "Whether the gene is inherited"  # kept as it is in the metadata for more clarity
-        assert extract.metadata[MetadataColumns.VAR_TYPE.value][2] == "bool"  # all lower case
-        assert not is_not_nan(extract.metadata[MetadataColumns.JSON_VALUES.value][2])
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM][2] == "loinc"
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][2] == "3265970"
+        assert not is_not_nan(extract.metadata[MetadataColumns.SEC_ONTOLOGY_SYSTEM][2])  # this should be nan as the cell is empty
+        assert not is_not_nan(extract.metadata[MetadataColumns.SEC_ONTOLOGY_CODE][2])  # this should be empty too
+        assert extract.metadata[MetadataColumns.COLUMN_NAME][2] == "is_inherited"  # all lower case, with an underscore
+        assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][2] == "Whether the gene is inherited"  # kept as it is in the metadata for more clarity
+        assert extract.metadata[MetadataColumns.VAR_TYPE][2] == "bool"  # all lower case
+        assert not is_not_nan(extract.metadata[MetadataColumns.JSON_VALUES][2])
 
         # c. test the first (Patient ID) line, because there are no ontologies for this one
-        assert extract.metadata[MetadataColumns.COLUMN_NAME.value][0] == "id"  # normalized column name
-        assert extract.metadata[MetadataColumns.SIGNIFICATION_EN.value][0] == "The Patient ID"  # non-normalized description
+        assert extract.metadata[MetadataColumns.COLUMN_NAME][0] == "id"  # normalized column name
+        assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][0] == "The Patient ID"  # non-normalized description
 
         # d. test normalization of ontology codes
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value][1] == "loinc"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value][2] == "loinc"
-        assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value][0])
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM][1] == "loinc"
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM][2] == "loinc"
+        assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM][0])
 
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value][1] == "326597056"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value][2] == "3265970"
-        assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value][0])
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][1] == "326597056"
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][2] == "3265970"
+        assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][0])
 
         # e. more general checks
         # DATASET: this should be the dataset name, and there should be no other datasets in that column
-        unique_dataset_names = list(extract.metadata[MetadataColumns.DATASET_NAME.value].unique())
+        unique_dataset_names = list(extract.metadata[MetadataColumns.DATASET_NAME].unique())
         log.debug(unique_dataset_names)
-        log.debug(TheTestFiles.TEST_ORIG_GENOMICS_PATH.value.split(os.sep)[-1])
+        log.debug(TheTestFiles.TEST_ORIG_GENOMICS_PATH.split(os.sep)[-1])
         assert len(unique_dataset_names) == 1
-        assert unique_dataset_names[0] == TheTestFiles.TEST_ORIG_GENOMICS_PATH.value.split(os.sep)[-1]
+        assert unique_dataset_names[0] == TheTestFiles.TEST_ORIG_GENOMICS_PATH.split(os.sep)[-1]
 
         log.debug(extract.metadata.to_string())
 
     def test_load_data_file_H1_D1(self):
-        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH.value,
-                           data_paths=TheTestFiles.TEST_ORIG_CLINICAL_PATH.value,
-                           hospital_name=HospitalNames.TEST_H1.value)
-        extract.execution.current_filepath = TheTestFiles.TEST_ORIG_CLINICAL_PATH.value  # set the test data as the currently processed file
+        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
+                           data_paths=TheTestFiles.TEST_ORIG_CLINICAL_PATH,
+                           hospital_name=HospitalNames.TEST_H1)
+        extract.execution.current_filepath = TheTestFiles.TEST_ORIG_CLINICAL_PATH  # set the test data as the currently processed file
         extract.load_data_file()
 
         # a. general size checks
@@ -219,10 +219,10 @@ class TestExtract(unittest.TestCase):
         log.debug(extract.data.to_string())
 
     def test_load_data_file_H3_D1(self):
-        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH.value,
-                           data_paths=TheTestFiles.TEST_ORIG_GENOMICS_PATH.value,
-                           hospital_name=HospitalNames.TEST_H3.value)
-        extract.execution.current_filepath = TheTestFiles.TEST_ORIG_GENOMICS_PATH.value  # set the test data as the currently processed file
+        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
+                           data_paths=TheTestFiles.TEST_ORIG_GENOMICS_PATH,
+                           hospital_name=HospitalNames.TEST_H3)
+        extract.execution.current_filepath = TheTestFiles.TEST_ORIG_GENOMICS_PATH  # set the test data as the currently processed file
         extract.load_data_file()
 
         # a. general size checks
@@ -257,9 +257,9 @@ class TestExtract(unittest.TestCase):
         log.debug(extract.data.to_string())
 
     def test_compute_mapped_values(self):
-        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH.value,
-                           data_paths=TheTestFiles.TEST_ORIG_CLINICAL_PATH.value,
-                           hospital_name=HospitalNames.TEST_H1.value)
+        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
+                           data_paths=TheTestFiles.TEST_ORIG_CLINICAL_PATH,
+                           hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()  # required to compute mapped values
         extract.compute_mapped_values()
 
@@ -286,14 +286,14 @@ class TestExtract(unittest.TestCase):
         assert extract.mapped_values["sex"][1]["snomedct"] == "248152002"
 
     def test_removed_unused_columns(self):
-        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH.value,
-                           data_paths=TheTestFiles.TEST_ORIG_CLINICAL_PATH.value,
-                           hospital_name=HospitalNames.TEST_H1.value)
+        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
+                           data_paths=TheTestFiles.TEST_ORIG_CLINICAL_PATH,
+                           hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()
         extract.load_data_file()  # both operations are needed to run the method
         extract.remove_unused_columns()
 
-        log.debug(extract.metadata[MetadataColumns.COLUMN_NAME.value])
+        log.debug(extract.metadata[MetadataColumns.COLUMN_NAME])
 
         # we assert that we get rid of the 'molecule_z' column (because it was not described in the metadata
         # other columns are kept
@@ -305,15 +305,15 @@ class TestExtract(unittest.TestCase):
 
         # we assert that we kept 'molecule_y' column (even though it was not in the data, but still described in the metadata)
         # other columns are kept
-        described_columns = list(extract.metadata[MetadataColumns.COLUMN_NAME.value])
+        described_columns = list(extract.metadata[MetadataColumns.COLUMN_NAME])
         described_columns.sort()
         assert len(described_columns) == 8  # molecule_y has been kept
         assert described_columns == ['date_of_birth', 'ethnicity', 'id', 'molecule_a', 'molecule_b', 'molecule_g', 'molecule_y', 'sex']
 
     def test_compute_mapped_types(self):
-        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH.value,
-                           data_paths=TheTestFiles.TEST_ORIG_CLINICAL_PATH.value,
-                           hospital_name=HospitalNames.TEST_H1.value)
+        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
+                           data_paths=TheTestFiles.TEST_ORIG_CLINICAL_PATH,
+                           hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()  # required to compute mapped types
         extract.load_data_file()  # required to compute mapped types
         extract.remove_unused_columns()  # required to compute mapped types

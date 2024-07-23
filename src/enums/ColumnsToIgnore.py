@@ -1,6 +1,10 @@
-class UpsertPolicy:
-    DO_NOTHING = "DO_NOTHING"
-    REPLACE = "REPLACE"
+from utils.utils import normalize_column_name
+
+
+class ColumnsToIgnore:
+    ID = normalize_column_name("id")
+    LINE = normalize_column_name("line")
+    UNNAMED = normalize_column_name("unnamed")
 
     @classmethod
     def values(cls):

@@ -5,18 +5,18 @@ from utils.utils import normalize_column_name
 NO_ID = "-1"
 
 ID_COLUMNS = {
-    HospitalNames.IT_BUZZI_UC1.value: {
-        TableNames.PATIENT.value: normalize_column_name("id"),
-        TableNames.SAMPLE.value: normalize_column_name("SampleBarcode")
+    HospitalNames.IT_BUZZI_UC1: {
+        TableNames.PATIENT: normalize_column_name("id"),
+        TableNames.SAMPLE: normalize_column_name("SampleBarcode")
     },
-    HospitalNames.TEST_H1.value: {
-        TableNames.PATIENT.value: normalize_column_name("id")
+    HospitalNames.TEST_H1: {
+        TableNames.PATIENT: normalize_column_name("id")
     },
-    HospitalNames.TEST_H2.value: {
-        TableNames.PATIENT.value: normalize_column_name("id")
+    HospitalNames.TEST_H2: {
+        TableNames.PATIENT: normalize_column_name("id")
     },
-    HospitalNames.TEST_H3.value: {
-        TableNames.PATIENT.value: normalize_column_name("id")
+    HospitalNames.TEST_H3: {
+        TableNames.PATIENT: normalize_column_name("id")
     }
 }
 

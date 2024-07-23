@@ -17,7 +17,7 @@ class DiagnosisFeature(Resource):
         :param code: the set of ontology terms (LOINC, ICD, ...) referring to that disease.
         """
         # set up the resource ID
-        super().__init__(id_value=id_value, resource_type=TableNames.DIAGNOSIS_FEATURE.value, counter=counter)
+        super().__init__(id_value=id_value, resource_type=TableNames.DIAGNOSIS_FEATURE, counter=counter)
 
         # set up the resource attributes
         self.code = code

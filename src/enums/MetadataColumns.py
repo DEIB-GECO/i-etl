@@ -1,9 +1,7 @@
-from enum import Enum
-
 from utils.utils import normalize_column_name
 
 
-class MetadataColumns(Enum):
+class MetadataColumns:
     FIRST_ONTOLOGY_SYSTEM = normalize_column_name(column_name="ontology")
     FIRST_ONTOLOGY_CODE = normalize_column_name(column_name="ontology_code")
     FIRST_ONTOLOGY_COMMENT = normalize_column_name(column_name="ontology_comment")
@@ -21,3 +19,11 @@ class MetadataColumns(Enum):
     JSON_VALUES = normalize_column_name(column_name="JSON_values")
     MULTIPLICITY = normalize_column_name(column_name="Multiplicity")
     DOUBTS = normalize_column_name(column_name="Doubts")
+
+    @classmethod
+    def values(cls):
+        xs = []
+        for name, value in vars(cls).items():
+            if not (name.startswith('__') or isinstance(value, classmethod)):
+                xs.append(value)
+        return xs

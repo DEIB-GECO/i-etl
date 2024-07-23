@@ -1,9 +1,8 @@
-from enum import Enum
-
+from utils.setup_logger import log
 from utils.utils import normalize_ontology_system, is_not_nan
 
 
-class Ontologies(Enum):
+class Ontologies:
 
     SNOMEDCT = {"name": normalize_ontology_system("SNOMEDCT"), "url": "http://snomed.info/sct/"}
     LOINC = {"name": normalize_ontology_system("LOINC"), "url": "http://loinc.org"}
@@ -18,9 +17,11 @@ class Ontologies(Enum):
         if not is_not_nan(ontology):
             return None
 
-        for existing_ontology in Ontologies:
-            if existing_ontology.value["name"] == ontology:
-                return existing_ontology.value["url"]  # return the ontology URI associated to that ontology
+        for existing_ontology in Ontologies.values():
+            log.debug(existing_ontology)
+            log.debug(type(existing_ontology))
+            if existing_ontology["name"] == ontology:
+                return existing_ontology["url"]  # return the ontology URI associated to that ontology
         # at the end of the loop, no enum value could match the given ontology
         # thus we need to raise an error
         raise ValueError(f"The given ontology system {ontology} is not known.")
@@ -28,3 +29,11 @@ class Ontologies(Enum):
     @classmethod
     def get_ontology_resource_uri(cls, ontology_system: str, resource_code: str) -> str:
         return ontology_system + "/" + resource_code
+
+    @classmethod
+    def values(cls):
+        xs = []
+        for name, value in vars(cls).items():
+            if not (name.startswith('__') or isinstance(value, classmethod)):
+                xs.append(value)
+        return xs

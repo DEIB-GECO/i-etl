@@ -187,8 +187,8 @@ def cast_value(value: str | float | bool | datetime) -> str | float | bool | dat
 
 
 def get_display(name: str, description: str) -> str:
-    display = name  # row[MetadataColumns.COLUMN_NAME.value]
-    if is_not_nan(description):  # row[MetadataColumns.SIGNIFICATION_EN.value]):
+    display = name  # row[MetadataColumns.COLUMN_NAME]
+    if is_not_nan(description):  # row[MetadataColumns.SIGNIFICATION_EN]):
         # by default the display is the variable name
         # if we also have a description, we append it to the display
         # e.g., "BTD (human biotinidase activity)"

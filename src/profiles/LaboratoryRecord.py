@@ -20,6 +20,6 @@ class LaboratoryRecord(Record):
         """
         # set up the resource ID
         super().__init__(id_value=id_value, feature_ref=examination_ref, subject_ref=subject_ref, hospital_ref=hospital_ref,
-                         value=value, resource_type=TableNames.LABORATORY_RECORD.value, counter=counter)
+                         value=value, resource_type=TableNames.LABORATORY_RECORD, counter=counter)
         # set up specific attributes for lab records
         self.based_on = sample_ref

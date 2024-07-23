@@ -1,9 +1,7 @@
-from enum import Enum
-
 from utils.utils import normalize_column_name
 
 
-class SampleColumns(Enum):
+class SampleColumns:
     SAMPLE_BAR_CODE = normalize_column_name(column_name="SampleBarcode")
     SAMPLING = normalize_column_name(column_name="Sampling")
     SAMPLE_QUALITY = normalize_column_name(column_name="SampleQuality")
@@ -14,4 +12,8 @@ class SampleColumns(Enum):
 
     @classmethod
     def values(cls):
-        return list(map(lambda c: c.value, cls))
+        xs = []
+        for name, value in vars(cls).items():
+            if not (name.startswith('__') or isinstance(value, classmethod)):
+                xs.append(value)
+        return xs

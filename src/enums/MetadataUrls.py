@@ -1,7 +1,4 @@
-from enum import Enum
-
-
-class MetadataUrls(Enum):
+class MetadataUrls:
     # use-case 1
     BUZZI_UC1 = "https://docs.google.com/spreadsheets/d/1zEpf8UU8vEQar-Y6L3YMBG8ekLoA6_DM/"
     IMGGE = "https://docs.google.com/spreadsheets/d/1pbVXUSI8SVonQ2yskZ1Urlue0qBq-grV/"
@@ -13,3 +10,11 @@ class MetadataUrls(Enum):
     BUZZI_UC3 = "https://docs.google.com/spreadsheets/d/15H_ly3ZSFX18gcGktzONthcKlY-O1EG8/"
     TERRASSA = "https://docs.google.com/spreadsheets/d/15H_ly3ZSFX18gcGktzONthcKlY-O1EG8/"
     UKK = "https://docs.google.com/spreadsheets/d/15H_ly3ZSFX18gcGktzONthcKlY-O1EG8/"
+
+    @classmethod
+    def values(cls):
+        xs = []
+        for name, value in vars(cls).items():
+            if not (name.startswith('__') or isinstance(value, classmethod)):
+                xs.append(value)
+        return xs

@@ -1,8 +1,7 @@
 import os
-from enum import Enum
 
 
-class TheTestFiles(Enum):
+class TheTestFiles:
     # original files for the Extract step
     TEST_ORIG_METADATA_PATH = os.path.join("datasets", "test", "test-orig-metadata.csv")  # this describes several hospitals, several datasets per hospitals, etc
     TEST_ORIG_CLINICAL_PATH = os.path.join("datasets", "test", "test-orig-clinical-data.csv")
@@ -23,5 +22,10 @@ class TheTestFiles(Enum):
     TEST_EXTR_CLINICAL_MAPPED_PATH = os.path.join("datasets", "test", "test-extr-mapped-values-clinical-data.json")
     TEST_EXTR_GENOMICS_MAPPED_PATH = os.path.join("datasets", "test", "test-extr-mapped-values-genomics-data.json")
 
-    # files obtained after the Transform step
-    # used for the Load step
+    @classmethod
+    def values(cls):
+        xs = []
+        for name, value in vars(cls).items():
+            if not (name.startswith('__') or isinstance(value, classmethod)):
+                xs.append(value)
+        return xs

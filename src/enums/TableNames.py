@@ -1,7 +1,4 @@
-from enum import Enum
-
-
-class TableNames(Enum):
+class TableNames:
     HOSPITAL = "Hospital"
     PATIENT = "Patient"
     LABORATORY_FEATURE = "LaboratoryFeature"
@@ -17,3 +14,11 @@ class TableNames(Enum):
     IMAGING_RECORD = "ImagingRecord"
     EXECUTION = "Execution"
     TEST = "Test"
+
+    @classmethod
+    def values(cls):
+        xs = []
+        for name, value in vars(cls).items():
+            if not (name.startswith('__') or isinstance(value, classmethod)):
+                xs.append(value)
+        return xs

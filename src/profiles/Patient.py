@@ -14,4 +14,4 @@ class Patient(Resource):
         This ID is shared by the different patent sample, and SHOULD be shared by the hospitals.
         """
         # set up the resource ID
-        super().__init__(id_value=id_value, resource_type=TableNames.PATIENT.value, counter=counter)
+        super().__init__(id_value=id_value, resource_type=TableNames.PATIENT, counter=counter)

@@ -31,13 +31,13 @@ def my_setup(create_indexes: bool) -> Load:
             "identifier": {"value": "1"},
             "code": {
                 "text": "age (Age in weeks)",
-                "coding": [{"system": Ontologies.LOINC.value["url"], "code": "123-456", "display": "age (Age in weeks)"}]},
+                "coding": [{"system": Ontologies.LOINC["url"], "code": "123-456", "display": "age (Age in weeks)"}]},
             "timestamp": get_mongodb_date_from_datetime(current_datetime=datetime.now())
         }, {
             "identifier": {"value": "2"},
             "code": {
                 "text": "twin (Whether the baby has a twin)",
-                "coding": [{"system": Ontologies.LOINC.value["url"], "code": "123-457", "display": "twin (Whether the baby has a twin)"}]},
+                "coding": [{"system": Ontologies.LOINC["url"], "code": "123-457", "display": "twin (Whether the baby has a twin)"}]},
             "timestamp": get_mongodb_date_from_datetime(current_datetime=datetime.now())
         }
     ]
@@ -46,9 +46,9 @@ def my_setup(create_indexes: bool) -> Load:
         {
             "identifier": {"value": "1"},
             "value": 12,
-            "subject": {"reference": "1", "type": TableNames.PATIENT.value},
-            "recorded_by": {"reference": "1", "type": TableNames.HOSPITAL.value},
-            "instantiate": {"reference": "1", "type": TableNames.LABORATORY_FEATURE.value},
+            "subject": {"reference": "1", "type": TableNames.PATIENT},
+            "recorded_by": {"reference": "1", "type": TableNames.HOSPITAL},
+            "instantiate": {"reference": "1", "type": TableNames.LABORATORY_FEATURE},
             "timestamp": get_mongodb_date_from_datetime(current_datetime=datetime.now())
         }
     ]
@@ -59,20 +59,20 @@ def my_setup(create_indexes: bool) -> Load:
         {"identifier": {"value": "3"}, "timestamp": get_mongodb_date_from_datetime(current_datetime=datetime.now())}
     ]
 
-    hospital = {"identifier": {"value": "1"}, "name": HospitalNames.TEST_H1.value}
+    hospital = {"identifier": {"value": "1"}, "name": HospitalNames.TEST_H1}
 
     # 3. write them in temporary JSON files
-    path_examinations = os.path.join(TestLoad.execution.working_dir_current, TableNames.LABORATORY_FEATURE.value+"1.json")
-    path_examination_records = os.path.join(TestLoad.execution.working_dir_current, TableNames.LABORATORY_RECORD.value+"1.json")
-    path_patients = os.path.join(TestLoad.execution.working_dir_current, TableNames.PATIENT.value+"1.json")
-    path_hospital = os.path.join(TestLoad.execution.working_dir_current, TableNames.HOSPITAL.value+"1.json")
+    path_examinations = os.path.join(TestLoad.execution.working_dir_current, TableNames.LABORATORY_FEATURE+"1.json")
+    path_examination_records = os.path.join(TestLoad.execution.working_dir_current, TableNames.LABORATORY_RECORD+"1.json")
+    path_patients = os.path.join(TestLoad.execution.working_dir_current, TableNames.PATIENT+"1.json")
+    path_hospital = os.path.join(TestLoad.execution.working_dir_current, TableNames.HOSPITAL+"1.json")
     # insert the data that is inserted during the Transform step
     with open(path_examinations, 'w') as f:
         json.dump(examinations, f)
-    load.database.db[TableNames.LABORATORY_FEATURE.value].insert_many(examinations)
+    load.database.db[TableNames.LABORATORY_FEATURE].insert_many(examinations)
     with open(path_hospital, 'w') as f:
         json.dump(hospital, f)
-    load.database.db[TableNames.HOSPITAL.value].insert_one(hospital)
+    load.database.db[TableNames.HOSPITAL].insert_one(hospital)
     # for other files, it will be inserted with the function load_remaining_data()
     with open(path_examination_records, 'w') as f:
         json.dump(examination_records, f)
@@ -92,11 +92,11 @@ class TestLoad(unittest.TestCase):
         load = my_setup(create_indexes=True)
         load.load_remaining_data()
 
-        assert load.database.db[TableNames.PATIENT.value].count_documents(filter={}) == 3
-        assert load.database.db[TableNames.LABORATORY_FEATURE.value].count_documents(filter={}) == 2
-        assert load.database.db[TableNames.LABORATORY_RECORD.value].count_documents(filter={}) == 1
-        assert load.database.db[TableNames.HOSPITAL.value].count_documents(filter={}) == 1
-        assert load.database.db[TableNames.SAMPLE.value].count_documents(filter={}) == 0
+        assert load.database.db[TableNames.PATIENT].count_documents(filter={}) == 3
+        assert load.database.db[TableNames.LABORATORY_FEATURE].count_documents(filter={}) == 2
+        assert load.database.db[TableNames.LABORATORY_RECORD].count_documents(filter={}) == 1
+        assert load.database.db[TableNames.HOSPITAL].count_documents(filter={}) == 1
+        assert load.database.db[TableNames.SAMPLE].count_documents(filter={}) == 0
 
     def test_create_db_indexes(self):
         load = my_setup(create_indexes=True)
@@ -106,8 +106,8 @@ class TestLoad(unittest.TestCase):
         #    - one on _id (mandatory, made by MongoDB)
         #    - one on identifier.value
         #    - one on timestamp
-        for table_name in TableNames:
-            index_cursor = load.database.db[table_name.value].list_indexes()
+        for table_name in TableNames.values():
+            index_cursor = load.database.db[table_name].list_indexes()
             print("\nindex_cursor:", index_cursor)
             count_indexes = 0
             # indexes are of the form
@@ -126,14 +126,14 @@ class TestLoad(unittest.TestCase):
                     else:
                         assert "unique" not in index
                 else:
-                    if table_name.value == TableNames.LABORATORY_FEATURE.value:
+                    if table_name == TableNames.LABORATORY_FEATURE:
                         # there is also a double indexes (code.coding.system and code.coding.code)
                         if "code.coding.system" in index_key and "code.coding.code" in index_key:
                             count_indexes = count_indexes + 1
                             assert "unique" not in index
                         else:
                             assert False, f"{table_name.value} expects a compound index on two fields."
-                    elif table_name.value == TableNames.LABORATORY_RECORD.value:
+                    elif table_name == TableNames.LABORATORY_RECORD:
                         # there are also three more indexes (instantiate.reference, subject.reference, based_on.reference)
                         if "instantiate.reference" in index_key:
                             count_indexes = count_indexes + 1
@@ -148,9 +148,9 @@ class TestLoad(unittest.TestCase):
                             assert False, f"{table_name.value} has an unknown index named {index_key}."
                     else:
                         assert False, f"{table_name.value} should have no index."
-            if table_name.value == TableNames.LABORATORY_FEATURE.value:
+            if table_name == TableNames.LABORATORY_FEATURE:
                 assert count_indexes == 4
-            elif table_name.value == TableNames.LABORATORY_RECORD.value:
+            elif table_name == TableNames.LABORATORY_RECORD:
                 assert count_indexes == 6
             else:
                 assert count_indexes == 3

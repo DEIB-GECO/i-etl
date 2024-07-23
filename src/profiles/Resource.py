@@ -20,7 +20,7 @@ class Resource:
         """
         self.identifier = None  # change the FHIR model to have an identifier which is simply a string
         if id_value == constants.NO_ID:
-            if resource_type == TableNames.PATIENT.value or resource_type == TableNames.SAMPLE.value:
+            if resource_type == TableNames.PATIENT or resource_type == TableNames.SAMPLE:
                 # Patient instances should always have an ID (given by the hospitals)
                 # this may contain chars, so we need to keep them as strings
                 raise ValueError("Patient and Sample instances should have an ID.")

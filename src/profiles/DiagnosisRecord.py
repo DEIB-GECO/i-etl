@@ -11,4 +11,4 @@ class DiagnosisRecord(Record):
                  disease_ref: Reference, value: Any, counter: Counter):
         # set up the resource ID
         super().__init__(id_value=id_value, feature_ref=disease_ref, subject_ref=subject_ref, hospital_ref=hospital_ref,
-                         resource_type=TableNames.DIAGNOSIS_RECORD.value, value=value, counter=counter)
+                         resource_type=TableNames.DIAGNOSIS_RECORD, value=value, counter=counter)

@@ -40,9 +40,9 @@ class VariableAnalysis:
     def compute_nb_categorical_features_without_mapping(self):
         self.nb_categorical_features_without_mapping = 0
         for index, metadata_variable in self.metadata.iterrows():
-            if metadata_variable[MetadataColumns.VAR_TYPE.value] == "category":
-                if not is_not_nan(metadata_variable[MetadataColumns.JSON_VALUES.value]):
-                    log.debug(f"{metadata_variable[MetadataColumns.COLUMN_NAME.value]}")
+            if metadata_variable[MetadataColumns.VAR_TYPE] == "category":
+                if not is_not_nan(metadata_variable[MetadataColumns.JSON_VALUES]):
+                    log.debug(f"{metadata_variable[MetadataColumns.COLUMN_NAME]}")
                     self.nb_categorical_features_without_mapping += 1
                 self.total_nb_categorical_features += 1
         self.ratio_categorical_feature_with_no_mapping = self.nb_categorical_features_without_mapping / self.total_nb_categorical_features

@@ -126,7 +126,7 @@ def main_to_snake_case():
     print(to_snake_case(" Molecule_A"))
     print(to_snake_case(" Nelly "))
     print(to_snake_case(" Nel ly "))
-    print(normalize_hospital_name(HospitalNames.IT_BUZZI_UC1.value))
+    print(normalize_hospital_name(HospitalNames.IT_BUZZI_UC1))
 
 
 def main_read_pandas_csv():

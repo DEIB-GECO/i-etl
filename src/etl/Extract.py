@@ -64,7 +64,7 @@ class Extract:
         nb_hospitals_in_columns = 0
         for column_name in self.metadata.columns:
             normalized_hospital_name = normalize_hospital_name(hospital_name=column_name)
-            if normalized_hospital_name in HospitalNames:
+            if normalized_hospital_name in HospitalNames.values():
                 # this column is labelled with a hospital name
                 # and indicates whether the associated variables are present in the UC
                 nb_hospitals_in_columns = nb_hospitals_in_columns + 1
@@ -77,7 +77,7 @@ class Extract:
             # there are more than one hospital described in this metadata
             # a. we filter the unnecessary hospital columns (for UC2 and UC3 there are several hospitals in the same metadata file)
             columns_to_keep = []
-            columns_to_keep.extend([normalize_column_name(column_name=meta_variable.value) for meta_variable in MetadataColumns])
+            columns_to_keep.extend([normalize_column_name(column_name=meta_variable) for meta_variable in MetadataColumns.values()])
             columns_to_keep.append(normalize_hospital_name(self.execution.hospital_name))
             log.debug(f"{self.metadata.columns}")
             log.debug(f"{columns_to_keep}")
@@ -97,26 +97,26 @@ class Extract:
         filename = os.path.basename(self.execution.clinical_filepaths[0]).lower()
         log.debug(f"{filename}")
         log.debug(f"{self.metadata.to_string()}")
-        log.debug(f"{self.metadata[MetadataColumns.DATASET_NAME.value].unique()}")
-        if filename not in self.metadata[MetadataColumns.DATASET_NAME.value.lower()].unique():
+        log.debug(f"{self.metadata[MetadataColumns.DATASET_NAME].unique()}")
+        if filename not in self.metadata[MetadataColumns.DATASET_NAME.lower()].unique():
             raise ValueError(f"The current dataset ({filename}) is not described in the provided metadata file.")
         else:
-            self.metadata = self.metadata[self.metadata[MetadataColumns.DATASET_NAME.value] == filename]
+            self.metadata = self.metadata[self.metadata[MetadataColumns.DATASET_NAME] == filename]
         # log.debug(self.metadata.to_string())
 
         # normalize ontology system names and codes
-        self.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value] = self.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM.value].apply(lambda value: normalize_ontology_system(ontology_system=value))
-        self.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value] = self.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE.value].apply(lambda value: normalize_ontology_code(ontology_code=value))
-        self.metadata[MetadataColumns.SEC_ONTOLOGY_SYSTEM.value] = self.metadata[MetadataColumns.SEC_ONTOLOGY_SYSTEM.value].apply(lambda value: normalize_ontology_system(ontology_system=value))
-        self.metadata[MetadataColumns.SEC_ONTOLOGY_CODE.value] = self.metadata[MetadataColumns.SEC_ONTOLOGY_CODE.value].apply(lambda value: normalize_ontology_code(ontology_code=value))
+        self.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM] = self.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM].apply(lambda value: normalize_ontology_system(ontology_system=value))
+        self.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE] = self.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE].apply(lambda value: normalize_ontology_code(ontology_code=value))
+        self.metadata[MetadataColumns.SEC_ONTOLOGY_SYSTEM] = self.metadata[MetadataColumns.SEC_ONTOLOGY_SYSTEM].apply(lambda value: normalize_ontology_system(ontology_system=value))
+        self.metadata[MetadataColumns.SEC_ONTOLOGY_CODE] = self.metadata[MetadataColumns.SEC_ONTOLOGY_CODE].apply(lambda value: normalize_ontology_code(ontology_code=value))
         # log.debug(self.metadata.to_string())
 
         # we also normalize column names described in the metadata, inc. "sex", "dateOfBirth", "Ethnicity", etc
-        self.metadata[MetadataColumns.COLUMN_NAME.value] = self.metadata[MetadataColumns.COLUMN_NAME.value].apply(lambda x: normalize_column_name(column_name=x))
+        self.metadata[MetadataColumns.COLUMN_NAME] = self.metadata[MetadataColumns.COLUMN_NAME].apply(lambda x: normalize_column_name(column_name=x))
         # log.debug(self.metadata.to_string())
 
         # normalize the var_type
-        self.metadata[MetadataColumns.VAR_TYPE.value] = self.metadata[MetadataColumns.VAR_TYPE.value].apply(lambda x: normalize_var_type(var_type=x))
+        self.metadata[MetadataColumns.VAR_TYPE] = self.metadata[MetadataColumns.VAR_TYPE].apply(lambda x: normalize_var_type(var_type=x))
         # log.debug(self.metadata.to_string())
 
         # normalize the dict of accepted JSON values
@@ -127,9 +127,9 @@ class Extract:
         # Note: we cannot simply add brackets around the dicts because it would add a string with the dicts in the list
         # we cannot either use json.loads on row["JSON_values"] because it is not parsable (it lacks the brackets)
         for index, row in self.metadata.iterrows():
-            if is_not_nan(row[MetadataColumns.JSON_VALUES.value]):
+            if is_not_nan(row[MetadataColumns.JSON_VALUES]):
                 values_dicts = []
-                json_dicts = re.split('}, {', row[MetadataColumns.JSON_VALUES.value])
+                json_dicts = re.split('}, {', row[MetadataColumns.JSON_VALUES])
                 for json_dict in json_dicts:
                     if not json_dict.startswith("{"):
                         json_dict = "{" + json_dict
@@ -155,7 +155,7 @@ class Extract:
                             ontology_code = normalize_ontology_code(ontology_code=the_json_dict[json_dict_keys[a_key]])
                             normalized_json_dict[ontology_system] = ontology_code
                     values_dicts.append(normalized_json_dict)
-                self.metadata.loc[index, MetadataColumns.JSON_VALUES.value] = json.dumps(values_dicts)  # set the new JSON values as a string (required by pandas)
+                self.metadata.loc[index, MetadataColumns.JSON_VALUES] = json.dumps(values_dicts)  # set the new JSON values as a string (required by pandas)
         # log.debug(self.metadata.to_string())
 
         # reindex the remaining metadata rows, starting from 0
@@ -182,9 +182,9 @@ class Extract:
         # they will be cast to the right type (int, float, datetime) in the Transform step
         # issue 113: we do not normalize identifiers assigned by hospitals to avoid discrepancies
         columns_no_normalization = []
-        columns_no_normalization.append(ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT.value])
-        if TableNames.SAMPLE.value in ID_COLUMNS[self.execution.hospital_name]:
-            columns_no_normalization.append(ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE.value])
+        columns_no_normalization.append(ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT])
+        if TableNames.SAMPLE in ID_COLUMNS[self.execution.hospital_name]:
+            columns_no_normalization.append(ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE])
 
         for column in self.data:
             if column not in columns_no_normalization:
@@ -199,7 +199,7 @@ class Extract:
         # for this, we get the union of both sets and remove the columns that are not described in the metadata
         log.debug(self.metadata.to_string())
         data_columns = list(self.data.columns)
-        columns_described_in_metadata = list(self.metadata[MetadataColumns.COLUMN_NAME.value])
+        columns_described_in_metadata = list(self.metadata[MetadataColumns.COLUMN_NAME])
         variables_to_keep = []
         variables_to_keep.extend(data_columns)
         variables_to_keep.extend(columns_described_in_metadata)
@@ -226,18 +226,18 @@ class Extract:
         self.mapped_values = {}
 
         for index, row in self.metadata.iterrows():
-            if is_not_nan(row[MetadataColumns.JSON_VALUES.value]):
-                current_dicts = json.loads(row[MetadataColumns.JSON_VALUES.value])
+            if is_not_nan(row[MetadataColumns.JSON_VALUES]):
+                current_dicts = json.loads(row[MetadataColumns.JSON_VALUES])
                 parsed_dicts = []
                 for current_dict in current_dicts:
                     # if we can convert the JSON value to a float or an int, we do it, otherwise we let it as a string
                     current_dict["value"] = normalize_column_value(column_value=current_dict["value"])
                     # if we can also convert the snomed_ct / loinc code, we do it
                     # TODO Nelly: loop on all ontologies known in OntologyNames
-                    if Ontologies.SNOMEDCT.value["name"] in current_dict:
-                        current_dict[Ontologies.SNOMEDCT.value["name"]] = normalize_ontology_code(ontology_code=current_dict[Ontologies.SNOMEDCT.value["name"]])
-                    if Ontologies.LOINC.value["name"] in current_dict:
-                        current_dict[Ontologies.LOINC.value["name"]] = normalize_ontology_code(ontology_code=current_dict[Ontologies.LOINC.value["name"]])
+                    if Ontologies.SNOMEDCT["name"] in current_dict:
+                        current_dict[Ontologies.SNOMEDCT["name"]] = normalize_ontology_code(ontology_code=current_dict[Ontologies.SNOMEDCT["name"]])
+                    if Ontologies.LOINC["name"] in current_dict:
+                        current_dict[Ontologies.LOINC["name"]] = normalize_ontology_code(ontology_code=current_dict[Ontologies.LOINC["name"]])
                     parsed_dicts.append(current_dict)
                 self.mapped_values[row["name"]] = parsed_dicts
         log.debug(f"{self.mapped_values}")
@@ -246,9 +246,9 @@ class Extract:
         self.mapped_types = {}
 
         for index, row in self.metadata.iterrows():
-            if is_not_nan(row[MetadataColumns.VAR_TYPE.value]):
+            if is_not_nan(row[MetadataColumns.VAR_TYPE]):
                 # we associate the column name to its expected type
-                self.mapped_types[row[MetadataColumns.COLUMN_NAME.value]] = row[MetadataColumns.VAR_TYPE.value]
+                self.mapped_types[row[MetadataColumns.COLUMN_NAME]] = row[MetadataColumns.VAR_TYPE]
         log.debug(f"{self.mapped_types}")
 
     def run_value_analysis(self) -> None:

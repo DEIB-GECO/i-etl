@@ -98,7 +98,7 @@ class Database:
         _ = self._db[table_name].insert_many(tuples, ordered=False)
 
     def create_update_stmt(self, the_tuple: dict):
-        if self._execution.db_upsert_policy == UpsertPolicy.DO_NOTHING.value:
+        if self._execution.db_upsert_policy == UpsertPolicy.DO_NOTHING:
             # insert the document if it does not exist
             # otherwise, do nothing
             return {"$setOnInsert": the_tuple}
@@ -262,7 +262,7 @@ class Database:
         to that examination url.
         :return: A float value being the average value for the given examination url.
         """
-        cursor = self._db[TableNames.LABORATORY_RECORD.value].aggregate([
+        cursor = self._db[TableNames.LABORATORY_RECORD].aggregate([
             mongodb_match(field="instantiate.reference", value=examination_url, is_regex=False),
             mongodb_project_one(field="value", projected_value=None),
             mongodb_group_by(group_key=None, group_by_name="avg_val", operator="$avg", field="$value")
@@ -288,16 +288,16 @@ class Database:
             mongodb_sort(field="_id", sort_order=1)
         ]
         # .collation({"locale": "en_US", "numericOrdering": "true"})
-        return self._db[TableNames.LABORATORY_RECORD.value].aggregate(pipeline)
+        return self._db[TableNames.LABORATORY_RECORD].aggregate(pipeline)
 
     def get_max_resource_counter_id(self) -> int:
         max_value = -1
-        for table_name in TableNames:
-            if table_name.value == TableNames.PATIENT.value or table_name.value == TableNames.SAMPLE.value:
+        for table_name in TableNames.values():
+            if table_name == TableNames.PATIENT or table_name == TableNames.SAMPLE:
                 # pass because Patient and Sample resources have their ID assigned by hospitals, not the FAIRificator
                 pass
             else:
-                current_max_identifier = self.get_max_value(table_name=table_name.value, field="identifier.value")
+                current_max_identifier = self.get_max_value(table_name=table_name, field="identifier.value")
                 if current_max_identifier is not None:
                     try:
                         current_max_identifier = int(current_max_identifier)

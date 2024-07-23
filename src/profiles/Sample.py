@@ -11,7 +11,7 @@ class Sample(Resource):
                  too_young: bool, bis: bool, counter: Counter):
         # set up the resource ID
         # this corresponds to the SampleBarcode in Buzzi data
-        super().__init__(id_value=id_value, resource_type=TableNames.SAMPLE.value, counter=counter)
+        super().__init__(id_value=id_value, resource_type=TableNames.SAMPLE, counter=counter)
 
         # set up the resource attributes
         self.sampling = sampling
