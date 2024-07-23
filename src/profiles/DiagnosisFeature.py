@@ -7,7 +7,7 @@ from enums.TableNames import TableNames
 from utils.utils import get_mongodb_date_from_datetime
 
 
-class Disease(Resource):
+class DiagnosisFeature(Resource):
     def __init__(self, id_value: str, code: CodeableConcept, counter: Counter):
         """
         Create a new Disease instance.
@@ -17,7 +17,7 @@ class Disease(Resource):
         :param code: the set of ontology terms (LOINC, ICD, ...) referring to that disease.
         """
         # set up the resource ID
-        super().__init__(id_value=id_value, resource_type=TableNames.DISEASE.value, counter=counter)
+        super().__init__(id_value=id_value, resource_type=TableNames.DIAGNOSIS_FEATURE.value, counter=counter)
 
         # set up the resource attributes
         self.code = code

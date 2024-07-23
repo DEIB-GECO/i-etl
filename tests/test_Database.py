@@ -611,22 +611,23 @@ class TestDatabase(unittest.TestCase):
         assert min_value == -10, "The expected minimum value is -10."
         assert max_value == -0.2, "The expected maximum value is -0.2."
 
-    def test_set_max_resource_counter_id(self):
+    def test_get_max_resource_counter_id(self):
         database = Database(TestDatabase.execution)
         my_resources_1 = [
-            { "identifier": {"value": 1}, "name": "Anna"},
-            { "identifier": {"value": 4}, "name": "Julien"},
-            { "identifier": {"value": 10}, "name": "Nelly"},
+            {"identifier": {"value": "1"}, "name": "Anna"},
+            {"identifier": {"value": "4"}, "name": "Julien"},
+            {"identifier": {"value": "999"}, "name": "Nelly"},
         ]
         my_resources_2 = [
-            {"identifier": {"value": 2}, "name": "Anna"},
-            {"identifier": {"value": 8}, "name": "Julien"},
-            {"identifier": {"value": 100}, "name": "Nelly"},
+            {"identifier": {"value": "2"}, "name": "Anna"},
+            {"identifier": {"value": "8"}, "name": "Julien"},
+            {"identifier": {"value": "100"}, "name": "Nelly"},
+            {"identifier": {"value": "1000b"}, "name": "Pietro"},
         ]
-        # as an exception, we insert into EXMAMINATION_RECORD, not in TableNames.TEST.value,
+        # as an exception, we insert into LABORATORY_RECORD, not in TableNames.TEST.value,
         # because the method is made to set up resource counter and is expected to work on the
         # TableNames table names only
-        database.db[TableNames.EXAMINATION_RECORD.value].insert_many(documents=my_resources_1)
-        database.db[TableNames.EXAMINATION.value].insert_many(documents=my_resources_2)
+        database.db[TableNames.LABORATORY_RECORD.value].insert_many(documents=my_resources_1)
+        database.db[TableNames.LABORATORY_FEATURE.value].insert_many(documents=my_resources_2)
         max_resource_id = database.get_max_resource_counter_id()
-        assert max_resource_id == 100, "The expected max resource id is 100."
+        assert max_resource_id == 999, "The expected max resource id is 999."

@@ -10,8 +10,8 @@ from datatypes.Coding import Coding
 from datatypes.Identifier import Identifier
 from datatypes.Reference import Reference
 from enums.SampleColumns import SampleColumns
-from profiles.Examination import Examination
-from profiles.ExaminationRecord import ExaminationRecord
+from profiles.LaboratoryFeature import LaboratoryFeature
+from profiles.LaboratoryRecord import LaboratoryRecord
 from profiles.Hospital import Hospital
 from profiles.Patient import Patient
 from profiles.Sample import Sample
@@ -56,7 +56,7 @@ class Transform:
         self.create_hospital(hospital_name=self.execution.hospital_name)
         log.info(f"Hospital count: {self.database.count_documents(table_name=TableNames.HOSPITAL.value, filter_dict={})}")
         self.create_examinations()
-        log.info(f"Examination count: {self.database.count_documents(table_name=TableNames.EXAMINATION.value, filter_dict={})}")
+        log.info(f"Examination count: {self.database.count_documents(table_name=TableNames.LABORATORY_FEATURE.value, filter_dict={})}")
         self.create_samples()
         self.create_patients()
         self.create_examination_records()
@@ -87,11 +87,11 @@ class Transform:
                     # we still add the codeable_concept as an examination
                     # but, it will have only the text (such as "BIS", or "TooYoung") and no associated codings
                     category = Transform.determine_examination_category(column_name=column_name)
-                    new_examination = Examination(id_value=NO_ID, code=cc, category=category, permitted_datatype="", counter=self.counter)
+                    new_examination = LaboratoryFeature(id_value=NO_ID, code=cc, category=category, permitted_datatype="", counter=self.counter)
                     log.info("adding a new examination about %s: %s", cc.text, new_examination)
                     self.examinations.append(new_examination)
                     if len(self.examinations) >= BATCH_SIZE:
-                        write_in_file(resource_list=self.examinations, current_working_dir=self.execution.working_dir_current, table_name=TableNames.EXAMINATION.value, count=count)
+                        write_in_file(resource_list=self.examinations, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_FEATURE.value, count=count)
                         self.examinations = []
                         count = count + 1
                 else:
@@ -101,8 +101,8 @@ class Transform:
             else:
                 log.debug(f"I am skipping column {column_name} because it has been marked as not being part of examination instances.")
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
-        write_in_file(resource_list=self.examinations, current_working_dir=self.execution.working_dir_current, table_name=TableNames.EXAMINATION.value, count=count)
-        self.database.load_json_in_table(table_name=TableNames.EXAMINATION.value, unique_variables=["code"])
+        write_in_file(resource_list=self.examinations, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_FEATURE.value, count=count)
+        self.database.load_json_in_table(table_name=TableNames.LABORATORY_FEATURE.value, unique_variables=["code"])
 
     def create_samples(self) -> None:
         if ID_COLUMNS[HospitalNames.IT_BUZZI_UC1.value][TableNames.SAMPLE.value] in self.data.columns:
@@ -142,7 +142,7 @@ class Transform:
         self.mapping_hospital_to_hospital_id = self.database.retrieve_identifiers(table_name=TableNames.HOSPITAL.value, projection="name")
         log.debug(f"{self.mapping_hospital_to_hospital_id}")
 
-        self.mapping_column_to_examination_id = self.database.retrieve_identifiers(table_name=TableNames.EXAMINATION.value, projection="code.text")
+        self.mapping_column_to_examination_id = self.database.retrieve_identifiers(table_name=TableNames.LABORATORY_FEATURE.value, projection="code.text")
         log.debug(f"{self.mapping_column_to_examination_id}")
 
         # b. Create ExaminationRecord instance, and write them in temporary (JSON) files
@@ -159,7 +159,7 @@ class Transform:
                         # log.info("I know a code for column %s", column_name)
                         # we know a code for this column, so we can register the value of that examination
                         examination_id = self.mapping_column_to_examination_id[column_name]
-                        examination_ref = Reference(resource_identifier=examination_id, resource_type=TableNames.EXAMINATION.value)
+                        examination_ref = Reference(resource_identifier=examination_id, resource_type=TableNames.LABORATORY_FEATURE.value)
                         hospital_id = self.mapping_hospital_to_hospital_id[self.execution.hospital_name]
                         hospital_ref = Reference(resource_identifier=hospital_id, resource_type=TableNames.HOSPITAL.value)
                         # for patient and sample instances, no need to go through a mapping because they have an ID assigned by the hospital
@@ -177,13 +177,13 @@ class Transform:
                             sample_ref = Reference(resource_identifier=sample_id.value, resource_type=TableNames.SAMPLE.value)
                         # TODO Nelly: we could even clean more the data, e.g., do not allow "Italy" as ethnicity (caucasian, etc)
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
-                        new_examination_record = ExaminationRecord(id_value=NO_ID, examination_ref=examination_ref,
-                                                                   subject_ref=patient_ref, hospital_ref=hospital_ref,
-                                                                   sample_ref=sample_ref, value=fairified_value,
-                                                                   counter=self.counter)
+                        new_examination_record = LaboratoryRecord(id_value=NO_ID, examination_ref=examination_ref,
+                                                                  subject_ref=patient_ref, hospital_ref=hospital_ref,
+                                                                  sample_ref=sample_ref, value=fairified_value,
+                                                                  counter=self.counter)
                         self.examination_records.append(new_examination_record)
                         if len(self.examination_records) >= BATCH_SIZE:
-                            write_in_file(resource_list=self.examination_records, current_working_dir=self.execution.working_dir_current, table_name=TableNames.EXAMINATION_RECORD.value, count=count)
+                            write_in_file(resource_list=self.examination_records, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_RECORD.value, count=count)
                             # no need to load ExaminationRecords instances because they are never referenced
                             self.examination_records = []
                             count = count + 1
@@ -192,7 +192,7 @@ class Transform:
                         # this represents the case when a column has not been converted to an Examination resource
                         pass
 
-        write_in_file(resource_list=self.examination_records, current_working_dir=self.execution.working_dir_current, table_name=TableNames.EXAMINATION_RECORD.value, count=count)
+        write_in_file(resource_list=self.examination_records, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_RECORD.value, count=count)
 
     def create_patients(self) -> None:
         log.info(f"create patient instances in memory")
@@ -249,7 +249,7 @@ class Transform:
         else:
             ontology = Ontologies.get_ontology_system(ontology=ontology)  # get the URI of the ontology system instead of its string name
             code = normalize_ontology_code(ontology_code=row[code_column])  # get the ontology code in the metadata for the given column and normalize it (just in case)
-            display = Examination.get_display(column_name=row[MetadataColumns.COLUMN_NAME.value], column_description=row[MetadataColumns.SIGNIFICATION_EN.value])
+            display = LaboratoryFeature.get_display(column_name=row[MetadataColumns.COLUMN_NAME.value], column_description=row[MetadataColumns.SIGNIFICATION_EN.value])
 
             log.info(f"Found exactly one row for the coding ({ontology}, {code})")
             return Coding(system=ontology, code=code, display=display)

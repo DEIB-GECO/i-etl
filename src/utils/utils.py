@@ -300,8 +300,8 @@ def compare_tuples(original_tuple: dict, inserted_tuple: dict) -> None:
     assert compare_keys(original_object=original_tuple, inserted_object=inserted_tuple) is True, different_keys()
     for original_key in original_tuple:
         assert original_key in inserted_tuple, missing_attribute(original_key)
-        if original_key == "createdAt":
-            # for the special case of "createdAt attributes, we check +/- few milliseconds
+        if original_key == "timestamp":
+            # for the special case of timestamp attributes, we check +/- few milliseconds
             # to avoid failing when conversions do not yield the exact same datetime value
             inserted_time = datetime.strptime(inserted_tuple[original_key]["$date"], THE_DATETIME_FORMAT)
             log.debug(inserted_time)

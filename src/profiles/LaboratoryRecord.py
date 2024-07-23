@@ -1,18 +1,14 @@
-from datetime import datetime
+from typing import Any
 
-from datatypes.CodeableConcept import CodeableConcept
-from datatypes.Coding import Coding
 from datatypes.Reference import Reference
-from profiles.Resource import Resource
 from enums.TableNames import TableNames
+from profiles.Record import Record
 from utils.Counter import Counter
-from utils.utils import get_mongodb_date_from_datetime, is_not_nan
-from utils.setup_logger import log
 
 
-class ExaminationRecord(Resource):
+class LaboratoryRecord(Record):
     def __init__(self, id_value: str, examination_ref: Reference, subject_ref: Reference,
-                 hospital_ref: Reference, sample_ref: Reference, value, counter: Counter):
+                 hospital_ref: Reference, sample_ref: Reference, value: Any, counter: Counter):
         """
         A new ClinicalRecord instance, either built from existing data or from scratch.
         :param id_value: A string being the BETTER ID of the ExaminationRecord instance.
@@ -23,11 +19,7 @@ class ExaminationRecord(Resource):
         :param value: A string/int/float/CodeableConcept being the value of what is examined in that record.
         """
         # set up the resource ID
-        super().__init__(id_value=id_value, resource_type=TableNames.EXAMINATION_RECORD.value, counter=counter)
-
-        # set up the resource attributes
-        self.value = value
-        self.subject = subject_ref
-        self.recorded_by = hospital_ref
-        self.instantiate = examination_ref
+        super().__init__(id_value=id_value, feature_ref=examination_ref, subject_ref=subject_ref, hospital_ref=hospital_ref,
+                         value=value, resource_type=TableNames.LABORATORY_RECORD.value, counter=counter)
+        # set up specific attributes for lab records
         self.based_on = sample_ref

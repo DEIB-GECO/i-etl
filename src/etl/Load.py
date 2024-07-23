@@ -23,22 +23,22 @@ class Load:
     def load_remaining_data(self) -> None:
         self.database.load_json_in_table(table_name=TableNames.PATIENT.value, unique_variables=["identifier"])
 
-        self.database.load_json_in_table(table_name=TableNames.EXAMINATION_RECORD.value, unique_variables=["recordedBy", "subject", "basedOn", "instantiate"])
+        self.database.load_json_in_table(table_name=TableNames.LABORATORY_RECORD.value, unique_variables=["recorded_by", "subject", "based_on", "instantiate"])
 
         self.database.load_json_in_table(table_name=TableNames.SAMPLE.value, unique_variables=["identifier"])
 
     def create_db_indexes(self) -> None:
         log.info(f"Creating indexes.")
-        # 1. for each resource type, we create an index on its "identifier" and its creation date "createdAt"
+        # 1. for each resource type, we create an index on its "identifier" and its creation date "timestamp"
         for table_name in TableNames:
             self.database.create_unique_index(table_name=table_name.value, columns={"identifier.value": 1})
-            self.database.create_non_unique_index(table_name=table_name.value, columns={"createdAt": 1})
+            self.database.create_non_unique_index(table_name=table_name.value, columns={"timestamp": 1})
         # 2. next, we also create resource-wise indexes
         # for Examination instances, we create an index both on the ontology (system) and a code
         # this is because we usually ask for a code for a given ontology (what is a coe without its ontology? nothing)
-        self.database.create_non_unique_index(table_name=TableNames.EXAMINATION.value, columns={"code.coding.system": 1, "code.coding.code": 1})
+        self.database.create_non_unique_index(table_name=TableNames.LABORATORY_FEATURE.value, columns={"code.coding.system": 1, "code.coding.code": 1})
         # for ExaminationRecord instances, we create an index per reference because we usually join each reference to a table
-        self.database.create_non_unique_index(table_name=TableNames.EXAMINATION_RECORD.value, columns={"instantiate.reference": 1})
-        self.database.create_non_unique_index(table_name=TableNames.EXAMINATION_RECORD.value, columns={"subject.reference": 1})
-        self.database.create_non_unique_index(table_name=TableNames.EXAMINATION_RECORD.value, columns={"basedOn.reference": 1})
+        self.database.create_non_unique_index(table_name=TableNames.LABORATORY_RECORD.value, columns={"instantiate.reference": 1})
+        self.database.create_non_unique_index(table_name=TableNames.LABORATORY_RECORD.value, columns={"subject.reference": 1})
+        self.database.create_non_unique_index(table_name=TableNames.LABORATORY_RECORD.value, columns={"based_on.reference": 1})
         log.info(f"Finished to create indexes.")

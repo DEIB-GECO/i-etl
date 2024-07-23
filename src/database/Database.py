@@ -141,14 +141,14 @@ class Database:
             filter_dict = {}
             for unique_variable in unique_variables:
                 if unique_variable in one_tuple:
-                    # only BUZZI ExaminationRecord instances have a "basedOn" attribute for the Samples
-                    # others do not have the "basedOn", so we need to check whether that attribute is present or not
+                    # only BUZZI ExaminationRecord instances have a "based_on" attribute for the Samples
+                    # others do not have the "based_on", so we need to check whether that attribute is present or not
                     filter_dict[unique_variable] = one_tuple[unique_variable]
             update_stmt = self.create_update_stmt(the_tuple=one_tuple)
             operations.append(pymongo.UpdateOne(filter=filter_dict, update=update_stmt, upsert=True))
         log.debug(f"Table {table_name}: sending a bulk write of {len(operations)} operations")
         # July 18th, 2024: bulk_write modifies the hospital lists in Transform (avan if I use deep copies everywhere)
-        # It changes (only?) the createdAt value with +1/100, e.g., 2024-07-18T14:34:32Z becomes 2024-07-18T14:34:33Z
+        # It changes (only?) the timestamp value with +1/100, e.g., 2024-07-18T14:34:32Z becomes 2024-07-18T14:34:33Z
         # in the tests I use a delta to compare datetime
         result_upsert = self._db[table_name].bulk_write(copy.deepcopy(operations))
         log.info(f"In {table_name}, {result_upsert.inserted_count} inserted, {result_upsert.upserted_count} upserted, {result_upsert.modified_count} modified tuples")
@@ -262,7 +262,7 @@ class Database:
         to that examination url.
         :return: A float value being the average value for the given examination url.
         """
-        cursor = self._db[TableNames.EXAMINATION_RECORD.value].aggregate([
+        cursor = self._db[TableNames.LABORATORY_RECORD.value].aggregate([
             mongodb_match(field="instantiate.reference", value=examination_url, is_regex=False),
             mongodb_project_one(field="value", projected_value=None),
             mongodb_group_by(group_key=None, group_by_name="avg_val", operator="$avg", field="$value")
@@ -288,7 +288,7 @@ class Database:
             mongodb_sort(field="_id", sort_order=1)
         ]
         # .collation({"locale": "en_US", "numericOrdering": "true"})
-        return self._db[TableNames.EXAMINATION_RECORD.value].aggregate(pipeline)
+        return self._db[TableNames.LABORATORY_RECORD.value].aggregate(pipeline)
 
     def get_max_resource_counter_id(self) -> int:
         max_value = -1
@@ -299,8 +299,14 @@ class Database:
             else:
                 current_max_identifier = self.get_max_value(table_name=table_name.value, field="identifier.value")
                 if current_max_identifier is not None:
-                    if current_max_identifier > max_value:
-                        max_value = current_max_identifier
+                    try:
+                        current_max_identifier = int(current_max_identifier)
+                        if current_max_identifier > max_value:
+                            max_value = current_max_identifier
+                    except ValueError:
+                        # this identifier is not an integer, e.g., a Sample ID like 24DL54
+                        # we simply ignore it and try to find the next maximum integer ID
+                        pass
                 else:
                     # the table is not created yet (this happens when we start from a fresh new DB, thus we skip this)
                     pass

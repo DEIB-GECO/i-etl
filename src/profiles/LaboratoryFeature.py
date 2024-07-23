@@ -1,22 +1,18 @@
-from datetime import datetime
-
 from datatypes.CodeableConcept import CodeableConcept
-from profiles.Resource import Resource
 from enums.TableNames import TableNames
-from utils.utils import is_not_nan, get_mongodb_date_from_datetime
+from profiles.Feature import Feature
 from utils.Counter import Counter
+from utils.utils import is_not_nan
 
 
-class Examination(Resource):
+class LaboratoryFeature(Feature):
     def __init__(self, id_value: str, code: CodeableConcept, category: CodeableConcept,
                  permitted_datatype: str, counter: Counter):
         # set up the resource ID
-        super().__init__(id_value=id_value, resource_type=TableNames.EXAMINATION.value, counter=counter)
+        super().__init__(id_value=id_value, code=code, permitted_datatype=permitted_datatype, resource_type=TableNames.LABORATORY_FEATURE.value, counter=counter)
 
-        # set up the resource attributes
-        self.code = code
+        # set up the Lab. feature specific attributes
         self.category = category
-        self.permitted_datatype = permitted_datatype  # TODO Nelly: assert that datatype is a "real" data type
 
     @classmethod
     def get_display(cls, column_name: str, column_description: str) -> str:

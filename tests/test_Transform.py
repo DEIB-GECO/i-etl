@@ -9,7 +9,7 @@ from database.Execution import Execution
 from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Coding import Coding
 from etl.Transform import Transform
-from profiles.Examination import Examination
+from profiles.LaboratoryFeature import LaboratoryFeature
 from profiles.Hospital import Hospital
 from enums.ExaminationCategory import ExaminationCategory
 from enums.HospitalNames import HospitalNames
@@ -64,16 +64,16 @@ class TestTransform(unittest.TestCase):
         # I manually insert some resources in the database
         database = Database(TestTransform.execution)
         my_tuples = [
-            {"identifier": {"value": 1}},
-            {"identifier": {"value": 2}},
-            {"identifier": {"value": 4}},
-            {"identifier": {"value": 3}},
-            {"identifier": {"value": 123}},
+            {"identifier": {"value": "1"}},
+            {"identifier": {"value": "2"}},
+            {"identifier": {"value": "4"}},
+            {"identifier": {"value": "3"}},
+            {"identifier": {"value": "123a"}},
         ]
         database.insert_many_tuples(table_name=TableNames.TEST.value, tuples=my_tuples)
         transform.set_resource_counter_id()
 
-        assert transform.counter.resource_id == 124
+        assert transform.counter.resource_id == 5
 
     def test_create_hospital(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1.value,
@@ -120,7 +120,7 @@ class TestTransform(unittest.TestCase):
         examination_a = get_examination_by_text_in_list(transform.examinations, "molecule_a")
         assert len(examination_a) == 3 + 3  # 3 inherited + 3 proper fields
         assert "identifier" in examination_a
-        assert examination_a["resource_type"] == TableNames.EXAMINATION.value
+        assert examination_a["resource_type"] == TableNames.LABORATORY_FEATURE.value
         assert examination_a["code"] == {
             "text": "molecule_a",
             "coding": [
@@ -138,7 +138,7 @@ class TestTransform(unittest.TestCase):
         examination_b = get_examination_by_text_in_list(transform.examinations, "molecule_b")
         assert len(examination_b) == 3 + 3  # 3 inherited + 3 proper fields
         assert "identifier" in examination_b
-        assert examination_b["resource_type"] == TableNames.EXAMINATION.value
+        assert examination_b["resource_type"] == TableNames.LABORATORY_FEATURE.value
         assert examination_b["code"] == {
             "text": "molecule_b",
             "coding": []
@@ -151,7 +151,7 @@ class TestTransform(unittest.TestCase):
         examination_ethnicity = get_examination_by_text_in_list(transform.examinations, "ethnicity")
         assert len(examination_ethnicity) == 3 + 3  # 3 inherited + 3 proper fields
         assert "identifier" in examination_ethnicity
-        assert examination_ethnicity["resource_type"] == TableNames.EXAMINATION.value
+        assert examination_ethnicity["resource_type"] == TableNames.LABORATORY_FEATURE.value
         assert examination_ethnicity["code"] == {
             "text": "ethnicity",
             "coding": [
@@ -217,7 +217,7 @@ class TestTransform(unittest.TestCase):
         examination_records_patient = get_examination_records_by_patient_id_in_list(examination_records_list=transform.examination_records, patient_id=patient_id)
         log.debug(json.dumps(examination_records_patient))
         assert len(examination_records_patient) == 5
-        assert examination_records_patient[0]["resource_type"] == TableNames.EXAMINATION_RECORD.value
+        assert examination_records_patient[0]["resource_type"] == TableNames.LABORATORY_RECORD.value
         assert examination_records_patient[0]["value"] == -0.003  # the value as been converted to an integer
         log.debug(examination_records_patient[0]["subject"]["reference"])
         log.debug(type(examination_records_patient[0]["subject"]["reference"]))
