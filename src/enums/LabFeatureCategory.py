@@ -5,18 +5,18 @@ from datatypes.Coding import Coding
 from enums.Ontologies import Ontologies
 
 
-class ExaminationCategory(Enum):
+class LabFeatureCategory(Enum):
     CATEGORY_PHENOTYPIC = Coding(system=Ontologies.LOINC.value["url"], code="81259-4", display="Associated phenotype")
     CATEGORY_CLINICAL = Coding(system=Ontologies.LOINC.value["url"], code="75321-0", display="Clinical finding")
 
     @classmethod
     def get_phenotypic(cls) -> CodeableConcept:
         cc = CodeableConcept()
-        cc.add_coding(one_coding=ExaminationCategory.CATEGORY_PHENOTYPIC.value)
+        cc.add_coding(one_coding=LabFeatureCategory.CATEGORY_PHENOTYPIC.value)
         return cc
 
     @classmethod
     def get_clinical(cls) -> CodeableConcept:
         cc = CodeableConcept()
-        cc.add_coding(one_coding=ExaminationCategory.CATEGORY_CLINICAL.value)
+        cc.add_coding(one_coding=LabFeatureCategory.CATEGORY_CLINICAL.value)
         return cc

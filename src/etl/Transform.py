@@ -16,7 +16,7 @@ from profiles.Hospital import Hospital
 from profiles.Patient import Patient
 from profiles.Sample import Sample
 from utils.Counter import Counter
-from enums.ExaminationCategory import ExaminationCategory
+from enums.LabFeatureCategory import LabFeatureCategory
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
@@ -257,9 +257,9 @@ class Transform:
     @classmethod
     def determine_examination_category(cls, column_name: str) -> CodeableConcept:
         if Transform.is_column_name_phenotypic(column_name=column_name):
-            return ExaminationCategory.get_phenotypic()
+            return LabFeatureCategory.get_phenotypic()
         else:
-            return ExaminationCategory.get_clinical()
+            return LabFeatureCategory.get_clinical()
 
     @classmethod
     def is_column_name_phenotypic(cls, column_name: str) -> bool:

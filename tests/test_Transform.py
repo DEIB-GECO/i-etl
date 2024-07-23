@@ -11,7 +11,7 @@ from datatypes.Coding import Coding
 from etl.Transform import Transform
 from profiles.LaboratoryFeature import LaboratoryFeature
 from profiles.Hospital import Hospital
-from enums.ExaminationCategory import ExaminationCategory
+from enums.LabFeatureCategory import LabFeatureCategory
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
@@ -131,7 +131,7 @@ class TestTransform(unittest.TestCase):
                 }
             ]
         }
-        assert examination_a["category"] == ExaminationCategory.get_clinical().to_json()
+        assert examination_a["category"] == LabFeatureCategory.get_clinical().to_json()
         assert examination_a["permitted_datatype"] == ""
 
         # examination about molecule_b
@@ -143,7 +143,7 @@ class TestTransform(unittest.TestCase):
             "text": "molecule_b",
             "coding": []
         }
-        assert examination_b["category"] == ExaminationCategory.get_clinical().to_json()
+        assert examination_b["category"] == LabFeatureCategory.get_clinical().to_json()
         assert examination_b["permitted_datatype"] == ""
 
         # examination about ethnicity
@@ -166,7 +166,7 @@ class TestTransform(unittest.TestCase):
                 }
             ]
         }
-        assert examination_ethnicity["category"] == ExaminationCategory.get_phenotypic().to_json()
+        assert examination_ethnicity["category"] == LabFeatureCategory.get_phenotypic().to_json()
         assert examination_ethnicity["permitted_datatype"] == ""  # TODO NElly: add datatypes
 
         # check that there are no duplicates in Examination instances
@@ -333,24 +333,24 @@ class TestTransform(unittest.TestCase):
         # clinical variables
         cc = Transform.determine_examination_category(column_name="molecule_a")
         assert cc is not None
-        assert cc.to_json() == ExaminationCategory.get_clinical().to_json()
+        assert cc.to_json() == LabFeatureCategory.get_clinical().to_json()
 
         cc = Transform.determine_examination_category(column_name="molecule_b")
         assert cc is not None
-        assert cc.to_json() == ExaminationCategory.get_clinical().to_json()
+        assert cc.to_json() == LabFeatureCategory.get_clinical().to_json()
 
         cc = Transform.determine_examination_category(column_name="molecule_g")
         assert cc is not None
-        assert cc.to_json() == ExaminationCategory.get_clinical().to_json()
+        assert cc.to_json() == LabFeatureCategory.get_clinical().to_json()
 
         # phenotypic variables
         cc = Transform.determine_examination_category(column_name="ethnicity")
         assert cc is not None
-        assert cc.to_json() == ExaminationCategory.get_phenotypic().to_json()
+        assert cc.to_json() == LabFeatureCategory.get_phenotypic().to_json()
 
         cc = Transform.determine_examination_category(column_name="sex")
         assert cc is not None
-        assert cc.to_json() == ExaminationCategory.get_phenotypic().to_json()
+        assert cc.to_json() == LabFeatureCategory.get_phenotypic().to_json()
 
     def test_is_column_phenotypic(self):
         _ = my_setup(hospital_name=HospitalNames.TEST_H1.value,

@@ -12,6 +12,8 @@ from database.Execution import Execution
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
+from enums.TableNames import TableNames
+from utils.constants import ID_COLUMNS
 from utils.setup_logger import log
 from utils.utils import is_not_nan, get_values_from_json_values, normalize_column_name, \
     normalize_ontology_system, normalize_ontology_code, normalize_column_value, normalize_hospital_name, \
@@ -178,8 +180,15 @@ class Extract:
         self.data.rename(columns=lambda x: normalize_column_name(column_name=x), inplace=True)
         # we also normalize the data values
         # they will be cast to the right type (int, float, datetime) in the Transform step
+        # issue 113: we do not normalize identifiers assigned by hospitals to avoid discrepancies
+        columns_no_normalization = []
+        columns_no_normalization.append(ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT.value])
+        if TableNames.SAMPLE.value in ID_COLUMNS[self.execution.hospital_name]:
+            columns_no_normalization.append(ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE.value])
+
         for column in self.data:
-            self.data[column] = self.data[column].apply(lambda x: normalize_column_value(column_value=x))
+            if column not in columns_no_normalization:
+                self.data[column] = self.data[column].apply(lambda x: normalize_column_value(column_value=x))
 
         log.info(f"{len(self.data.columns)} columns and {len(self.data)} lines in the data file.")
 

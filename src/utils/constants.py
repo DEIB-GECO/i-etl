@@ -11,6 +11,12 @@ ID_COLUMNS = {
     },
     HospitalNames.TEST_H1.value: {
         TableNames.PATIENT.value: normalize_column_name("id")
+    },
+    HospitalNames.TEST_H2.value: {
+        TableNames.PATIENT.value: normalize_column_name("id")
+    },
+    HospitalNames.TEST_H3.value: {
+        TableNames.PATIENT.value: normalize_column_name("id")
     }
 }
 
