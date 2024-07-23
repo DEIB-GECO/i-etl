@@ -186,17 +186,13 @@ def cast_value(value: str | float | bool | datetime) -> str | float | bool | dat
         return value
 
 
-def get_categorical_value_display(variable_value: str, value_description: str) -> str:
-    # the content of this function is the same as Examination.get_display()
-    # but they are used in different contexts: the former is used to compute an Examination label,
-    # while the former is used to compute the display of categorical values
-    # to avoid confusions, I created two methods
-    display = variable_value
-    if is_not_nan(value_description):
-        # by default the display is the variable value, e.g., "f" for Female value
+def get_display(name: str, description: str) -> str:
+    display = name  # row[MetadataColumns.COLUMN_NAME.value]
+    if is_not_nan(description):  # row[MetadataColumns.SIGNIFICATION_EN.value]):
+        # by default the display is the variable name
         # if we also have a description, we append it to the display
-        # e.g., "f (Female)"
-        display = f"{display} ({str(value_description)})"
+        # e.g., "BTD (human biotinidase activity)"
+        display = f"{display} ({str(description)})"
     return display
 
 

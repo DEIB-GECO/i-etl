@@ -1,6 +1,6 @@
 from enum import Enum
 
-from utils.utils import normalize_ontology_system
+from utils.utils import normalize_ontology_system, is_not_nan
 
 
 class Ontologies(Enum):
@@ -14,6 +14,9 @@ class Ontologies(Enum):
     @classmethod
     def get_ontology_system(cls, ontology: str) -> str:
         ontology = normalize_ontology_system(ontology_system=ontology)
+
+        if not is_not_nan(ontology):
+            return None
 
         for existing_ontology in Ontologies:
             if existing_ontology.value["name"] == ontology:

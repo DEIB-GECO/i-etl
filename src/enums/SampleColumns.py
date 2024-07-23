@@ -11,3 +11,7 @@ class SampleColumns(Enum):
     SAMPLE_RECEIVED = normalize_column_name(column_name="SamTimeReceived")
     SAMPLE_TOO_YOUNG = normalize_column_name(column_name="TooYoung")
     SAMPLE_BIS = normalize_column_name(column_name="BIS")
+
+    @classmethod
+    def values(cls):
+        return list(map(lambda c: c.value, cls))

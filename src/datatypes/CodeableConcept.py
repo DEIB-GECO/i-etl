@@ -1,8 +1,9 @@
-import json
-
 import jsonpickle
 
 from datatypes.Coding import Coding
+from enums.Ontologies import Ontologies
+from utils.setup_logger import log
+from utils.utils import normalize_column_name, normalize_ontology_system, normalize_ontology_code
 
 
 class CodeableConcept:
@@ -40,6 +41,34 @@ class CodeableConcept:
         # encode create a stringified JSON object of the class
         # and decode transforms the stringified JSON to a "real" JSON object
         return jsonpickle.decode(jsonpickle.encode(self, unpicklable=False))
+
+    @classmethod
+    def create_without_row(cls, ontology1: str, code1: str, ontology2: str, code2: str, column_name: str, column_description: str):
+        cc = CodeableConcept()
+
+        column_name = normalize_column_name(column_name=column_name)
+        ontology1 = normalize_ontology_system(ontology_system=ontology1)
+        ontology1 = Ontologies.get_ontology_system(ontology=ontology1)  # get the URI of the ontology system instead of its string name
+        code1 = normalize_ontology_code(ontology_code=code1)  # get the ontology code in the metadata for the given column and normalize it (just in case)
+        cc.add_coding(one_coding=Coding(system=ontology1,
+                                        code=code1,
+                                        name=column_name,
+                                        description=column_description))
+
+        if ontology2 is not None:
+            ontology2 = normalize_ontology_system(ontology_system=ontology2)
+            ontology2 = Ontologies.get_ontology_system(ontology=ontology2)
+            code2 = normalize_ontology_code(ontology_code=code2)
+            cc.add_coding(one_coding=Coding(system=ontology2,
+                                            code=code2,
+                                            name=column_name,
+                                            description=column_description))
+        cc.text = column_name
+        log.debug(cc.coding)
+        log.debug(f"Create a new CodeableConcept labelled {cc.text} for {cc.coding[0].system}/{cc.coding[0].code} ({cc.coding[0].display})")
+        if ontology2 is not None:
+            log.debug(f"Create a new CodeableConcept labelled {cc.text} for {cc.coding[1].system}/{cc.coding[1].code}, labelled {cc.coding[1].display}")
+        return cc
 
     def __str__(self) -> str:
         return jsonpickle.encode(self, unpicklable=False)

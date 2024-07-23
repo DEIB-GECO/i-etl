@@ -2,7 +2,6 @@ from datatypes.CodeableConcept import CodeableConcept
 from enums.TableNames import TableNames
 from profiles.Feature import Feature
 from utils.Counter import Counter
-from utils.utils import is_not_nan
 
 
 class LaboratoryFeature(Feature):
@@ -13,13 +12,3 @@ class LaboratoryFeature(Feature):
 
         # set up the Lab. feature specific attributes
         self.category = category
-
-    @classmethod
-    def get_display(cls, column_name: str, column_description: str) -> str:
-        display = column_name  # row[MetadataColumns.COLUMN_NAME.value]
-        if is_not_nan(column_description):  # row[MetadataColumns.SIGNIFICATION_EN.value]):
-            # by default the display is the variable name
-            # if we also have a description, we append it to the display
-            # e.g., "BTD (human biotinidase activity)"
-            display = f"{display} ({str(column_description)})"
-        return display
