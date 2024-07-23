@@ -1,9 +1,10 @@
 from datatypes.CodeableConcept import CodeableConcept
+from enums.EnumAsClass import EnumAsClass
 from enums.Ontologies import Ontologies
 from utils.utils import normalize_column_name
 
 
-class PhenotypicColumns:
+class PhenotypicColumns(EnumAsClass):
     DOB = CodeableConcept.create_without_row(ontology1=Ontologies.SNOMEDCT["name"], code1="184099003", ontology2="loinc", code2="21112-8", column_name="DateOfBirth", column_description="Date of birth")
     SEX = CodeableConcept.create_without_row(ontology1=Ontologies.SNOMEDCT["name"], code1="734000001", ontology2="loinc", code2="46098-0", column_name="Sex", column_description="Sex")
     CITY = CodeableConcept.create_without_row(ontology1=Ontologies.LOINC["name"], code1="68997-6", ontology2=None, code2=None, column_name="City", column_description="City of residence")
@@ -20,11 +21,3 @@ class PhenotypicColumns:
             if normalize_column_name(column_name) == phenotypic_column.text:
                 return True
         return False
-
-    @classmethod
-    def values(cls):
-        xs = []
-        for name, value in vars(cls).items():
-            if not (name.startswith('__') or isinstance(value, classmethod)):
-                xs.append(value)
-        return xs

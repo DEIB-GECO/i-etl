@@ -77,7 +77,7 @@ class Extract:
             # there are more than one hospital described in this metadata
             # a. we filter the unnecessary hospital columns (for UC2 and UC3 there are several hospitals in the same metadata file)
             columns_to_keep = []
-            columns_to_keep.extend([normalize_column_name(column_name=meta_variable) for meta_variable in MetadataColumns.values()])
+            columns_to_keep.extend([normalize_column_name(column_name=meta_variable) for meta_variable in MetadataColumns.required_values()])
             columns_to_keep.append(normalize_hospital_name(self.execution.hospital_name))
             log.debug(f"{self.metadata.columns}")
             log.debug(f"{columns_to_keep}")

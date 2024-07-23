@@ -1,7 +1,8 @@
+from enums.EnumAsClass import EnumAsClass
 from utils.utils import normalize_hospital_name
 
 
-class HospitalNames:
+class HospitalNames(EnumAsClass):
     IT_BUZZI_UC1 = normalize_hospital_name("IT_BUZZI_UC1")
     RS_IMGGE = normalize_hospital_name("RS_IMGGE")
     ES_HSJD = normalize_hospital_name("ES_HSJD")
@@ -25,11 +26,3 @@ class HospitalNames:
     @classmethod
     def get_as_iterator(cls) -> iter:
         return iter(HospitalNames.get())
-
-    @classmethod
-    def values(cls):
-        xs = []
-        for name, value in vars(cls).items():
-            if not (name.startswith('__') or isinstance(value, classmethod)):
-                xs.append(value)
-        return xs

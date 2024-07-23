@@ -90,7 +90,8 @@ class Transform:
                     # we still add the codeable_concept as an examination
                     # but, it will have only the text (such as "BIS", or "TooYoung") and no associated codings
                     category = Transform.get_examination_category(column_name=column_name)
-                    new_examination = LaboratoryFeature(id_value=NO_ID, code=cc, category=category, permitted_datatype="", counter=self.counter)
+                    data_type = row[MetadataColumns.VAR_TYPE]  # this has already been normalized when loading the metadata
+                    new_examination = LaboratoryFeature(id_value=NO_ID, code=cc, category=category, permitted_datatype=data_type, counter=self.counter)
                     log.info("adding a new examination about %s: %s", cc.text, new_examination)
                     self.laboratory_features.append(new_examination)
                     if len(self.laboratory_features) >= BATCH_SIZE:

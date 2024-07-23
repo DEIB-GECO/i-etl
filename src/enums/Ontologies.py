@@ -1,8 +1,9 @@
+from enums.EnumAsClass import EnumAsClass
 from utils.setup_logger import log
 from utils.utils import normalize_ontology_system, is_not_nan
 
 
-class Ontologies:
+class Ontologies(EnumAsClass):
 
     SNOMEDCT = {"name": normalize_ontology_system("SNOMEDCT"), "url": "http://snomed.info/sct/"}
     LOINC = {"name": normalize_ontology_system("LOINC"), "url": "http://loinc.org"}
@@ -29,11 +30,3 @@ class Ontologies:
     @classmethod
     def get_ontology_resource_uri(cls, ontology_system: str, resource_code: str) -> str:
         return ontology_system + "/" + resource_code
-
-    @classmethod
-    def values(cls):
-        xs = []
-        for name, value in vars(cls).items():
-            if not (name.startswith('__') or isinstance(value, classmethod)):
-                xs.append(value)
-        return xs

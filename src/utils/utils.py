@@ -11,7 +11,7 @@ import pandas as pd
 from dateutil.parser import parse
 from pandas import DataFrame
 
-
+from enums.DataTypes import DataTypes
 from utils.setup_logger import log
 
 # moving it to constants.py creates a circular dependency; also it is only used in this file
@@ -149,7 +149,27 @@ def normalize_hospital_name(hospital_name: str) -> str:
 def normalize_var_type(var_type: str) -> str:
     if is_not_nan(var_type):
         var_type = process_spaces(input_string=var_type)
-        return var_type.lower()
+        var_type = var_type.lower()
+
+        if var_type == "int" or var_type == "integer":
+            return DataTypes.INTEGER
+        elif var_type == "str" or var_type == "string":
+            return DataTypes.STRING
+        elif var_type == "category" or var_type == "categorical":
+            return DataTypes.CATEGORY
+        elif var_type == "float" or var_type == "numeric":
+            return DataTypes.FLOAT
+        elif var_type == "bool" or var_type == "boolean":
+            return DataTypes.BOOLEAN
+        elif var_type == "image file":
+            return DataTypes.IMAGE
+        elif var_type == "date":
+            return DataTypes.DATE
+        elif var_type == "datetime" or var_type == "datetime64":
+            return DataTypes.DATETIME
+        else:
+            log.error(f"{var_type} is not a recognized data type; will use string")
+            return DataTypes.STRING
     else:
         return var_type
 

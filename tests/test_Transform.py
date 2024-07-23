@@ -133,7 +133,7 @@ class TestTransform(unittest.TestCase):
             ]
         }
         assert examination_a["category"] == LabFeatureCategory.get_clinical().to_json()
-        assert examination_a["permitted_datatype"] == ""
+        assert examination_a["permitted_datatype"] == "float"
 
         # examination about molecule_b
         examination_b = get_examination_by_text_in_list(transform.laboratory_features, "molecule_b")
@@ -145,7 +145,7 @@ class TestTransform(unittest.TestCase):
             "coding": []
         }
         assert examination_b["category"] == LabFeatureCategory.get_clinical().to_json()
-        assert examination_b["permitted_datatype"] == ""
+        assert examination_b["permitted_datatype"] == "integer"
 
         # examination about ethnicity
         # "loinc/45678" and "snomedct/345:678"
@@ -168,7 +168,7 @@ class TestTransform(unittest.TestCase):
             ]
         }
         assert examination_ethnicity["category"] == LabFeatureCategory.get_phenotypic().to_json()
-        assert examination_ethnicity["permitted_datatype"] == ""  # TODO NElly: add datatypes
+        assert examination_ethnicity["permitted_datatype"] == "str"
 
         # check that there are no duplicates in Examination instances
         # for this, we get the set of their names (in the field "text")

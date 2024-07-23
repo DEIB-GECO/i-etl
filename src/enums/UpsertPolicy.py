@@ -1,11 +1,6 @@
-class UpsertPolicy:
+from enums.EnumAsClass import EnumAsClass
+
+
+class UpsertPolicy(EnumAsClass):
     DO_NOTHING = "DO_NOTHING"
     REPLACE = "REPLACE"
-
-    @classmethod
-    def values(cls):
-        xs = []
-        for name, value in vars(cls).items():
-            if not (name.startswith('__') or isinstance(value, classmethod)):
-                xs.append(value)
-        return xs

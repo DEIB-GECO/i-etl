@@ -1,9 +1,10 @@
 from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Coding import Coding
+from enums.EnumAsClass import EnumAsClass
 from enums.Ontologies import Ontologies
 
 
-class LabFeatureCategory:
+class LabFeatureCategory(EnumAsClass):
     CATEGORY_PHENOTYPIC = Coding(system=Ontologies.LOINC["url"], code="81259-4", name="Phenotypic feature", description="Associated phenotype")
     CATEGORY_CLINICAL = Coding(system=Ontologies.LOINC["url"], code="75321-0", name="Clinical feature", description="Clinical finding")
 
@@ -18,11 +19,3 @@ class LabFeatureCategory:
         cc = CodeableConcept()
         cc.add_coding(one_coding=LabFeatureCategory.CATEGORY_CLINICAL)
         return cc
-
-    @classmethod
-    def values(cls):
-        xs = []
-        for name, value in vars(cls).items():
-            if not (name.startswith('__') or isinstance(value, classmethod)):
-                xs.append(value)
-        return xs

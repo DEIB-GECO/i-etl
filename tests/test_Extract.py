@@ -4,6 +4,7 @@ import unittest
 
 from database.Database import Database
 from database.Execution import Execution
+from enums.DataTypes import DataTypes
 from etl.Extract import Extract
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
@@ -42,7 +43,7 @@ class TestExtract(unittest.TestCase):
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 17, "The expected number of columns is 17."
+        assert len(extract.metadata.columns) == 10, "The expected number of columns is 10."
         assert len(extract.metadata) == 8, "The expected number of lines is 8."
 
         # b. checking the first line completely
@@ -102,7 +103,7 @@ class TestExtract(unittest.TestCase):
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 17, "The expected number of columns is 17."
+        assert len(extract.metadata.columns) == 10, "The expected number of columns is 10."
         assert len(extract.metadata) == 3, "The expected number of lines is 3."
 
         log.debug(extract.metadata.to_string())
@@ -153,7 +154,7 @@ class TestExtract(unittest.TestCase):
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 17, "The expected number of columns is 17."
+        assert len(extract.metadata.columns) == 10, "The expected number of columns is 10."
         assert len(extract.metadata) == 3, "The expected number of lines is 3."
 
         log.debug(extract.metadata.to_string())
@@ -321,14 +322,14 @@ class TestExtract(unittest.TestCase):
 
         log.debug(extract.mapped_types)
         assert len(extract.mapped_types.keys()) == 8
-        assert extract.mapped_types["molecule_a"] == "float"
-        assert extract.mapped_types["molecule_b"] == "integer"
-        assert extract.mapped_types["molecule_g"] == "boolean"
-        assert extract.mapped_types["molecule_y"] == "str"
-        assert extract.mapped_types["sex"] == "category"
-        assert extract.mapped_types["ethnicity"] == "str"
-        assert extract.mapped_types["date_of_birth"] == "datetime"  # normalized column name
-        assert extract.mapped_types["id"] == "integer"  # normalized column name
+        assert extract.mapped_types["molecule_a"] == DataTypes.FLOAT
+        assert extract.mapped_types["molecule_b"] == DataTypes.INTEGER
+        assert extract.mapped_types["molecule_g"] == DataTypes.BOOLEAN
+        assert extract.mapped_types["molecule_y"] == DataTypes.STRING
+        assert extract.mapped_types["sex"] == DataTypes.CATEGORY
+        assert extract.mapped_types["ethnicity"] == DataTypes.STRING
+        assert extract.mapped_types["date_of_birth"] == DataTypes.DATETIME  # normalized column name
+        assert extract.mapped_types["id"] == DataTypes.INTEGER  # normalized column name
         # this column has been removed while removing columns present in the data but not in the metadata
         assert "molecule_z" not in extract.mapped_types
 

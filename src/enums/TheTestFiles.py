@@ -1,7 +1,9 @@
 import os
 
+from enums.EnumAsClass import EnumAsClass
 
-class TheTestFiles:
+
+class TheTestFiles(EnumAsClass):
     # original files for the Extract step
     TEST_ORIG_METADATA_PATH = os.path.join("datasets", "test", "test-orig-metadata.csv")  # this describes several hospitals, several datasets per hospitals, etc
     TEST_ORIG_CLINICAL_PATH = os.path.join("datasets", "test", "test-orig-clinical-data.csv")
@@ -21,11 +23,3 @@ class TheTestFiles:
     TEST_EXTR_GENOMICS_DATA_PATH = os.path.join("datasets", "test", "test-extr-genomics-data.csv")
     TEST_EXTR_CLINICAL_MAPPED_PATH = os.path.join("datasets", "test", "test-extr-mapped-values-clinical-data.json")
     TEST_EXTR_GENOMICS_MAPPED_PATH = os.path.join("datasets", "test", "test-extr-mapped-values-genomics-data.json")
-
-    @classmethod
-    def values(cls):
-        xs = []
-        for name, value in vars(cls).items():
-            if not (name.startswith('__') or isinstance(value, classmethod)):
-                xs.append(value)
-        return xs
