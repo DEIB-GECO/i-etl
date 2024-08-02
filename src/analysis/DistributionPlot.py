@@ -11,9 +11,9 @@ matplotlib.rcParams['backend'] = 'TkAgg'  # fix to avoid "Loaded backend macosx 
 
 
 class DistributionPlot:
-    def __init__(self, cursor: CommandCursor, examination_name: str, y_label: str, vertical_y: bool):
+    def __init__(self, cursor: CommandCursor, column_name: str, y_label: str, vertical_y: bool):
         self.cursor = cursor
-        self.examination_name = examination_name
+        self.column_name = column_name
         self.y_label = y_label
         self.vertical_y = vertical_y
         self.y = None
@@ -34,8 +34,7 @@ class DistributionPlot:
         plt.ylabel(self.y_label)
         if self.vertical_y:
             plt.xticks(rotation=90)
-        plt.suptitle('Value distribution for Examination ' + self.examination_name)
-        plt.suptitle('Value distribution for Examination ' + self.examination_name)
+        plt.suptitle('Value distribution for ' + self.column_name)
         # print value of each bar
         for index, value in enumerate(self.y):
             plt.text(value, index, str(value))

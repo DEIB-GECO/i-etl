@@ -64,7 +64,7 @@ class Transform:
         self.create_hospital(hospital_name=self.execution.hospital_name)
         log.info(f"Hospital count: {self.database.count_documents(table_name=TableNames.HOSPITAL, filter_dict={})}")
         self.create_laboratory_features()
-        log.info(f"Examination count: {self.database.count_documents(table_name=TableNames.LABORATORY_FEATURE, filter_dict={})}")
+        log.info(f"LabFeature count: {self.database.count_documents(table_name=TableNames.LABORATORY_FEATURE, filter_dict={})}")
         self.create_samples()
         self.create_patients()
         self.create_laboratory_records()
@@ -93,15 +93,15 @@ class Transform:
                 log.debug(cc)
                 if cc is not None:
                     # some columns have no attributed ontology code
-                    # we still add the codeable_concept as an examination
+                    # we still add the codeable_concept as a LabFeature
                     # but, it will have only the text (such as "BIS", or "TooYoung") and no associated codings
-                    category = Transform.get_examination_category(column_name=column_name)
+                    category = Transform.get_lab_feature_category(column_name=column_name)
                     data_type = row[MetadataColumns.ETL_TYPE]  # this has been normalized while loading + wetake ETL_type, not var_type, to get the narrowest type (in which we cast values)
                     dimension = self.column_to_dimension[column_name]
                     log.debug(f"for column {column_name}, dimension is {dimension}")
-                    new_examination = LaboratoryFeature(id_value=NO_ID, code=cc, category=category, permitted_datatype=data_type, dimension=dimension, counter=self.counter)
-                    log.info("adding a new examination about %s: %s", cc.text, new_examination)
-                    self.laboratory_features.append(new_examination)
+                    new_lab_feature = LaboratoryFeature(id_value=NO_ID, code=cc, category=category, permitted_datatype=data_type, dimension=dimension, counter=self.counter)
+                    log.info(f"adding a new LabFeature instance about {cc.text}: {new_lab_feature}")
+                    self.laboratory_features.append(new_lab_feature)
                     if len(self.laboratory_features) >= BATCH_SIZE:
                         write_in_file(resource_list=self.laboratory_features, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_FEATURE, count=count)
                         self.laboratory_features = []
@@ -111,7 +111,7 @@ class Transform:
                     # this should never happen
                     pass
             else:
-                log.debug(f"I am skipping column {column_name} because it has been marked as not being part of examination instances.")
+                log.debug(f"I am skipping column {column_name} because it has been marked as not being part of LabFeature instances.")
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
         write_in_file(resource_list=self.laboratory_features, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_FEATURE, count=count)
         self.database.load_json_in_table(table_name=TableNames.LABORATORY_FEATURE, unique_variables=["code"])
@@ -157,26 +157,26 @@ class Transform:
         self.mapping_column_to_labfeat_id = self.database.retrieve_identifiers(table_name=TableNames.LABORATORY_FEATURE, projection="code.text")
         log.debug(f"{self.mapping_column_to_labfeat_id}")
 
-        # b. Create ExaminationRecord instance, and write them in temporary (JSON) files
+        # b. Create LabRecord instance, and write them in temporary (JSON) files
         count = 1
         for index, row in self.data.iterrows():
-            # create ExaminationRecord instances by associating observations to patients (and possibly the sample)
+            # create LabRecord instances by associating observations to patients (and possibly the sample)
             for column_name, value in row.items():
                 log.debug(f"for row {index} (type: {type(index)} and column {column_name} (type: {type(column_name)}), value is {value}")
                 if value is None or value == "" or not is_not_nan(value):
-                    # if there is no value for that examination, no need to create an ExaminationRecord instance
+                    # if there is no value for that LabFeature, no need to create a LabRecord instance
                     pass
                 else:
                     if column_name in self.mapping_column_to_labfeat_id:
                         # log.info("I know a code for column %s", column_name)
-                        # we know a code for this column, so we can register the value of that examination
-                        examination_id = self.mapping_column_to_labfeat_id[column_name]
-                        examination_ref = Reference(resource_identifier=examination_id, resource_type=TableNames.LABORATORY_FEATURE)
+                        # we know a code for this column, so we can register the value of that LabFeature
+                        lab_feature_id = self.mapping_column_to_labfeat_id[column_name]
+                        lab_feature_ref = Reference(resource_identifier=lab_feature_id, resource_type=TableNames.LABORATORY_FEATURE)
                         hospital_id = self.mapping_hospital_to_hospital_id[self.execution.hospital_name]
                         hospital_ref = Reference(resource_identifier=hospital_id, resource_type=TableNames.HOSPITAL)
                         # for patient and sample instances, no need to go through a mapping because they have an ID assigned by the hospital
                         # TODO NELLY: if Buzzi decides to remove patient ids, we will have to number them with a Counter
-                        #  and to create mappings (as for Hospital and Examination resources)
+                        #  and to create mappings (as for Hospital and LabFeature resources)
                         id_column_for_patients = ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]
                         patient_id = Identifier(id_value=row[id_column_for_patients], resource_type=TableNames.PATIENT)
                         log.debug(f"patient_id = {patient_id.to_json()} of type {type(patient_id)}")
@@ -189,19 +189,19 @@ class Transform:
                             sample_ref = Reference(resource_identifier=sample_id.value, resource_type=TableNames.SAMPLE)
                         # TODO Nelly: we could even clean more the data, e.g., do not allow "Italy" as ethnicity (caucasian, etc)
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
-                        new_laboratory_record = LaboratoryRecord(id_value=NO_ID, examination_ref=examination_ref,
-                                                                  subject_ref=patient_ref, hospital_ref=hospital_ref,
-                                                                  sample_ref=sample_ref, value=fairified_value,
-                                                                  counter=self.counter)
+                        new_laboratory_record = LaboratoryRecord(id_value=NO_ID, feature_ref=lab_feature_ref,
+                                                                 patient_ref=patient_ref, hospital_ref=hospital_ref,
+                                                                 sample_ref=sample_ref, value=fairified_value,
+                                                                 counter=self.counter)
                         self.laboratory_records.append(new_laboratory_record)
                         if len(self.laboratory_records) >= BATCH_SIZE:
                             write_in_file(resource_list=self.laboratory_records, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_RECORD, count=count)
-                            # no need to load ExaminationRecords instances because they are never referenced
+                            # no need to load LabRecords instances because they are never referenced
                             self.laboratory_records = []
                             count = count + 1
                     else:
                         # this should never happen
-                        # this represents the case when a column has not been converted to an Examination resource
+                        # this represents the case when a column has not been converted to a LabFeature resource
                         pass
 
         write_in_file(resource_list=self.laboratory_records, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_RECORD, count=count)
@@ -248,7 +248,7 @@ class Transform:
             # NB July 18th 2024: for the text of a CC, this HAS TO be the column name ONLY (and not the column name and the description).
             # this is because we build a mapping between column names (variables) and their identifiers
             # if there is also the description in the text, then no column name would match the CC text.
-            # NOPE   cc.text = Examination.get_display(column_name=row[MetadataColumns.COLUMN_NAME], column_description=row[MetadataColumns.SIGNIFICATION_EN])  # the column name + description
+            # NOPE   cc.text = LabFeature.get_display(column_name=row[MetadataColumns.COLUMN_NAME], column_description=row[MetadataColumns.SIGNIFICATION_EN])  # the column name + description
             cc.text = row[MetadataColumns.COLUMN_NAME]
             return cc
         elif len(rows) == 0:
@@ -259,7 +259,7 @@ class Transform:
             return None
 
     @classmethod
-    def get_examination_category(cls, column_name: str) -> CodeableConcept:
+    def get_lab_feature_category(cls, column_name: str) -> CodeableConcept:
         if PhenotypicColumns.is_column_phenotypic(column_name=column_name):
             return LabFeatureCategories.get_phenotypic()
         else:

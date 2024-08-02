@@ -7,8 +7,8 @@ from utils.Counter import Counter
 
 
 class DiagnosisRecord(Record):
-    def __init__(self, id_value: str, subject_ref: Reference, hospital_ref: Reference,
+    def __init__(self, id_value: str, patient_ref: Reference, hospital_ref: Reference,
                  disease_ref: Reference, value: Any, counter: Counter):
         # set up the resource ID
-        super().__init__(id_value=id_value, feature_ref=disease_ref, subject_ref=subject_ref, hospital_ref=hospital_ref,
+        super().__init__(id_value=id_value, feature_ref=disease_ref, patient_ref=patient_ref, hospital_ref=hospital_ref,
                          resource_type=TableNames.DIAGNOSIS_RECORD, value=value, counter=counter)

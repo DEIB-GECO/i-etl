@@ -368,33 +368,33 @@ def read_csv_file_as_string(filepath: str) -> pd.DataFrame:
 
 
 # ARRAYS
-def get_examination_by_text(examinations_list: list, examination_text: str) -> dict:
+def get_lab_feature_by_text(lab_features: list, lab_feature_text: str) -> dict:
     """
-    :param examinations_list: list of Examination resources
+    :param lab_features: list of LabFeature instances
     """
-    json_examinations_list = [examination.to_json() for examination in examinations_list]
-    log.debug(json_examinations_list)
-    log.debug(examination_text)
-    for json_examination in json_examinations_list:
-        if "code" in json_examination and "text" in json_examination["code"] and json_examination["code"]["text"].startswith(examination_text):
-            return json_examination
+    json_lab_features = [lab_feature.to_json() for lab_feature in lab_features]
+    log.debug(json_lab_features)
+    log.debug(lab_feature_text)
+    for json_lab_feature in json_lab_features:
+        if "code" in json_lab_feature and "text" in json_lab_feature["code"] and json_lab_feature["code"]["text"].startswith(lab_feature_text):
+            return json_lab_feature
     return {}
 
 
-def get_lab_records_for_patient(lab_records_list: list, patient_id: str) -> list[dict]:
+def get_lab_records_for_patient(lab_records: list, patient_id: str) -> list[dict]:
     """
-    :param lab_records_list: list of ExaminationRecord resources
+    :param lab_records: list of LabRecord resources
     """
-    matching_examination_records = []
-    json_examination_records_list = [examination_record.to_json() for examination_record in lab_records_list]
-    log.debug(json_examination_records_list)
+    matching_lab_records = []
+    json_lab_records_list = [lab_record.to_json() for lab_record in lab_records]
+    log.debug(json_lab_records_list)
     log.debug(patient_id)
-    for json_examination_record in json_examination_records_list:
-        if json_examination_record["subject"]["reference"] == patient_id:
-            matching_examination_records.append(json_examination_record)
-    # also sort them by Examination reference id
-    log.debug(matching_examination_records)
-    return sorted(matching_examination_records, key=lambda d: d["instantiate"]["reference"])
+    for json_lab_record in json_lab_records_list:
+        if json_lab_record["subject"]["reference"] == patient_id:
+            matching_lab_records.append(json_lab_record)
+    # also sort them by LabFeature reference id
+    log.debug(matching_lab_records)
+    return sorted(matching_lab_records, key=lambda d: d["instantiate"]["reference"])
 
 
 def get_field_value_for_patient(lab_records: list, lab_features: list, patient_id: str, column_name: str) -> Any:
@@ -416,10 +416,10 @@ def get_field_value_for_patient(lab_records: list, lab_features: list, patient_i
     if lab_feature is not None:
         log.debug(lab_records)
         log.debug(patient_id)
-        for examination_record in lab_records:
-            json_examination_record = examination_record.to_json()
-            log.info(f"checking {json_examination_record["subject"]["reference"]} vs. {patient_id} and {json_examination_record["instantiate"]["reference"]} vs. {lab_feature["identifier"]["value"]}")
-            if json_examination_record["subject"]["reference"] == patient_id:
-                if json_examination_record["instantiate"]["reference"] == lab_feature["identifier"]["value"]:
-                    return json_examination_record["value"]
+        for lab_record in lab_records:
+            json_lab_record = lab_record.to_json()
+            log.info(f"checking {json_lab_record["subject"]["reference"]} vs. {patient_id} and {json_lab_record["instantiate"]["reference"]} vs. {lab_feature["identifier"]["value"]}")
+            if json_lab_record["subject"]["reference"] == patient_id:
+                if json_lab_record["instantiate"]["reference"] == lab_feature["identifier"]["value"]:
+                    return json_lab_record["value"]
     return None

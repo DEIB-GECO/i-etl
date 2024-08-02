@@ -26,7 +26,7 @@ def my_setup(create_indexes: bool) -> Load:
     load = Load(database=database, execution=TestLoad.execution, create_indexes=create_indexes)
 
     # 2. create few "fake" files in the current working directory in order to tests insertion and index creation
-    examinations = [
+    lab_features = [
         {
             "identifier": {"value": "1"},
             "code": {
@@ -42,7 +42,7 @@ def my_setup(create_indexes: bool) -> Load:
         }
     ]
 
-    examination_records = [
+    lab_records = [
         {
             "identifier": {"value": "1"},
             "value": 12,
@@ -62,20 +62,20 @@ def my_setup(create_indexes: bool) -> Load:
     hospital = {"identifier": {"value": "1"}, "name": HospitalNames.TEST_H1}
 
     # 3. write them in temporary JSON files
-    path_examinations = os.path.join(TestLoad.execution.working_dir_current, TableNames.LABORATORY_FEATURE+"1.json")
-    path_examination_records = os.path.join(TestLoad.execution.working_dir_current, TableNames.LABORATORY_RECORD+"1.json")
+    path_lab_features = os.path.join(TestLoad.execution.working_dir_current, TableNames.LABORATORY_FEATURE+"1.json")
+    path_lab_records = os.path.join(TestLoad.execution.working_dir_current, TableNames.LABORATORY_RECORD+"1.json")
     path_patients = os.path.join(TestLoad.execution.working_dir_current, TableNames.PATIENT+"1.json")
     path_hospital = os.path.join(TestLoad.execution.working_dir_current, TableNames.HOSPITAL+"1.json")
     # insert the data that is inserted during the Transform step
-    with open(path_examinations, 'w') as f:
-        json.dump(examinations, f)
-    load.database.db[TableNames.LABORATORY_FEATURE].insert_many(examinations)
+    with open(path_lab_features, 'w') as f:
+        json.dump(lab_features, f)
+    load.database.db[TableNames.LABORATORY_FEATURE].insert_many(lab_features)
     with open(path_hospital, 'w') as f:
         json.dump(hospital, f)
     load.database.db[TableNames.HOSPITAL].insert_one(hospital)
     # for other files, it will be inserted with the function load_remaining_data()
-    with open(path_examination_records, 'w') as f:
-        json.dump(examination_records, f)
+    with open(path_lab_records, 'w') as f:
+        json.dump(lab_records, f)
     with open(path_patients, 'w') as f:
         json.dump(patients, f)
 

@@ -110,7 +110,7 @@ class Database:
     def upsert_one_tuple(self, table_name: str, unique_variables: list[str], one_tuple: dict) -> None:
         # filter_dict should only contain the fields on which we want a Resource to be unique,
         # e.g., name for Hospital instances, ID for Patient instances,
-        #       the combination of Patient, Hospital, Sample and Examination instances for ExaminationRecord instances
+        #       the combination of Patient, Hospital, Sample and LabFeature instances for LabRecord instances
         #       see https://github.com/Nelly-Barret/BETTER-fairificator/issues/3
         # one_tuple contains the Resource itself (with all its fields; as a JSON dict)
         # use $setOnInsert instead of $set to not modify the existing tuple if it already exists in the DB
@@ -141,7 +141,7 @@ class Database:
             filter_dict = {}
             for unique_variable in unique_variables:
                 if unique_variable in one_tuple:
-                    # only BUZZI ExaminationRecord instances have a "based_on" attribute for the Samples
+                    # only BUZZI LabRecord instances have a "based_on" attribute for the Samples
                     # others do not have the "based_on", so we need to check whether that attribute is present or not
                     filter_dict[unique_variable] = one_tuple[unique_variable]
             update_stmt = self.create_update_stmt(the_tuple=one_tuple)
@@ -158,7 +158,7 @@ class Database:
         # projection contains the field name to which we want to associate identifiers,
         # e.g., if we have { "identifier": "1", "name": "Alice" } and {"identifier": "2", "name": "Bob" }
         # we would obtain the following mapping: { "Alice": "1", "Bob": "2" }
-        # this is used for now to associate each column name to its Examination id, and each hospital to its Hospital id
+        # this is used for now to associate each column name to its LabFeature id, and each hospital to its Hospital id
         projection_as_dict = {projection: 1, "identifier": 1}
         cursor = self.find_operation(table_name=table_name, filter_dict={}, projection=projection_as_dict)
         mapping = {}
@@ -176,7 +176,7 @@ class Database:
         for filename in os.listdir(self.execution.working_dir_current):
             if re.search(table_name+"[0-9]+", filename) is not None:
                 # implementation note: we cannot simply use filename.startswith(table_name)
-                # because both Examination and ExaminationRecord start with Examination
+                # because both LaboratoryFeature and LaboratoryRecord start with Laboratory
                 # the solution is to use a regex
                 with open(os.path.join(self.execution.working_dir_current, filename), "r") as json_datafile:
                     tuples = bson.json_util.loads(json_datafile.read())
@@ -254,16 +254,16 @@ class Database:
     def get_min_value(self, table_name: str, field: str) -> int | float:
         return self.get_min_or_max_value(table_name=table_name, field=field, sort_order=1)
 
-    def get_avg_value_of_examination_record(self, examination_url: str) -> int | float:
+    def get_avg_value_of_lab_feature(self, lab_feature_url: str) -> int | float:
         """
-        Compute the average value among all the examination records for a certain examination.
-        :param examination_url: A string being the examination url of the form Examination/X, where X is the
-        Examination number, and for which the avg value will be computed among the examination records referring
-        to that examination url.
-        :return: A float value being the average value for the given examination url.
+        Compute the average value among all the LabRecord instances for a certain LabFeature.
+        :param lab_feature_url: A string being the LabFeature url of the form LabFeature/X, where X is the
+        LabFeature number, and for which the avg value will be computed among the LabRecord instance referring
+        to that LabFeature.
+        :return: A float value being the average value for the given LabFeature instance (url).
         """
         cursor = self.db[TableNames.LABORATORY_RECORD].aggregate([
-            mongodb_match(field="instantiate.reference", value=examination_url, is_regex=False),
+            mongodb_match(field="instantiate.reference", value=lab_feature_url, is_regex=False),
             mongodb_project_one(field="value", projected_value=None),
             mongodb_group_by(group_key=None, group_by_name="avg_val", operator="$avg", field="$value")
         ])
@@ -271,17 +271,17 @@ class Database:
         for result in cursor:
             return float(result)  # There should be only one result, so we can return directly the min or max value
 
-    def get_value_distribution_of_examination(self, examination_url: str, min_value: float) -> CommandCursor:
+    def get_value_distribution_of_lab_feature(self, lab_feature_url: str, min_value: float) -> CommandCursor:
         """
-        Compute the value distribution among all the examination records for a certain examination.
-        :param examination_url: A string being the examination url of the form Examination/X, where X is the
-        Examination number, and for which the value distribution will be computed among the examination records
-        referring to that examination url.
+        Compute the value distribution among all the LabRecord instances for a certain LabFeature instance.
+        :param lab_feature_url: A string being the LabFeature url of the form LabFeature/X, where X is the
+        LabFeature number, and for which the value distribution will be computed among the LabRecord instances
+        referring to that LabFeature (url).
         :param min_value: A float value being the minimum frequency that an element should have to be part of the plot.
         :return: A CommandCursor to iterate over the value distribution of the form { "value": frequency, ... }
         """
         pipeline = [
-            mongodb_match(field="instantiate.reference", value=examination_url, is_regex=False),
+            mongodb_match(field="instantiate.reference", value=lab_feature_url, is_regex=False),
             mongodb_project_one(field="value", projected_value=None),
             mongodb_group_by(group_key="$value", group_by_name="total", operator="$sum", field=1),
             mongodb_match(field="total", value={"$gt": min_value}, is_regex=False),

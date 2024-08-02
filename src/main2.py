@@ -157,8 +157,8 @@ def main_json_pickle():
     print(type(json_string))
     print(json_string)
     json_string = jsonpickle.encode(LaboratoryRecord(id_value="1",
-                                                     examination_ref=Reference(resource_type="Examination", resource_identifier="123"),
-                                                     subject_ref=Reference(resource_type="Patient", resource_identifier="123"),
+                                                     feature_ref=Reference(resource_type="LabFeature", resource_identifier="123"),
+                                                     patient_ref=Reference(resource_type="Patient", resource_identifier="123"),
                                                      hospital_ref=Reference(resource_type="Hospital", resource_identifier="123"),
                                                      sample_ref=Reference(resource_type="Sample", resource_identifier="123"),
                                                      value=0.02,

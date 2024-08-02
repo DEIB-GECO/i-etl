@@ -6,7 +6,7 @@ from utils.Counter import Counter
 
 
 class Record(Resource):
-    def __init__(self, id_value: str, feature_ref: Reference, subject_ref: Reference,
+    def __init__(self, id_value: str, feature_ref: Reference, patient_ref: Reference,
                  hospital_ref: Reference, value: Any, resource_type: str, counter: Counter):
         """
 
@@ -16,6 +16,6 @@ class Record(Resource):
 
         # set up the resource attributes
         self.value = value
-        self.subject = subject_ref
+        self.subject = patient_ref
         self.recorded_by = hospital_ref
         self.instantiate = feature_ref
