@@ -23,6 +23,22 @@ class Coding:
         # and decode transforms the stringified JSON to a "real" JSON object
         return jsonpickle.decode(jsonpickle.encode(self, unpicklable=False))
 
+    def __eq__(self, other):
+        if not isinstance(other, Coding):
+            raise TypeError(f"Could not compare the current instance with an instance of type {type(other)}.")
+
+        # we do not use the display  because this would lead to unequal instances
+        # if provided descriptions differ from one hospital to another
+        return self.system == other.system and self.code == other.code
+
+    # def __hash__(self):
+    #     # we do not use the display in the hash
+    #     # because this would lead to different hashes
+    #     # if provided descriptions differ from one hospital to another
+    #     my_hash = hash((self.system, self.code))
+    #     log.debug(f"compute hash of {self.system} and {self.code}: {my_hash}")
+    #     return my_hash
+
     def __str__(self) -> str:
         return jsonpickle.encode(self, unpicklable=False)
 

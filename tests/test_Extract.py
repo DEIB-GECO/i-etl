@@ -43,7 +43,7 @@ class TestExtract(unittest.TestCase):
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 10, "The expected number of columns is 10."
+        assert len(extract.metadata.columns) == 11, "The expected number of columns is 11."
         assert len(extract.metadata) == 8, "The expected number of lines is 8."
 
         # b. checking the first line completely
@@ -83,7 +83,29 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][7] == "124678"
         assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][0])
 
-        # e. more general checks
+        # e. check var type normalization
+        log.debug(extract.metadata.columns)
+        log.debug(extract.metadata.to_string())
+        assert extract.metadata[MetadataColumns.VAR_TYPE][0] == DataTypes.INTEGER  # patient id
+        assert extract.metadata[MetadataColumns.VAR_TYPE][1] == DataTypes.FLOAT  # molecule A
+        assert extract.metadata[MetadataColumns.VAR_TYPE][2] == DataTypes.STRING  # molecule B
+        assert extract.metadata[MetadataColumns.VAR_TYPE][3] == DataTypes.BOOLEAN  # molecule G
+        assert extract.metadata[MetadataColumns.VAR_TYPE][4] == DataTypes.CATEGORY  # sex
+        assert extract.metadata[MetadataColumns.VAR_TYPE][5] == DataTypes.STRING  # ethnicity
+        assert extract.metadata[MetadataColumns.VAR_TYPE][6] == DataTypes.DATETIME  # date of birth
+
+        # f. check ETL type normalization
+        log.debug(extract.metadata.columns)
+        log.debug(MetadataColumns.ETL_TYPE)
+        assert extract.metadata[MetadataColumns.ETL_TYPE][0] == DataTypes.INTEGER  # patient id
+        assert extract.metadata[MetadataColumns.ETL_TYPE][1] == DataTypes.FLOAT  # molecule A
+        assert extract.metadata[MetadataColumns.ETL_TYPE][2] == DataTypes.INTEGER  # molecule B
+        assert extract.metadata[MetadataColumns.ETL_TYPE][3] == DataTypes.BOOLEAN  # molecule G
+        assert extract.metadata[MetadataColumns.ETL_TYPE][4] == DataTypes.CATEGORY  # sex
+        assert extract.metadata[MetadataColumns.ETL_TYPE][5] == DataTypes.STRING  # ethnicity
+        assert extract.metadata[MetadataColumns.ETL_TYPE][6] == DataTypes.DATETIME  # date of birth
+
+        # g. more general checks
         # DATASET: this should be the dataset name, and there should be no other datasets in that column
         unique_dataset_names = list(extract.metadata[MetadataColumns.DATASET_NAME].unique())
         log.debug(unique_dataset_names)
@@ -103,7 +125,7 @@ class TestExtract(unittest.TestCase):
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 10, "The expected number of columns is 10."
+        assert len(extract.metadata.columns) == 11, "The expected number of columns is 11."
         assert len(extract.metadata) == 3, "The expected number of lines is 3."
 
         log.debug(extract.metadata.to_string())
@@ -116,6 +138,7 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.COLUMN_NAME][2] == "disease_form"  # all lower case, with an underscore
         assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][2] == "The form of the disease"  # kept as it is in the metadata for more clarity
         assert extract.metadata[MetadataColumns.VAR_TYPE][2] == "category"  # all lower case
+        assert extract.metadata[MetadataColumns.ETL_TYPE][2] == "category"  # all lower case
         # test JSON values in the second line (disease form)
         # pandas dataframe does not allow json objects, so we have to store them as JSON-like string
         expected_json_values = [{"value": "start", "explanation": "< 1 year", "pubchem": "023468"}, {"value": "middle", "explanation": "1 year <= ... <= 3 years", "pubchem": "203:468"}, {"value": "end", "explanation": "> 3 years", "pubchem": "4097625"}]
@@ -154,7 +177,7 @@ class TestExtract(unittest.TestCase):
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 10, "The expected number of columns is 10."
+        assert len(extract.metadata.columns) == 11, "The expected number of columns is 11."
         assert len(extract.metadata) == 3, "The expected number of lines is 3."
 
         log.debug(extract.metadata.to_string())
@@ -167,6 +190,7 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.COLUMN_NAME][2] == "is_inherited"  # all lower case, with an underscore
         assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][2] == "Whether the gene is inherited"  # kept as it is in the metadata for more clarity
         assert extract.metadata[MetadataColumns.VAR_TYPE][2] == "bool"  # all lower case
+        assert extract.metadata[MetadataColumns.ETL_TYPE][2] == "bool"  # all lower case
         assert not is_not_nan(extract.metadata[MetadataColumns.JSON_VALUES][2])
 
         # c. test the first (Patient ID) line, because there are no ontologies for this one
@@ -211,7 +235,7 @@ class TestExtract(unittest.TestCase):
         #   for instance 100 is read 100 if there are no empty cells in that column, 100.0 otherwise
         assert extract.data["id"][0] == "999999999", "The expected id is '999999999'."
         assert extract.data["molecule_a"][0] == "0.001", "The expected value is '0.001'."
-        assert extract.data["molecule_b"][0] == "100", "The expected value is '100'."
+        assert extract.data["molecule_b"][0] == "100g", "The expected value is '100'."
         assert extract.data["molecule_g"][0] == "true", "The expected value is 'true'."
         assert extract.data["molecule_z"][0] == "abc", "The expected value is "
         assert extract.data["sex"][0] == "f"
@@ -311,27 +335,35 @@ class TestExtract(unittest.TestCase):
         assert len(described_columns) == 8  # molecule_y has been kept
         assert described_columns == ['date_of_birth', 'ethnicity', 'id', 'molecule_a', 'molecule_b', 'molecule_g', 'molecule_y', 'sex']
 
-    def test_compute_mapped_types(self):
+    def test_compute_column_to_dimension(self):
         extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.TEST_ORIG_CLINICAL_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-        extract.load_metadata_file()  # required to compute mapped types
-        extract.load_data_file()  # required to compute mapped types
-        extract.remove_unused_columns()  # required to compute mapped types
-        extract.compute_mapped_types()
+        extract.load_metadata_file()
+        extract.load_data_file()  # both operations are needed to run the method
+        log.debug(extract.metadata.to_string())
+        extract.remove_unused_columns()
+        log.debug(extract.metadata.to_string())
+        extract.compute_column_to_dimension()
 
-        log.debug(extract.mapped_types)
-        assert len(extract.mapped_types.keys()) == 8
-        assert extract.mapped_types["molecule_a"] == DataTypes.FLOAT
-        assert extract.mapped_types["molecule_b"] == DataTypes.INTEGER
-        assert extract.mapped_types["molecule_g"] == DataTypes.BOOLEAN
-        assert extract.mapped_types["molecule_y"] == DataTypes.STRING
-        assert extract.mapped_types["sex"] == DataTypes.CATEGORY
-        assert extract.mapped_types["ethnicity"] == DataTypes.STRING
-        assert extract.mapped_types["date_of_birth"] == DataTypes.DATETIME  # normalized column name
-        assert extract.mapped_types["id"] == DataTypes.INTEGER  # normalized column name
-        # this column has been removed while removing columns present in the data but not in the metadata
-        assert "molecule_z" not in extract.mapped_types
+        # {'id': [], 'molecule_a': ['mg/L'], 'molecule_b': ['kg', 'grams', 'g'], 'molecule_g': [], 'sex': [], 'ethnicity': [], 'date_of_birth': []}
+        assert len(extract.column_to_dimension.keys()) == 8
+        assert "id" in extract.column_to_dimension
+        assert extract.column_to_dimension["id"] is None
+        assert "molecule_a" in extract.column_to_dimension
+        assert extract.column_to_dimension["molecule_a"] == "mg/L"
+        assert "molecule_b" in extract.column_to_dimension
+        assert extract.column_to_dimension["molecule_b"] == "g"
+        assert "molecule_g" in extract.column_to_dimension
+        assert extract.column_to_dimension["molecule_g"] is None
+        assert "sex" in extract.column_to_dimension
+        assert extract.column_to_dimension["sex"] is None
+        assert "ethnicity" in extract.column_to_dimension
+        assert extract.column_to_dimension["ethnicity"] is None
+        assert "date_of_birth" in extract.column_to_dimension
+        assert extract.column_to_dimension["date_of_birth"] is None
+        assert "molecule_y" in extract.column_to_dimension
+        assert extract.column_to_dimension["molecule_y"] is None
 
     # def test_run_value_analysis(self):
     #     self.fail()

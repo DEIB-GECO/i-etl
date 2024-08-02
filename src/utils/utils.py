@@ -146,32 +146,32 @@ def normalize_hospital_name(hospital_name: str) -> str:
         return hospital_name
 
 
-def normalize_var_type(var_type: str) -> str:
-    if is_not_nan(var_type):
-        var_type = process_spaces(input_string=var_type)
-        var_type = var_type.lower()
+def normalize_type(data_type: str) -> str:
+    if is_not_nan(data_type):
+        data_type = process_spaces(input_string=data_type)
+        data_type = data_type.lower()
 
-        if var_type == "int" or var_type == "integer":
+        if data_type == "int" or data_type == "integer":
             return DataTypes.INTEGER
-        elif var_type == "str" or var_type == "string":
+        elif data_type == "str" or data_type == "string":
             return DataTypes.STRING
-        elif var_type == "category" or var_type == "categorical":
+        elif data_type == "category" or data_type == "categorical":
             return DataTypes.CATEGORY
-        elif var_type == "float" or var_type == "numeric":
+        elif data_type == "float" or data_type == "numeric":
             return DataTypes.FLOAT
-        elif var_type == "bool" or var_type == "boolean":
+        elif data_type == "bool" or data_type == "boolean":
             return DataTypes.BOOLEAN
-        elif var_type == "image file":
+        elif data_type == "image file":
             return DataTypes.IMAGE
-        elif var_type == "date":
+        elif data_type == "date":
             return DataTypes.DATE
-        elif var_type == "datetime" or var_type == "datetime64":
+        elif data_type == "datetime" or data_type == "datetime64":
             return DataTypes.DATETIME
         else:
-            log.error(f"{var_type} is not a recognized data type; will use string")
+            log.error(f"{data_type} is not a recognized data type; will use string")
             return DataTypes.STRING
     else:
-        return var_type
+        return data_type
 
 
 def cast_value(value: str | float | bool | datetime) -> str | float | bool | datetime:
@@ -368,7 +368,7 @@ def read_csv_file_as_string(filepath: str) -> pd.DataFrame:
 
 
 # ARRAYS
-def get_examination_by_text_in_list(examinations_list: list, examination_text: str) -> dict:
+def get_examination_by_text(examinations_list: list, examination_text: str) -> dict:
     """
     :param examinations_list: list of Examination resources
     """
@@ -381,12 +381,12 @@ def get_examination_by_text_in_list(examinations_list: list, examination_text: s
     return {}
 
 
-def get_examination_records_by_patient_id_in_list(examination_records_list: list, patient_id: str) -> list[dict]:
+def get_lab_records_for_patient(lab_records_list: list, patient_id: str) -> list[dict]:
     """
-    :param examination_records_list: list of ExaminationRecord resources
+    :param lab_records_list: list of ExaminationRecord resources
     """
     matching_examination_records = []
-    json_examination_records_list = [examination_record.to_json() for examination_record in examination_records_list]
+    json_examination_records_list = [examination_record.to_json() for examination_record in lab_records_list]
     log.debug(json_examination_records_list)
     log.debug(patient_id)
     for json_examination_record in json_examination_records_list:
@@ -395,3 +395,31 @@ def get_examination_records_by_patient_id_in_list(examination_records_list: list
     # also sort them by Examination reference id
     log.debug(matching_examination_records)
     return sorted(matching_examination_records, key=lambda d: d["instantiate"]["reference"])
+
+
+def get_field_value_for_patient(lab_records: list, lab_features: list, patient_id: str, column_name: str) -> Any:
+    """
+    :param lab_records: list of LaboratoryRecord resources
+    :param lab_features: list of LaboratoryFeature resource
+    :param patient_id: the patient (ID) for which we want to get a specific value
+    :param column_name: the column for which we want to get the value
+    """
+
+    log.info(f"looking for the value of column {column_name} for patient {patient_id}")
+
+    lab_feature = None
+    for lab_feat in lab_features:
+        if lab_feat.to_json()["code"]["text"] == column_name:
+            lab_feature = lab_feat.to_json()
+            break
+    log.info(lab_feature)
+    if lab_feature is not None:
+        log.debug(lab_records)
+        log.debug(patient_id)
+        for examination_record in lab_records:
+            json_examination_record = examination_record.to_json()
+            log.info(f"checking {json_examination_record["subject"]["reference"]} vs. {patient_id} and {json_examination_record["instantiate"]["reference"]} vs. {lab_feature["identifier"]["value"]}")
+            if json_examination_record["subject"]["reference"] == patient_id:
+                if json_examination_record["instantiate"]["reference"] == lab_feature["identifier"]["value"]:
+                    return json_examination_record["value"]
+    return None

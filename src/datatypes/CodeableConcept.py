@@ -1,5 +1,6 @@
 import jsonpickle
 
+from collections import Counter
 from datatypes.Coding import Coding
 from enums.Ontologies import Ontologies
 from utils.setup_logger import log
@@ -69,6 +70,12 @@ class CodeableConcept:
         if ontology2 is not None:
             log.debug(f"Create a new CodeableConcept labelled {cc.text} for {cc.coding[1].system}/{cc.coding[1].code}, labelled {cc.coding[1].display}")
         return cc
+
+    def __eq__(self, other):
+        if not isinstance(other, CodeableConcept):
+            raise TypeError(f"Could not compare the current instance with an instance of type {type(other)}.")
+
+        return self.text == other.text and sorted(self.coding) == sorted(other.coding)
 
     def __str__(self) -> str:
         return jsonpickle.encode(self, unpicklable=False)

@@ -1,3 +1,5 @@
+import re
+
 from enums.HospitalNames import HospitalNames
 from enums.TableNames import TableNames
 from utils.utils import normalize_column_name
@@ -26,6 +28,8 @@ WORKING_DIR = "working-dir"
 DEFAULT_DB_CONNECTION = "mongodb://localhost:27017/"
 DEFAULT_DB_NAME = "better_default"
 TEST_DB_NAME = "better_test"
+
+PATTERN_VALUE_DIMENSION = re.compile(r'^ *([0-9]+) *([a-zA-Z_-]+) *$')  # we add start and end delimiters (^ and $) to not process cells with multiples values inside
 
 
 

@@ -1,6 +1,9 @@
 import copy
+import re
 from datetime import datetime
+from typing import Any
 
+import numpy as np
 from pandas import DataFrame
 
 from database.Database import Database
@@ -10,27 +13,29 @@ from datatypes.Coding import Coding
 from datatypes.Identifier import Identifier
 from datatypes.Reference import Reference
 from enums.ColumnsToIgnore import ColumnsToIgnore
+from enums.DataTypes import DataTypes
 from enums.PhenotypicColumns import PhenotypicColumns
 from enums.SampleColumns import SampleColumns
+from enums.TrueFalse import TrueFalse
 from profiles.LaboratoryFeature import LaboratoryFeature
 from profiles.LaboratoryRecord import LaboratoryRecord
 from profiles.Hospital import Hospital
 from profiles.Patient import Patient
 from profiles.Sample import Sample
 from utils.Counter import Counter
-from enums.LabFeatureCategory import LabFeatureCategory
+from enums.LabFeatureCategories import LabFeatureCategories
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from enums.TableNames import TableNames
-from utils.constants import NO_ID, BATCH_SIZE, ID_COLUMNS
+from utils.constants import NO_ID, BATCH_SIZE, ID_COLUMNS, PATTERN_VALUE_DIMENSION
 from utils.setup_logger import log
 from utils.utils import is_not_nan, cast_value, write_in_file
 
 
 class Transform:
 
-    def __init__(self, database: Database, execution: Execution, data: DataFrame, metadata: DataFrame, mapped_values: dict):
+    def __init__(self, database: Database, execution: Execution, data: DataFrame, metadata: DataFrame, mapped_values: dict, column_to_dimension: dict):
         self.database = database
         self.execution = execution
         self.counter = Counter()
@@ -39,6 +44,7 @@ class Transform:
         self.data = data
         self.metadata = metadata
         self.mapped_values = mapped_values
+        self.column_to_dimension = column_to_dimension
 
         # to record objects that will be further inserted in the database
         self.hospitals = []
@@ -90,8 +96,10 @@ class Transform:
                     # we still add the codeable_concept as an examination
                     # but, it will have only the text (such as "BIS", or "TooYoung") and no associated codings
                     category = Transform.get_examination_category(column_name=column_name)
-                    data_type = row[MetadataColumns.VAR_TYPE]  # this has already been normalized when loading the metadata
-                    new_examination = LaboratoryFeature(id_value=NO_ID, code=cc, category=category, permitted_datatype=data_type, counter=self.counter)
+                    data_type = row[MetadataColumns.ETL_TYPE]  # this has been normalized while loading + wetake ETL_type, not var_type, to get the narrowest type (in which we cast values)
+                    dimension = self.column_to_dimension[column_name]
+                    log.debug(f"for column {column_name}, dimension is {dimension}")
+                    new_examination = LaboratoryFeature(id_value=NO_ID, code=cc, category=category, permitted_datatype=data_type, dimension=dimension, counter=self.counter)
                     log.info("adding a new examination about %s: %s", cc.text, new_examination)
                     self.laboratory_features.append(new_examination)
                     if len(self.laboratory_features) >= BATCH_SIZE:
@@ -178,7 +186,7 @@ class Transform:
                         sample_ref = None
                         if id_column_for_samples != "":
                             sample_id = Identifier(id_value=row[id_column_for_samples], resource_type=TableNames.SAMPLE)
-                            sample_ref = Reference(resource_identifier=sample_id, resource_type=TableNames.SAMPLE)
+                            sample_ref = Reference(resource_identifier=sample_id.value, resource_type=TableNames.SAMPLE)
                         # TODO Nelly: we could even clean more the data, e.g., do not allow "Italy" as ethnicity (caucasian, etc)
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
                         new_laboratory_record = LaboratoryRecord(id_value=NO_ID, examination_ref=examination_ref,
@@ -253,12 +261,18 @@ class Transform:
     @classmethod
     def get_examination_category(cls, column_name: str) -> CodeableConcept:
         if PhenotypicColumns.is_column_phenotypic(column_name=column_name):
-            return LabFeatureCategory.get_phenotypic()
+            return LabFeatureCategories.get_phenotypic()
         else:
-            return LabFeatureCategory.get_clinical()
+            return LabFeatureCategories.get_clinical()
 
-    def fairify_value(self, column_name, value) -> str | float | datetime | CodeableConcept:
-        if column_name in self.mapped_values:
+    def fairify_value(self, column_name: str, value: Any) -> str | float | datetime | CodeableConcept:
+        current_column_info = DataFrame(self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name])
+        log.debug(f"current_column_info is {current_column_info} of type {type(current_column_info)}")
+        etl_type = current_column_info[MetadataColumns.ETL_TYPE].iloc[0]  # we need to take the value itself, otherwise we end up with a series of 1 element (the ETL type)
+        var_type = current_column_info[MetadataColumns.VAR_TYPE].iloc[0]
+        expected_unit = self.column_to_dimension[column_name]
+        log.debug(f"ETL type is {etl_type}, var type is {var_type}, expected unit is {expected_unit}")
+        if (etl_type == DataTypes.CATEGORY or etl_type == DataTypes.BOOLEAN) and column_name in self.mapped_values:
             # we iterate over all the mappings of a given column
             for mapping in self.mapped_values[column_name]:
                 # we get the value of the mapping, e.g., F, or M, or NA
@@ -277,6 +291,48 @@ class Transform:
                         if key != 'value' and key != 'explanation':
                             system = Ontologies.get_ontology_system(ontology=key)
                             cc.add_coding(one_coding=Coding(system=system, code=val, name=value, description=mapping['explanation']))
-                    return cc  # return the CC computed out of the corresponding mapping
+                    # now that we have constructed a CC from the value, we check whether this corresponds to the categorical value of booleans
+                    # i.e., True/False(/unknown), Sì/no, etc
+                    if etl_type == DataTypes.BOOLEAN:
+                        log.info(f"The value {value} should rather be a boolean. ")
+                        # this should rather be a boolean, let's cast it as boolean, instead of using Yes/No SNOMED_CT codes
+                        if cc == TrueFalse.get_true():
+                            return True
+                        elif cc == TrueFalse.get_false():
+                            return False
+                        else:
+                            return np.nan
+                    else:
+                        return cc  # return the CC computed out of the corresponding mapping
             return cast_value(value=value)  # no coded value for that value, trying at least to normalize it a bit
-        return cast_value(value=value)  # no coded value for that value, trying at least to normalize it a bit
+        elif var_type == DataTypes.STRING and (etl_type == DataTypes.INTEGER or etl_type == DataTypes.FLOAT):
+            # if the dimension is not the one of the feature, we simply leave the cell value as a string
+            # otherwise, convert the numeric value
+            log.debug(f"convert str value to int or float: {value}")
+            m = re.search(PATTERN_VALUE_DIMENSION, value)
+            log.debug(f"convert str value to int or float: {value}")
+            if m is not None:
+                # m.group(0) is the text itself, m.group(1) is the int/float value, m.group(2) is the dimension
+                the_value = m.group(1)
+                unit = m.group(2)
+                log.debug(f"could convert str value to int or float: {value}. expected unit is {expected_unit}, unit is {unit}")
+                if unit == expected_unit:
+                    if etl_type == DataTypes.INTEGER:
+                        return int(the_value)
+                    elif etl_type == DataTypes.FLOAT:
+                        return float(the_value)
+                    else:
+                        return the_value
+                else:
+                    # the feature dimension does not correspond, we return the value as is
+                    log.debug(f"could convert str value to int or float: {value}")
+                    return value
+            else:
+                # this value does not contain a dimension or is not of the form "value dimension"
+                # we simply cast it as much as we can
+                log.info(f"could not convert str value to int or float, returning {value}")
+                return cast_value(value=value)
+        else:
+            # this is not a category, not a boolean and not an int/float value
+            # we simply cast it as much as we can
+            return cast_value(value=value)

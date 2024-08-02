@@ -24,12 +24,12 @@ class MetadataColumns(EnumAsClass):
     DOUBTS = normalize_column_name(column_name="Doubts")
 
     @classmethod
-    def required_values(cls):
+    def required_columns(cls):
         required_values = []
         for value in MetadataColumns.values():
             if (value != MetadataColumns.FIRST_ONTOLOGY_COMMENT and value != MetadataColumns.SEC_ONTOLOGY_COMMENT
                     and value != MetadataColumns.SNOMED_VARTYPE and value != MetadataColumns.SIGNIFICATION_IT
-                    and value != MetadataColumns.ETL_TYPE and value != MetadataColumns.DETAILS
+                    and value != MetadataColumns.DETAILS
                     and value != MetadataColumns.MULTIPLICITY and value != MetadataColumns.DOUBTS):
                 required_values.append(value)
             else:

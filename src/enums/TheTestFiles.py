@@ -23,3 +23,4 @@ class TheTestFiles(EnumAsClass):
     TEST_EXTR_GENOMICS_DATA_PATH = os.path.join("datasets", "test", "test-extr-genomics-data.csv")
     TEST_EXTR_CLINICAL_MAPPED_PATH = os.path.join("datasets", "test", "test-extr-mapped-values-clinical-data.json")
     TEST_EXTR_GENOMICS_MAPPED_PATH = os.path.join("datasets", "test", "test-extr-mapped-values-genomics-data.json")
+    TEST_EXTR_CLINICAL_DIMENSIONS_PATH = os.path.join("datasets", "test", "test-extr-column-to-dimension-clinical-data.json")

@@ -8,11 +8,11 @@ from database.Database import Database
 from database.Execution import Execution
 from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Coding import Coding
+from enums.DataTypes import DataTypes
 from enums.PhenotypicColumns import PhenotypicColumns
 from etl.Transform import Transform
-from profiles.LaboratoryFeature import LaboratoryFeature
 from profiles.Hospital import Hospital
-from enums.LabFeatureCategory import LabFeatureCategory
+from enums.LabFeatureCategories import LabFeatureCategories
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
@@ -20,13 +20,13 @@ from enums.TableNames import TableNames
 from enums.TheTestFiles import TheTestFiles
 from utils.constants import DEFAULT_DB_CONNECTION, TEST_DB_NAME
 from utils.setup_logger import log
-from utils.utils import compare_tuples, get_json_resource_file, get_examination_by_text_in_list, \
-    get_examination_records_by_patient_id_in_list, normalize_ontology_system, normalize_ontology_code, is_not_nan, \
-    cast_value, read_csv_file_as_string
+from utils.utils import compare_tuples, get_json_resource_file, get_examination_by_text, \
+    normalize_ontology_system, normalize_ontology_code, is_not_nan, cast_value, read_csv_file_as_string, \
+    get_field_value_for_patient, get_lab_records_for_patient
 
 
 # personalized setup called at the beginning of each test
-def my_setup(hospital_name: str, extracted_metadata_path: str, extracted_data_paths: str, extracted_mapped_values_path: str) -> Transform:
+def my_setup(hospital_name: str, extracted_metadata_path: str, extracted_data_paths: str, extracted_mapped_values_path: str, extracted_column_dimension_path: str) -> Transform:
     args = {
         Execution.DB_CONNECTION_KEY: DEFAULT_DB_CONNECTION,
         Execution.DB_DROP_KEY: True,
@@ -41,7 +41,8 @@ def my_setup(hospital_name: str, extracted_metadata_path: str, extracted_data_pa
     metadata = read_csv_file_as_string(extracted_metadata_path)
     data = read_csv_file_as_string(extracted_data_paths)
     mapped_values = json.load(open(extracted_mapped_values_path))
-    transform = Transform(database=database, execution=TestTransform.execution, data=data, metadata=metadata, mapped_values=mapped_values)
+    column_to_dimension = json.load(open(extracted_column_dimension_path))
+    transform = Transform(database=database, execution=TestTransform.execution, data=data, metadata=metadata, mapped_values=mapped_values, column_to_dimension=column_to_dimension)
     return transform
 
 
@@ -56,7 +57,8 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
                              extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.TEST_EXTR_CLINICAL_DATA_PATH,
-                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH)
+                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH,
+                             extracted_column_dimension_path=TheTestFiles.TEST_EXTR_CLINICAL_DIMENSIONS_PATH)
         transform.set_resource_counter_id()
 
         assert transform.counter.resource_id == 0
@@ -80,7 +82,8 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
                              extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.TEST_EXTR_CLINICAL_DATA_PATH,
-                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH)
+                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH,
+                             extracted_column_dimension_path=TheTestFiles.TEST_EXTR_CLINICAL_DIMENSIONS_PATH)
         # this creates a new Hospital resource and insert it in a (JSON) temporary file
         transform.create_hospital(HospitalNames.TEST_H1)
 
@@ -104,7 +107,8 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
                              extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.TEST_EXTR_CLINICAL_DATA_PATH,
-                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH)
+                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH,
+                             extracted_column_dimension_path=TheTestFiles.TEST_EXTR_CLINICAL_DIMENSIONS_PATH)
         # this creates Examination resources (based on the metadata file) and insert them in a (JSON) temporary file
         log.debug(transform.data.to_string())
         log.debug(transform.metadata.to_string())
@@ -118,8 +122,8 @@ class TestTransform(unittest.TestCase):
         # because they may not be in the same order as in the metadata file, we get them based on their text
         # (which contains at least the column name, and maybe a description)
         # examination about molecule_a
-        examination_a = get_examination_by_text_in_list(transform.laboratory_features, "molecule_a")
-        assert len(examination_a) == 3 + 3  # 3 inherited + 3 proper fields
+        examination_a = get_examination_by_text(transform.laboratory_features, "molecule_a")
+        assert len(examination_a) == 7  # inherited fields (identifier, resource_type, timestamp), proper fields (code, permitted_datatype, dimension, category)
         assert "identifier" in examination_a
         assert examination_a["resource_type"] == TableNames.LABORATORY_FEATURE
         assert examination_a["code"] == {
@@ -132,25 +136,28 @@ class TestTransform(unittest.TestCase):
                 }
             ]
         }
-        assert examination_a["category"] == LabFeatureCategory.get_clinical().to_json()
-        assert examination_a["permitted_datatype"] == "float"
+        assert examination_a["category"] == LabFeatureCategories.get_clinical().to_json()
+        assert examination_a["permitted_datatype"] == DataTypes.FLOAT
+        assert examination_a["dimension"] == "mg/L"
 
         # examination about molecule_b
-        examination_b = get_examination_by_text_in_list(transform.laboratory_features, "molecule_b")
-        assert len(examination_b) == 3 + 3  # 3 inherited + 3 proper fields
+        examination_b = get_examination_by_text(transform.laboratory_features, "molecule_b")
+        log.info(examination_b)
+        assert len(examination_b) == 7
         assert "identifier" in examination_b
         assert examination_b["resource_type"] == TableNames.LABORATORY_FEATURE
         assert examination_b["code"] == {
             "text": "molecule_b",
             "coding": []
         }
-        assert examination_b["category"] == LabFeatureCategory.get_clinical().to_json()
-        assert examination_b["permitted_datatype"] == "integer"
+        assert examination_b["category"] == LabFeatureCategories.get_clinical().to_json()
+        assert examination_b["permitted_datatype"] == DataTypes.INTEGER
+        assert examination_b["dimension"] == "g"  # unit is gram
 
         # examination about ethnicity
         # "loinc/45678" and "snomedct/345:678"
-        examination_ethnicity = get_examination_by_text_in_list(transform.laboratory_features, "ethnicity")
-        assert len(examination_ethnicity) == 3 + 3  # 3 inherited + 3 proper fields
+        examination_ethnicity = get_examination_by_text(transform.laboratory_features, "ethnicity")
+        assert len(examination_ethnicity) == 6  # only 6 (not 7) because dimension is None, thus not added
         assert "identifier" in examination_ethnicity
         assert examination_ethnicity["resource_type"] == TableNames.LABORATORY_FEATURE
         assert examination_ethnicity["code"] == {
@@ -167,8 +174,9 @@ class TestTransform(unittest.TestCase):
                 }
             ]
         }
-        assert examination_ethnicity["category"] == LabFeatureCategory.get_phenotypic().to_json()
-        assert examination_ethnicity["permitted_datatype"] == "str"
+        assert examination_ethnicity["category"] == LabFeatureCategories.get_phenotypic().to_json()
+        assert examination_ethnicity["permitted_datatype"] == DataTypes.STRING
+        # assert examination_ethnicity["dimension"] is None  # this field is not added as it is None
 
         # check that there are no duplicates in Examination instances
         # for this, we get the set of their names (in the field "text")
@@ -180,7 +188,8 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
                              extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.TEST_EXTR_CLINICAL_DATA_PATH,
-                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH)
+                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH,
+                             extracted_column_dimension_path=TheTestFiles.TEST_EXTR_CLINICAL_DIMENSIONS_PATH)
         # this creates Examination resources (based on the metadata file) and insert them in a (JSON) temporary file
         log.debug(transform.data.to_string())
         log.debug(transform.metadata.to_string())
@@ -192,7 +201,8 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
                              extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.TEST_EXTR_CLINICAL_DATA_PATH,
-                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH)
+                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH,
+                             extracted_column_dimension_path=TheTestFiles.TEST_EXTR_CLINICAL_DIMENSIONS_PATH)
         # this loads references (hospital+examination resources), creates ExaminationRecord resources (based on the data file) and insert them in a (JSON) temporary file
         log.debug(transform.data.to_string())
         log.debug(transform.metadata.to_string())
@@ -215,7 +225,7 @@ class TestTransform(unittest.TestCase):
         # we take the seventh row
         log.debug(transform.laboratory_records)
         patient_id = "999999994"
-        examination_records_patient = get_examination_records_by_patient_id_in_list(examination_records_list=transform.laboratory_records, patient_id=patient_id)
+        examination_records_patient = get_lab_records_for_patient(lab_records_list=transform.laboratory_records, patient_id=patient_id)
         log.debug(json.dumps(examination_records_patient))
         assert len(examination_records_patient) == 5
         assert examination_records_patient[0]["resource_type"] == TableNames.LABORATORY_RECORD
@@ -242,6 +252,16 @@ class TestTransform(unittest.TestCase):
                                                description="Female"))
         assert examination_records_patient[2]["value"] == cc_female.to_json()  # the value as been replaced by its ontology code (sex is a categorical value)r
 
+        # we also check that conversions str->int/float and category->bool worked
+        assert get_field_value_for_patient(lab_records=transform.laboratory_records, lab_features=transform.laboratory_features, patient_id="999999999", column_name="molecule_b") == 100  # this has been cast as int because it matches the expected unit
+        assert get_field_value_for_patient(lab_records=transform.laboratory_records, lab_features=transform.laboratory_features, patient_id="999999998", column_name="molecule_b") == 111  # this has been cast as int because it matches the expected unit
+        assert get_field_value_for_patient(lab_records=transform.laboratory_records, lab_features=transform.laboratory_features, patient_id="999999997", column_name="molecule_b") == "231 grams"  # this has not been converted as this does not match the expected dimension
+        assert get_field_value_for_patient(lab_records=transform.laboratory_records, lab_features=transform.laboratory_features, patient_id="999999996", column_name="molecule_b") == 21  # this has been cast as int because it matches the expected unit
+        assert get_field_value_for_patient(lab_records=transform.laboratory_records, lab_features=transform.laboratory_features, patient_id="999999995", column_name="molecule_b") == 100  # this has been cast as int even though there was no unit
+        assert get_field_value_for_patient(lab_records=transform.laboratory_records, lab_features=transform.laboratory_features, patient_id="999999994", column_name="molecule_b") is None  # no value
+        assert get_field_value_for_patient(lab_records=transform.laboratory_records, lab_features=transform.laboratory_features, patient_id="999999993", column_name="molecule_b") is None  # null value
+        assert get_field_value_for_patient(lab_records=transform.laboratory_records, lab_features=transform.laboratory_features, patient_id="999999992", column_name="molecule_b") == "116 kg"  # this has not been converted as this does not match the expected dimension
+
         # check the selected ExaminationRecord instances more generally:
         # for examination_record in examination_records_patient: TODO NELLY
 
@@ -254,7 +274,8 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
                              extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.TEST_EXTR_CLINICAL_DATA_PATH,
-                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH)
+                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH,
+                             extracted_column_dimension_path=TheTestFiles.TEST_EXTR_CLINICAL_DIMENSIONS_PATH)
         # this creates Patient resources (based on the data file) and insert them in a (JSON) temporary file
         log.debug(transform.data.to_string())
         log.debug(transform.metadata.to_string())
@@ -272,7 +293,8 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
                              extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.TEST_EXTR_CLINICAL_DATA_PATH,
-                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH)
+                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH,
+                             extracted_column_dimension_path=TheTestFiles.TEST_EXTR_CLINICAL_DIMENSIONS_PATH)
         # no associated ontology code
         cc = transform.create_codeable_concept_from_row(column_name="molecule_b")
         assert cc is not None
@@ -301,7 +323,8 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
                              extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.TEST_EXTR_CLINICAL_DATA_PATH,
-                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH)
+                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH,
+                             extracted_column_dimension_path=TheTestFiles.TEST_EXTR_CLINICAL_DIMENSIONS_PATH)
         # no associated ontology code (patient id line)
         first_row = transform.metadata.iloc[0]
         coding = Coding(system=Ontologies.get_ontology_system(first_row[MetadataColumns.FIRST_ONTOLOGY_SYSTEM]),
@@ -347,35 +370,37 @@ class TestTransform(unittest.TestCase):
         _ = my_setup(hospital_name=HospitalNames.TEST_H1,
                      extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_CLINICAL_PATH,
                      extracted_data_paths=TheTestFiles.TEST_EXTR_CLINICAL_DATA_PATH,
-                     extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH)
+                     extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH,
+                             extracted_column_dimension_path=TheTestFiles.TEST_EXTR_CLINICAL_DIMENSIONS_PATH)
 
         # clinical variables
         cc = Transform.get_examination_category(column_name="molecule_a")
         assert cc is not None
-        assert cc.to_json() == LabFeatureCategory.get_clinical().to_json()
+        assert cc.to_json() == LabFeatureCategories.get_clinical().to_json()
 
         cc = Transform.get_examination_category(column_name="molecule_b")
         assert cc is not None
-        assert cc.to_json() == LabFeatureCategory.get_clinical().to_json()
+        assert cc.to_json() == LabFeatureCategories.get_clinical().to_json()
 
         cc = Transform.get_examination_category(column_name="molecule_g")
         assert cc is not None
-        assert cc.to_json() == LabFeatureCategory.get_clinical().to_json()
+        assert cc.to_json() == LabFeatureCategories.get_clinical().to_json()
 
         # phenotypic variables
         cc = Transform.get_examination_category(column_name="ethnicity")
         assert cc is not None
-        assert cc.to_json() == LabFeatureCategory.get_phenotypic().to_json()
+        assert cc.to_json() == LabFeatureCategories.get_phenotypic().to_json()
 
         cc = Transform.get_examination_category(column_name="sex")
         assert cc is not None
-        assert cc.to_json() == LabFeatureCategory.get_phenotypic().to_json()
+        assert cc.to_json() == LabFeatureCategories.get_phenotypic().to_json()
 
     def test_is_column_phenotypic(self):
         _ = my_setup(hospital_name=HospitalNames.TEST_H1,
                      extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_CLINICAL_PATH,
                      extracted_data_paths=TheTestFiles.TEST_EXTR_CLINICAL_DATA_PATH,
-                     extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH)
+                     extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH,
+                             extracted_column_dimension_path=TheTestFiles.TEST_EXTR_CLINICAL_DIMENSIONS_PATH)
 
         # clinical variables
         assert PhenotypicColumns.is_column_phenotypic(column_name="molecule_a") is False
@@ -390,7 +415,8 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
                              extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.TEST_EXTR_CLINICAL_DATA_PATH,
-                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH)
+                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_CLINICAL_MAPPED_PATH,
+                             extracted_column_dimension_path=TheTestFiles.TEST_EXTR_CLINICAL_DIMENSIONS_PATH)
 
         assert transform.fairify_value(column_name="id", value=transform.data.iloc[0][0]) == 999999999  # TODO NELLY: do not convert IDs to int, keep it as strings!
         assert transform.fairify_value(column_name="molecule_a", value=transform.data.iloc[0][1]) == 0.001

@@ -52,7 +52,6 @@ class Resource:
     def to_json(self):
         # encode create a stringified JSON object of the class
         # and decode transforms the stringified JSON to a "real" JSON object
-        log.debug(jsonpickle.decode(jsonpickle.encode(self, unpicklable=False)))
         return jsonpickle.decode(jsonpickle.encode(self, unpicklable=False))
 
     def __str__(self) -> str:

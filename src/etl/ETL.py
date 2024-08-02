@@ -58,7 +58,7 @@ class ETL:
 
                 self.extract.run()
             if self.execution.is_transform:
-                self.transform = Transform(database=self.database, execution=self.execution, data=self.extract.data, metadata=self.extract.metadata, mapped_values=self.extract.mapped_values)
+                self.transform = Transform(database=self.database, execution=self.execution, data=self.extract.data, metadata=self.extract.metadata, mapped_values=self.extract.mapped_values, column_to_dimension=self.extract.column_to_dimension)
                 self.transform.run()
             if self.execution.is_load:
                 # create indexes only if this is the last file (otherwise, we would create useless intermediate indexes)

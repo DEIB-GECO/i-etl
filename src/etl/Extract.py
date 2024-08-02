@@ -13,11 +13,11 @@ from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from enums.TableNames import TableNames
-from utils.constants import ID_COLUMNS
+from utils.constants import ID_COLUMNS, PATTERN_VALUE_DIMENSION
 from utils.setup_logger import log
 from utils.utils import is_not_nan, get_values_from_json_values, normalize_column_name, \
     normalize_ontology_system, normalize_ontology_code, normalize_column_value, normalize_hospital_name, \
-    normalize_var_type, read_csv_file_as_string
+    normalize_type, read_csv_file_as_string
 
 
 class Extract:
@@ -26,7 +26,8 @@ class Extract:
         self.metadata = None
         self.data = None
         self.mapped_values = {}  # accepted values for some categorical columns (column "JSON_values" in metadata)
-        self.mapped_types = {}  # expected data type for columns (column "vartype" in metadata)
+        self.column_to_vartype = {}  # each column is associated to its var type (column "vartype" in metadata)
+        self.column_to_dimension = {}  # each column is associated to its dimension, the union set of the dimension given in the metadata and the units found in the string values themselves
 
         self.execution = execution
         self.database = database
@@ -34,9 +35,11 @@ class Extract:
     def run(self) -> None:
         self.load_metadata_file()
         self.load_data_file()
+        log.debug(self.metadata.columns)
         self.remove_unused_columns()
         self.compute_mapped_values()
-        self.compute_mapped_types()
+        log.debug(self.metadata.columns)
+        self.compute_column_to_dimension()
 
         if self.execution.is_analyze:
             self.run_value_analysis()
@@ -77,7 +80,7 @@ class Extract:
             # there are more than one hospital described in this metadata
             # a. we filter the unnecessary hospital columns (for UC2 and UC3 there are several hospitals in the same metadata file)
             columns_to_keep = []
-            columns_to_keep.extend([normalize_column_name(column_name=meta_variable) for meta_variable in MetadataColumns.required_values()])
+            columns_to_keep.extend([normalize_column_name(column_name=meta_variable) for meta_variable in MetadataColumns.required_columns()])
             columns_to_keep.append(normalize_hospital_name(self.execution.hospital_name))
             log.debug(f"{self.metadata.columns}")
             log.debug(f"{columns_to_keep}")
@@ -115,8 +118,11 @@ class Extract:
         self.metadata[MetadataColumns.COLUMN_NAME] = self.metadata[MetadataColumns.COLUMN_NAME].apply(lambda x: normalize_column_name(column_name=x))
         # log.debug(self.metadata.to_string())
 
-        # normalize the var_type
-        self.metadata[MetadataColumns.VAR_TYPE] = self.metadata[MetadataColumns.VAR_TYPE].apply(lambda x: normalize_var_type(var_type=x))
+        # normalize the var_type and the ETL type
+        self.metadata[MetadataColumns.VAR_TYPE] = self.metadata[MetadataColumns.VAR_TYPE].apply(lambda x: normalize_type(
+            data_type=x))
+        self.metadata[MetadataColumns.ETL_TYPE] = self.metadata[MetadataColumns.ETL_TYPE].apply(lambda x: normalize_type(
+            data_type=x))
         # log.debug(self.metadata.to_string())
 
         # normalize the dict of accepted JSON values
@@ -242,14 +248,58 @@ class Extract:
                 self.mapped_values[row["name"]] = parsed_dicts
         log.debug(f"{self.mapped_values}")
 
-    def compute_mapped_types(self) -> None:
-        self.mapped_types = {}
+    def compute_column_to_dimension(self) -> None:
+        self.column_to_dimension = {}
 
         for index, row in self.metadata.iterrows():
-            if is_not_nan(row[MetadataColumns.VAR_TYPE]):
-                # we associate the column name to its expected type
-                self.mapped_types[row[MetadataColumns.COLUMN_NAME]] = row[MetadataColumns.VAR_TYPE]
-        log.debug(f"{self.mapped_types}")
+            column_name = row[MetadataColumns.COLUMN_NAME]
+            add_described_dimension = False
+            if column_name in self.data.columns:  # some columns are in the metadata and not in the data (but are kept), thus we need to check
+                # we compute the set of units used in the data for that column and keep the most frequent
+                # if there is no unit for those value, we use the provided dimension if it exists, otherwise None
+                values_in_columns = self.data[column_name]
+                log.debug(f"values in columns: {values_in_columns}")
+                units = {}
+                for value in values_in_columns:
+                    if is_not_nan(value):
+                        m = re.search(PATTERN_VALUE_DIMENSION, value)
+                        if m is not None:
+                            # m.group(0) is the text itself, m.group(1) is the int/float value, m.group(2) is the dimension
+                            unit = m.group(2)
+                            if unit not in units:
+                                units[unit] = 0
+                            units[unit] += 1
+                        else:
+                            # this value does not contain a dimension or is not of the form "value dimension"
+                            pass
+                log.debug(f"units for column {column_name}: {units}")
+
+                # we only keep the most frequent unit; values that do not have this unit will not be cast to numeric
+                if len(units.keys()) > 0:
+                    # if several units reach the highest frequency, we sorted them in alphabetical order and take the first
+                    max_frequency = max(units.values())
+                    units_with_max_frequency = [unit for unit, frequency in units.items() if frequency == max_frequency]
+                    units_with_max_frequency.sort()
+                    most_frequent_unit = units_with_max_frequency[0]
+                    log.debug(f"most frequent dimension is {most_frequent_unit}")
+                    self.column_to_dimension[column_name] = most_frequent_unit
+                else:
+                    # no unit found in those values
+                    add_described_dimension = True
+            else:
+                # this column is described in the metadata but not in the data
+                add_described_dimension = True
+
+            if add_described_dimension:
+                # 1. if there is a dimension provided by the description, we use it
+                # 2. otherwise, we set it to None
+                column_expected_dimension = row[MetadataColumns.VAR_DIMENSION]
+                if is_not_nan(column_expected_dimension):
+                    # if there is a dimension provided in the metadata (this may be overridden if there are dimensions in the cells values)
+                    self.column_to_dimension[column_name] = column_expected_dimension
+                else:
+                    self.column_to_dimension[column_name] = None
+        log.debug(self.column_to_dimension)
 
     def run_value_analysis(self) -> None:
         log.debug(f"{self.mapped_values}")
@@ -263,10 +313,8 @@ class Extract:
             # log.debug(self.metadata["name"])
             # log.info("Working on column '%s'", column)
             # trying to get the expected type of the current column
-            if column in self.mapped_types:
-                expected_type = self.mapped_types[column]
-            else:
-                expected_type = ""
+            # TODO NELLY: complete this part
+            expected_type = ""
             # trying to get expected values for the current column
             if column in self.mapped_values:
                 # self.mapped_values[column] contains the mappings (JSON dicts) for the given column
