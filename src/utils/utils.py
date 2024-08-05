@@ -177,9 +177,9 @@ def normalize_type(data_type: str) -> str:
 def cast_value(value: str | float | bool | datetime) -> str | float | bool | datetime:
     if isinstance(value, str):
         # try to convert as boolean
-        if value == "True" or value == "true":
+        if normalize_column_value(column_value=value) == "true":
             return True
-        elif value == "False" or value == "false":
+        elif normalize_column_value(column_value=value) == "false":
             return False
 
         # try to cast as float
@@ -188,9 +188,7 @@ def cast_value(value: str | float | bool | datetime) -> str | float | bool | dat
             return float_value
 
         # try to cast as date
-        log.debug(f"trying to cast value {value}")
         datetime_value = get_datetime_from_str(str_value=value)
-        log.debug(f"obtained datetime value: {value}")
         if datetime_value is not None:
             return datetime_value
 
@@ -365,6 +363,17 @@ def get_json_resource_file(current_working_dir: str, table_name: str, count: int
 
 def read_csv_file_as_string(filepath: str) -> pd.DataFrame:
     return pd.read_csv(filepath, index_col=False, dtype=str, keep_default_na=True)
+
+
+def split_list_of_files(joined_filepaths: str) -> [str]:
+    log.debug(f"{joined_filepaths}")
+    split_files = joined_filepaths.split(",")
+    log.debug(f"{split_files}")
+    for current_file in split_files:
+        if not os.path.isfile(current_file):
+            raise FileNotFoundError("The specified data file " + current_file + " does not exist.")
+    # we do not copy the data in our working dir because it is too large to be copied
+    return split_files  # file 1,file 2, ...,file N
 
 
 # ARRAYS

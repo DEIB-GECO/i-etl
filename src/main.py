@@ -22,12 +22,24 @@ if __name__ == '__main__':
                         help="Set the hospital name among " + str(),
                         choices={hn for hn in HospitalNames.values()},
                         required=True)
-    parser.add_argument("--"+Execution.CLINICAL_METADATA_PATH_KEY,
+    parser.add_argument("--" + Execution.METADATA_PATH_KEY,
                         help="Set the absolute path to the metadata file.",
                         required=True)
-    parser.add_argument("--"+Execution.CLINICAL_DATA_PATHS_KEY,
-                        help="Set the absolute path to one or several data files, separated with commas (,) if applicable.",
-                        required=True)
+    parser.add_argument("--" + Execution.LABORATORY_PATHS_KEY,
+                        help="Set the absolute path to one or several laboratory data files, separated with commas (,).",
+                        required=False)
+    parser.add_argument("--" + Execution.DIAGNOSIS_PATHS_KEY,
+                        help="Set the absolute path to one or several diagnosis data files, separated with commas (,).",
+                        required=False)
+    parser.add_argument("--" + Execution.MEDICINE_PATHS_KEY,
+                        help="Set the absolute path to one or several medicine data files, separated with commas (,).",
+                        required=False)
+    parser.add_argument("--" + Execution.IMAGING_PATHS_KEY,
+                        help="Set the absolute path to one or several imaging data files, separated with commas (,).",
+                        required=False)
+    parser.add_argument("--" + Execution.GENOMIC_PATHS_KEY,
+                        help="Set the absolute path to one or several genomic data files, separated with commas (,).",
+                        required=False)
     parser.add_argument("--"+Execution.USE_EN_LOCALE_KEY,
                         help="Whether to use the en_US locale instead of the one automatically assigned by the ETL.",
                         choices={"True", "False"},

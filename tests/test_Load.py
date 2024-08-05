@@ -10,6 +10,7 @@ from enums.HospitalNames import HospitalNames
 from enums.Ontologies import Ontologies
 from enums.TableNames import TableNames
 from utils.constants import DEFAULT_DB_CONNECTION, TEST_DB_NAME
+from utils.setup_logger import log
 from utils.utils import get_mongodb_date_from_datetime
 
 
@@ -108,7 +109,7 @@ class TestLoad(unittest.TestCase):
         #    - one on timestamp
         for table_name in TableNames.values():
             index_cursor = load.database.db[table_name].list_indexes()
-            print("\nindex_cursor:", index_cursor)
+            log.debug(f"table {table_name}, index_cursor: {index_cursor}")
             count_indexes = 0
             # indexes are of the form
             # SON([('v', 2), ('key', SON([('_id', 1)])), ('name', '_id_')])
@@ -116,7 +117,7 @@ class TestLoad(unittest.TestCase):
             # SON([('v', 2), ('key', SON([('timestamp', 1)])), ('name', 'timestamp_1')])
             for index in index_cursor:
                 index_key = index["key"]
-                print(index_key)
+                log.debug(index_key)
                 if "_id" in index_key or "identifier.value" in index_key or "timestamp" in index_key:
                     # to check whether we have exactly the three indexes we expect
                     count_indexes = count_indexes + 1
@@ -126,15 +127,19 @@ class TestLoad(unittest.TestCase):
                     else:
                         assert "unique" not in index
                 else:
-                    if table_name == TableNames.LABORATORY_FEATURE:
-                        # there is also a double indexes (code.coding.system and code.coding.code)
+                    log.debug(table_name)
+                    log.info(TableNames.features())
+                    log.info(TableNames.records())
+                    log.info(table_name in TableNames.features())
+                    if table_name in TableNames.features():
+                        # there is also a double index (code.coding.system and code.coding.code)
                         if "code.coding.system" in index_key and "code.coding.code" in index_key:
                             count_indexes = count_indexes + 1
                             assert "unique" not in index
                         else:
-                            assert False, f"{table_name.value} expects a compound index on two fields."
-                    elif table_name == TableNames.LABORATORY_RECORD:
-                        # there are also three more indexes (instantiate.reference, subject.reference, based_on.reference)
+                            assert False, f"{table_name} expects a compound index on two fields."
+                    elif table_name in TableNames.records():
+                        # there are also two more indexes (instantiate.reference, subject.reference)
                         if "instantiate.reference" in index_key:
                             count_indexes = count_indexes + 1
                             assert "unique" not in index
@@ -142,15 +147,17 @@ class TestLoad(unittest.TestCase):
                             count_indexes = count_indexes + 1
                             assert "unique" not in index
                         elif "based_on.reference" in index_key:
-                            count_indexes = count_indexes + 1
-                            assert "unique" not in index
+                            # did not test Sample ref index because it is proper to BUZZI data
+                            pass
+                            #     count_indexes = count_indexes + 1
+                            #     assert "unique" not in index
                         else:
-                            assert False, f"{table_name.value} has an unknown index named {index_key}."
+                            assert False, f"{table_name} has an unknown index named {index_key}."
                     else:
-                        assert False, f"{table_name.value} should have no index."
-            if table_name == TableNames.LABORATORY_FEATURE:
+                        assert False, f"{table_name} should have no index."
+            if table_name in TableNames.features():
                 assert count_indexes == 4
-            elif table_name == TableNames.LABORATORY_RECORD:
-                assert count_indexes == 6
+            elif table_name in TableNames.records():
+                assert count_indexes == 5
             else:
                 assert count_indexes == 3

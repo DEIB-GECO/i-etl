@@ -1,4 +1,5 @@
 from enums.EnumAsClass import EnumAsClass
+from utils.setup_logger import log
 
 
 class TableNames(EnumAsClass):
@@ -17,3 +18,20 @@ class TableNames(EnumAsClass):
     IMAGING_RECORD = "ImagingRecord"
     EXECUTION = "Execution"
     TEST = "Test"
+
+    @classmethod
+    def features(cls):
+        xs = []
+        for name, value in vars(cls).items():
+            if not (name.startswith('__') or isinstance(value, classmethod)) and value.endswith("Feature"):
+                xs.append(value)
+        return xs
+
+    @classmethod
+    def records(cls):
+        xs = []
+        for name, value in vars(cls).items():
+            if not (name.startswith('__') or isinstance(value, classmethod)) and value.endswith("Record"):
+                xs.append(value)
+        return xs
+

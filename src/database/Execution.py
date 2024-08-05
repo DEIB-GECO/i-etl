@@ -12,6 +12,7 @@ from utils import setup_logger
 from enums.UpsertPolicy import UpsertPolicy
 from utils.constants import WORKING_DIR, DEFAULT_DB_CONNECTION
 from utils.setup_logger import log
+from utils.utils import split_list_of_files
 
 
 class Execution:
@@ -25,8 +26,12 @@ class Execution:
     IS_ANALYZE_KEY = "analyze"
     IS_TRANSFORM_KEY = "transform"
     IS_LOAD_KEY = "load"
-    CLINICAL_METADATA_PATH_KEY = "clinical_metadata_path"
-    CLINICAL_DATA_PATHS_KEY = "clinical_data_paths"
+    METADATA_PATH_KEY = "metadata"
+    LABORATORY_PATHS_KEY = "laboratory"
+    DIAGNOSIS_PATHS_KEY = "diagnosis"
+    MEDICINE_PATHS_KEY = "medicine"
+    IMAGING_PATHS_KEY = "imaging"
+    GENOMIC_PATHS_KEY = "genomic"
 
     def __init__(self, db_name: str):
         self.execution_date = datetime.now().isoformat()
@@ -40,9 +45,14 @@ class Execution:
         self.setup_logging_files()
 
         # parameters related to the project structure and the input/output files
-        self.clinical_metadata_filepath = None  # user input
-        self.clinical_filepaths = None  # user input
-        self.current_filepath = None  # computed in setup
+        self.metadata_filepath = None  # user input
+        self.laboratory_filepaths = None  # user input
+        self.diagnosis_filepaths = None  # user input
+        self.medicine_filepaths = None  # user input
+        self.imaging_filepaths = None  # user input
+        self.genomic_filepaths = None  # user input
+        self.current_filepath = None  # set in the loop on files in ETL
+        self.current_file_type = None  # set in the loop on files in ETL
         self.use_en_locale = True  # user input
         # parameters related to the database
         self.db_connection = DEFAULT_DB_CONNECTION  # user input
@@ -95,12 +105,24 @@ class Execution:
         # B. set up the data and metadata files
         if setup_data_files:
             log.debug("I will also set up data files")
-            if Execution.CLINICAL_METADATA_PATH_KEY in args_as_dict:
-                self.clinical_metadata_filepath = args_as_dict[Execution.CLINICAL_METADATA_PATH_KEY]
-            log.debug(self.clinical_metadata_filepath)
-            if Execution.CLINICAL_DATA_PATHS_KEY in args_as_dict:
-                self.clinical_filepaths = args_as_dict[Execution.CLINICAL_DATA_PATHS_KEY]
-            log.debug(self.clinical_filepaths)
+            if Execution.METADATA_PATH_KEY in args_as_dict:
+                self.metadata_filepath = args_as_dict[Execution.METADATA_PATH_KEY]
+            log.debug(self.metadata_filepath)
+            if Execution.LABORATORY_PATHS_KEY in args_as_dict:
+                self.laboratory_filepaths = args_as_dict[Execution.LABORATORY_PATHS_KEY]
+            if Execution.DIAGNOSIS_PATHS_KEY in args_as_dict:
+                self.diagnosis_filepaths = args_as_dict[Execution.DIAGNOSIS_PATHS_KEY]
+            if Execution.MEDICINE_PATHS_KEY in args_as_dict:
+                self.medicine_filepaths = args_as_dict[Execution.MEDICINE_PATHS_KEY]
+            if Execution.IMAGING_PATHS_KEY in args_as_dict:
+                self.imaging_filepaths = args_as_dict[Execution.IMAGING_PATHS_KEY]
+            if Execution.GENOMIC_PATHS_KEY in args_as_dict:
+                self.genomic_filepaths = args_as_dict[Execution.GENOMIC_PATHS_KEY]
+            log.debug(self.laboratory_filepaths)
+            log.debug(self.diagnosis_filepaths)
+            log.debug(self.medicine_filepaths)
+            log.debug(self.imaging_filepaths)
+            log.debug(self.genomic_filepaths)
             self.setup_data_files()
 
     def create_current_working_dir(self):
@@ -134,29 +156,50 @@ class Execution:
         # get metadata and data filepaths
         try:
             new_metadata_filename = "metadata-" + self.hospital_name + ".csv"
-            new_clinical_metadata_filepath = os.path.join(self.working_dir_current, new_metadata_filename)
-            shutil.copyfile(self.clinical_metadata_filepath, new_clinical_metadata_filepath)
-            self.clinical_metadata_filepath = new_clinical_metadata_filepath
+            new_metadata_filepath = os.path.join(self.working_dir_current, new_metadata_filename)
+            shutil.copyfile(self.metadata_filepath, new_metadata_filepath)
+            self.metadata_filepath = new_metadata_filepath
         except Exception:
-            raise FileNotFoundError(f"The specified metadata file {self.clinical_metadata_filepath} does not exist.")
+            raise FileNotFoundError(f"The specified metadata file {self.metadata_filepath} does not exist.")
 
         # if there is a single file, this will put that file in a list
         # otherwise, when the user provides several files, it will split them in an array
-        log.debug(f"{self.clinical_filepaths}")
-        split_files = self.clinical_filepaths.split(",")
-        log.debug(f"{split_files}")
-        for current_file in split_files:
-            if not os.path.isfile(current_file):
-                raise FileNotFoundError("The specified data file " + current_file + " does not exist.")
-        # we do not copy the data in our working dir because it is too large to be copied
-        self.clinical_filepaths = split_files  # file 1,file 2, ...,file N
-        log.debug(f"{self.clinical_filepaths}")
+        # also, we do not copy the data in our working dir because it is too large to be copied
+        # 1. we process laboratory data filepaths...
+        if self.laboratory_filepaths is not None:
+            log.debug(f"{self.laboratory_filepaths}")
+            self.laboratory_filepaths = split_list_of_files(self.laboratory_filepaths)  # file 1,file 2, ...,file N
+            log.debug(f"{self.laboratory_filepaths}")
+
+        # 2. ...diagnosis filepaths...
+        if self.diagnosis_filepaths is not None:
+            log.debug(f"{self.diagnosis_filepaths}")
+            self.diagnosis_filepaths = split_list_of_files(self.diagnosis_filepaths)  # file 1,file 2, ...,file N
+            log.debug(f"{self.diagnosis_filepaths}")
+
+        # 3. ...medicine filepaths ...
+        if self.medicine_filepaths is not None:
+            log.debug(f"{self.medicine_filepaths}")
+            self.medicine_filepaths = split_list_of_files(self.medicine_filepaths)  # file 1,file 2, ...,file N
+            log.debug(f"{self.medicine_filepaths}")
+
+        # 4. ...imaging filepaths ...
+        if self.imaging_filepaths is not None:
+            log.debug(f"{self.imaging_filepaths}")
+            self.imaging_filepaths = split_list_of_files(self.imaging_filepaths)  # file 1,file 2, ...,file N
+            log.debug(f"{self.imaging_filepaths}")
+
+        # 5. ...genomic filepaths
+        if self.genomic_filepaths is not None:
+            log.debug(f"{self.genomic_filepaths}")
+            self.genomic_filepaths = split_list_of_files(self.genomic_filepaths)  # file 1,file 2, ...,file N
+            log.debug(f"{self.genomic_filepaths}")
 
     def has_no_none_attributes(self) -> bool:
         return (self.working_dir is not None
                 and self.working_dir_current is not None
-                and self.clinical_metadata_filepath is not None
-                and self.clinical_filepaths is not None
+                and self.metadata_filepath is not None
+                and self.laboratory_filepaths is not None
                 and self.use_en_locale is not None
                 and self.db_name is not None
                 and self.db_connection is not None
@@ -174,8 +217,12 @@ class Execution:
             "user_parameters": {
                 "working_dir": self.working_dir,
                 "working_dir_current": self.working_dir_current,
-                Execution.CLINICAL_METADATA_PATH_KEY: self.clinical_metadata_filepath,
-                Execution.CLINICAL_DATA_PATHS_KEY: self.clinical_filepaths,
+                Execution.METADATA_PATH_KEY: self.metadata_filepath,
+                Execution.LABORATORY_PATHS_KEY: self.laboratory_filepaths,
+                Execution.DIAGNOSIS_PATHS_KEY: self.diagnosis_filepaths,
+                Execution.MEDICINE_PATHS_KEY: self.medicine_filepaths,
+                Execution.IMAGING_PATHS_KEY: self.imaging_filepaths,
+                Execution.GENOMIC_PATHS_KEY: self.genomic_filepaths,
                 "current_filepath": self.current_filepath,
                 Execution.DB_CONNECTION_KEY: self.db_connection,
                 Execution.DB_NAME_KEY: self.db_name,

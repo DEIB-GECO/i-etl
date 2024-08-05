@@ -2,6 +2,7 @@ import locale
 
 from database.Database import Database
 from database.Execution import Execution
+from enums.FileTypes import FileTypes
 from etl.Extract import Extract
 from etl.Load import Load
 from etl.Transform import Transform
@@ -35,30 +36,47 @@ class ETL:
     def run(self) -> None:
         is_last_file = False
         file_counter = 0
-        log.debug(f"{self.execution.clinical_filepaths}")
-        log.debug(f"{type(self.execution.clinical_filepaths)}")
-        for one_file in self.execution.clinical_filepaths:
+        log.debug(f"{self.execution.laboratory_filepaths}")
+        log.debug(f"{type(self.execution.laboratory_filepaths)}")
+
+        # 1. aggregate all filepaths given by the user
+        # in order to be able to ingest them all with a single loop
+        # we will also store the file type (lab., diagnosis, etc) so that Transform knows in which table store data
+        all_filepaths = {}
+        if self.execution.laboratory_filepaths is not None:
+            for laboratory_filepath in self.execution.laboratory_filepaths:
+                all_filepaths[laboratory_filepath] = FileTypes.LABORATORY
+        if self.execution.diagnosis_filepaths is not None:
+            for diagnosis_filepath in self.execution.diagnosis_filepaths:
+                all_filepaths[diagnosis_filepath] = FileTypes.DIAGNOSIS
+        if self.execution.medicine_filepaths is not None:
+            for medicine_filepath in self.execution.medicine_filepaths:
+                all_filepaths[medicine_filepath] = FileTypes.MEDICINE
+        if self.execution.genomic_filepaths is not None:
+            for genomic_filepath in self.execution.genomic_filepaths:
+                all_filepaths[genomic_filepath] = FileTypes.GENOMIC
+        if self.execution.imaging_filepaths is not None:
+            for imaging_filepath in self.execution.imaging_filepaths:
+                all_filepaths[imaging_filepath] = FileTypes.IMAGING
+
+        # 2. iterate over all the files
+        for one_file in all_filepaths.keys():
             log.debug(f"{one_file}")
             file_counter = file_counter + 1
-            if file_counter == len(self.execution.clinical_filepaths):
+            if file_counter == len(all_filepaths):
                 is_last_file = True
-            # set the current path in the config because the ETL only knows files declared in the config
-            if one_file.startswith("/"):
-                # this is an absolute filepath, so we keep it as is
-                self.execution.current_filepath = one_file
-            else:
-                # this is a relative filepath, we consider it to be relative to the project root (BETTER-fairificator)
-                # we need to add three times ".." because the data files are never copied to the working dir (but remain in their place)
-                # NOPE: full_path = os.path.join(self.execution.working_dir_current, "..", "..", "..", str(one_file))
-                self.execution.current_filepath = one_file
+            # set the current filepath
+            # this may be an absolute path (starting with /)
+            # or a relative filepath, for which we consider it to be relative to the project root (BETTER-fairificator)
+            self.execution.current_filepath = one_file
+            self.execution.current_file_type = all_filepaths[one_file]
 
-            log.info(f"--- Starting to ingest file '{self.execution.current_filepath}'")
+            log.info(f"--- Starting to ingest file '{self.execution.current_filepath}' of type {self.execution.current_file_type}")
             if self.execution.is_extract:
                 self.extract = Extract(database=self.database, execution=self.execution)
-
                 self.extract.run()
             if self.execution.is_transform:
-                self.transform = Transform(database=self.database, execution=self.execution, data=self.extract.data, metadata=self.extract.metadata, mapped_values=self.extract.mapped_values, column_to_dimension=self.extract.column_to_dimension)
+                self.transform = Transform(database=self.database, execution=self.execution, data=self.extract.data, metadata=self.extract.metadata, mapped_values=self.extract.categorical_values, column_to_dimension=self.extract.column_to_dimension)
                 self.transform.run()
             if self.execution.is_load:
                 # create indexes only if this is the last file (otherwise, we would create useless intermediate indexes)

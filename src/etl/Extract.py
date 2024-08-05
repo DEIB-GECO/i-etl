@@ -9,6 +9,7 @@ from analysis.ValueAnalysis import ValueAnalysis
 from analysis.VariableAnalysis import VariableAnalysis
 from database.Database import Database
 from database.Execution import Execution
+from enums.FileTypes import FileTypes
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
@@ -25,31 +26,48 @@ class Extract:
     def __init__(self, database: Database, execution: Execution):
         self.metadata = None
         self.data = None
-        self.mapped_values = {}  # accepted values for some categorical columns (column "JSON_values" in metadata)
+        self.categorical_values = {}  # accepted values for some categorical columns (column "JSON_values" in metadata)
         self.column_to_vartype = {}  # each column is associated to its var type (column "vartype" in metadata)
         self.column_to_dimension = {}  # each column is associated to its dimension, the union set of the dimension given in the metadata and the units found in the string values themselves
 
         self.execution = execution
         self.database = database
 
-    def run(self) -> None:
+    def run (self) -> None:
+        # load and pre-process metadata
         self.load_metadata_file()
-        self.load_data_file()
+        self.compute_categorical_values()
         log.debug(self.metadata.columns)
-        self.remove_unused_columns()
-        self.compute_mapped_values()
-        log.debug(self.metadata.columns)
-        self.compute_column_to_dimension()
 
+        # load and pre-process data (all kinds)
+        if self.execution.current_file_type in (FileTypes.LABORATORY, FileTypes.DIAGNOSIS, FileTypes.MEDICINE):
+            # laboratory, diagnosis, medicine data
+            self.load_csv_data_file()
+            self.remove_unused_csv_columns()
+            log.debug(self.metadata.columns)
+        elif self.execution.current_file_type == FileTypes.IMAGING:
+            self.load_imaging_data_file()
+        elif self.execution.current_file_type == FileTypes.GENOMIC:
+            self.load_genomic_data_file()
+        else:
+            raise TypeError(f"The type of the current file is unknown. It should be laboratory, diagnosis, medicine, imaging or genomic. It is of type: {self.execution.current_file_type}")
+
+        # The remaining task of 1. (loading metadata) has to be done after the data is loaded because
+        # the dimensions are either extracted from the metadata (if described) or from the data
+        # we do this only for lab data, otherwise we end up with units extracted from any string containing both digits and chars
+        if self.execution.current_file_type == FileTypes.LABORATORY:
+            self.compute_column_to_dimension()
+
+        # if asked, run some data analysis on the loaded data
         if self.execution.is_analyze:
             self.run_value_analysis()
             self.run_variable_analysis()
 
     def load_metadata_file(self) -> None:
-        log.info(f"Metadata filepath is {self.execution.clinical_metadata_filepath}")
+        log.info(f"Metadata filepath is {self.execution.metadata_filepath}")
 
         # index_col is False to not add a column with line numbers
-        self.metadata = read_csv_file_as_string(self.execution.clinical_metadata_filepath)  # keep all metadata as str
+        self.metadata = read_csv_file_as_string(self.execution.metadata_filepath)  # keep all metadata as str
         log.debug(self.metadata.dtypes)
         # log.debug(self.metadata.to_string())
 
@@ -96,8 +114,8 @@ class Extract:
         # log.debug(self.metadata.to_string())
 
         # 3. We keep the metadata of the current dataset
-        # TODO Nelly: store the clinical metadata into self_clinical_metadata (a subset of self.metadata); similarly for images and genomic data
-        filename = os.path.basename(self.execution.clinical_filepaths[0]).lower()
+        # TODO Nelly: store the laboratory metadata into self_laboratory_metadata (a subset of self.metadata); similarly for images and genomic data
+        filename = os.path.basename(self.execution.current_filepath).lower()
         log.debug(f"{filename}")
         log.debug(f"{self.metadata.to_string()}")
         log.debug(f"{self.metadata[MetadataColumns.DATASET_NAME].unique()}")
@@ -172,7 +190,7 @@ class Extract:
 
         log.info(f"{len(self.metadata.columns)} columns and {len(self.metadata)} lines in the metadata file.")
 
-    def load_data_file(self) -> None:
+    def load_csv_data_file(self) -> None:
         log.info(f"{self.execution.current_filepath}")
         assert os.path.exists(self.execution.current_filepath), "The provided samples file could not be found. Please check the filepath you specify when running this script."
 
@@ -198,7 +216,15 @@ class Extract:
 
         log.info(f"{len(self.data.columns)} columns and {len(self.data)} lines in the data file.")
 
-    def remove_unused_columns(self) -> None:
+    def load_imaging_data_file(self):
+        # TODO Nelly: implement this
+        pass
+
+    def load_genomic_data_file(self):
+        # TODO Nelly: implement this
+        pass
+
+    def remove_unused_csv_columns(self) -> None:
         # removes the data columns that are NOT described in the metadata
         # if a column is described in the metadata but is not present in the data or this column is empty we keep it
         # because people took the time to describe it.
@@ -228,8 +254,8 @@ class Extract:
         log.debug(self.data.to_string())
         log.debug(self.metadata.to_string())
 
-    def compute_mapped_values(self) -> None:
-        self.mapped_values = {}
+    def compute_categorical_values(self) -> None:
+        self.categorical_values = {}
 
         for index, row in self.metadata.iterrows():
             if is_not_nan(row[MetadataColumns.JSON_VALUES]):
@@ -245,15 +271,15 @@ class Extract:
                     if Ontologies.LOINC["name"] in current_dict:
                         current_dict[Ontologies.LOINC["name"]] = normalize_ontology_code(ontology_code=current_dict[Ontologies.LOINC["name"]])
                     parsed_dicts.append(current_dict)
-                self.mapped_values[row["name"]] = parsed_dicts
-        log.debug(f"{self.mapped_values}")
+                self.categorical_values[row["name"]] = parsed_dicts
+        log.debug(f"{self.categorical_values}")
 
     def compute_column_to_dimension(self) -> None:
         self.column_to_dimension = {}
 
         for index, row in self.metadata.iterrows():
             column_name = row[MetadataColumns.COLUMN_NAME]
-            add_described_dimension = False
+            add_dimension_from_metadata = False
             if column_name in self.data.columns:  # some columns are in the metadata and not in the data (but are kept), thus we need to check
                 # we compute the set of units used in the data for that column and keep the most frequent
                 # if there is no unit for those value, we use the provided dimension if it exists, otherwise None
@@ -285,12 +311,12 @@ class Extract:
                     self.column_to_dimension[column_name] = most_frequent_unit
                 else:
                     # no unit found in those values
-                    add_described_dimension = True
+                    add_dimension_from_metadata = True
             else:
                 # this column is described in the metadata but not in the data
-                add_described_dimension = True
+                add_dimension_from_metadata = True
 
-            if add_described_dimension:
+            if add_dimension_from_metadata:
                 # 1. if there is a dimension provided by the description, we use it
                 # 2. otherwise, we set it to None
                 column_expected_dimension = row[MetadataColumns.VAR_DIMENSION]
@@ -302,7 +328,7 @@ class Extract:
         log.debug(self.column_to_dimension)
 
     def run_value_analysis(self) -> None:
-        log.debug(f"{self.mapped_values}")
+        log.debug(f"{self.categorical_values}")
         # for each column in the sample data (and not in the metadata because some (empty) data columns are not
         # present in the metadata file), we compare the set of values it takes against the accepted set of values
         # (available in the mapped_values variable)
@@ -316,10 +342,10 @@ class Extract:
             # TODO NELLY: complete this part
             expected_type = ""
             # trying to get expected values for the current column
-            if column in self.mapped_values:
+            if column in self.categorical_values:
                 # self.mapped_values[column] contains the mappings (JSON dicts) for the given column
                 # we need to get only the set of values described in the mappings of the given column
-                accepted_values = get_values_from_json_values(json_values=self.mapped_values[column])
+                accepted_values = get_values_from_json_values(json_values=self.categorical_values[column])
             else:
                 accepted_values = []
             value_analysis = ValueAnalysis(column_name=column, values=values, expected_type=expected_type, accepted_values=accepted_values)

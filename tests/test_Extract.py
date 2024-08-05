@@ -19,8 +19,8 @@ def my_setup(metadata_path: str, data_paths: str, hospital_name: str) -> Extract
     args = {
         Execution.DB_CONNECTION_KEY: DEFAULT_DB_CONNECTION,
         Execution.DB_DROP_KEY: True,
-        Execution.CLINICAL_METADATA_PATH_KEY: metadata_path,
-        Execution.CLINICAL_DATA_PATHS_KEY: data_paths,
+        Execution.METADATA_PATH_KEY: metadata_path,
+        Execution.LABORATORY_PATHS_KEY: data_paths,
         Execution.HOSPITAL_NAME_KEY: hospital_name
     }
     TestExtract.execution.set_up(args_as_dict=args, setup_data_files=True)
@@ -35,7 +35,7 @@ class TestExtract(unittest.TestCase):
 
     def test_load_metadata_file_H1_D1(self):
         extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.TEST_ORIG_CLINICAL_PATH,
+                           data_paths=TheTestFiles.TEST_ORIG_LABORATORY_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()
 
@@ -109,9 +109,9 @@ class TestExtract(unittest.TestCase):
         # DATASET: this should be the dataset name, and there should be no other datasets in that column
         unique_dataset_names = list(extract.metadata[MetadataColumns.DATASET_NAME].unique())
         log.debug(unique_dataset_names)
-        log.debug(TheTestFiles.TEST_ORIG_CLINICAL_PATH.split(os.sep)[-1])
+        log.debug(TheTestFiles.TEST_ORIG_LABORATORY_PATH.split(os.sep)[-1])
         assert len(unique_dataset_names) == 1
-        assert unique_dataset_names[0] == TheTestFiles.TEST_ORIG_CLINICAL_PATH.split(os.sep)[-1]
+        assert unique_dataset_names[0] == TheTestFiles.TEST_ORIG_LABORATORY_PATH.split(os.sep)[-1]
 
         log.debug(extract.metadata.to_string())
 
@@ -218,10 +218,10 @@ class TestExtract(unittest.TestCase):
 
     def test_load_data_file_H1_D1(self):
         extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.TEST_ORIG_CLINICAL_PATH,
+                           data_paths=TheTestFiles.TEST_ORIG_LABORATORY_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-        extract.execution.current_filepath = TheTestFiles.TEST_ORIG_CLINICAL_PATH  # set the test data as the currently processed file
-        extract.load_data_file()
+        extract.execution.current_filepath = TheTestFiles.TEST_ORIG_LABORATORY_PATH  # set the test data as the currently processed file
+        extract.load_csv_data_file()
 
         # a. general size checks
         assert extract.data is not None, "Data is None, while it should not."
@@ -248,7 +248,7 @@ class TestExtract(unittest.TestCase):
                            data_paths=TheTestFiles.TEST_ORIG_GENOMICS_PATH,
                            hospital_name=HospitalNames.TEST_H3)
         extract.execution.current_filepath = TheTestFiles.TEST_ORIG_GENOMICS_PATH  # set the test data as the currently processed file
-        extract.load_data_file()
+        extract.load_csv_data_file()
 
         # a. general size checks
         assert extract.data is not None, "Data is None, while it should not."
@@ -283,40 +283,40 @@ class TestExtract(unittest.TestCase):
 
     def test_compute_mapped_values(self):
         extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.TEST_ORIG_CLINICAL_PATH,
+                           data_paths=TheTestFiles.TEST_ORIG_LABORATORY_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()  # required to compute mapped values
-        extract.compute_mapped_values()
+        extract.compute_categorical_values()
 
-        log.debug(extract.mapped_values)
+        log.debug(extract.categorical_values)
 
-        assert len(extract.mapped_values.keys()) == 1  # only sex has categorical values in the test data
-        assert "sex" in extract.mapped_values.keys()
-        assert len(extract.mapped_values["sex"]) == 2  # mappings for female, male
+        assert len(extract.categorical_values.keys()) == 1  # only sex has categorical values in the test data
+        assert "sex" in extract.categorical_values.keys()
+        assert len(extract.categorical_values["sex"]) == 2  # mappings for female, male
         # checking "male" mapping
-        assert len(extract.mapped_values["sex"][0]) == 3  # value, explanation, and ontology keys
-        assert "value" in extract.mapped_values["sex"][0]
-        assert extract.mapped_values["sex"][0]["value"] == "m"  # normalized categorical value
-        assert "explanation" in extract.mapped_values["sex"][0]
-        assert extract.mapped_values["sex"][0]["explanation"] == "Male"  # not normalized (human) description
-        assert "snomedct" in extract.mapped_values["sex"][0]  # normalized (ontology) key
-        assert extract.mapped_values["sex"][0]["snomedct"] == "24815:3007"  # normalized ontology code
+        assert len(extract.categorical_values["sex"][0]) == 3  # value, explanation, and ontology keys
+        assert "value" in extract.categorical_values["sex"][0]
+        assert extract.categorical_values["sex"][0]["value"] == "m"  # normalized categorical value
+        assert "explanation" in extract.categorical_values["sex"][0]
+        assert extract.categorical_values["sex"][0]["explanation"] == "Male"  # not normalized (human) description
+        assert "snomedct" in extract.categorical_values["sex"][0]  # normalized (ontology) key
+        assert extract.categorical_values["sex"][0]["snomedct"] == "24815:3007"  # normalized ontology code
         # checking "female" mapping
-        assert len(extract.mapped_values["sex"][1]) == 3
-        assert "value" in extract.mapped_values["sex"][1]
-        assert extract.mapped_values["sex"][1]["value"] == "f"
-        assert "explanation" in extract.mapped_values["sex"][1]
-        assert extract.mapped_values["sex"][1]["explanation"] == "Female"
-        assert "snomedct" in extract.mapped_values["sex"][1]
-        assert extract.mapped_values["sex"][1]["snomedct"] == "248152002"
+        assert len(extract.categorical_values["sex"][1]) == 3
+        assert "value" in extract.categorical_values["sex"][1]
+        assert extract.categorical_values["sex"][1]["value"] == "f"
+        assert "explanation" in extract.categorical_values["sex"][1]
+        assert extract.categorical_values["sex"][1]["explanation"] == "Female"
+        assert "snomedct" in extract.categorical_values["sex"][1]
+        assert extract.categorical_values["sex"][1]["snomedct"] == "248152002"
 
     def test_removed_unused_columns(self):
         extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.TEST_ORIG_CLINICAL_PATH,
+                           data_paths=TheTestFiles.TEST_ORIG_LABORATORY_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()
-        extract.load_data_file()  # both operations are needed to run the method
-        extract.remove_unused_columns()
+        extract.load_csv_data_file()  # both operations are needed to run the method
+        extract.remove_unused_csv_columns()
 
         log.debug(extract.metadata[MetadataColumns.COLUMN_NAME])
 
@@ -337,12 +337,12 @@ class TestExtract(unittest.TestCase):
 
     def test_compute_column_to_dimension(self):
         extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.TEST_ORIG_CLINICAL_PATH,
+                           data_paths=TheTestFiles.TEST_ORIG_LABORATORY_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()
-        extract.load_data_file()  # both operations are needed to run the method
+        extract.load_csv_data_file()  # both operations are needed to run the method
         log.debug(extract.metadata.to_string())
-        extract.remove_unused_columns()
+        extract.remove_unused_csv_columns()
         log.debug(extract.metadata.to_string())
         extract.compute_column_to_dimension()
 

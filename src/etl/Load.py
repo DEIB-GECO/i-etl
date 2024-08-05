@@ -27,18 +27,42 @@ class Load:
 
         self.database.load_json_in_table(table_name=TableNames.SAMPLE, unique_variables=["identifier"])
 
+        self.database.load_json_in_table(table_name=TableNames.DIAGNOSIS_RECORD, unique_variables=["recorded_by", "subject", "instantiate"])
+
+        self.database.load_json_in_table(table_name=TableNames.MEDICINE_RECORD, unique_variables=["recorded_by", "subject", "instantiate"])
+
+        self.database.load_json_in_table(table_name=TableNames.IMAGING_RECORD, unique_variables=["recorded_by", "subject", "instantiate"])
+
+        self.database.load_json_in_table(table_name=TableNames.GENOMIC_FEATURE, unique_variables=["recorded_by", "subject", "instantiate"])
+
     def create_db_indexes(self) -> None:
         log.info(f"Creating indexes.")
+
+        count = 0
+
         # 1. for each resource type, we create an index on its "identifier" and its creation date "timestamp"
         for table_name in TableNames.values():
             self.database.create_unique_index(table_name=table_name, columns={"identifier.value": 1})
             self.database.create_non_unique_index(table_name=table_name, columns={"timestamp": 1})
+            count += 2
+
         # 2. next, we also create resource-wise indexes
-        # for LabFeature instances, we create an index both on the ontology (system) and a code
+
+        # for Feature instances, we create an index both on the ontology (system) and a code
         # this is because we usually ask for a code for a given ontology (what is a coe without its ontology? nothing)
-        self.database.create_non_unique_index(table_name=TableNames.LABORATORY_FEATURE, columns={"code.coding.system": 1, "code.coding.code": 1})
-        # for LabRecord instances, we create an index per reference because we usually join each reference to a table
-        self.database.create_non_unique_index(table_name=TableNames.LABORATORY_RECORD, columns={"instantiate.reference": 1})
-        self.database.create_non_unique_index(table_name=TableNames.LABORATORY_RECORD, columns={"subject.reference": 1})
-        self.database.create_non_unique_index(table_name=TableNames.LABORATORY_RECORD, columns={"based_on.reference": 1})
-        log.info(f"Finished to create indexes.")
+        for table_name in TableNames.values():
+            if "Feature" in table_name and len(table_name) > len("Feature"):
+                # a table name of the form XFeature
+                self.database.create_non_unique_index(table_name=table_name, columns={"code.coding.system": 1, "code.coding.code": 1})
+                count += 1
+
+        # for Record instances, we create an index per reference because we usually join each reference to a table
+        for table_name in TableNames.values():
+            if "Record" in table_name and len(table_name) > len("Record"):
+                # a table name of the form XRecord
+                self.database.create_non_unique_index(table_name=table_name, columns={"instantiate.reference": 1})
+                self.database.create_non_unique_index(table_name=table_name, columns={"subject.reference": 1})
+                self.database.create_non_unique_index(table_name=table_name, columns={"based_on.reference": 1})
+                count += 3
+
+        log.info(f"Finished to create {count} indexes.")
