@@ -13,8 +13,10 @@ Requirements:
 **From the root of the project, i.e., in `BETTER-fairificator` folder**
 
 ```shell
-sudo docker run -it fairificator sh
+sudo docker run fairificator -d
 ```
+
+To check whether the ETL has finished, one can run `docker logs <container_id> --follow` where `<container_id>` is the id of the container (obtained by `docker ps`). Otherwise, one can also attach stdout to Docker to print logs "in real time".
 
 
 ## Standalone
