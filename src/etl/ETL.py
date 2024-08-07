@@ -6,8 +6,7 @@ from enums.FileTypes import FileTypes
 from etl.Extract import Extract
 from etl.Load import Load
 from etl.Transform import Transform
-from enums.DatasetsLocales import DatasetsLocales
-from enums.HospitalNames import HospitalNames
+from utils.constants import DATASET_LOCALES
 from utils.setup_logger import log
 
 
@@ -23,8 +22,8 @@ class ETL:
             locale.setlocale(category=locale.LC_NUMERIC, locale="en_US")
         else:
             # we use the default locale assigned to each center based on their country
-            log.debug(f"custom locale: {DatasetsLocales[HospitalNames[self.execution.hospital_name]]}")
-            locale.setlocale(category=locale.LC_NUMERIC, locale=DatasetsLocales[HospitalNames[self.execution.hospital_name]])
+            log.debug(f"custom locale: {DATASET_LOCALES[self.execution.hospital_name]}")
+            locale.setlocale(category=locale.LC_NUMERIC, locale=DATASET_LOCALES[self.execution.hospital_name])
 
         log.info(f"Current locale is: {locale.getlocale(locale.LC_NUMERIC)}")
 

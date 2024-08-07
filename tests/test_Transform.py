@@ -8,6 +8,7 @@ from database.Database import Database
 from database.Execution import Execution
 from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Coding import Coding
+from datatypes.PatientAnonymizedIdentifier import PatientAnonymizedIdentifier
 from enums.DataTypes import DataTypes
 from enums.PhenotypicColumns import PhenotypicColumns
 from etl.Transform import Transform
@@ -18,7 +19,7 @@ from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from enums.TableNames import TableNames
 from enums.TheTestFiles import TheTestFiles
-from utils.constants import DEFAULT_DB_CONNECTION, TEST_DB_NAME
+from utils.constants import DEFAULT_DB_CONNECTION, TEST_DB_NAME, DELIMITER_PATIENT_ID
 from utils.setup_logger import log
 from utils.utils import compare_tuples, get_json_resource_file, get_lab_feature_by_text, \
     normalize_ontology_system, normalize_ontology_code, is_not_nan, cast_value, read_csv_file_as_string, \
@@ -67,16 +68,19 @@ class TestTransform(unittest.TestCase):
         # I manually insert some resources in the database
         database = Database(TestTransform.execution)
         my_tuples = [
-            {"identifier": {"value": "1"}},
-            {"identifier": {"value": "2"}},
-            {"identifier": {"value": "4"}},
-            {"identifier": {"value": "3"}},
-            {"identifier": {"value": "123a"}},
+            {"identifier": {"value": "h1_1"}},
+            {"identifier": {"value": "h1_2"}},
+            {"identifier": {"value": "h1_7"}},
+            {"identifier": {"value": "h1_3"}},
+            {"identifier": {"value": "h1_9"}},
+            {"identifier": {"value": "h1_123a"}},
+            {"identifier": {"value": "6"}},
+            {"identifier": {"value": "123"}},
         ]
         database.insert_many_tuples(table_name=TableNames.TEST, tuples=my_tuples)
         transform.set_resource_counter_id()
 
-        assert transform.counter.resource_id == 5
+        assert transform.counter.resource_id == 124
 
     def test_create_hospital(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
@@ -85,7 +89,7 @@ class TestTransform(unittest.TestCase):
                              extracted_mapped_values_path=TheTestFiles.TEST_EXTR_LABORATORY_MAPPED_PATH,
                              extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
         # this creates a new Hospital resource and insert it in a (JSON) temporary file
-        transform.create_hospital(HospitalNames.TEST_H1)
+        transform.create_hospital()
 
         # check that the in-memory hospital is correct
         assert len(transform.hospitals) == 1
@@ -206,7 +210,7 @@ class TestTransform(unittest.TestCase):
         # this loads references (Hospital+LabFeature resources), creates LabRecord resources (based on the data file) and insert them in a (JSON) temporary file
         log.debug(transform.data.to_string())
         log.debug(transform.metadata.to_string())
-        transform.create_hospital(HospitalNames.TEST_H1)
+        transform.create_hospital()
         transform.create_laboratory_features()
         transform.create_patients()  # this step and the two above are required to create LabRecord instances
         transform.create_laboratory_records()
@@ -224,7 +228,8 @@ class TestTransform(unittest.TestCase):
         # assert that LabRecord instances have been correctly created for a given data row
         # we take the seventh row
         log.debug(transform.laboratory_records)
-        patient_id = "999999994"
+        patient_id = transform.mapping_anonymized_patient_ids["999999994"]
+        log.info(patient_id)
         lab_records_patient = get_lab_records_for_patient(lab_records=transform.laboratory_records, patient_id=patient_id)
         log.debug(json.dumps(lab_records_patient))
         assert len(lab_records_patient) == 5
@@ -253,14 +258,16 @@ class TestTransform(unittest.TestCase):
         assert lab_records_patient[2]["value"] == cc_female.to_json()  # the value as been replaced by its ontology code (sex is a categorical value)r
 
         # we also check that conversions str->int/float and category->bool worked
-        assert get_field_value_for_patient(lab_records=transform.laboratory_records, lab_features=transform.laboratory_features, patient_id="999999999", column_name="molecule_b") == 100  # this has been cast as int because it matches the expected unit
-        assert get_field_value_for_patient(lab_records=transform.laboratory_records, lab_features=transform.laboratory_features, patient_id="999999998", column_name="molecule_b") == 111  # this has been cast as int because it matches the expected unit
-        assert get_field_value_for_patient(lab_records=transform.laboratory_records, lab_features=transform.laboratory_features, patient_id="999999997", column_name="molecule_b") == "231 grams"  # this has not been converted as this does not match the expected dimension
-        assert get_field_value_for_patient(lab_records=transform.laboratory_records, lab_features=transform.laboratory_features, patient_id="999999996", column_name="molecule_b") == 21  # this has been cast as int because it matches the expected unit
-        assert get_field_value_for_patient(lab_records=transform.laboratory_records, lab_features=transform.laboratory_features, patient_id="999999995", column_name="molecule_b") == 100  # this has been cast as int even though there was no unit
-        assert get_field_value_for_patient(lab_records=transform.laboratory_records, lab_features=transform.laboratory_features, patient_id="999999994", column_name="molecule_b") is None  # no value
-        assert get_field_value_for_patient(lab_records=transform.laboratory_records, lab_features=transform.laboratory_features, patient_id="999999993", column_name="molecule_b") is None  # null value
-        assert get_field_value_for_patient(lab_records=transform.laboratory_records, lab_features=transform.laboratory_features, patient_id="999999992", column_name="molecule_b") == "116 kg"  # this has not been converted as this does not match the expected dimension
+        lab_recs = transform.laboratory_records
+        lab_feats = transform.laboratory_features
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.mapping_anonymized_patient_ids["999999999"], column_name="molecule_b") == 100  # this has been cast as int because it matches the expected unit
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.mapping_anonymized_patient_ids["999999998"], column_name="molecule_b") == 111  # this has been cast as int because it matches the expected unit
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.mapping_anonymized_patient_ids["999999997"], column_name="molecule_b") == "231 grams"  # this has not been converted as this does not match the expected dimension
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.mapping_anonymized_patient_ids["999999996"], column_name="molecule_b") == 21  # this has been cast as int because it matches the expected unit
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.mapping_anonymized_patient_ids["999999995"], column_name="molecule_b") == 100  # this has been cast as int even though there was no unit
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.mapping_anonymized_patient_ids["999999994"], column_name="molecule_b") is None  # no value
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.mapping_anonymized_patient_ids["999999993"], column_name="molecule_b") is None  # null value
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.mapping_anonymized_patient_ids["999999992"], column_name="molecule_b") == "116 kg"  # this has not been converted as this does not match the expected dimension
 
     # TODO Nelly: check there are no duplicates for LabFeature instances
     def test_create_lab_records_with_samples(self):
@@ -281,10 +288,14 @@ class TestTransform(unittest.TestCase):
         log.debug(transform.patients)
 
         assert len(transform.patients) == 10
-        sorted_patients = sorted(transform.patients, key=lambda d: d.to_json()["identifier"]["value"], reverse=True)
+        # we cannot simply order by identifier value because they are strings, not int
+        # thus will need a bit more of processing to sort by the integer represented within the string
+        # sorted_patients = sorted(transform.patients, key=lambda d: d.to_json()["identifier"]["value"])
+        sorted_patients = sorted(transform.patients, key=lambda p: p.get_identifier_as_int())
         log.debug(sorted_patients)
         for i in range(0, len(sorted_patients)):
-            assert sorted_patients[i].to_json()["identifier"]["value"] == str(999999999-i)
+            # patients have their own anonymized ids
+            assert sorted_patients[i].to_json()["identifier"]["value"] == PatientAnonymizedIdentifier(id_value=str(i+1), hospital_name=HospitalNames.TEST_H1).value
 
     def test_create_codeable_concept_from_row(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,

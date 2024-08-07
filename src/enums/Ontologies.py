@@ -19,8 +19,6 @@ class Ontologies(EnumAsClass):
             return None
 
         for existing_ontology in Ontologies.values():
-            log.debug(existing_ontology)
-            log.debug(type(existing_ontology))
             if existing_ontology["name"] == ontology:
                 return existing_ontology["url"]  # return the ontology URI associated to that ontology
         # at the end of the loop, no enum value could match the given ontology

@@ -6,9 +6,9 @@ from utils.Counter import Counter
 
 
 class Feature(Resource):
-    def __init__(self, id_value: str, code: CodeableConcept, column_type: str, dimension: str, counter: Counter, resource_type: str):
+    def __init__(self, id_value: str, code: CodeableConcept, column_type: str, dimension: str, counter: Counter, resource_type: str, hospital_name: str):
         # set up the resource ID
-        super().__init__(id_value=id_value, resource_type=resource_type, counter=counter)
+        super().__init__(id_value=id_value, resource_type=resource_type, counter=counter, hospital_name=hospital_name)
 
         # set up the resource attributes
         self.code = code

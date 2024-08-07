@@ -18,7 +18,7 @@ class Hospital(Resource):
         :param name: A string being the name of the hospital.
         """
         # set up the resource ID
-        super().__init__(id_value=id_value, resource_type=TableNames.HOSPITAL, counter=counter)
+        super().__init__(id_value=id_value, resource_type=TableNames.HOSPITAL, counter=counter, hospital_name=name)
 
         # set up the resource attributes
         self.name = name

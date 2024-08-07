@@ -16,7 +16,7 @@ class Coding:
             self.system = system  # this is the ontology url, not the ontology name
             self.code = normalize_ontology_code(ontology_code=code)
             self.display = get_display(name=name, description=description)
-            log.debug(f"Create a new Coding for {self.system}/{self.code}, labelled {self.display}")
+            # log.debug(f"Create a new Coding for {self.system}/{self.code}, labelled {self.display}")
 
     def to_json(self):
         # encode create a stringified JSON object of the class

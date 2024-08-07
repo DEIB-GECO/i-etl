@@ -12,9 +12,10 @@ from pymongo.cursor import Cursor
 from database.Execution import Execution
 from enums.TableNames import TableNames
 from enums.UpsertPolicy import UpsertPolicy
+from utils.constants import DELIMITER_PATIENT_ID
 from utils.setup_logger import log
 from utils.utils import mongodb_match, mongodb_project_one, mongodb_group_by, \
-    mongodb_sort, mongodb_limit
+    mongodb_sort, mongodb_limit, mongodb_unwind
 
 
 class Database:
@@ -224,35 +225,54 @@ class Database:
         """
         self.db[table_name].create_index(columns, unique=False)
 
-    def get_min_or_max_value(self, table_name: str, field: str, sort_order: int) -> int | float:
+    def get_min_or_max_value(self, table_name: str, field: str, sort_order: int, from_string: bool) -> int | float:
         operations = []
-        field_split = field.split(".")
-        last_field = field_split[-1]
-        if "." in field:
-            # this field is a nested one, we only keep the deepest one,
-            # e.g. for { "identifier": {"value": 1}} we keep { "value": 1}
-            operations.append(mongodb_project_one(field=field, projected_value=last_field))
-            operations.append(mongodb_sort(field=last_field, sort_order=sort_order))
+        last_field = field.split(".")[-1]
+
+        if from_string:
+            # we need to parse the string to long
+            operations.append(mongodb_project_one(field=field, projected_value={"split_var": {"$split": ["$"+field, DELIMITER_PATIENT_ID]}}))
+            operations.append(mongodb_unwind(field="split_var"))
+            operations.append(mongodb_match(field="split_var", value="^[0-9]+$", is_regex=True))  # only numbers
+            operations.append(mongodb_group_by(group_key={"var": "$split_var"}, group_by_name="min_max", operator="$max", field={"$toLong": "$split_var"}))
+            operations.append(mongodb_sort(field="min_max", sort_order=sort_order))
             operations.append(mongodb_limit(1))
+
+            # better_default > db["ExaminationRecord"].aggregate([
+            #     {"$project": {"identifier.value": {"$split": ["$identifier.value", "/"]}}},
+            #     {"$unwind": "$identifier.value"},
+            #     {"$match": {"identifier.value": / [0 - 9] + /}},
+            # {"$group": {"_id": "identifier.value", "Max": {"$max": {"$toLong": "$identifier.value"}}}}
+            # ])
         else:
-            operations.append(mongodb_project_one(field=field, projected_value=None))
-            operations.append(mongodb_sort(field=field, sort_order=sort_order))
-            operations.append(mongodb_limit(1))
+            if "." in field:
+                # this field is a nested one, we only keep the deepest one,
+                # e.g. for { "identifier": {"value": 1}} we keep { "value": 1}
+                operations.append(mongodb_project_one(field=field, projected_value=last_field))
+                operations.append(mongodb_sort(field=last_field, sort_order=sort_order))
+                operations.append(mongodb_limit(1))
+            else:
+                operations.append(mongodb_project_one(field=field, projected_value=None))
+                operations.append(mongodb_sort(field=field, sort_order=sort_order))
+                operations.append(mongodb_limit(1))
 
         cursor = self.db[table_name].aggregate(operations)
-
         for result in cursor:
             # There should be only one result, so we can return directly the min or max value
-            if "." in field:
-                return result[last_field]
+            if from_string:
+                return result["min_max"]
             else:
-                return result[field]
+                if "." in field:
+                    return result[last_field]
+                else:
+                    return result[field]
+        return -1
 
-    def get_max_value(self, table_name: str, field: str) -> int | float:
-        return self.get_min_or_max_value(table_name=table_name, field=field, sort_order=-1)
+    def get_max_value(self, table_name: str, field: str, from_string: bool) -> int | float:
+        return self.get_min_or_max_value(table_name=table_name, field=field, sort_order=-1, from_string=from_string)
 
-    def get_min_value(self, table_name: str, field: str) -> int | float:
-        return self.get_min_or_max_value(table_name=table_name, field=field, sort_order=1)
+    def get_min_value(self, table_name: str, field: str, from_string: bool) -> int | float:
+        return self.get_min_or_max_value(table_name=table_name, field=field, sort_order=1, from_string=from_string)
 
     def get_avg_value_of_lab_feature(self, lab_feature_url: str) -> int | float:
         """
@@ -293,11 +313,12 @@ class Database:
     def get_max_resource_counter_id(self) -> int:
         max_value = -1
         for table_name in TableNames.values():
-            if table_name == TableNames.PATIENT or table_name == TableNames.SAMPLE:
-                # pass because Patient and Sample resources have their ID assigned by hospitals, not the FAIRificator
+            if table_name == TableNames.SAMPLE:
+                # pass because Sample resources have their ID assigned by hospitals, not the FAIRificator
                 pass
             else:
-                current_max_identifier = self.get_max_value(table_name=table_name, field="identifier.value")
+                current_max_identifier = self.get_max_value(table_name=table_name, field="identifier.value", from_string=True)
+                log.info(f"for table {table_name}, max id is {current_max_identifier}")
                 if current_max_identifier is not None:
                     try:
                         current_max_identifier = int(current_max_identifier)

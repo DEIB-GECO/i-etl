@@ -4,6 +4,8 @@ from datetime import datetime
 import jsonpickle
 
 from datatypes.Identifier import Identifier
+from datatypes.PatientAnonymizedIdentifier import PatientAnonymizedIdentifier
+from datatypes.ResourceIdentifier import ResourceIdentifier
 from enums.TableNames import TableNames
 from utils import constants
 from utils.Counter import Counter
@@ -12,28 +14,41 @@ from utils.utils import get_mongodb_date_from_datetime, is_not_nan
 
 
 class Resource:
-    def __init__(self, id_value: str, resource_type: str, counter: Counter):
+    def __init__(self, id_value: str, resource_type: str, counter: Counter, hospital_name: str):
         """
 
         :param id_value:
         :param resource_type:
         """
-        self.identifier = None  # change the FHIR model to have an identifier which is simply a string
+        self.identifier = None
+        id_to_use = None
         if id_value == constants.NO_ID:
-            if resource_type == TableNames.PATIENT or resource_type == TableNames.SAMPLE:
-                # Patient instances should always have an ID (given by the hospitals)
-                # this may contain chars, so we need to keep them as strings
-                raise ValueError("Patient and Sample instances should have an ID.")
+            # we are creating a new instance, we assign it a new ID
+            # for Sample data only, we expect to have an ID assigned by the hospital, thus it cannot be NO_ID
+            if resource_type == TableNames.SAMPLE:
+                raise ValueError("Sample instances should have an ID.")
             else:
-                # We assign an ID to the new resource
-                self.identifier = Identifier(id_value=str(counter.increment()), resource_type=resource_type)
+                id_to_use = str(counter.increment())
         else:
-            # This case covers when we retrieve resources from the DB, and we reconstruct them in-memory:
-            # they already have an identifier, thus we simply reconstruct it with the value
-            self.identifier = Identifier(id_value=id_value, resource_type=resource_type)
+            # we are retrieving a resource from the DB and reconstruct it in-memory:
+            # it already has an identifier, thus we simply reconstruct it with the value
+            id_to_use = id_value
+
+        # create the right Identifier based on the resource type:
+        if resource_type == TableNames.PATIENT:
+            # we use anonymized patient id
+            self.identifier = PatientAnonymizedIdentifier(id_value=id_to_use, hospital_name=hospital_name)
+        else:
+            # We assign a "simple" (stringified integer) ID to the new resource
+            self.identifier = ResourceIdentifier(id_value=id_to_use)
 
         self.resource_type = resource_type
         self.timestamp = get_mongodb_date_from_datetime(current_datetime=datetime.now())
+
+    def get_identifier_as_int(self):
+        # Resource identifiers (except Patient ones, which override this method) are a stringified int, e.g., "1", "2", etc
+        # we only need to cast this value to int
+        return self.identifier.get_as_int()
 
     def __getstate__(self):
         # we need to check whether each field is a NaN value because we do not want to add fields for NaN values

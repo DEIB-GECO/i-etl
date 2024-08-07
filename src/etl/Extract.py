@@ -114,10 +114,8 @@ class Extract:
         # log.debug(self.metadata.to_string())
 
         # 3. We keep the metadata of the current dataset
-        # TODO Nelly: store the laboratory metadata into self_laboratory_metadata (a subset of self.metadata); similarly for images and genomic data
         filename = os.path.basename(self.execution.current_filepath).lower()
         log.debug(f"{filename}")
-        log.debug(f"{self.metadata.to_string()}")
         log.debug(f"{self.metadata[MetadataColumns.DATASET_NAME].unique()}")
         if filename not in self.metadata[MetadataColumns.DATASET_NAME.lower()].unique():
             raise ValueError(f"The current dataset ({filename}) is not described in the provided metadata file.")
@@ -229,7 +227,6 @@ class Extract:
         # if a column is described in the metadata but is not present in the data or this column is empty we keep it
         # because people took the time to describe it.
         # for this, we get the union of both sets and remove the columns that are not described in the metadata
-        log.debug(self.metadata.to_string())
         data_columns = list(self.data.columns)
         columns_described_in_metadata = list(self.metadata[MetadataColumns.COLUMN_NAME])
         variables_to_keep = []
@@ -250,9 +247,6 @@ class Extract:
             if column not in variables_to_keep:
                 log.info(f"Drop data column corresponding to the variable {column}.")
                 self.data = self.data.drop(column, axis=1)  # axis=1 -> columns
-
-        log.debug(self.data.to_string())
-        log.debug(self.metadata.to_string())
 
     def compute_categorical_values(self) -> None:
         self.categorical_values = {}
@@ -284,7 +278,6 @@ class Extract:
                 # we compute the set of units used in the data for that column and keep the most frequent
                 # if there is no unit for those value, we use the provided dimension if it exists, otherwise None
                 values_in_columns = self.data[column_name]
-                log.debug(f"values in columns: {values_in_columns}")
                 units = {}
                 for value in values_in_columns:
                     if is_not_nan(value):
@@ -298,7 +291,6 @@ class Extract:
                         else:
                             # this value does not contain a dimension or is not of the form "value dimension"
                             pass
-                log.debug(f"units for column {column_name}: {units}")
 
                 # we only keep the most frequent unit; values that do not have this unit will not be cast to numeric
                 if len(units.keys()) > 0:

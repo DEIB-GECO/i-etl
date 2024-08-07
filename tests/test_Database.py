@@ -9,12 +9,16 @@ import pytest
 from database.Database import Database
 from database.Execution import Execution
 from datatypes.Identifier import Identifier
+from datatypes.PatientAnonymizedIdentifier import PatientAnonymizedIdentifier
+from datatypes.ResourceIdentifier import ResourceIdentifier
+from enums.HospitalNames import HospitalNames
 from profiles.ResourceTest import ResourceTest
 from utils.Counter import Counter
 from enums.TableNames import TableNames
 from enums.UpsertPolicy import UpsertPolicy
 from utils.constants import TEST_DB_NAME, NO_ID
 from utils.constants import DEFAULT_DB_CONNECTION
+from utils.setup_logger import log
 from utils.utils import compare_tuples, wrong_number_of_docs, write_in_file
 
 
@@ -399,18 +403,18 @@ class TestDatabase(unittest.TestCase):
         assert len(used_unique_variables.keys()) == 1
         assert "name" in used_unique_variables
 
-    def test_retrieve_identifiers_1(self):
+    def test_retrieve_resource_identifiers_1(self):
         database = Database(TestDatabase.execution)
-        my_id = Identifier(id_value="123", resource_type=TableNames.PATIENT)
+        my_id = ResourceIdentifier(id_value="123")
         my_tuple = {"identifier": my_id.to_json(), "name": "Nelly"}
         database.db[TableNames.TEST].insert_one(my_tuple)
         the_doc = database.retrieve_identifiers(table_name=TableNames.TEST, projection="name")
         expected_doc = {"Nelly": "123"}
         assert the_doc == expected_doc
 
-    def test_retrieve_identifiers_10(self):
+    def test_retrieve_resource_identifiers_10(self):
         database = Database(TestDatabase.execution)
-        my_tuples = [{"identifier": Identifier(id_value=str(i), resource_type=TableNames.PATIENT).to_json(), "value": i+random.randint(0, 100)} for i in range(0, 10)]
+        my_tuples = [{"identifier": ResourceIdentifier(id_value=str(i)).to_json(), "value": i+random.randint(0, 100)} for i in range(0, 10)]
         my_original_tuples = copy.deepcopy(my_tuples)
         database.db[TableNames.TEST].insert_many(my_tuples)
         docs = database.retrieve_identifiers(table_name=TableNames.TEST, projection="value")
@@ -421,9 +425,39 @@ class TestDatabase(unittest.TestCase):
         for key, value in expected_docs.items():
             compare_tuples(original_tuple={key: value}, inserted_tuple={key: docs[key]})
 
-    def test_retrieve_identifiers_wrong_key(self):
+    def test_retrieve_resource_identifiers_wrong_key(self):
         database = Database(TestDatabase.execution)
-        my_id = Identifier(id_value="123", resource_type=TableNames.PATIENT)
+        my_id = ResourceIdentifier(id_value="123")
+        my_tuple = {"identifier": my_id.to_json(), "name": "Nelly"}
+        database.db[TableNames.TEST].insert_one(my_tuple)
+        with pytest.raises(KeyError):
+            _ = database.retrieve_identifiers(table_name=TableNames.TEST, projection="name2")
+
+    def test_retrieve_patient_identifiers_1(self):
+        database = Database(TestDatabase.execution)
+        my_id = PatientAnonymizedIdentifier(id_value="123", hospital_name=HospitalNames.TEST_H1)
+        my_tuple = {"identifier": my_id.to_json(), "name": "Nelly"}
+        database.db[TableNames.TEST].insert_one(my_tuple)
+        the_doc = database.retrieve_identifiers(table_name=TableNames.TEST, projection="name")
+        expected_doc = {"Nelly": my_id.value}
+        assert the_doc == expected_doc
+
+    def test_retrieve_patient_identifiers_10(self):
+        database = Database(TestDatabase.execution)
+        my_tuples = [{"identifier": PatientAnonymizedIdentifier(id_value=str(i), hospital_name=HospitalNames.TEST_H1).to_json(), "value": i+random.randint(0, 100)} for i in range(0, 10)]
+        my_original_tuples = copy.deepcopy(my_tuples)
+        database.db[TableNames.TEST].insert_many(my_tuples)
+        docs = database.retrieve_identifiers(table_name=TableNames.TEST, projection="value")
+        expected_docs = {}
+        for doc in my_original_tuples:
+            expected_docs[doc["value"]] = doc["identifier"]["value"]
+        assert len(docs) == len(expected_docs), wrong_number_of_docs(len(expected_docs))
+        for key, value in expected_docs.items():
+            compare_tuples(original_tuple={key: value}, inserted_tuple={key: docs[key]})
+
+    def test_retrieve_patient_identifiers_wrong_key(self):
+        database = Database(TestDatabase.execution)
+        my_id = PatientAnonymizedIdentifier(id_value="123", hospital_name=HospitalNames.TEST_H1)
         my_tuple = {"identifier": my_id.to_json(), "name": "Nelly"}
         database.db[TableNames.TEST].insert_one(my_tuple)
         with pytest.raises(KeyError):
@@ -432,9 +466,9 @@ class TestDatabase(unittest.TestCase):
     def test_write_in_file(self):
         counter = Counter()
         my_tuples = [
-            ResourceTest(id_value=NO_ID, resource_type=TableNames.TEST, counter=counter),
-            ResourceTest(id_value=NO_ID, resource_type=TableNames.TEST, counter=counter),
-            ResourceTest(id_value=NO_ID, resource_type=TableNames.TEST, counter=counter),
+            ResourceTest(id_value=NO_ID, resource_type=TableNames.TEST, counter=counter, hospital_name=HospitalNames.TEST_H1),
+            ResourceTest(id_value=NO_ID, resource_type=TableNames.TEST, counter=counter, hospital_name=HospitalNames.TEST_H1),
+            ResourceTest(id_value=NO_ID, resource_type=TableNames.TEST, counter=counter, hospital_name=HospitalNames.TEST_H1),
         ]
         my_tuples_as_json = [my_tuples[i].to_json() for i in range(len(my_tuples))]
 
@@ -593,8 +627,8 @@ class TestDatabase(unittest.TestCase):
             {"value": 2}
         ]
         database.db[TableNames.TEST].insert_many(documents=my_tuples)
-        min_value = database.get_min_or_max_value(table_name=TableNames.TEST, field="value", sort_order=1)
-        max_value = database.get_min_or_max_value(table_name=TableNames.TEST, field="value", sort_order=-1)
+        min_value = database.get_min_or_max_value(table_name=TableNames.TEST, field="value", sort_order=1, from_string=False)
+        max_value = database.get_min_or_max_value(table_name=TableNames.TEST, field="value", sort_order=-1, from_string=False)
         assert min_value == 0.2, "The expected minimum value is 0.2."
         assert max_value == 10, "The expected maximum value is 10."
 
@@ -606,23 +640,53 @@ class TestDatabase(unittest.TestCase):
             {"value": -2}
         ]
         database.db[TableNames.TEST].insert_many(documents=my_tuples)
-        min_value = database.get_min_or_max_value(table_name=TableNames.TEST, field="value", sort_order=1)
-        max_value = database.get_min_or_max_value(table_name=TableNames.TEST, field="value", sort_order=-1)
+        min_value = database.get_min_or_max_value(table_name=TableNames.TEST, field="value", sort_order=1, from_string=False)
+        max_value = database.get_min_or_max_value(table_name=TableNames.TEST, field="value", sort_order=-1, from_string=False)
         assert min_value == -10, "The expected minimum value is -10."
         assert max_value == -0.2, "The expected maximum value is -0.2."
 
+    def test_get_min_or_max_resource_id(self):
+        database = Database(TestDatabase.execution)
+        my_tuples = [
+            {"value": ResourceIdentifier(id_value="45").value},
+            {"value": ResourceIdentifier(id_value="54").value},
+            {"value": ResourceIdentifier(id_value="9").value},
+            {"value": ResourceIdentifier(id_value="154").value}
+        ]
+        database.db[TableNames.TEST].insert_many(documents=my_tuples)
+        min_value = database.get_min_or_max_value(table_name=TableNames.TEST, field="value", sort_order=1, from_string=True)
+        max_value = database.get_min_or_max_value(table_name=TableNames.TEST, field="value", sort_order=-1, from_string=True)
+        assert min_value == 9, "The expected minimum value is 9."
+        assert max_value == 154, "The expected maximum value is 154."
+
+    def test_get_min_or_max_patient_id(self):
+        database = Database(TestDatabase.execution)
+        my_tuples = [
+            {"value": PatientAnonymizedIdentifier(id_value="45", hospital_name=HospitalNames.TEST_H1).value},
+            {"value": PatientAnonymizedIdentifier(id_value="54", hospital_name=HospitalNames.TEST_H1).value},
+            {"value": PatientAnonymizedIdentifier(id_value="9", hospital_name=HospitalNames.TEST_H1).value},
+            {"value": PatientAnonymizedIdentifier(id_value="154", hospital_name=HospitalNames.TEST_H1).value}
+        ]
+        database.db[TableNames.TEST].insert_many(documents=my_tuples)
+        min_value = database.get_min_or_max_value(table_name=TableNames.TEST, field="value", sort_order=1, from_string=True)
+        max_value = database.get_min_or_max_value(table_name=TableNames.TEST, field="value", sort_order=-1, from_string=True)
+        assert min_value == 9, "The expected minimum value is 9."
+        assert max_value == 154, "The expected maximum value is 154."
+
     def test_get_max_resource_counter_id(self):
+        # we need to check both with Resource and AnonymizedPatient identifiers
+        # to be sure that both identifiers can be parsed accordingly and take the max value among them
         database = Database(TestDatabase.execution)
         my_resources_1 = [
-            {"identifier": {"value": "1"}, "name": "Anna"},
-            {"identifier": {"value": "4"}, "name": "Julien"},
-            {"identifier": {"value": "999"}, "name": "Nelly"},
+            {"identifier": {"value": ResourceIdentifier(id_value="1").value}, "name": "Anna"},
+            {"identifier": {"value": ResourceIdentifier(id_value="4").value}, "name": "Julien"},
+            {"identifier": {"value": PatientAnonymizedIdentifier(id_value="999", hospital_name=HospitalNames.TEST_H1).value}, "name": "Nelly"},
         ]
         my_resources_2 = [
-            {"identifier": {"value": "2"}, "name": "Anna"},
-            {"identifier": {"value": "8"}, "name": "Julien"},
-            {"identifier": {"value": "100"}, "name": "Nelly"},
-            {"identifier": {"value": "1000b"}, "name": "Pietro"},
+            {"identifier": {"value": ResourceIdentifier(id_value="2").value}, "name": "Anna"},
+            {"identifier": {"value": PatientAnonymizedIdentifier(id_value="8", hospital_name=HospitalNames.TEST_H1).value}, "name": "Julien"},
+            {"identifier": {"value": ResourceIdentifier(id_value="100").value}, "name": "Nelly"},
+            {"identifier": {"value": ResourceIdentifier(id_value="1000b").value}, "name": "Pietro"},
         ]
         # as an exception, we insert into LABORATORY_RECORD, not in TableNames.TEST,
         # because the method is made to set up resource counter and is expected to work on the

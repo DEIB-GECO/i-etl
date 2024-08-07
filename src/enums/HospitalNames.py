@@ -1,4 +1,5 @@
 from enums.EnumAsClass import EnumAsClass
+from utils.setup_logger import log
 from utils.utils import normalize_hospital_name
 
 
@@ -16,13 +17,7 @@ class HospitalNames(EnumAsClass):
     TEST_H3 = normalize_hospital_name("TEST_H3")
 
     @classmethod
-    def get(cls) -> list[str]:
-        accepted_hospital_names = []
-        for hospital_name in HospitalNames.values():
-            if not hospital_name.startswith("test"):
-                accepted_hospital_names.append(hospital_name)
-        return accepted_hospital_names
-
-    @classmethod
-    def get_as_iterator(cls) -> iter:
-        return iter(HospitalNames.get())
+    def short(cls, hospital_name) -> str:
+        log.debug(hospital_name)
+        log.debug(hospital_name.split("_"))
+        return hospital_name.split("_")[1]  # the second part corresponds to the hospital name (only)

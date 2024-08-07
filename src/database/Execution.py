@@ -82,7 +82,7 @@ class Execution:
         if Execution.HOSPITAL_NAME_KEY in args_as_dict:
             self.hospital_name = args_as_dict[Execution.HOSPITAL_NAME_KEY]
         if Execution.USE_EN_LOCALE_KEY in args_as_dict:
-            self.use_en_locale = args_as_dict[Execution.USE_EN_LOCALE_KEY]
+            self.use_en_locale = args_as_dict[Execution.USE_EN_LOCALE_KEY] == "True" or args_as_dict[Execution.DB_DROP_KEY] is True
         if Execution.DB_CONNECTION_KEY in args_as_dict:
             self.db_connection = args_as_dict[Execution.DB_CONNECTION_KEY]
         if Execution.DB_UPSERT_POLICY_KEY in args_as_dict:
@@ -147,7 +147,7 @@ class Execution:
     def setup_logging_files(self):
         log_file = os.path.join(self.working_dir_current, f"log-{self.execution_date}.log")
         filehandler = logging.FileHandler(log_file, 'a')
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s [%(filename)s:%(lineno)d] %(message)s')
         filehandler.setFormatter(formatter)
         setup_logger.log.addHandler(filehandler)  # add the filehandler located in the working dir
 

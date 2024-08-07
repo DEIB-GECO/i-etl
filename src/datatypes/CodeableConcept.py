@@ -66,9 +66,6 @@ class CodeableConcept:
                                             description=column_description))
         cc.text = column_name
         log.debug(cc.coding)
-        log.debug(f"Create a new CodeableConcept labelled {cc.text} for {cc.coding[0].system}/{cc.coding[0].code} ({cc.coding[0].display})")
-        if ontology2 is not None:
-            log.debug(f"Create a new CodeableConcept labelled {cc.text} for {cc.coding[1].system}/{cc.coding[1].code}, labelled {cc.coding[1].display}")
         return cc
 
     def __eq__(self, other):

@@ -4,11 +4,12 @@ from datatypes.Reference import Reference
 from enums.TableNames import TableNames
 from profiles.Record import Record
 from utils.Counter import Counter
+from utils.setup_logger import log
 
 
 class LaboratoryRecord(Record):
     def __init__(self, id_value: str, feature_ref: Reference, patient_ref: Reference,
-                 hospital_ref: Reference, sample_ref: Reference, value: Any, counter: Counter):
+                 hospital_ref: Reference, sample_ref: Reference, value: Any, counter: Counter, hospital_name: str):
         """
         A new LabRecord instance.
         :param id_value: A string being the BETTER ID of the LabRecord instance.
@@ -19,7 +20,8 @@ class LaboratoryRecord(Record):
         :param value: A string/int/float/CodeableConcept being the value of what is examined in that record.
         """
         # set up the resource ID
+        log.info(patient_ref)
         super().__init__(id_value=id_value, feature_ref=feature_ref, patient_ref=patient_ref, hospital_ref=hospital_ref,
-                         value=value, resource_type=TableNames.LABORATORY_RECORD, counter=counter)
+                         value=value, resource_type=TableNames.LABORATORY_RECORD, counter=counter, hospital_name=hospital_name)
         # set up specific attributes for lab records
         self.based_on = sample_ref

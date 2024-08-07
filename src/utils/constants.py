@@ -22,6 +22,21 @@ ID_COLUMNS = {
     }
 }
 
+DATASET_LOCALES = {
+    # use-case 1
+    HospitalNames.IT_BUZZI_UC1: "it_IT",
+    HospitalNames.RS_IMGGE: "sr_RS",
+    HospitalNames.ES_HSJD: "es_ES",
+    # use-case 2
+    HospitalNames.ES_LAFE: "es_ES",
+    HospitalNames.IL_HMC: "en_IL",
+    # use-case 3
+    HospitalNames.IT_BUZZI_UC3: "it_IT",
+    HospitalNames.ES_TERRASSA: "es_ES",
+    HospitalNames.DE_UKK: "de_DE"
+}
+
+
 BATCH_SIZE = 50
 
 WORKING_DIR = "working-dir"
@@ -31,5 +46,5 @@ TEST_DB_NAME = "better_test"
 
 PATTERN_VALUE_DIMENSION = re.compile(r'^ *([0-9]+) *([a-zA-Z_-]+) *$')  # we add start and end delimiters (^ and $) to not process cells with multiples values inside
 
-
+DELIMITER_PATIENT_ID = ":"
 
