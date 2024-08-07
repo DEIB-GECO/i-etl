@@ -5,7 +5,8 @@ from enums.TableNames import TableNames
 
 
 class DiagnosisFeature(Feature):
-    def __init__(self, id_value: str, code: CodeableConcept, permitted_datatype: str, dimension: str|None, counter: Counter, hospital_name: str):
+    def __init__(self, id_value: str, code: CodeableConcept, permitted_datatype: str, dimension: str|None,
+                 counter: Counter, hospital_name: str, categorical_values: list[CodeableConcept]):
         """
         Create a new Disease instance.
         This is different from a DiseaseRecord:
@@ -15,7 +16,8 @@ class DiagnosisFeature(Feature):
         """
         # set up the resource ID
         super().__init__(id_value=id_value, resource_type=TableNames.DIAGNOSIS_FEATURE, code=code,
-                         column_type=permitted_datatype, dimension=dimension, counter=counter, hospital_name=hospital_name)
+                         column_type=permitted_datatype, dimension=dimension, counter=counter,
+                         hospital_name=hospital_name, list_categorical_values=categorical_values)
 
         # set up the resource attributes
         self.code = code

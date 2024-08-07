@@ -27,7 +27,7 @@ from utils.utils import compare_tuples, get_json_resource_file, get_lab_feature_
 
 
 # personalized setup called at the beginning of each test
-def my_setup(hospital_name: str, extracted_metadata_path: str, extracted_data_paths: str, extracted_mapped_values_path: str, extracted_column_dimension_path: str) -> Transform:
+def my_setup(hospital_name: str, extracted_metadata_path: str, extracted_data_paths: str, extracted_mapping_categorical_values_path: str, extracted_column_dimension_path: str) -> Transform:
     args = {
         Execution.DB_CONNECTION_KEY: DEFAULT_DB_CONNECTION,
         Execution.DB_DROP_KEY: True,
@@ -41,9 +41,9 @@ def my_setup(hospital_name: str, extracted_metadata_path: str, extracted_data_pa
     # - and mapped_values as a JSON file that I obtained from the same Extract object
     metadata = read_csv_file_as_string(extracted_metadata_path)
     data = read_csv_file_as_string(extracted_data_paths)
-    mapped_values = json.load(open(extracted_mapped_values_path))
+    mapping_categorical_values = json.load(open(extracted_mapping_categorical_values_path))
     column_to_dimension = json.load(open(extracted_column_dimension_path))
-    transform = Transform(database=database, execution=TestTransform.execution, data=data, metadata=metadata, mapped_values=mapped_values, column_to_dimension=column_to_dimension)
+    transform = Transform(database=database, execution=TestTransform.execution, data=data, metadata=metadata, mapping_categorical_values=mapping_categorical_values, column_to_dimension=column_to_dimension)
     return transform
 
 
@@ -58,7 +58,7 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
                              extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
                              extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_LABORATORY_MAPPED_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
                              extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
         transform.set_resource_counter_id()
 
@@ -86,7 +86,7 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
                              extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
                              extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_LABORATORY_MAPPED_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
                              extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
         # this creates a new Hospital resource and insert it in a (JSON) temporary file
         transform.create_hospital()
@@ -111,7 +111,7 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
                              extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
                              extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_LABORATORY_MAPPED_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
                              extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
         # this creates LabFeature instances (based on the metadata file) and insert them in a (JSON) temporary file
         log.debug(transform.data.to_string())
@@ -192,7 +192,7 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
                              extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
                              extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_LABORATORY_MAPPED_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
                              extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
         # this creates LabFeature resources (based on the metadata file) and insert them in a (JSON) temporary file
         log.debug(transform.data.to_string())
@@ -205,7 +205,7 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
                              extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
                              extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_LABORATORY_MAPPED_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
                              extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
         # this loads references (Hospital+LabFeature resources), creates LabRecord resources (based on the data file) and insert them in a (JSON) temporary file
         log.debug(transform.data.to_string())
@@ -278,7 +278,7 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
                              extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
                              extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_LABORATORY_MAPPED_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
                              extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
         # this creates Patient resources (based on the data file) and insert them in a (JSON) temporary file
         log.debug(transform.data.to_string())
@@ -301,7 +301,7 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
                              extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
                              extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_LABORATORY_MAPPED_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
                              extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
         # no associated ontology code
         cc = transform.create_codeable_concept_from_row(column_name="molecule_b")
@@ -331,7 +331,7 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
                              extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
                              extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_LABORATORY_MAPPED_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
                              extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
         # no associated ontology code (patient id line)
         first_row = transform.metadata.iloc[0]
@@ -378,7 +378,7 @@ class TestTransform(unittest.TestCase):
         _ = my_setup(hospital_name=HospitalNames.TEST_H1,
                      extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
                      extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                     extracted_mapped_values_path=TheTestFiles.TEST_EXTR_LABORATORY_MAPPED_PATH,
+                     extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
                      extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
 
         # clinical variables
@@ -407,7 +407,7 @@ class TestTransform(unittest.TestCase):
         _ = my_setup(hospital_name=HospitalNames.TEST_H1,
                      extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
                      extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                     extracted_mapped_values_path=TheTestFiles.TEST_EXTR_LABORATORY_MAPPED_PATH,
+                     extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
                      extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
 
         # clinical variables
@@ -423,7 +423,7 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
                              extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
                              extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                             extracted_mapped_values_path=TheTestFiles.TEST_EXTR_LABORATORY_MAPPED_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
                              extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
 
         assert transform.fairify_value(column_name="id", value=transform.data.iloc[0][0]) == 999999999  # TODO NELLY: do not convert IDs to int, keep it as strings!
@@ -432,7 +432,7 @@ class TestTransform(unittest.TestCase):
         assert transform.fairify_value(column_name="molecule_g", value=transform.data.iloc[0][3]) is True
         cc_female = CodeableConcept()
         cc_female.add_coding(one_coding=Coding(system=Ontologies.SNOMEDCT["url"], code="248152002", name="f", description="Female"))
-        assert transform.fairify_value(column_name="sex", value=transform.data.iloc[0][4]).to_json() == cc_female.to_json()
+        assert transform.fairify_value(column_name="sex", value=transform.data.iloc[0][4]) == cc_female.to_json()
         assert transform.fairify_value(column_name="ethnicity", value=transform.data.iloc[0][5]) == "white"
         assert not is_not_nan(transform.fairify_value(column_name="date_of_birth", value=transform.data.iloc[0][6]))
         assert transform.fairify_value(column_name="date_of_birth", value=transform.data.iloc[5][6]) == cast_value("2021-12-22 11:58:38.881")

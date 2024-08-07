@@ -1,7 +1,0 @@
-{"disease_form":
-  [
-    {"value": "start", "explanation": "< 1 year", "pubchem": "023468"},
-    {"value": "middle", "explanation": "1 year <= ... <= 3 years", "pubchem": "203:468"},
-    {"value": "end", "explanation": "> 3 years", "pubchem": "4097625"}
-  ]
-}

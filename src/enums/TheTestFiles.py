@@ -21,6 +21,6 @@ class TheTestFiles(EnumAsClass):
     TEST_EXTR_DISEASE_DATA_PATH = os.path.join("datasets", "test", "test-extr-disease-data.csv")
     TEST_EXTR_DYNAMIC_DATA_PATH = os.path.join("datasets", "test", "test-extr-dynamic-data.csv")
     TEST_EXTR_GENOMICS_DATA_PATH = os.path.join("datasets", "test", "test-extr-genomics-data.csv")
-    TEST_EXTR_LABORATORY_MAPPED_PATH = os.path.join("datasets", "test", "test-extr-mapped-values-laboratory-data.json")
-    TEST_EXTR_GENOMICS_MAPPED_PATH = os.path.join("datasets", "test", "test-extr-mapped-values-genomics-data.json")
+    TEST_EXTR_LABORATORY_CATEGORICAL_PATH = os.path.join("datasets", "test", "test-extr-categorical-laboratory-data.json")
+    TEST_EXTR_GENOMICS_CATEGORICAL_PATH = os.path.join("datasets", "test", "test-extr-categorical-genomics-data.json")
     TEST_EXTR_LABORATORY_DIMENSIONS_PATH = os.path.join("datasets", "test", "test-extr-column-to-dimension-laboratory-data.json")

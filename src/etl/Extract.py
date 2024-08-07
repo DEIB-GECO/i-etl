@@ -9,6 +9,8 @@ from analysis.ValueAnalysis import ValueAnalysis
 from analysis.VariableAnalysis import VariableAnalysis
 from database.Database import Database
 from database.Execution import Execution
+from datatypes.CodeableConcept import CodeableConcept
+from datatypes.Coding import Coding
 from enums.FileTypes import FileTypes
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
@@ -26,7 +28,7 @@ class Extract:
     def __init__(self, database: Database, execution: Execution):
         self.metadata = None
         self.data = None
-        self.categorical_values = {}  # accepted values for some categorical columns (column "JSON_values" in metadata)
+        self.mapping_categorical_values_to_codeable_concepts = {}  # accepted values for categorical columns (column "JSON_values" in metadata) and their CodeableConcept
         self.column_to_vartype = {}  # each column is associated to its var type (column "vartype" in metadata)
         self.column_to_dimension = {}  # each column is associated to its dimension, the union set of the dimension given in the metadata and the units found in the string values themselves
 
@@ -36,7 +38,7 @@ class Extract:
     def run (self) -> None:
         # load and pre-process metadata
         self.load_metadata_file()
-        self.compute_categorical_values()
+        self.compute_mapping_categorical_values()
         log.debug(self.metadata.columns)
 
         # load and pre-process data (all kinds)
@@ -248,11 +250,12 @@ class Extract:
                 log.info(f"Drop data column corresponding to the variable {column}.")
                 self.data = self.data.drop(column, axis=1)  # axis=1 -> columns
 
-    def compute_categorical_values(self) -> None:
-        self.categorical_values = {}
+    def compute_mapping_categorical_values(self) -> None:
+        self.mapping_categorical_values_to_codeable_concepts = {}
 
         for index, row in self.metadata.iterrows():
             if is_not_nan(row[MetadataColumns.JSON_VALUES]):
+                log.info(row)
                 current_dicts = json.loads(row[MetadataColumns.JSON_VALUES])
                 parsed_dicts = []
                 for current_dict in current_dicts:
@@ -265,8 +268,29 @@ class Extract:
                     if Ontologies.LOINC["name"] in current_dict:
                         current_dict[Ontologies.LOINC["name"]] = normalize_ontology_code(ontology_code=current_dict[Ontologies.LOINC["name"]])
                     parsed_dicts.append(current_dict)
-                self.categorical_values[row["name"]] = parsed_dicts
-        log.debug(f"{self.categorical_values}")
+                log.info(parsed_dicts)
+                self.mapping_categorical_values_to_codeable_concepts[row[MetadataColumns.COLUMN_NAME]] = {}
+                # we get the value of the mapping, e.g., F, or M, or NA
+                # we create a CodeableConcept with each code added to the mapping, e.g., snomed_ct and loinc
+                # recall that a mapping is of the form: {'value': 'X', 'explanation': '...', 'snomed_ct': '123', 'loinc': '456' }
+                # and we add each ontology code to that CodeableConcept
+                for one_dict in parsed_dicts:
+                    log.info(one_dict)
+                    cc = CodeableConcept()
+                    for key, val in one_dict.items():
+                        log.info(f"{key}: {val}")
+                        # for any key value pair that is not about the value or the explanation
+                        # (i.e., loinc and snomed_ct columns), we create a Coding, which we add to the CodeableConcept
+                        # we need to do a loop because there may be several ontology terms for a single mapping
+                        if key != "value" and key != "explanation":
+                            system = Ontologies.get_ontology_system(ontology=key)
+                            cc.add_coding(one_coding=Coding(system=system, code=val, name=one_dict["value"], description=one_dict["explanation"]))
+                    # {
+                    # 'sex': {'m': {"coding": [{"system": "snomed", "code": "248153007", "display": "m (Male)"}], "text": ""}}, {'f': {"coding": [{"system": "snomed", "code": "248152002", "display": "f (Female)"}], "text": ""}}}
+                    # 'sample_quality': {'inadeguata': {"coding": [{"system": "snomed", "code": "71978007", "display": "inadeguata (inadequate)"}], "text": ""}, ...}
+                    # }
+                    self.mapping_categorical_values_to_codeable_concepts[row[MetadataColumns.COLUMN_NAME]][one_dict["value"]] = cc
+        log.debug(f"{self.mapping_categorical_values_to_codeable_concepts}")
 
     def compute_column_to_dimension(self) -> None:
         self.column_to_dimension = {}
@@ -320,7 +344,7 @@ class Extract:
         log.debug(self.column_to_dimension)
 
     def run_value_analysis(self) -> None:
-        log.debug(f"{self.categorical_values}")
+        log.debug(f"{self.mapping_categorical_values_to_codeable_concepts}")
         # for each column in the sample data (and not in the metadata because some (empty) data columns are not
         # present in the metadata file), we compare the set of values it takes against the accepted set of values
         # (available in the mapped_values variable)
@@ -334,10 +358,10 @@ class Extract:
             # TODO NELLY: complete this part
             expected_type = ""
             # trying to get expected values for the current column
-            if column in self.categorical_values:
+            if column in self.mapping_categorical_values_to_codeable_concepts:
                 # self.mapped_values[column] contains the mappings (JSON dicts) for the given column
                 # we need to get only the set of values described in the mappings of the given column
-                accepted_values = get_values_from_json_values(json_values=self.categorical_values[column])
+                accepted_values = get_values_from_json_values(json_values=self.mapping_categorical_values_to_codeable_concepts[column])
             else:
                 accepted_values = []
             value_analysis = ValueAnalysis(column_name=column, values=values, expected_type=expected_type, accepted_values=accepted_values)

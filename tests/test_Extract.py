@@ -5,6 +5,7 @@ import unittest
 from database.Database import Database
 from database.Execution import Execution
 from enums.DataTypes import DataTypes
+from enums.Ontologies import Ontologies
 from etl.Extract import Extract
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
@@ -286,29 +287,37 @@ class TestExtract(unittest.TestCase):
                            data_paths=TheTestFiles.TEST_ORIG_LABORATORY_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()  # required to compute mapped values
-        extract.compute_categorical_values()
+        extract.compute_mapping_categorical_values()
 
-        log.debug(extract.categorical_values)
+        log.debug(extract.mapping_categorical_values_to_codeable_concepts)
 
-        assert len(extract.categorical_values.keys()) == 1  # only sex has categorical values in the test data
-        assert "sex" in extract.categorical_values.keys()
-        assert len(extract.categorical_values["sex"]) == 2  # mappings for female, male
+        assert len(extract.mapping_categorical_values_to_codeable_concepts.keys()) == 1  # only sex has categorical values in the test data
+        assert "sex" in extract.mapping_categorical_values_to_codeable_concepts.keys()
+        assert len(extract.mapping_categorical_values_to_codeable_concepts["sex"]) == 2  # mappings for female, male
         # checking "male" mapping
-        assert len(extract.categorical_values["sex"][0]) == 3  # value, explanation, and ontology keys
-        assert "value" in extract.categorical_values["sex"][0]
-        assert extract.categorical_values["sex"][0]["value"] == "m"  # normalized categorical value
-        assert "explanation" in extract.categorical_values["sex"][0]
-        assert extract.categorical_values["sex"][0]["explanation"] == "Male"  # not normalized (human) description
-        assert "snomedct" in extract.categorical_values["sex"][0]  # normalized (ontology) key
-        assert extract.categorical_values["sex"][0]["snomedct"] == "24815:3007"  # normalized ontology code
+        assert "m" in extract.mapping_categorical_values_to_codeable_concepts["sex"]  # normalized categorical value
+        cc_male = extract.mapping_categorical_values_to_codeable_concepts["sex"]["m"].to_json()
+        assert "coding" in cc_male
+        assert "text" in cc_male
+        assert len(cc_male["coding"][0]) == 3  # system, code, and display keys
+        assert "system" in cc_male["coding"][0]
+        assert "code" in cc_male["coding"][0]
+        assert "display" in cc_male["coding"][0]
+        assert cc_male["coding"][0]["display"] == "m (Male)"  # not normalized (human) description
+        assert cc_male["coding"][0]["system"] == Ontologies.SNOMEDCT["url"]  # normalized (ontology) key
+        assert cc_male["coding"][0]["code"] == "24815:3007"  # normalized ontology code
         # checking "female" mapping
-        assert len(extract.categorical_values["sex"][1]) == 3
-        assert "value" in extract.categorical_values["sex"][1]
-        assert extract.categorical_values["sex"][1]["value"] == "f"
-        assert "explanation" in extract.categorical_values["sex"][1]
-        assert extract.categorical_values["sex"][1]["explanation"] == "Female"
-        assert "snomedct" in extract.categorical_values["sex"][1]
-        assert extract.categorical_values["sex"][1]["snomedct"] == "248152002"
+        assert "f" in extract.mapping_categorical_values_to_codeable_concepts["sex"]  # normalized categorical value
+        cc_female = extract.mapping_categorical_values_to_codeable_concepts["sex"]["f"].to_json()
+        assert "coding" in cc_female
+        assert "text" in cc_female
+        assert len(cc_female["coding"][0]) == 3  # system, code, and display keys
+        assert "system" in cc_female["coding"][0]
+        assert "code" in cc_female["coding"][0]
+        assert "display" in cc_female["coding"][0]
+        assert cc_female["coding"][0]["display"] == "f (Female)"  # not normalized (human) description
+        assert cc_female["coding"][0]["system"] == Ontologies.SNOMEDCT["url"]  # normalized (ontology) key
+        assert cc_female["coding"][0]["code"] == "248152002"  # normalized ontology code
 
     def test_removed_unused_columns(self):
         extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,

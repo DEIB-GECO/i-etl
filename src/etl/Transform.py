@@ -10,8 +10,6 @@ from database.Execution import Execution
 from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Coding import Coding
 from datatypes.Identifier import Identifier
-from datatypes.PatientAnonymizedIdentifier import PatientAnonymizedIdentifier
-from datatypes.Reference import Reference
 from enums.ColumnsToIgnore import ColumnsToIgnore
 from enums.DataTypes import DataTypes
 from enums.FileTypes import FileTypes
@@ -37,7 +35,7 @@ from utils.utils import is_not_nan, cast_value, write_in_file
 
 class Transform:
 
-    def __init__(self, database: Database, execution: Execution, data: DataFrame, metadata: DataFrame, mapped_values: dict, column_to_dimension: dict):
+    def __init__(self, database: Database, execution: Execution, data: DataFrame, metadata: DataFrame, mapping_categorical_values: dict, column_to_dimension: dict):
         self.database = database
         self.execution = execution
         self.counter = Counter()
@@ -45,8 +43,8 @@ class Transform:
         # get data, metadata and the mapped values computed in the Extract step
         self.data = data
         self.metadata = metadata
-        self.mapped_values = mapped_values
         self.column_to_dimension = column_to_dimension
+        self.mapping_categorical_values = mapping_categorical_values
 
         # to record objects that will be further inserted in the database
         self.hospitals = []
@@ -115,7 +113,6 @@ class Transform:
     def create_laboratory_features(self) -> None:
         log.info(f"create Lab. Feat. instances in memory")
         count = 1
-        index_for_column_name = self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)
         for row_index, row in self.metadata.iterrows():
             column_name = row[MetadataColumns.COLUMN_NAME]
             if column_name not in SampleColumns.values() and column_name not in ColumnsToIgnore.values():
@@ -125,9 +122,13 @@ class Transform:
                     # we still add the codeable_concept as a LabFeature
                     # but, it will have only the text (such as "BIS", or "TooYoung") and no associated codings
                     category = Transform.get_lab_feature_category(column_name=column_name)
-                    data_type = row[MetadataColumns.ETL_TYPE]  # this has been normalized while loading + wetake ETL_type, not var_type, to get the narrowest type (in which we cast values)
+                    data_type = row[MetadataColumns.ETL_TYPE]  # this has been normalized while loading + we take ETL_type, not var_type, to get the narrowest type (in which we cast values)
                     dimension = self.column_to_dimension[column_name]
-                    new_lab_feature = LaboratoryFeature(id_value=NO_ID, code=cc, category=category, permitted_datatype=data_type, dimension=dimension, counter=self.counter, hospital_name=self.execution.hospital_name)
+                    categorical_values = self.mapping_categorical_values[column_name] if column_name in self.mapping_categorical_values.keys() else None
+                    new_lab_feature = LaboratoryFeature(id_value=NO_ID, code=cc, category=category,
+                                                        permitted_datatype=data_type, dimension=dimension,
+                                                        counter=self.counter, hospital_name=self.execution.hospital_name,
+                                                        categorical_values=categorical_values)
                     log.info(f"adding a new LabFeature instance about {cc.text}: {new_lab_feature}")
                     self.laboratory_features.append(new_lab_feature)
                     if len(self.laboratory_features) >= BATCH_SIZE:
@@ -206,17 +207,12 @@ class Transform:
                         # we cannot use PatientAnonymizedIdentifier otherwise we would concat a set hospital name to the anonymized patient id
                         # patient_id = PatientAnonymizedIdentifier(id_value=self.mapping_anonymized_patient_ids[row[id_column_for_patients]], hospital_name=self.execution.hospital_name)
                         patient_id = Identifier(value=self.mapping_anonymized_patient_ids[row[id_column_for_patients]])
-                        log.info(patient_id)
                         id_column_for_samples = ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE] if TableNames.SAMPLE in ID_COLUMNS[self.execution.hospital_name] else ""
                         sample_id = None
                         if id_column_for_samples != "":
                             sample_id = Identifier(value=row[id_column_for_samples])
                         # TODO Nelly: we could even clean more the data, e.g., do not allow "Italy" as ethnicity (caucasian, etc)
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
-                        log.info(lab_feature_id)
-                        log.info(hospital_id)
-                        log.info(sample_id)
-                        log.info(patient_id)
                         new_laboratory_record = LaboratoryRecord(id_value=NO_ID, feature_id=lab_feature_id,
                                                                  patient_id=patient_id, hospital_id=hospital_id,
                                                                  sample_id=sample_id, value=fairified_value,
@@ -418,25 +414,19 @@ class Transform:
         else:
             expected_unit = None  # in case no unit has been specified and no unit could be extracted form data
         # log.debug(f"ETL type is {etl_type}, var type is {var_type}, expected unit is {expected_unit}")
-        if (etl_type == DataTypes.CATEGORY or etl_type == DataTypes.BOOLEAN) and column_name in self.mapped_values:
+        if (etl_type == DataTypes.CATEGORY or etl_type == DataTypes.BOOLEAN) and column_name in self.mapping_categorical_values.keys():
             # we iterate over all the mappings of a given column
-            for mapping in self.mapped_values[column_name]:
+            for map_value_cc in self.mapping_categorical_values[column_name]:
+                # map_value_cc contains the value in the data and the associated CodeableConcept
                 # we get the value of the mapping, e.g., F, or M, or NA
-                mapped_value = mapping['value']
                 # if the sample value is equal to the mapping value, we have found a match,
                 # and we will record the associated ontology term instead of the value
-                if value == mapped_value:
+                if value in map_value_cc:
                     # we create a CodeableConcept with each code added to the mapping, e.g., snomed_ct and loinc
                     # recall that a mapping is of the form: {'value': 'X', 'explanation': '...', 'snomed_ct': '123', 'loinc': '456' }
                     # and we add each ontology code to that CodeableConcept
-                    cc = CodeableConcept()
-                    for key, val in mapping.items():
-                        # for any key value pair that is not about the value or the explanation
-                        # (i.e., loinc and snomed_ct columns), we create a Coding, which we add to the CodeableConcept
-                        # we need to do a loop because there may be several ontology terms for a single mapping
-                        if key != 'value' and key != 'explanation':
-                            system = Ontologies.get_ontology_system(ontology=key)
-                            cc.add_coding(one_coding=Coding(system=system, code=val, name=value, description=mapping['explanation']))
+                    cc = self.mapping_categorical_values[column_name][value]
+                    log.info(cc)
                     # now that we have constructed a CC from the value, we check whether this corresponds to the categorical value of booleans
                     # i.e., True/False(/unknown), Sì/no, etc
                     if etl_type == DataTypes.BOOLEAN:
