@@ -2,6 +2,7 @@ import json
 
 import jsonpickle
 
+from datatypes.Identifier import Identifier
 from utils.setup_logger import log
 
 
@@ -11,13 +12,13 @@ class Reference:
     This allows to refer to other resources using their BETTER ID
     (not the local_id, which is proper to each hospital, but instead the id
     """
-    def __init__(self, resource_identifier: str, resource_type: str):
+    def __init__(self, resource_identifier: Identifier):
         """
         Create a new reference to another resource.
         :param resource_identifier:
         """
-        self.reference = resource_identifier
-        self.type = resource_type
+        log.info(resource_identifier)
+        self.reference = resource_identifier.value
 
     def to_json(self):
         # encode create a stringified JSON object of the class

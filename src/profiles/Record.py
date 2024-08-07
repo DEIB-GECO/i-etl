@@ -1,13 +1,15 @@
 from typing import Any
 
+from datatypes.Identifier import Identifier
 from datatypes.Reference import Reference
 from profiles.Resource import Resource
 from utils.Counter import Counter
+from utils.setup_logger import log
 
 
 class Record(Resource):
-    def __init__(self, id_value: str, feature_ref: Reference, patient_ref: Reference,
-                 hospital_ref: Reference, value: Any, resource_type: str, counter: Counter, hospital_name: str):
+    def __init__(self, id_value: str, feature_id: Identifier, patient_id: Identifier,
+                 hospital_id: Identifier, value: Any, resource_type: str, counter: Counter, hospital_name: str):
         """
 
         """
@@ -16,6 +18,6 @@ class Record(Resource):
 
         # set up the resource attributes
         self.value = value
-        self.subject = patient_ref
-        self.recorded_by = hospital_ref
-        self.instantiate = feature_ref
+        self.subject = Reference(resource_identifier=patient_id)
+        self.recorded_by = Reference(resource_identifier=hospital_id)
+        self.instantiate = Reference(resource_identifier=feature_id)

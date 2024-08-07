@@ -1,7 +1,6 @@
 from datatypes.CodeableConcept import CodeableConcept
-from profiles.Feature import Feature
-from profiles.Resource import Resource
 from enums.TableNames import TableNames
+from profiles.Feature import Feature
 from utils.Counter import Counter
 
 

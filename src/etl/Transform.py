@@ -197,10 +197,8 @@ class Transform:
                 else:
                     if column_name in self.mapping_column_to_labfeat_id:
                         # we know a code for this column, so we can register the value of that LabFeature
-                        lab_feature_id = self.mapping_column_to_labfeat_id[column_name]
-                        lab_feature_ref = Reference(resource_identifier=lab_feature_id, resource_type=TableNames.LABORATORY_FEATURE)
-                        hospital_id = self.mapping_hospital_to_hospital_id[self.execution.hospital_name]
-                        hospital_ref = Reference(resource_identifier=hospital_id, resource_type=TableNames.HOSPITAL)
+                        lab_feature_id = Identifier(self.mapping_column_to_labfeat_id[column_name])
+                        hospital_id = Identifier(self.mapping_hospital_to_hospital_id[self.execution.hospital_name])
                         # for patient and sample instances, no need to go through a mapping because they have an ID assigned by the hospital
                         # TODO NELLY: if Buzzi decides to remove patient ids, we will have to number them with a Counter
                         #  and to create mappings (as for Hospital and LabFeature resources)
@@ -209,18 +207,19 @@ class Transform:
                         # patient_id = PatientAnonymizedIdentifier(id_value=self.mapping_anonymized_patient_ids[row[id_column_for_patients]], hospital_name=self.execution.hospital_name)
                         patient_id = Identifier(value=self.mapping_anonymized_patient_ids[row[id_column_for_patients]])
                         log.info(patient_id)
-                        patient_ref = Reference(resource_identifier=patient_id.value, resource_type=TableNames.PATIENT)
-                        log.info(patient_ref)
                         id_column_for_samples = ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE] if TableNames.SAMPLE in ID_COLUMNS[self.execution.hospital_name] else ""
-                        sample_ref = None
+                        sample_id = None
                         if id_column_for_samples != "":
                             sample_id = Identifier(value=row[id_column_for_samples])
-                            sample_ref = Reference(resource_identifier=sample_id.value, resource_type=TableNames.SAMPLE)
                         # TODO Nelly: we could even clean more the data, e.g., do not allow "Italy" as ethnicity (caucasian, etc)
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
-                        new_laboratory_record = LaboratoryRecord(id_value=NO_ID, feature_ref=lab_feature_ref,
-                                                                 patient_ref=patient_ref, hospital_ref=hospital_ref,
-                                                                 sample_ref=sample_ref, value=fairified_value,
+                        log.info(lab_feature_id)
+                        log.info(hospital_id)
+                        log.info(sample_id)
+                        log.info(patient_id)
+                        new_laboratory_record = LaboratoryRecord(id_value=NO_ID, feature_id=lab_feature_id,
+                                                                 patient_id=patient_id, hospital_id=hospital_id,
+                                                                 sample_id=sample_id, value=fairified_value,
                                                                  counter=self.counter, hospital_name=self.execution.hospital_name)
                         self.laboratory_records.append(new_laboratory_record)
                         if len(self.laboratory_records) >= BATCH_SIZE:
@@ -316,9 +315,7 @@ class Transform:
                         # log.info("I know a code for column %s", column_name)
                         # we know a code for this column, so we can register the value of that LabFeature
                         diag_feature_id = self.mapping_column_to_diagfeat_id[column_name]
-                        diag_feature_ref = Reference(resource_identifier=diag_feature_id, resource_type=TableNames.DIAGNOSIS_FEATURE)
-                        hospital_id = self.mapping_hospital_to_hospital_id[self.execution.hospital_name]
-                        hospital_ref = Reference(resource_identifier=hospital_id, resource_type=TableNames.HOSPITAL)
+                        hospital_id = Identifier(self.mapping_hospital_to_hospital_id[self.execution.hospital_name])
                         # for patient instances, no need to go through a mapping because they have an ID assigned by the hospital
                         # TODO NELLY: if Buzzi decides to remove patient ids, we will have to number them with a Counter
                         #  and to create mappings (as for Hospital and Feature resources)
@@ -327,12 +324,11 @@ class Transform:
                         # patient_id = PatientAnonymizedIdentifier(id_value=row[id_column_for_patients], hospital_name=self.execution.hospital_name)
                         patient_id = Identifier(value=self.mapping_anonymized_patient_ids[row[id_column_for_patients]])
                         log.debug(f"patient_id = {patient_id.to_json()} of type {type(patient_id)}")
-                        patient_ref = Reference(resource_identifier=patient_id.value, resource_type=TableNames.PATIENT)
-                        log.debug(f"patient_ref = {patient_ref.to_json()} of type {type(patient_ref)}")
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
-                        new_diag_record = DiagnosisRecord(id_value=NO_ID, feature_ref=diag_feature_ref,
-                                                             patient_ref=patient_ref, hospital_ref=hospital_ref,
-                                                             value=fairified_value, counter=self.counter, hospital_name=self.execution.hospital_name)
+                        new_diag_record = DiagnosisRecord(id_value=NO_ID, feature_id=diag_feature_id,
+                                                          patient_id=patient_id, hospital_id=hospital_id,
+                                                          value=fairified_value, counter=self.counter,
+                                                          hospital_name=self.execution.hospital_name)
                         self.diagnosis_records.append(new_diag_record)
                         if len(self.diagnosis_records) >= BATCH_SIZE:
                             write_in_file(resource_list=self.diagnosis_records,
