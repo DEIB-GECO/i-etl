@@ -35,18 +35,14 @@ class CodeableConcept:
 
     @classmethod
     def from_json(cls, json_cc: dict):  # returns a CodeableConcept
-        log.info(json_cc)
-        log.info(json_cc.keys())
         # fill a new CodeableConcept instance with a JSON-encoded CodeableConcept
         cc = CodeableConcept("")
         if "text" in json_cc:
             cc = CodeableConcept(json_cc["text"])
         if "coding" in json_cc:
             cc.coding = []
-            log.debug(json_cc["coding"])
             for json_coding in json_cc["coding"]:
-                cc.add_coding(one_coding=Coding(ontology=Ontologies.get_enum_from_url(json_coding["system"]), code=json_coding["code"], display=json_coding["display"], column_name=cc.text))
-                log.info(cc)
+                cc.add_coding(one_coding=Coding(ontology=Ontologies.get_enum_from_url(json_coding["system"]), code=json_coding["code"], display=json_coding["display"]))
         return cc
 
     @classmethod

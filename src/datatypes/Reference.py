@@ -17,7 +17,6 @@ class Reference:
         Create a new reference to another resource.
         :param resource_identifier:
         """
-        log.info(resource_identifier)
         self.reference = resource_identifier.value
 
     def to_json(self):

@@ -110,5 +110,5 @@ snomed ct,236973005,,,,,,screening.csv,BirthMethod,Metodo di nascita ,Birth meth
 ,,,,,,,screening.csv,BIS,Flag per indicare se si tratta di campione BIS,Flag to indicate whether it is a BIS sample,str,str,,,,1,
 snomed ct,28030000,,,,,,screening.csv,Twins,gemello ,Twin,category,bool,,{si} Yes\\{no} No,"[{""value"": ""si"", ""explanation"": ""Yes"", ""snomed_ct"": ""373066001""}, {""value"": ""no"", ""explanation"": ""No"", ""snomed_ct"": ""373067005""}]",1,"The metadata says Si/no, but the data uses 1 for twins and empty cell for unique children"
 ,,,,,,,screening.csv,id,identifier,Identifier,int,int,,,,1,
-,,,,,,,diagnoses.csv,SampleBarcode,,Patient ID,str,str,,,"This column is labelled ""Case ID"" in the data!",1,"This column is labelled ""Case ID"" in the data! This looks like SampleBarcode ids. We need to know exactly what is this column about"
-snomed ct,782964007,,,,,,diagnoses.csv,diagnosis,,Diagnosis,str,str,,Free text,,??,Is this field related to the Diagnosis list? How is the diagnosis encoded? Are there one or multiple diagnosis?
+,,,,,,,diagnoses.csv,id,,Patient ID,str,str,,,,1,"This column is labelled ""Case ID"" in the data! This looks like SampleBarcode ids. We need to know exactly what is this column about"
+snomed ct,782964007,,,,,,diagnoses.csv,diagnosis,,Diagnosis,str,regex,,Free text,,??,Is this field related to the Diagnosis list? How is the diagnosis encoded? Are there one or multiple diagnosis?

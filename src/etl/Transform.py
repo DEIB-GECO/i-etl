@@ -1,3 +1,5 @@
+import json
+import os.path
 import re
 from datetime import datetime
 from typing import Any
@@ -37,7 +39,7 @@ class Transform:
 
     def __init__(self, database: Database, execution: Execution, data: DataFrame, metadata: DataFrame,
                  mapping_categorical_value_to_cc: dict, mapping_column_to_categorical_value: dict,
-                 mapping_column_to_dimension: dict):
+                 mapping_column_to_dimension: dict, patient_ids_mapping: dict):
         self.database = database
         self.execution = execution
         self.counter = Counter()
@@ -48,6 +50,9 @@ class Transform:
         self.mapping_column_to_dimension = mapping_column_to_dimension
         self.mapping_categorical_value_to_cc = mapping_categorical_value_to_cc
         self.mapping_column_to_categorical_value = mapping_column_to_categorical_value
+        # to keep track of anonymized vs. hospital patient ids
+        # this is empty if no file as been provided by the user, otherwise it contains some mappings <patient ID, anonymized ID>
+        self.patient_ids_mapping = patient_ids_mapping
 
         # to record objects that will be further inserted in the database
         self.hospitals = []
@@ -69,9 +74,6 @@ class Transform:
         self.mapping_hospital_to_hospital_id = {}  # map the hospital names to their IDs
         self.mapping_column_to_labfeat_id = {}  # map the column names to their LaboratoryFeature IDs
         self.mapping_column_to_diagfeat_id = {}  # map the disease names to their Diagnosis IDs
-
-        # to keep track of anonymized vs. hospital patient ids
-        self.mapping_anonymized_patient_ids = {}  # <hospital patient id, anonymized patient id>
 
     def run(self) -> None:
         self.set_resource_counter_id()
@@ -258,8 +260,8 @@ class Transform:
                         #  and to create mappings (as for Hospital and LabFeature resources)
                         id_column_for_patients = ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]
                         # we cannot use PatientAnonymizedIdentifier otherwise we would concat a set hospital name to the anonymized patient id
-                        # patient_id = PatientAnonymizedIdentifier(id_value=self.mapping_anonymized_patient_ids[row[id_column_for_patients]], hospital_name=self.execution.hospital_name)
-                        patient_id = Identifier(value=self.mapping_anonymized_patient_ids[row[id_column_for_patients]])
+                        # patient_id = PatientAnonymizedIdentifier(id_value=self.patient_ids_mapping[row[id_column_for_patients]], hospital_name=self.execution.hospital_name)
+                        patient_id = Identifier(value=self.patient_ids_mapping[row[id_column_for_patients]])
                         id_column_for_samples = ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE] if TableNames.SAMPLE in ID_COLUMNS[self.execution.hospital_name] else ""
                         sample_id = None
                         if id_column_for_samples != "":
@@ -285,24 +287,32 @@ class Transform:
 
     def create_patients(self) -> None:
         log.info(f"create patient instances in memory")
-        created_patient_ids = set()
         count = 1
         for index, row in self.data.iterrows():
             row_patient_id = row[ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]]
-            if row_patient_id not in created_patient_ids:
-                # the patient does not exist yet, we will create it
+            if row_patient_id not in self.patient_ids_mapping:
+                # the (anonymized) patient does not exist yet, we will create it
                 new_patient = Patient(id_value=NO_ID, counter=self.counter, hospital_name=self.execution.hospital_name)
-                created_patient_ids.add(row_patient_id)
-                self.patients.append(new_patient)
-                self.mapping_anonymized_patient_ids[row_patient_id] = new_patient.identifier.value  # keep track of anonymized patient ids
-                if len(self.patients) >= BATCH_SIZE:
-                    write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current, table_name=TableNames.PATIENT, count=count)  # this will save the data if it has reached BATCH_SIZE
-                    self.patients = []
-                    count = count + 1
-                    # no need to load Patient instances because they are referenced using their ID,
-                    # which was provided by the hospital (thus is known by the dataset)
+                self.patient_ids_mapping[row_patient_id] = new_patient.identifier.value  # keep track of anonymized patient ids
+            else:
+                # the (anonymized) patient id already exists, we take it from the mapping
+                new_patient = Patient(id_value=self.patient_ids_mapping[row_patient_id], counter=self.counter, hospital_name=self.execution.hospital_name)
+            self.patients.append(new_patient)
+            if len(self.patients) >= BATCH_SIZE:
+                write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current, table_name=TableNames.PATIENT, count=count)  # this will save the data if it has reached BATCH_SIZE
+                self.patients = []
+                count = count + 1
+                # no need to load Patient instances because they are referenced using their ID,
+                # which was provided by the hospital (thus is known by the dataset)
         write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current, table_name=TableNames.PATIENT, count=count)
-        log.debug(self.mapping_anonymized_patient_ids)
+        # finally, we also write the mapping patient ID / anonymized ID in a file - this will be ingested for subsequent runs to not renumber existing anonymized patients
+        log.debug(self.patient_ids_mapping)
+        with open(self.execution.anonymized_patient_ids_filepath, "w") as data_file:
+            try:
+                log.debug(f"Writing {len(self.patient_ids_mapping)} mappings for patient IDs")
+                json.dump(self.patient_ids_mapping, data_file)
+            except Exception:
+                raise ValueError(f"Could not dump the {len(self.patient_ids_mapping)} JSON resources in the file located at {self.execution.anonymized_patient_ids_filepath}.")
 
     def create_diagnosis_features(self):
         log.info(f"create Diag. Feat. instances in memory")
@@ -338,7 +348,7 @@ class Transform:
                     if column_name in self.mapping_column_to_diagfeat_id:
                         # log.info("I know a code for column %s", column_name)
                         # we know a code for this column, so we can register the value of that LabFeature
-                        diag_feature_id = self.mapping_column_to_diagfeat_id[column_name]
+                        diag_feature_id = Identifier(value=self.mapping_column_to_diagfeat_id[column_name])
                         hospital_id = Identifier(self.mapping_hospital_to_hospital_id[self.execution.hospital_name])
                         # for patient instances, no need to go through a mapping because they have an ID assigned by the hospital
                         # TODO NELLY: if Buzzi decides to remove patient ids, we will have to number them with a Counter
@@ -346,7 +356,7 @@ class Transform:
                         id_column_for_patients = ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]
                         # we cannot use PatientAnonymizedIdentifier otherwise we would concat a set hospital name to the anonymized patient id
                         # patient_id = PatientAnonymizedIdentifier(id_value=row[id_column_for_patients], hospital_name=self.execution.hospital_name)
-                        patient_id = Identifier(value=self.mapping_anonymized_patient_ids[row[id_column_for_patients]])
+                        patient_id = Identifier(value=self.patient_ids_mapping[row[id_column_for_patients]])
                         log.debug(f"patient_id = {patient_id.to_json()} of type {type(patient_id)}")
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
                         new_diag_record = DiagnosisRecord(id_value=NO_ID, feature_id=diag_feature_id,
@@ -434,18 +444,13 @@ class Transform:
         current_column_info = DataFrame(self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name])
         etl_type = current_column_info[MetadataColumns.ETL_TYPE].iloc[0]  # we need to take the value itself, otherwise we end up with a series of 1 element (the ETL type)
         var_type = current_column_info[MetadataColumns.VAR_TYPE].iloc[0]
-        log.info(f"var type is {var_type} vs. etl type is {etl_type}")
         if column_name in self.mapping_column_to_dimension:
             expected_unit = self.mapping_column_to_dimension[column_name]
         else:
             expected_unit = None  # in case no unit has been specified and no unit could be extracted form data
         # log.debug(f"ETL type is {etl_type}, var type is {var_type}, expected unit is {expected_unit}")
-        log.info(column_name)
-        log.debug(self.mapping_categorical_value_to_cc.keys())
         if (etl_type == DataTypes.CATEGORY or etl_type == DataTypes.BOOLEAN) and column_name in self.mapping_column_to_categorical_value:
             # we iterate over all the mappings of a given column
-            log.debug(self.mapping_column_to_categorical_value)
-            log.debug(self.mapping_column_to_categorical_value[column_name])
             if value in self.mapping_column_to_categorical_value[column_name] and value in self.mapping_categorical_value_to_cc:
                 # if the value is equal to the mapping value, we have found a match,
                 # and we will record the associated ontology term instead of the value
@@ -453,7 +458,6 @@ class Transform:
                 # recall that a mapping is of the form: {'value': 'X', 'explanation': '...', 'snomed_ct': '123', 'loinc': '456' }
                 # and we add each ontology code to that CodeableConcept
                 cc = self.mapping_categorical_value_to_cc[value]
-                log.info(cc)
                 # now that we have constructed a CC from the value, we check whether this corresponds to the categorical value of booleans
                 # i.e., True/False(/unknown), Sì/no, etc
                 if etl_type == DataTypes.BOOLEAN:

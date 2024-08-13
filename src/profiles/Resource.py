@@ -21,7 +21,6 @@ class Resource:
         :param resource_type:
         """
         self.identifier = None
-        id_to_use = None
         if id_value == constants.NO_ID:
             # we are creating a new instance, we assign it a new ID
             # for Sample data only, we expect to have an ID assigned by the hospital, thus it cannot be NO_ID
@@ -37,7 +36,12 @@ class Resource:
         # create the right Identifier based on the resource type:
         if resource_type == TableNames.PATIENT:
             # we use anonymized patient id
-            self.identifier = PatientAnonymizedIdentifier(id_value=id_to_use, hospital_name=hospital_name)
+            if id_value == constants.NO_ID:
+                # we are creating a new Patient anonymized ID
+                self.identifier = PatientAnonymizedIdentifier(id_value=id_to_use, hospital_name=hospital_name)
+            else:
+                # we are retrieving an existing anonymized patient ID
+                self.identifier = PatientAnonymizedIdentifier(id_value=id_to_use, hospital_name=None)
         else:
             # We assign a "simple" (stringified integer) ID to the new resource
             self.identifier = ResourceIdentifier(id_value=id_to_use)

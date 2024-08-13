@@ -32,6 +32,7 @@ class Execution:
     MEDICINE_PATHS_KEY = "medicine"
     IMAGING_PATHS_KEY = "imaging"
     GENOMIC_PATHS_KEY = "genomic"
+    ANONYMIZED_PATIENT_IDS_KEY = "anonymized_pids"
 
     def __init__(self, db_name: str):
         self.execution_date = datetime.now().isoformat()
@@ -53,6 +54,7 @@ class Execution:
         self.genomic_filepaths = None  # user input
         self.current_filepath = None  # set in the loop on files in ETL
         self.current_file_type = None  # set in the loop on files in ETL
+        self.anonymized_patient_ids_filepath = None  # user input
         self.use_en_locale = True  # user input
         # parameters related to the database
         self.db_connection = DEFAULT_DB_CONNECTION  # user input
@@ -101,6 +103,8 @@ class Execution:
             self.is_transform = args_as_dict[Execution.IS_TRANSFORM_KEY] == "True" or args_as_dict[Execution.IS_TRANSFORM_KEY] is True
         if Execution.IS_LOAD_KEY in args_as_dict:
             self.is_load = args_as_dict[Execution.IS_LOAD_KEY] == "True" or args_as_dict[Execution.IS_LOAD_KEY] is True
+        if Execution.ANONYMIZED_PATIENT_IDS_KEY in args_as_dict:
+            self.anonymized_patient_ids_filepath = args_as_dict[Execution.ANONYMIZED_PATIENT_IDS_KEY]
 
         # B. set up the data and metadata files
         if setup_data_files:
@@ -123,7 +127,9 @@ class Execution:
             log.debug(self.medicine_filepaths)
             log.debug(self.imaging_filepaths)
             log.debug(self.genomic_filepaths)
+            log.debug(self.anonymized_patient_ids_filepath)
             self.setup_data_files()
+            self.setup_mapping_patient_ids()
 
     def create_current_working_dir(self):
         # 1. check whether the folder working-dir exists, if not create it
@@ -195,21 +201,18 @@ class Execution:
             self.genomic_filepaths = split_list_of_files(self.genomic_filepaths)  # file 1,file 2, ...,file N
             log.debug(f"{self.genomic_filepaths}")
 
-    def has_no_none_attributes(self) -> bool:
-        return (self.working_dir is not None
-                and self.working_dir_current is not None
-                and self.metadata_filepath is not None
-                and self.laboratory_filepaths is not None
-                and self.use_en_locale is not None
-                and self.db_name is not None
-                and self.db_connection is not None
-                and self.db_drop is not None
-                and self.db_no_index is not None
-                and self.hospital_name is not None
-                and self.is_extract is not None
-                and self.is_transform is not None
-                and self.is_load is not None
-                and self.is_analyze is not None)
+    def setup_mapping_patient_ids(self):
+        log.debug(self.anonymized_patient_ids_filepath)
+        if os.stat(self.anonymized_patient_ids_filepath).st_size == 0:
+            log.info("write {} in patient ids mapping")
+            # the file is empty, we simply add the empty mapping
+            # otherwise the file cannot be read as a JSON file
+            with open(self.anonymized_patient_ids_filepath, "w") as file:
+                file.write("{}")
+        else:
+            log.info("patient ids mapping already contains data")
+            # there are some mappings there, nothing more to do
+            pass
 
     def to_json(self):
         return {
@@ -217,13 +220,14 @@ class Execution:
             "user_parameters": {
                 "working_dir": self.working_dir,
                 "working_dir_current": self.working_dir_current,
+                "current_filepath": self.current_filepath,
                 Execution.METADATA_PATH_KEY: self.metadata_filepath,
                 Execution.LABORATORY_PATHS_KEY: self.laboratory_filepaths,
                 Execution.DIAGNOSIS_PATHS_KEY: self.diagnosis_filepaths,
                 Execution.MEDICINE_PATHS_KEY: self.medicine_filepaths,
                 Execution.IMAGING_PATHS_KEY: self.imaging_filepaths,
                 Execution.GENOMIC_PATHS_KEY: self.genomic_filepaths,
-                "current_filepath": self.current_filepath,
+                Execution.ANONYMIZED_PATIENT_IDS_KEY: self.anonymized_patient_ids_filepath,
                 Execution.DB_CONNECTION_KEY: self.db_connection,
                 Execution.DB_NAME_KEY: self.db_name,
                 Execution.DB_DROP_KEY: self.db_drop,

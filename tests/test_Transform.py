@@ -28,13 +28,16 @@ from utils.utils import compare_tuples, get_json_resource_file, get_lab_feature_
 def my_setup(hospital_name: str, extracted_metadata_path: str, extracted_data_paths: str,
              extracted_mapping_categorical_values_path: str,
              extracted_column_to_categorical_path: str,
-             extracted_column_dimension_path: str) -> Transform:
+             extracted_column_dimension_path: str,
+             extracted_patient_ids_mapping_path: str) -> Transform:
     args = {
         Execution.DB_CONNECTION_KEY: DEFAULT_DB_CONNECTION,
         Execution.DB_DROP_KEY: True,
-        Execution.HOSPITAL_NAME_KEY: hospital_name
+        Execution.HOSPITAL_NAME_KEY: hospital_name,
+        Execution.ANONYMIZED_PATIENT_IDS_KEY: extracted_patient_ids_mapping_path
         # no need to set the metadata and data filepaths as we get already the loaded data and metadata as arguments
     }
+    log.debug(args)
     TestTransform.execution.set_up(args_as_dict=args, setup_data_files=False)  # no need to setup the files, we get data and metadata as input
     database = Database(TestTransform.execution)
     # I load:
@@ -45,10 +48,13 @@ def my_setup(hospital_name: str, extracted_metadata_path: str, extracted_data_pa
     mapping_categorical_values = json.load(open(extracted_mapping_categorical_values_path))
     mapping_column_to_categorical_value = json.load(open(extracted_column_to_categorical_path))
     column_to_dimension = json.load(open(extracted_column_dimension_path))
+    log.debug(extracted_patient_ids_mapping_path)
+    patient_ids_mapping = json.load(open(extracted_patient_ids_mapping_path))
     transform = Transform(database=database, execution=TestTransform.execution, data=data, metadata=metadata,
                           mapping_categorical_value_to_cc=mapping_categorical_values,
                           mapping_column_to_categorical_value=mapping_column_to_categorical_value,
-                          mapping_column_to_dimension=column_to_dimension)
+                          mapping_column_to_dimension=column_to_dimension,
+                          patient_ids_mapping=patient_ids_mapping)
     return transform
 
 
@@ -61,11 +67,12 @@ class TestTransform(unittest.TestCase):
     def test_set_resource_counter_id(self):
         # when there is nothing in the database, the counter should be 0
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
-                             extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
-                             extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
-                             extracted_column_to_categorical_path=TheTestFiles.TEST_EXTR_LABORATORY_COL_CAT_PATH,
-                             extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
+                             extracted_metadata_path=TheTestFiles.EXTR_METADATA_LABORATORY_PATH,
+                             extracted_data_paths=TheTestFiles.EXTR_LABORATORY_DATA_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_LABORATORY_CATEGORICAL_PATH,
+                             extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
+                             extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
+                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
         transform.set_resource_counter_id()
 
         assert transform.counter.resource_id == 0
@@ -90,11 +97,12 @@ class TestTransform(unittest.TestCase):
 
     def test_create_hospital(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
-                             extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
-                             extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
-                             extracted_column_to_categorical_path=TheTestFiles.TEST_EXTR_LABORATORY_COL_CAT_PATH,
-                             extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
+                             extracted_metadata_path=TheTestFiles.EXTR_METADATA_LABORATORY_PATH,
+                             extracted_data_paths=TheTestFiles.EXTR_LABORATORY_DATA_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_LABORATORY_CATEGORICAL_PATH,
+                             extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
+                             extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
+                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
         # this creates a new Hospital resource and insert it in a (JSON) temporary file
         transform.create_hospital()
 
@@ -116,11 +124,12 @@ class TestTransform(unittest.TestCase):
 
     def test_create_lab_features_H1_D1(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
-                             extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
-                             extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
-                             extracted_column_to_categorical_path=TheTestFiles.TEST_EXTR_LABORATORY_COL_CAT_PATH,
-                             extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
+                             extracted_metadata_path=TheTestFiles.EXTR_METADATA_LABORATORY_PATH,
+                             extracted_data_paths=TheTestFiles.EXTR_LABORATORY_DATA_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_LABORATORY_CATEGORICAL_PATH,
+                             extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
+                             extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
+                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
         # this creates LabFeature instances (based on the metadata file) and insert them in a (JSON) temporary file
         log.debug(transform.data.to_string())
         log.debug(transform.metadata.to_string())
@@ -198,11 +207,12 @@ class TestTransform(unittest.TestCase):
 
     def test_create_samples(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
-                             extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
-                             extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
-                             extracted_column_to_categorical_path=TheTestFiles.TEST_EXTR_LABORATORY_COL_CAT_PATH,
-                             extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
+                             extracted_metadata_path=TheTestFiles.EXTR_METADATA_LABORATORY_PATH,
+                             extracted_data_paths=TheTestFiles.EXTR_LABORATORY_DATA_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_LABORATORY_CATEGORICAL_PATH,
+                             extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
+                             extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
+                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
         # this creates LabFeature resources (based on the metadata file) and insert them in a (JSON) temporary file
         log.debug(transform.data.to_string())
         log.debug(transform.metadata.to_string())
@@ -210,13 +220,14 @@ class TestTransform(unittest.TestCase):
 
         # TODO NELLY
 
-    def test_create_lab_records_without_samples(self):
+    def test_create_lab_records_without_samples_without_pid(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
-                             extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
-                             extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
-                             extracted_column_to_categorical_path=TheTestFiles.TEST_EXTR_LABORATORY_COL_CAT_PATH,
-                             extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
+                             extracted_metadata_path=TheTestFiles.EXTR_METADATA_LABORATORY_PATH,
+                             extracted_data_paths=TheTestFiles.EXTR_LABORATORY_DATA_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_LABORATORY_CATEGORICAL_PATH,
+                             extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
+                             extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
+                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
         # this loads references (Hospital+LabFeature resources), creates LabRecord resources (based on the data file) and insert them in a (JSON) temporary file
         log.debug(transform.data.to_string())
         log.debug(transform.metadata.to_string())
@@ -238,8 +249,76 @@ class TestTransform(unittest.TestCase):
         # assert that LabRecord instances have been correctly created for a given data row
         # we take the seventh row
         log.debug(transform.laboratory_records)
-        patient_id = transform.mapping_anonymized_patient_ids["999999994"]
+        patient_id = transform.patient_ids_mapping["999999994"]
         log.info(patient_id)
+        assert patient_id == "h1:6"
+        lab_records_patient = get_lab_records_for_patient(lab_records=transform.laboratory_records, patient_id=patient_id)
+        log.debug(json.dumps(lab_records_patient))
+        assert len(lab_records_patient) == 5
+        assert lab_records_patient[0]["resource_type"] == TableNames.LABORATORY_RECORD
+        assert lab_records_patient[0]["value"] == -0.003  # the value as been converted to an integer
+        assert lab_records_patient[0]["subject"]["reference"] == str(patient_id)  # this has not been converted to an integer
+        assert lab_records_patient[0]["recorded_by"]["reference"] == "1"
+        assert lab_records_patient[0]["instantiate"]["reference"] == "2"  # LabRecord 2 is about molecule_a
+        pattern_date = re.compile("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2,3}Z")
+        assert pattern_date.match(lab_records_patient[0]["timestamp"]["$date"])  # check the date is in datetime (CEST) form
+
+        # check that all values are cast to the expected type
+        assert lab_records_patient[0]["value"] == -0.003  # the value as been converted to an integer
+        assert lab_records_patient[1]["value"] is False  # the value as been converted to a boolean
+        assert lab_records_patient[3]["value"] == "black"
+        assert lab_records_patient[4]["value"] == {"$date": "2021-12-22T11:58:38Z"}  # the value as been converted to a MongoDB-style datetime
+        cc_female = CodeableConcept(original_name="f")
+        cc_female.add_coding(one_coding=Coding(
+            ontology=Ontologies.SNOMEDCT,
+            code=normalize_ontology_code(ontology_code="248152002"), display=None))
+        assert lab_records_patient[2]["value"] == cc_female.to_json()  # the value as been replaced by its ontology code (sex is a categorical value)r
+
+        # we also check that conversions str->int/float and category->bool worked
+        lab_recs = transform.laboratory_records
+        lab_feats = transform.laboratory_features
+        assert transform.patient_ids_mapping["999999996"] == "h1:4"
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999999"], column_name="molecule_b") == 100  # this has been cast as int because it matches the expected unit
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999998"], column_name="molecule_b") == 111  # this has been cast as int because it matches the expected unit
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999997"], column_name="molecule_b") == "231 grams"  # this has not been converted as this does not match the expected dimension
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999996"], column_name="molecule_b") == 21  # this has been cast as int because it matches the expected unit
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999995"], column_name="molecule_b") == 100  # this has been cast as int even though there was no unit
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999994"], column_name="molecule_b") is None  # no value
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999993"], column_name="molecule_b") is None  # null value
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999992"], column_name="molecule_b") == "116 kg"  # this has not been converted as this does not match the expected dimension
+
+    def test_create_lab_records_without_samples_with_pid(self):
+        transform = my_setup(hospital_name=HospitalNames.TEST_H1,
+                             extracted_metadata_path=TheTestFiles.EXTR_METADATA_LABORATORY_PATH,
+                             extracted_data_paths=TheTestFiles.EXTR_LABORATORY_DATA_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_LABORATORY_CATEGORICAL_PATH,
+                             extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
+                             extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
+                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_FILLED_PIDS_PATH)
+        # this loads references (Hospital+LabFeature resources), creates LabRecord resources (based on the data file) and insert them in a (JSON) temporary file
+        log.debug(transform.data.to_string())
+        log.debug(transform.metadata.to_string())
+        transform.create_hospital()
+        transform.create_laboratory_features()
+        transform.create_patients()  # this step and the two above are required to create LabRecord instances
+        transform.create_laboratory_records()
+
+        log.debug(transform.mapping_hospital_to_hospital_id)
+        log.debug(transform.mapping_column_to_labfeat_id)
+        log.debug(transform.hospitals)
+        log.debug(transform.laboratory_features)
+
+        assert len(transform.mapping_hospital_to_hospital_id) == 1
+        assert HospitalNames.TEST_H1 in transform.mapping_hospital_to_hospital_id
+        log.debug(transform.laboratory_records)
+        assert len(transform.laboratory_records) == 33  # in total, 33 LabRecord instances are created, between 2 and 5 per Patient
+
+        # assert that LabRecord instances have been correctly created for a given data row
+        # we take the seventh row
+        log.debug(transform.laboratory_records)
+        patient_id = transform.patient_ids_mapping["999999994"]
+        log.info(patient_id)
+        assert patient_id == "h1:994"
         lab_records_patient = get_lab_records_for_patient(lab_records=transform.laboratory_records, patient_id=patient_id)
         log.debug(json.dumps(lab_records_patient))
         assert len(lab_records_patient) == 5
@@ -269,30 +348,32 @@ class TestTransform(unittest.TestCase):
         # we also check that conversions str->int/float and category->bool worked
         lab_recs = transform.laboratory_records
         lab_feats = transform.laboratory_features
-        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.mapping_anonymized_patient_ids["999999999"], column_name="molecule_b") == 100  # this has been cast as int because it matches the expected unit
-        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.mapping_anonymized_patient_ids["999999998"], column_name="molecule_b") == 111  # this has been cast as int because it matches the expected unit
-        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.mapping_anonymized_patient_ids["999999997"], column_name="molecule_b") == "231 grams"  # this has not been converted as this does not match the expected dimension
-        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.mapping_anonymized_patient_ids["999999996"], column_name="molecule_b") == 21  # this has been cast as int because it matches the expected unit
-        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.mapping_anonymized_patient_ids["999999995"], column_name="molecule_b") == 100  # this has been cast as int even though there was no unit
-        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.mapping_anonymized_patient_ids["999999994"], column_name="molecule_b") is None  # no value
-        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.mapping_anonymized_patient_ids["999999993"], column_name="molecule_b") is None  # null value
-        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.mapping_anonymized_patient_ids["999999992"], column_name="molecule_b") == "116 kg"  # this has not been converted as this does not match the expected dimension
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999999"], column_name="molecule_b") == 100  # this has been cast as int because it matches the expected unit
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999998"], column_name="molecule_b") == 111  # this has been cast as int because it matches the expected unit
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999997"], column_name="molecule_b") == "231 grams"  # this has not been converted as this does not match the expected dimension
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999996"], column_name="molecule_b") == 21  # this has been cast as int because it matches the expected unit
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999995"], column_name="molecule_b") == 100  # this has been cast as int even though there was no unit
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999994"], column_name="molecule_b") is None  # no value
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999993"], column_name="molecule_b") is None  # null value
+        assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999992"], column_name="molecule_b") == "116 kg"  # this has not been converted as this does not match the expected dimension
 
     # TODO Nelly: check there are no duplicates for LabFeature instances
     def test_create_lab_records_with_samples(self):
+        # TODO NELLY: code this test
         pass
-        # TODO NELLY: continue
 
-    def test_create_patients(self):
+    def test_create_patients_without_pid(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
-                             extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
-                             extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
-                             extracted_column_to_categorical_path=TheTestFiles.TEST_EXTR_LABORATORY_COL_CAT_PATH,
-                             extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
+                             extracted_metadata_path=TheTestFiles.EXTR_METADATA_LABORATORY_PATH,
+                             extracted_data_paths=TheTestFiles.EXTR_LABORATORY_DATA_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_LABORATORY_CATEGORICAL_PATH,
+                             extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
+                             extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
+                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
         # this creates Patient resources (based on the data file) and insert them in a (JSON) temporary file
         log.debug(transform.data.to_string())
         log.debug(transform.metadata.to_string())
+        log.debug(transform.patient_ids_mapping)
         transform.create_patients()
 
         log.debug(transform.patients)
@@ -307,13 +388,41 @@ class TestTransform(unittest.TestCase):
             # patients have their own anonymized ids
             assert sorted_patients[i].to_json()["identifier"]["value"] == PatientAnonymizedIdentifier(id_value=str(i+1), hospital_name=HospitalNames.TEST_H1).value
 
+    def test_create_patients_with_pid(self):
+        transform = my_setup(hospital_name=HospitalNames.TEST_H1,
+                             extracted_metadata_path=TheTestFiles.EXTR_METADATA_LABORATORY_PATH,
+                             extracted_data_paths=TheTestFiles.EXTR_LABORATORY_DATA_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_LABORATORY_CATEGORICAL_PATH,
+                             extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
+                             extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
+                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_FILLED_PIDS_PATH)
+        # this creates Patient resources (based on the data file) and insert them in a (JSON) temporary file
+        log.debug(transform.data.to_string())
+        log.debug(transform.metadata.to_string())
+        log.debug(transform.patient_ids_mapping)
+        transform.create_patients()
+
+        log.debug(transform.patients)
+
+        assert len(transform.patients) == 10
+        # we cannot simply order by identifier value because they are strings, not int
+        # thus will need a bit more of processing to sort by the integer represented within the string
+        # sorted_patients = sorted(transform.patients, key=lambda d: d.to_json()["identifier"]["value"])
+        sorted_patients = sorted(transform.patients, key=lambda p: p.get_identifier_as_int())
+        log.debug(sorted_patients)
+        log.debug(transform.patient_ids_mapping)
+        for i in range(0, len(sorted_patients)):
+            # patients have their own anonymized ids
+            assert sorted_patients[i].to_json()["identifier"]["value"] == PatientAnonymizedIdentifier(id_value=str(990+i), hospital_name=HospitalNames.TEST_H1).value
+
     def test_create_codeable_concept_from_row(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
-                             extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
-                             extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
-                             extracted_column_to_categorical_path=TheTestFiles.TEST_EXTR_LABORATORY_COL_CAT_PATH,
-                             extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
+                             extracted_metadata_path=TheTestFiles.EXTR_METADATA_LABORATORY_PATH,
+                             extracted_data_paths=TheTestFiles.EXTR_LABORATORY_DATA_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_LABORATORY_CATEGORICAL_PATH,
+                             extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
+                             extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
+                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
         # no associated ontology code
         cc = transform.create_codeable_concept_from_row(column_name="molecule_b")
         assert cc is not None
@@ -340,11 +449,12 @@ class TestTransform(unittest.TestCase):
 
     def test_coding(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
-                             extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
-                             extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
-                             extracted_column_to_categorical_path=TheTestFiles.TEST_EXTR_LABORATORY_COL_CAT_PATH,
-                             extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
+                             extracted_metadata_path=TheTestFiles.EXTR_METADATA_LABORATORY_PATH,
+                             extracted_data_paths=TheTestFiles.EXTR_LABORATORY_DATA_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_LABORATORY_CATEGORICAL_PATH,
+                             extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
+                             extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
+                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
         # no associated ontology code (patient id line)
         first_row = transform.metadata.iloc[0]
         coding = Coding(ontology=Ontologies.get_enum_from_name(first_row[MetadataColumns.FIRST_ONTOLOGY_NAME]),
@@ -381,11 +491,12 @@ class TestTransform(unittest.TestCase):
 
     def test_determine_lab_feature_category(self):
         _ = my_setup(hospital_name=HospitalNames.TEST_H1,
-                     extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
-                     extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                     extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
-                     extracted_column_to_categorical_path=TheTestFiles.TEST_EXTR_LABORATORY_COL_CAT_PATH,
-                     extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
+                     extracted_metadata_path=TheTestFiles.EXTR_METADATA_LABORATORY_PATH,
+                     extracted_data_paths=TheTestFiles.EXTR_LABORATORY_DATA_PATH,
+                     extracted_mapping_categorical_values_path=TheTestFiles.EXTR_LABORATORY_CATEGORICAL_PATH,
+                     extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
+                     extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
+                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
 
         # clinical variables
         cc = Transform.get_lab_feature_category(column_name="molecule_a")
@@ -411,11 +522,12 @@ class TestTransform(unittest.TestCase):
 
     def test_is_column_phenotypic(self):
         _ = my_setup(hospital_name=HospitalNames.TEST_H1,
-                     extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
-                     extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                     extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
-                     extracted_column_to_categorical_path=TheTestFiles.TEST_EXTR_LABORATORY_COL_CAT_PATH,
-                     extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
+                     extracted_metadata_path=TheTestFiles.EXTR_METADATA_LABORATORY_PATH,
+                     extracted_data_paths=TheTestFiles.EXTR_LABORATORY_DATA_PATH,
+                     extracted_mapping_categorical_values_path=TheTestFiles.EXTR_LABORATORY_CATEGORICAL_PATH,
+                     extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
+                     extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
+                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
 
         # clinical variables
         assert PhenotypicColumns.is_column_phenotypic(column_name="molecule_a") is False
@@ -428,11 +540,12 @@ class TestTransform(unittest.TestCase):
 
     def test_fairify_value(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
-                             extracted_metadata_path=TheTestFiles.TEST_EXTR_METADATA_LABORATORY_PATH,
-                             extracted_data_paths=TheTestFiles.TEST_EXTR_LABORATORY_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.TEST_EXTR_LABORATORY_CATEGORICAL_PATH,
-                             extracted_column_to_categorical_path=TheTestFiles.TEST_EXTR_LABORATORY_COL_CAT_PATH,
-                             extracted_column_dimension_path=TheTestFiles.TEST_EXTR_LABORATORY_DIMENSIONS_PATH)
+                             extracted_metadata_path=TheTestFiles.EXTR_METADATA_LABORATORY_PATH,
+                             extracted_data_paths=TheTestFiles.EXTR_LABORATORY_DATA_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_LABORATORY_CATEGORICAL_PATH,
+                             extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
+                             extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
+                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
 
         assert transform.fairify_value(column_name="id", value=transform.data.iloc[0][0]) == 999999999  # TODO NELLY: do not convert IDs to int, keep it as strings!
         assert transform.fairify_value(column_name="molecule_a", value=transform.data.iloc[0][1]) == 0.001

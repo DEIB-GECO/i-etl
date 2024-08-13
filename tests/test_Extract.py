@@ -1,28 +1,28 @@
-import json
 import os
 import unittest
 
 from database.Database import Database
 from database.Execution import Execution
 from enums.DataTypes import DataTypes
-from enums.Ontologies import Ontologies
-from etl.Extract import Extract
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
+from enums.Ontologies import Ontologies
 from enums.TheTestFiles import TheTestFiles
+from etl.Extract import Extract
 from utils.constants import DEFAULT_DB_CONNECTION, TEST_DB_NAME
 from utils.setup_logger import log
 from utils.utils import is_not_nan
 
 
 # personalized setup called at the beginning of each test
-def my_setup(metadata_path: str, data_paths: str, hospital_name: str) -> Extract:
+def my_setup(metadata_path: str, data_paths: str, pids_path: str, hospital_name: str) -> Extract:
     args = {
         Execution.DB_CONNECTION_KEY: DEFAULT_DB_CONNECTION,
         Execution.DB_DROP_KEY: True,
         Execution.METADATA_PATH_KEY: metadata_path,
         Execution.LABORATORY_PATHS_KEY: data_paths,
-        Execution.HOSPITAL_NAME_KEY: hospital_name
+        Execution.HOSPITAL_NAME_KEY: hospital_name,
+        Execution.ANONYMIZED_PATIENT_IDS_KEY: pids_path
     }
     TestExtract.execution.set_up(args_as_dict=args, setup_data_files=True)
     TestExtract.execution.current_filepath = data_paths
@@ -35,8 +35,9 @@ class TestExtract(unittest.TestCase):
     execution = Execution(TEST_DB_NAME)
 
     def test_load_metadata_file_H1_D1(self):
-        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.TEST_ORIG_LABORATORY_PATH,
+        extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
+                           data_paths=TheTestFiles.ORIG_LABORATORY_PATH,
+                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()
 
@@ -110,15 +111,16 @@ class TestExtract(unittest.TestCase):
         # DATASET: this should be the dataset name, and there should be no other datasets in that column
         unique_dataset_names = list(extract.metadata[MetadataColumns.DATASET_NAME].unique())
         log.debug(unique_dataset_names)
-        log.debug(TheTestFiles.TEST_ORIG_LABORATORY_PATH.split(os.sep)[-1])
+        log.debug(TheTestFiles.ORIG_LABORATORY_PATH.split(os.sep)[-1])
         assert len(unique_dataset_names) == 1
-        assert unique_dataset_names[0] == TheTestFiles.TEST_ORIG_LABORATORY_PATH.split(os.sep)[-1]
+        assert unique_dataset_names[0] == TheTestFiles.ORIG_LABORATORY_PATH.split(os.sep)[-1]
 
         log.debug(extract.metadata.to_string())
 
     def test_load_metadata_file_H1_D2(self):
-        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.TEST_ORIG_DISEASE_PATH,
+        extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
+                           data_paths=TheTestFiles.ORIG_DISEASE_PATH,
+                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()
 
@@ -162,15 +164,16 @@ class TestExtract(unittest.TestCase):
         # DATASET: this should be the dataset name, and there should be no other datasets in that column
         unique_dataset_names = list(extract.metadata[MetadataColumns.DATASET_NAME].unique())
         log.debug(unique_dataset_names)
-        log.debug(TheTestFiles.TEST_ORIG_DISEASE_PATH.split(os.sep)[-1])
+        log.debug(TheTestFiles.ORIG_DISEASE_PATH.split(os.sep)[-1])
         assert len(unique_dataset_names) == 1
-        assert unique_dataset_names[0] == TheTestFiles.TEST_ORIG_DISEASE_PATH.split(os.sep)[-1]
+        assert unique_dataset_names[0] == TheTestFiles.ORIG_DISEASE_PATH.split(os.sep)[-1]
 
         log.debug(extract.metadata.to_string())
 
     def test_load_metadata_file_H3_D1(self):
-        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.TEST_ORIG_GENOMICS_PATH,
+        extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
+                           data_paths=TheTestFiles.ORIG_GENOMICS_PATH,
+                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H3)
         extract.load_metadata_file()
 
@@ -211,17 +214,18 @@ class TestExtract(unittest.TestCase):
         # DATASET: this should be the dataset name, and there should be no other datasets in that column
         unique_dataset_names = list(extract.metadata[MetadataColumns.DATASET_NAME].unique())
         log.debug(unique_dataset_names)
-        log.debug(TheTestFiles.TEST_ORIG_GENOMICS_PATH.split(os.sep)[-1])
+        log.debug(TheTestFiles.ORIG_GENOMICS_PATH.split(os.sep)[-1])
         assert len(unique_dataset_names) == 1
-        assert unique_dataset_names[0] == TheTestFiles.TEST_ORIG_GENOMICS_PATH.split(os.sep)[-1]
+        assert unique_dataset_names[0] == TheTestFiles.ORIG_GENOMICS_PATH.split(os.sep)[-1]
 
         log.debug(extract.metadata.to_string())
 
     def test_load_data_file_H1_D1(self):
-        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.TEST_ORIG_LABORATORY_PATH,
+        extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
+                           data_paths=TheTestFiles.ORIG_LABORATORY_PATH,
+                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-        extract.execution.current_filepath = TheTestFiles.TEST_ORIG_LABORATORY_PATH  # set the test data as the currently processed file
+        extract.execution.current_filepath = TheTestFiles.ORIG_LABORATORY_PATH  # set the test data as the currently processed file
         extract.load_csv_data_file()
 
         # a. general size checks
@@ -245,10 +249,11 @@ class TestExtract(unittest.TestCase):
         log.debug(extract.data.to_string())
 
     def test_load_data_file_H3_D1(self):
-        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.TEST_ORIG_GENOMICS_PATH,
+        extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
+                           data_paths=TheTestFiles.ORIG_GENOMICS_PATH,
+                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H3)
-        extract.execution.current_filepath = TheTestFiles.TEST_ORIG_GENOMICS_PATH  # set the test data as the currently processed file
+        extract.execution.current_filepath = TheTestFiles.ORIG_GENOMICS_PATH  # set the test data as the currently processed file
         extract.load_csv_data_file()
 
         # a. general size checks
@@ -283,8 +288,9 @@ class TestExtract(unittest.TestCase):
         log.debug(extract.data.to_string())
 
     def test_compute_mapped_values(self):
-        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.TEST_ORIG_LABORATORY_PATH,
+        extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
+                           data_paths=TheTestFiles.ORIG_LABORATORY_PATH,
+                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()  # required to compute mapped values
         extract.compute_mapping_categorical_value_to_cc()
@@ -318,8 +324,9 @@ class TestExtract(unittest.TestCase):
         assert cc_female["coding"][0]["code"] == "248152002"  # normalized ontology code
 
     def test_removed_unused_columns(self):
-        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.TEST_ORIG_LABORATORY_PATH,
+        extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
+                           data_paths=TheTestFiles.ORIG_LABORATORY_PATH,
+                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()
         extract.load_csv_data_file()  # both operations are needed to run the method
@@ -343,8 +350,9 @@ class TestExtract(unittest.TestCase):
         assert described_columns == ['date_of_birth', 'ethnicity', 'id', 'molecule_a', 'molecule_b', 'molecule_g', 'molecule_y', 'sex']
 
     def test_compute_column_to_dimension(self):
-        extract = my_setup(metadata_path=TheTestFiles.TEST_ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.TEST_ORIG_LABORATORY_PATH,
+        extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
+                           data_paths=TheTestFiles.ORIG_LABORATORY_PATH,
+                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()
         extract.load_csv_data_file()  # both operations are needed to run the method
@@ -371,6 +379,43 @@ class TestExtract(unittest.TestCase):
         assert extract.mapping_column_to_dimension["date_of_birth"] is None
         assert "molecule_y" in extract.mapping_column_to_dimension
         assert extract.mapping_column_to_dimension["molecule_y"] is None
+
+    def test_load_empty_patient_id_mapping(self):
+        extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
+                           data_paths=TheTestFiles.ORIG_LABORATORY_PATH,
+                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
+                           hospital_name=HospitalNames.TEST_H1)
+        extract.load_patient_id_mapping()
+
+        # when the file is empty, the Execution should write an empty list into it
+        assert os.stat(TheTestFiles.ORIG_EMPTY_PIDS_PATH).st_size > 0
+        assert extract.patient_ids_mapping == {}
+
+        # get back to the original empty file
+        with open(TheTestFiles.ORIG_EMPTY_PIDS_PATH, "w") as file:
+            file.write("")
+
+    def test_load_filled_patient_id_mapping(self):
+        extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
+                           data_paths=TheTestFiles.ORIG_LABORATORY_PATH,
+                           pids_path=TheTestFiles.ORIG_FILLED_PIDS_PATH,
+                           hospital_name=HospitalNames.TEST_H1)
+        extract.load_patient_id_mapping()
+
+        # when the file is not empty, all mappings should be loaded in Extract
+        assert os.stat(TheTestFiles.ORIG_FILLED_PIDS_PATH).st_size > 0
+        assert extract.patient_ids_mapping == {
+                                                  "999999999": "h1:999",
+                                                  "999999998": "h1:998",
+                                                  "999999997": "h1:997",
+                                                  "999999996": "h1:996",
+                                                  "999999995": "h1:995",
+                                                  "999999994": "h1:994",
+                                                  "999999993": "h1:993",
+                                                  "999999992": "h1:992",
+                                                  "999999991": "h1:991",
+                                                  "999999990": "h1:990"
+                                              }
 
     # def test_run_value_analysis(self):
     #     self.fail()

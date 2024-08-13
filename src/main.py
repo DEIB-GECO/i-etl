@@ -40,6 +40,9 @@ if __name__ == '__main__':
     parser.add_argument(f"--{Execution.GENOMIC_PATHS_KEY}",
                         help="Set the absolute path to one or several genomic data files, separated with commas (,).",
                         required=False)
+    parser.add_argument(f"--{Execution.ANONYMIZED_PATIENT_IDS_KEY}",
+                        help="Set the absolute path to the file containing the mapping between Patient IDs and anonymized IDs. If no mapping exists, provide the filepath to an empty file.",
+                        required=True)
     parser.add_argument(f"--{Execution.USE_EN_LOCALE_KEY}",
                         help="Whether to use the en_US locale instead of the one automatically assigned by the ETL.",
                         choices={"True", "False"},

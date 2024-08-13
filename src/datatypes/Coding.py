@@ -24,7 +24,7 @@ class Coding:
                 # when we create a new CodeableConcept from scratch, we need to compute the display with ontology API
                 # if the query to the API does not work, we can still use the column name as the display of the coding
                 # the column name is stored in display to avoid adding another parameter to the Coding constructor
-                self.display = Coding.compute_display_from_api(ontology_system=ontology, ontology_code=self.code)
+                self.display = Coding.compute_display_from_api(ontology=ontology, ontology_code=self.code)
             else:
                 # when we retrieve a CodeableConcept from the db, we do NOT want to compute again its display
                 # we still get the existing display
@@ -32,60 +32,61 @@ class Coding:
             # log.debug(f"Create a new Coding for {self.system}/{self.code}, labelled {self.display}")
 
     @classmethod
-    def compute_display_from_api(cls, ontology_system: Ontologies, ontology_code: str) -> str:
+    def compute_display_from_api(cls, ontology: Ontologies, ontology_code: str) -> str:
         # column_name is to be used when the display of the Coding could not be computed with any of the APIs
-        log.debug(f"{ontology_system} of type {type(ontology_system)}")
-        log.debug(f"will compute display with API for {ontology_system}/{ontology_code}")
-
-        try:
-            if ontology_system == Ontologies.SNOMEDCT:
-                url_resource = quote(f"http://purl.bioontology.org/ontology/SNOMEDCT/{ontology_code}", safe="")
-                url = f"http://data.bioontology.org/ontologies/SNOMEDCT/classes/{url_resource}"
-                response = urlopen_with_api_key(url=url, api_key="d6fb9c05-3309-4158-892f-65434a9133b9", with_bearer=False)
-                data = parse_json_response(response)
-                if "prefLabel" in data:
-                    log.debug(data["prefLabel"])
-                    return data["prefLabel"]
-                else:
+        compute_from_api = True
+        if compute_from_api:
+            try:
+                if ontology == Ontologies.SNOMEDCT:
+                    url_resource = quote(f"http://purl.bioontology.org/ontology/SNOMEDCT/{ontology_code}", safe="")
+                    url = f"http://data.bioontology.org/ontologies/SNOMEDCT/classes/{url_resource}"
+                    response = urlopen_with_api_key(url=url, api_key="d6fb9c05-3309-4158-892f-65434a9133b9", with_bearer=False)
+                    data = parse_json_response(response)
+                    if "prefLabel" in data:
+                        log.debug(data["prefLabel"])
+                        return data["prefLabel"]
+                    else:
+                        return DEFAULT_CODING_DISPLAY
+                elif ontology == Ontologies.LOINC:
+                    url = f"https://loinc.regenstrief.org/searchapi/loincs?query={ontology_code}"
+                    response = urlopen_with_authentication(url=url, username="nbarret", password="d7=47@xiz$g=-Ns")
+                    data = parse_json_response(response)
+                    if "Results" in data and len(data["Results"]) > 0 and "COMPONENT" in data["Results"][0]:
+                        return data["Results"][0]["COMPONENT"]
+                    else:
+                        return DEFAULT_CODING_DISPLAY
+                elif ontology == Ontologies.PUBCHEM:
+                    url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{ontology_code}/description/JSON"
+                    response = urlopen_with_header(url)
+                    data = parse_json_response(response)
+                    if ("InformationList" in data
+                            and "Information" in data["InformationList"]
+                            and len(data["InformationList"]["Information"]) > 0
+                            and "Title" in data["InformationList"]["Information"][0]):
+                        return data["InformationList"]["Information"][0]["Title"]
+                    else:
+                        return DEFAULT_CODING_DISPLAY
+                elif ontology == Ontologies.CLIR:
+                    # TODO Nelly: code this
                     return DEFAULT_CODING_DISPLAY
-            elif ontology_system == Ontologies.LOINC:
-                url = f"https://loinc.regenstrief.org/searchapi/loincs?query={ontology_code}"
-                response = urlopen_with_authentication(url=url, username="nbarret", password="d7=47@xiz$g=-Ns")
-                data = parse_json_response(response)
-                if "Results" in data and len(data["Results"]) > 0 and "COMPONENT" in data["Results"][0]:
-                    return data["Results"][0]["COMPONENT"]
-                else:
+                elif ontology == Ontologies.GSSO:
+                    iri = f"http://purl.obolibrary.org/obo/{ontology_code}"
+                    url = f"https://ontobee.org/ontology/GSSO?iri={iri}"
+                    response = urlopen_with_api_key(url=url, api_key="d6fb9c05-3309-4158-892f-65434a9133b9", with_bearer=True)
+                    data = parse_xml_response(response)  # data is an XML document
+                    classes = data.getElementsByTagName('Class')
+                    for one_class in classes:
+                        if one_class.getAttribute("rdf:about") == iri:
+                            if len(one_class.getElementsByTagName("rdfs:label")) > 0:
+                                return one_class.getElementsByTagName("rdfs:label")[0].childNodes[0].data
                     return DEFAULT_CODING_DISPLAY
-            elif ontology_system == Ontologies.PUBCHEM:
-                url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{ontology_code}/description/JSON"
-                response = urlopen_with_header(url)
-                data = parse_json_response(response)
-                if ("InformationList" in data
-                        and "Information" in data["InformationList"]
-                        and len(data["InformationList"]["Information"]) > 0
-                        and "Title" in data["InformationList"]["Information"][0]):
-                    return data["InformationList"]["Information"][0]["Title"]
                 else:
+                    # raise NotImplementedError("Not implemented yet.")
                     return DEFAULT_CODING_DISPLAY
-            elif ontology_system == Ontologies.CLIR:
-                # TODO Nelly: code this
+            except Exception as e:
+                # the API could not be queried, returning empty string.
                 return DEFAULT_CODING_DISPLAY
-            elif ontology_system == Ontologies.GSSO:
-                iri = f"http://purl.obolibrary.org/obo/{ontology_code}"
-                url = f"https://ontobee.org/ontology/GSSO?iri={iri}"
-                response = urlopen_with_api_key(url=url, api_key="d6fb9c05-3309-4158-892f-65434a9133b9", with_bearer=True)
-                data = parse_xml_response(response)  # data is an XML document
-                classes = data.getElementsByTagName('Class')
-                for one_class in classes:
-                    if one_class.getAttribute("rdf:about") == iri:
-                        if len(one_class.getElementsByTagName("rdfs:label")) > 0:
-                            return one_class.getElementsByTagName("rdfs:label")[0].childNodes[0].data
-                return DEFAULT_CODING_DISPLAY
-            else:
-                # raise NotImplementedError("Not implemented yet.")
-                return DEFAULT_CODING_DISPLAY
-        except Exception as e:
-            # the API could not be queried, returning empty string.
+        else:
             return DEFAULT_CODING_DISPLAY
 
     def to_json(self):

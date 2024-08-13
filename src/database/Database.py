@@ -318,7 +318,6 @@ class Database:
                 pass
             else:
                 current_max_identifier = self.get_max_value(table_name=table_name, field="identifier.value", from_string=True)
-                log.info(f"for table {table_name}, max id is {current_max_identifier}")
                 if current_max_identifier is not None:
                     try:
                         current_max_identifier = int(current_max_identifier)

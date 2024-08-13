@@ -3,7 +3,8 @@ from enums.HospitalNames import HospitalNames
 from profiles.Patient import Patient
 from enums.TableNames import TableNames
 from utils.Counter import Counter
-from utils.constants import DELIMITER_PATIENT_ID
+from utils.constants import DELIMITER_PATIENT_ID, NO_ID
+from utils.setup_logger import log
 
 
 class TestPatient:
@@ -12,14 +13,19 @@ class TestPatient:
         Test whether the Patient constructor correctly assign IDs and the resource type.
         :return: None.
         """
+        # this is a new Patient, thus with a new anonymised ID
         counter = Counter()
-        patient1 = Patient(id_value="123", counter=counter, hospital_name=HospitalNames.TEST_H1)
+        patient1 = Patient(id_value=NO_ID, counter=counter, hospital_name=HospitalNames.TEST_H1)
+        anonymised_p1 = PatientAnonymizedIdentifier(id_value="1", hospital_name=HospitalNames.TEST_H1).value
         assert patient1.identifier is not None
-        assert patient1.identifier.value == PatientAnonymizedIdentifier(id_value="123", hospital_name=HospitalNames.TEST_H1).value
+        assert patient1.identifier.value == anonymised_p1
 
-        # TODO Nelly: check that a Patient can be created with a NO_ID id
-        # I tried with self.assertRaises(ValueError, Patient(NO_ID, TableNames.PATIENT))
-        # but this still raises the Exception and does not pass the test
+        # this is an existing Patient, for which an anonymized ID already exists
+        counter = Counter()
+        patient1 = Patient(id_value="h1:123", counter=counter, hospital_name=HospitalNames.TEST_H1)
+        anonymized_p1 = PatientAnonymizedIdentifier(id_value="h1:123", hospital_name=None).value
+        assert patient1.identifier is not None
+        assert patient1.identifier.value == anonymized_p1
 
     def test_get_type(self):
         """
@@ -32,13 +38,13 @@ class TestPatient:
 
     def test_to_json(self):
         counter = Counter()
-        patient1 = Patient("123", counter=counter, hospital_name=HospitalNames.TEST_H1)
+        patient1 = Patient(NO_ID, counter=counter, hospital_name=HospitalNames.TEST_H1)
         patient1_json = patient1.to_json()
 
         assert patient1_json is not None
         assert patient1_json == {
             "identifier": {
-                "value": PatientAnonymizedIdentifier(id_value="123", hospital_name=HospitalNames.TEST_H1).value
+                "value": PatientAnonymizedIdentifier(id_value="1", hospital_name=HospitalNames.TEST_H1).value
             },
             "resource_type": TableNames.PATIENT,
             "timestamp": patient1.timestamp

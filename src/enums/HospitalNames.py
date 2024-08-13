@@ -18,6 +18,4 @@ class HospitalNames(EnumAsClass):
 
     @classmethod
     def short(cls, hospital_name) -> str:
-        log.debug(hospital_name)
-        log.debug(hospital_name.split("_"))
         return hospital_name.split("_")[1]  # the second part corresponds to the hospital name (only)

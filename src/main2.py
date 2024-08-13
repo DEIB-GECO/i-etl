@@ -181,7 +181,7 @@ def main_json_pickle():
 def main_ontology_api():
     print()
     # does not work due to ssl certificates
-    print(Coding.compute_display_from_api(ontology_system=Ontologies.SNOMEDCT, ontology_code="248152002"))
+    print(Coding.compute_display_from_api(ontology=Ontologies.SNOMEDCT, ontology_code="248152002"))
     # print()
     # print(Coding.compute_display_from_api(ontology_system=Ontologies.LOINC, ontology_code="4544-3"))
     # print()

@@ -28,6 +28,7 @@ class Extract:
     def __init__(self, database: Database, execution: Execution):
         self.metadata = None
         self.data = None
+        self.patient_ids_mapping = None
         self.mapping_categorical_value_to_cc = {}  # accepted values for categorical columns (column "JSON_values" in metadata) and their CodeableConcept
         self.mapping_column_to_categorical_value = {}  # each column name with its normalized accepted values (str, not cc)
         self.mapping_column_to_vartype = {}  # each column is associated to its var type (column "vartype" in metadata)
@@ -60,6 +61,9 @@ class Extract:
         # we do this only for lab data, otherwise we end up with units extracted from any string containing both digits and chars
         if self.execution.current_file_type == FileTypes.LABORATORY:
             self.compute_column_to_dimension()
+
+        # if provided as input, load the mapping between patient IDs and anonymized IDs
+        self.load_patient_id_mapping()
 
         # if asked, run some data analysis on the loaded data
         if self.execution.is_analyze:
@@ -184,6 +188,18 @@ class Extract:
         # TODO Nelly: implement this
         pass
 
+    def load_patient_id_mapping(self) -> None:
+        log.info(f"Patient ID mapping filepath is {self.execution.anonymized_patient_ids_filepath}")
+
+        # index_col is False to not add a column with line numbers
+        self.patient_ids_mapping = {}
+        log.debug(self.execution.anonymized_patient_ids_filepath)
+        if self.execution.anonymized_patient_ids_filepath is not None:
+            self.patient_ids_mapping = json.load(open(self.execution.anonymized_patient_ids_filepath, "r"))
+        log.debug(type(self.patient_ids_mapping))
+        log.debug(self.patient_ids_mapping)
+        log.info(f"{len(self.patient_ids_mapping)} patient IDs in the mapping file.")
+
     def remove_unused_csv_columns(self) -> None:
         # removes the data columns that are NOT described in the metadata
         # if a column is described in the metadata but is not present in the data or this column is empty we keep it
@@ -220,17 +236,13 @@ class Extract:
         for table_name in TableNames.values():
             # the set of categorical values are defined in Features only, thus we can restrict the find to only those:
             if table_name.endswith("Feature"):
-                log.info(f"Looking for categorical values in {table_name}")
                 # categorical_values_for_table_name = {'_id': ObjectId('66b9b890583ee775ef4edcb9'), 'categorical_values': [{...}, {...}, ...]}
                 categorical_values_for_table_name = self.database.find_operation(table_name=table_name, filter_dict={"categorical_values": {"$exists": 1}}, projection={"categorical_values": 1})
                 for one_tuple in categorical_values_for_table_name:
                     # existing_categorical_value_for_table_name = [{...}, {...}, ...]}
-                    log.info(one_tuple)
                     existing_categorical_values_for_table_name = one_tuple["categorical_values"]
-                    log.info(existing_categorical_values_for_table_name)
                     for encoded_categorical_value in existing_categorical_values_for_table_name:
                         existing_cc = CodeableConcept.from_json(encoded_categorical_value)
-                        log.info(existing_cc)
                         existing_categorical_codeable_concepts[existing_cc.text] = existing_cc
         log.debug(existing_categorical_codeable_concepts)
 
@@ -240,10 +252,8 @@ class Extract:
         for index, row in self.metadata.iterrows():
             if is_not_nan(row[MetadataColumns.JSON_VALUES]):
                 column_name = normalize_column_name(row[MetadataColumns.COLUMN_NAME])
-                log.info(f"{column_name}: {row[MetadataColumns.JSON_VALUES]}")
                 # we get the possible categorical values for the column, e.g., F, or M, or NA for sex
                 json_categorical_values = json.loads(row[MetadataColumns.JSON_VALUES])
-                log.info(json_categorical_values)
                 self.mapping_column_to_categorical_value[column_name] = []
                 for json_categorical_value in json_categorical_values:
                     normalized_categorical_value = normalize_column_value(json_categorical_value["value"])
@@ -259,7 +269,6 @@ class Extract:
                             cc = CodeableConcept(original_name=normalized_categorical_value)
                             # TODO Nelly: do not compute cc for boolean (categorical) columns
                             for key, val in json_categorical_value.items():
-                                log.info(f"{key}: {val}")
                                 # for any key value pair that is not about the value or the explanation
                                 # (i.e., loinc and snomed_ct columns), we create a Coding, which we add to the CodeableConcept
                                 # we need to do a loop because there may be several ontology terms for a single mapping
@@ -277,7 +286,7 @@ class Extract:
                         else:
                             # a CodeableConcept already exists for this value (it has been retrieved from the db),
                             # we simply add it to the mapping
-                            log.debug(f"The categorical value {normalized_categorical_value} already existing in the database as a CC. Taking it from here.")
+                            log.debug(f"The categorical value {normalized_categorical_value} already exists in the database as a CC. Taking it from here.")
                             self.mapping_categorical_value_to_cc[normalized_categorical_value] = existing_categorical_codeable_concepts[normalized_categorical_value]
                     else:
                         # this categorical value is already present in the mapping (it has either been retrieved from

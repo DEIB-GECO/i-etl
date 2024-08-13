@@ -43,6 +43,7 @@ WORKING_DIR = "working-dir"
 DEFAULT_DB_CONNECTION = "mongodb://localhost:27017/"
 DEFAULT_DB_NAME = "better_default"
 TEST_DB_NAME = "better_test"
+ANONYMIZED_PATIENT_IDS_FILE = "anonymized-patient-ids.json"
 
 PATTERN_VALUE_DIMENSION = re.compile(r'^ *([0-9]+) *([a-zA-Z_-]+) *$')  # we add start and end delimiters (^ and $) to not process cells with multiples values inside
 
