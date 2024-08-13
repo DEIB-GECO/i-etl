@@ -4,10 +4,10 @@ from utils.utils import normalize_column_name
 
 
 class MetadataColumns(EnumAsClass):
-    FIRST_ONTOLOGY_SYSTEM = normalize_column_name(column_name="ontology")
+    FIRST_ONTOLOGY_NAME = normalize_column_name(column_name="ontology")
     FIRST_ONTOLOGY_CODE = normalize_column_name(column_name="ontology_code")
     FIRST_ONTOLOGY_COMMENT = normalize_column_name(column_name="ontology_comment")
-    SEC_ONTOLOGY_SYSTEM = normalize_column_name(column_name="secondary_ontology")
+    SEC_ONTOLOGY_NAME = normalize_column_name(column_name="secondary_ontology")
     SEC_ONTOLOGY_CODE = normalize_column_name(column_name="secondary_ontology_code")
     SEC_ONTOLOGY_COMMENT = normalize_column_name(column_name="secondary_ontology_comment")
     SNOMED_VARTYPE = normalize_column_name(column_name="snomed_vartype")

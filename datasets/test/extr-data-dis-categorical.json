@@ -3,7 +3,7 @@
     "start": {
       "coding": [
         {
-          "system": "https://pubchem.ncbi.nlm.nih.gov/",
+          "system": "https://pubchem.ncbi.nlm.nih.gov",
           "code": "02468",
           "display": "start"
         }
@@ -13,7 +13,7 @@
     "middle": {
       "coding": [
         {
-          "system": "https://pubchem.ncbi.nlm.nih.gov/",
+          "system": "https://pubchem.ncbi.nlm.nih.gov",
           "code": "203:468",
           "display": "middle"
         }
@@ -23,7 +23,7 @@
     "end": {
       "coding": [
         {
-          "system": "https://pubchem.ncbi.nlm.nih.gov/",
+          "system": "https://pubchem.ncbi.nlm.nih.gov",
           "code": "4097625",
           "display": "end"
         }

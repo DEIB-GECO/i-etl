@@ -34,7 +34,7 @@ class DistributionPlot:
         plt.ylabel(self.y_label)
         if self.vertical_y:
             plt.xticks(rotation=90)
-        plt.suptitle('Value distribution for ' + self.column_name)
+        plt.suptitle(f"Value distribution for {self.column_name}")
         # print value of each bar
         for index, value in enumerate(self.y):
             plt.text(value, index, str(value))

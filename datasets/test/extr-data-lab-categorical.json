@@ -1,0 +1,22 @@
+{
+  "m": {
+      "coding": [
+        {
+          "display": "Male",
+          "system": "http://snomed.info/sct",
+          "code": "248153007"
+        }
+      ],
+      "text": "m"
+    },
+    "f": {
+      "coding": [
+        {
+          "display": "Female",
+          "system": "http://snomed.info/sct",
+          "code": "248152002"
+        }
+      ],
+      "text": "f"
+    }
+  }

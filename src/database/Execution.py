@@ -155,7 +155,7 @@ class Execution:
         log.debug("In setup_data_files")
         # get metadata and data filepaths
         try:
-            new_metadata_filename = "metadata-" + self.hospital_name + ".csv"
+            new_metadata_filename = f"metadata-{self.hospital_name}.csv"
             new_metadata_filepath = os.path.join(self.working_dir_current, new_metadata_filename)
             shutil.copyfile(self.metadata_filepath, new_metadata_filepath)
             self.metadata_filepath = new_metadata_filepath

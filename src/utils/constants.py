@@ -48,3 +48,4 @@ PATTERN_VALUE_DIMENSION = re.compile(r'^ *([0-9]+) *([a-zA-Z_-]+) *$')  # we add
 
 DELIMITER_PATIENT_ID = ":"
 
+DEFAULT_CODING_DISPLAY = ""

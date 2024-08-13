@@ -1,18 +1,26 @@
+import base64
 import json
 import locale
 import math
 import os
-import re
+import xml.dom.minidom
+from urllib.parse import quote
+
+import requests
+import urllib
 from datetime import datetime, timedelta
 from typing import Any
+from urllib.request import Request, urlopen
 
 import inflection
 import pandas as pd
 from dateutil.parser import parse
 from pandas import DataFrame
+from requests.utils import requote_uri
 
 from enums.DataTypes import DataTypes
 from utils.setup_logger import log
+
 
 # moving it to constants.py creates a circular dependency; also it is only used in this file
 THE_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
@@ -104,7 +112,7 @@ def process_spaces(input_string: str) -> str:
     return ' '.join(input_string.split())
 
 
-def normalize_ontology_system(ontology_system: str) -> str:
+def normalize_ontology_name(ontology_system: str) -> str:
     if is_not_nan(ontology_system):
         ontology_system = process_spaces(input_string=ontology_system)
         return ontology_system.lower().replace(" ", "").replace("_", "")
@@ -287,7 +295,7 @@ def mongodb_group_by(group_key: Any, group_by_name: str, operator: str, field) -
 
 def mongodb_unwind(field: str) -> dict:
     return {
-        "$unwind": "$" + field
+        "$unwind": f"${field}"
     }
 
 
@@ -367,7 +375,7 @@ def write_in_file(resource_list: list, current_working_dir: str, table_name: str
 
 
 def get_json_resource_file(current_working_dir: str, table_name: str, count: int) -> str:
-    return os.path.join(current_working_dir, table_name + str(count) + ".json")
+    return os.path.join(current_working_dir, f"{table_name}{str(count)}.json")
 
 
 def read_csv_file_as_string(filepath: str) -> pd.DataFrame:
@@ -380,7 +388,7 @@ def split_list_of_files(joined_filepaths: str) -> [str]:
     log.debug(f"{split_files}")
     for current_file in split_files:
         if not os.path.isfile(current_file):
-            raise FileNotFoundError("The specified data file " + current_file + " does not exist.")
+            raise FileNotFoundError(f"The specified data file {current_file} does not exist.")
     # we do not copy the data in our working dir because it is too large to be copied
     return split_files  # file 1,file 2, ...,file N
 
@@ -441,3 +449,59 @@ def get_field_value_for_patient(lab_records: list, lab_features: list, patient_i
                 if json_lab_record["instantiate"]["reference"] == lab_feature["identifier"]["value"]:
                     return json_lab_record["value"]
     return None
+
+
+# API ACCESS
+def urlopen_with_header(url):
+    # adds User-Agent header otherwise urlopen on its own gets an IP blocked response
+    request = Request(url)
+    request.add_header(key='User-Agent', val='Python')
+    # return urlopen(request).read()
+    return requests.get(url)
+
+
+def urlopen_with_authentication(url, username, password):
+    base64string = base64.b64encode(bytes('%s:%s' % (username, password), "ascii"))
+    headers = {
+        "Authorization": f"Basic {base64string.decode("utf-8")}"  # Make sure to prepend 'Bearer ' before your API key
+    }
+    return requests.get(url, headers=headers)
+
+
+def urlopen_with_api_key(url, api_key, with_bearer: bool):
+    if with_bearer:
+        headers = {
+            "Authorization": f"Bearer {api_key}"  # Make sure to prepend 'Bearer ' before your API key
+        }
+        return requests.get(url, headers=headers)
+    else:
+        # simply concat it to the url with the key "apikey"
+        # log.debug("http://data.bioontology.org/ontologies/SNOMEDCT/classes/http%3A%2F%2Fpurl.bioontology.org%2Fontology%2FSNOMEDCT%2F373067005?apikey=d6fb9c05-3309-4158-892f-65434a9133b9")
+        # log.debug("http://data.bioontology.org/ontologies/SNOMEDCT?p=classes&conceptid=248152002&apikey=d6fb9c05-3309-4158-892f-65434a9133b9")
+        # expected: http://data.bioontology.org/ontologies/SNOMEDCT/classes/http%3A%2F%2Fpurl.bioontology.org%2Fontology%2FSNOMEDCT%2F28030000?apikey=d6fb9c05-3309-4158-892f-65434a9133b9
+        # given   : http://data.bioontology.org/ontologies/SNOMEDCT/classes/http%3A%2F%2Fpurl.bioontology.org%2Fontology%2FSNOMEDCT%2F248152002&apikey=d6fb9c05-3309-4158-892f-65434a9133b9
+        # expected: http://data.bioontology.org/ontologies/SNOMEDCT/classes/http%3A%2F%2Fpurl.bioontology.org%2Fontology%2FSNOMEDCT%2F373066001?apikey=d6fb9c05-3309-4158-892f-65434a9133b9
+        # given   : http://data.bioontology.org/ontologies/SNOMEDCT/classes/http%3A%2F%2Fpurl.bioontology.org%2Fontology%2FSNOMEDCT%2F373066001&apikey=d6fb9c05-3309-4158-892f-65434a9133b9
+        # url_with_apikey = requote_uri(f"{url}&apikey={api_key}")
+        # log.debug(url_with_apikey)
+        url_with_apikey = f"{url}?apikey={api_key}"
+        log.debug(url_with_apikey)
+        # url_with_apikey = quote(f"{url}&apikey={api_key}", safe="")
+        # log.debug(url_with_apikey)
+        return requests.get(url_with_apikey)
+
+
+def parse_json_response(response):
+    # we need to load x2 and to dump to have a "real" JSON dict, parseable by Python
+    # otherwise, we have a JSON-like string or JSNO-like text data
+    log.debug(response)
+    log.debug(response.content)
+    return json.loads(json.dumps(json.loads(response.content)))
+
+
+def parse_xml_response(response):
+    return xml.dom.minidom.parseString(response.content)
+
+
+def load_xml_file(filepath: str):
+    return xml.dom.minidom.parse(filepath)

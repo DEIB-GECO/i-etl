@@ -77,8 +77,9 @@ class ETL:
             if self.execution.is_transform:
                 self.transform = Transform(database=self.database, execution=self.execution, data=self.extract.data,
                                            metadata=self.extract.metadata,
-                                           mapping_categorical_values=self.extract.mapping_categorical_values_to_codeable_concepts,
-                                           column_to_dimension=self.extract.column_to_dimension)
+                                           mapping_categorical_value_to_cc=self.extract.mapping_categorical_value_to_cc,
+                                           mapping_column_to_categorical_value=self.extract.mapping_column_to_categorical_value,
+                                           mapping_column_to_dimension=self.extract.mapping_column_to_dimension)
                 self.transform.run()
             if self.execution.is_load:
                 # create indexes only if this is the last file (otherwise, we would create useless intermediate indexes)

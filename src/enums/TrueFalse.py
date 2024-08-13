@@ -5,17 +5,17 @@ from enums.Ontologies import Ontologies
 
 
 class TrueFalse(EnumAsClass):
-    FALSE = Coding(system=Ontologies.SNOMEDCT["url"], code="373067005", name="False", description="False boolean value")
-    TRUE = Coding(system=Ontologies.SNOMEDCT["url"], code="373066001", name="True", description="True boolean value")
+    FALSE = Coding(ontology=Ontologies.SNOMEDCT, code="373067005", display=None)
+    TRUE = Coding(ontology=Ontologies.SNOMEDCT, code="373066001", display=None)
 
     @classmethod
     def get_false(cls) -> CodeableConcept:
-        cc = CodeableConcept()
+        cc = CodeableConcept(original_name="False")
         cc.add_coding(one_coding=TrueFalse.FALSE)
         return cc
 
     @classmethod
     def get_true(cls) -> CodeableConcept:
-        cc = CodeableConcept()
+        cc = CodeableConcept(original_name="True")
         cc.add_coding(one_coding=TrueFalse.TRUE)
         return cc

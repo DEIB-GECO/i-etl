@@ -190,8 +190,8 @@ class Database:
         """
         Perform a find operation (SELECT * FROM x WHERE filter_dict) in a given table.
         :param table_name: A string being the table name in which the find operation is performed.
-        :param filter_dict: A dict being the set of filters (conditions) to apply on the data in the given table.
-        :param projection: A dict being the set of projections (selections) to apply on the data in the given table.
+        :param filter_dict: A dict being the set of filters (conditions) to apply on the data in the given table. Give {} to not apply any filter.
+        :param projection: A dict being the set of projections (selections) to apply on the data in the given table. Give {} to return all fields.
         :return: A Cursor on the results, i.e., filtered data.
         """
         return self.db[table_name].find(filter_dict, projection)
@@ -231,7 +231,7 @@ class Database:
 
         if from_string:
             # we need to parse the string to long
-            operations.append(mongodb_project_one(field=field, projected_value={"split_var": {"$split": ["$"+field, DELIMITER_PATIENT_ID]}}))
+            operations.append(mongodb_project_one(field=field, projected_value={"split_var": {"$split": [f"${field}", DELIMITER_PATIENT_ID]}}))
             operations.append(mongodb_unwind(field="split_var"))
             operations.append(mongodb_match(field="split_var", value="^[0-9]+$", is_regex=True))  # only numbers
             operations.append(mongodb_group_by(group_key={"var": "$split_var"}, group_by_name="min_max", operator="$max", field={"$toLong": "$split_var"}))
@@ -334,7 +334,7 @@ class Database:
         return max_value
 
     def __str__(self) -> str:
-        return "Database " + self.execution.db_name
+        return f"Database {self.execution.db_name}"
 
     def db_exists(self, db_name: str) -> bool:
         list_dbs = self.client.list_databases()

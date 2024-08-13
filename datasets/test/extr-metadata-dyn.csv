@@ -1,0 +1,5 @@
+"ontology","ontology_code","ontology_comment","secondary_ontology","secondary_ontology_code","secondary_ontology_comment","snomed_vartype","test h1","TEST H2","test_H3","dataset","name","Significato_it","description","vartype","etl_type","dimension","details","JSON_values","Multiplicity","Doubts"
+,,,,,,,0,1,0,"extr-data-dyn.csv","id","The Patient ID","The Patient ID","integer","int",,,,,
+"pubchem",987654,,,,,,0,1,0,"extr-data-dyn.csv","age","The patient age", "The patient age in years","str","int",,,,,
+"pubchem",254682,,,,,,0,1,0,"extr-data-dyn.csv","reva","Best Corrected Visual acuity right eye", "Best Corrected Visual acuity right eye","int","int",,,,,
+"pubchem",98567,,,,,,0,1,0,"extr-data-dyn.csv","leva","Best Corrected Visual acuity left eye", "Best Corrected Visual acuity right eye","int","int",,,,,

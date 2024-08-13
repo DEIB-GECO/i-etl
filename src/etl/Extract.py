@@ -19,7 +19,7 @@ from enums.TableNames import TableNames
 from utils.constants import ID_COLUMNS, PATTERN_VALUE_DIMENSION
 from utils.setup_logger import log
 from utils.utils import is_not_nan, get_values_from_json_values, normalize_column_name, \
-    normalize_ontology_system, normalize_ontology_code, normalize_column_value, normalize_hospital_name, \
+    normalize_ontology_name, normalize_ontology_code, normalize_column_value, normalize_hospital_name, \
     normalize_type, read_csv_file_as_string
 
 
@@ -28,17 +28,18 @@ class Extract:
     def __init__(self, database: Database, execution: Execution):
         self.metadata = None
         self.data = None
-        self.mapping_categorical_values_to_codeable_concepts = {}  # accepted values for categorical columns (column "JSON_values" in metadata) and their CodeableConcept
-        self.column_to_vartype = {}  # each column is associated to its var type (column "vartype" in metadata)
-        self.column_to_dimension = {}  # each column is associated to its dimension, the union set of the dimension given in the metadata and the units found in the string values themselves
+        self.mapping_categorical_value_to_cc = {}  # accepted values for categorical columns (column "JSON_values" in metadata) and their CodeableConcept
+        self.mapping_column_to_categorical_value = {}  # each column name with its normalized accepted values (str, not cc)
+        self.mapping_column_to_vartype = {}  # each column is associated to its var type (column "vartype" in metadata)
+        self.mapping_column_to_dimension = {}  # each column is associated to its dimension, the union set of the dimension given in the metadata and the units found in the string values themselves
 
         self.execution = execution
         self.database = database
 
-    def run (self) -> None:
+    def run(self) -> None:
         # load and pre-process metadata
         self.load_metadata_file()
-        self.compute_mapping_categorical_values()
+        self.compute_mapping_categorical_value_to_cc()
         log.debug(self.metadata.columns)
 
         # load and pre-process data (all kinds)
@@ -76,9 +77,9 @@ class Extract:
         log.info("Will preprocess metadata")
 
         # 1. normalize the header, e.g., "Significato it" becomes "significato_it"
+        # this also normalizes hospital names if they are in the header (UC 2 and UC 3)
         self.metadata.rename(columns=lambda x: normalize_column_name(column_name=x), inplace=True)
         # log.debug(self.metadata.to_string())
-        # we will also specifically normalize the hospital names if they are in the header (UC 2 and UC 3) when counting how many they are (see below)
 
         # 2. Get the metadata associated to the current hospital (but any dataset within that hospital)
         log.debug(f"working on hospital {self.execution.hospital_name}")
@@ -111,7 +112,7 @@ class Extract:
         else:
             # we have 0 or 1 column specifying the hospital name,
             # so the metadata is only for the current hospital
-            # thus, nothing more to do
+            # thus, nothing to do
             pass
         # log.debug(self.metadata.to_string())
 
@@ -125,10 +126,10 @@ class Extract:
             self.metadata = self.metadata[self.metadata[MetadataColumns.DATASET_NAME] == filename]
         # log.debug(self.metadata.to_string())
 
-        # normalize ontology system names and codes
-        self.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM] = self.metadata[MetadataColumns.FIRST_ONTOLOGY_SYSTEM].apply(lambda value: normalize_ontology_system(ontology_system=value))
+        # normalize ontology names and codes
+        self.metadata[MetadataColumns.FIRST_ONTOLOGY_NAME] = self.metadata[MetadataColumns.FIRST_ONTOLOGY_NAME].apply(lambda value: normalize_ontology_name(ontology_system=value))
         self.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE] = self.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE].apply(lambda value: normalize_ontology_code(ontology_code=value))
-        self.metadata[MetadataColumns.SEC_ONTOLOGY_SYSTEM] = self.metadata[MetadataColumns.SEC_ONTOLOGY_SYSTEM].apply(lambda value: normalize_ontology_system(ontology_system=value))
+        self.metadata[MetadataColumns.SEC_ONTOLOGY_NAME] = self.metadata[MetadataColumns.SEC_ONTOLOGY_NAME].apply(lambda value: normalize_ontology_name(ontology_system=value))
         self.metadata[MetadataColumns.SEC_ONTOLOGY_CODE] = self.metadata[MetadataColumns.SEC_ONTOLOGY_CODE].apply(lambda value: normalize_ontology_code(ontology_code=value))
         # log.debug(self.metadata.to_string())
 
@@ -137,49 +138,8 @@ class Extract:
         # log.debug(self.metadata.to_string())
 
         # normalize the var_type and the ETL type
-        self.metadata[MetadataColumns.VAR_TYPE] = self.metadata[MetadataColumns.VAR_TYPE].apply(lambda x: normalize_type(
-            data_type=x))
-        self.metadata[MetadataColumns.ETL_TYPE] = self.metadata[MetadataColumns.ETL_TYPE].apply(lambda x: normalize_type(
-            data_type=x))
-        # log.debug(self.metadata.to_string())
-
-        # normalize the dict of accepted JSON values
-        # the non-NaN JSON_values values are of the form: "{...}, {...}, ..."
-        # thus, we need to
-        # 1. create an empty list
-        # 2. add each JSON dict of JSON_values in that list
-        # Note: we cannot simply add brackets around the dicts because it would add a string with the dicts in the list
-        # we cannot either use json.loads on row["JSON_values"] because it is not parsable (it lacks the brackets)
-        for index, row in self.metadata.iterrows():
-            if is_not_nan(row[MetadataColumns.JSON_VALUES]):
-                values_dicts = []
-                json_dicts = re.split('}, {', row[MetadataColumns.JSON_VALUES])
-                for json_dict in json_dicts:
-                    if not json_dict.startswith("{"):
-                        json_dict = "{" + json_dict
-                    if not json_dict.endswith("}"):
-                        json_dict = json_dict + "}"
-                    the_json_dict = json.loads(json_dict)
-                    # normalize the keys and values before happening the json dict to the list
-                    normalized_json_dict = {}
-                    # we suppose we have three (k, v): one for "value", one for "explanation", and one for ontology_system: ontology_code
-                    json_dict_keys = {k.strip().lower(): k for k in the_json_dict.keys()}  # we need to keep the mapping between the original keys and the normalized to be able to query the original dict
-                    for a_key in json_dict_keys.keys():
-                        if a_key == "value":
-                            # for the categorical value, e.g., F and M for sex, we normalize it
-                            # so that we can lift inconsistencies between data and metadata
-                            normalized_json_dict["value"] = normalize_column_value(the_json_dict[json_dict_keys["value"]])
-                        elif a_key == "explanation":
-                            # for the (human) textual explanation of the JSON value, we do not normalize it (as this is supposed to be human text)
-                            normalized_json_dict["explanation"] = the_json_dict[json_dict_keys["explanation"]]
-                        else:
-                            # this should be an ontology code, associated to an ontology code
-                            # there may be several, e.g., F (female) may have both LOINC and SNOMED_CT codes
-                            ontology_system = normalize_ontology_system(ontology_system=a_key)
-                            ontology_code = normalize_ontology_code(ontology_code=the_json_dict[json_dict_keys[a_key]])
-                            normalized_json_dict[ontology_system] = ontology_code
-                    values_dicts.append(normalized_json_dict)
-                self.metadata.loc[index, MetadataColumns.JSON_VALUES] = json.dumps(values_dicts)  # set the new JSON values as a string (required by pandas)
+        self.metadata[MetadataColumns.VAR_TYPE] = self.metadata[MetadataColumns.VAR_TYPE].apply(lambda x: normalize_type(data_type=x))
+        self.metadata[MetadataColumns.ETL_TYPE] = self.metadata[MetadataColumns.ETL_TYPE].apply(lambda x: normalize_type(data_type=x))
         # log.debug(self.metadata.to_string())
 
         # reindex the remaining metadata rows, starting from 0
@@ -250,50 +210,89 @@ class Extract:
                 log.info(f"Drop data column corresponding to the variable {column}.")
                 self.data = self.data.drop(column, axis=1)  # axis=1 -> columns
 
-    def compute_mapping_categorical_values(self) -> None:
-        self.mapping_categorical_values_to_codeable_concepts = {}
+    def compute_mapping_categorical_value_to_cc(self) -> None:
+        self.mapping_categorical_value_to_cc = {}
+        self.mapping_column_to_categorical_value = {}
+        # 1. first, we retrieve the existing categorical values already transformed as CodeableConcept
+        # this will avoid to send again API queries to re-build already-built CodeableConcept
+        # we get all the categorical values across all tables to not miss any of them
+        existing_categorical_codeable_concepts = {}
+        for table_name in TableNames.values():
+            # the set of categorical values are defined in Features only, thus we can restrict the find to only those:
+            if table_name.endswith("Feature"):
+                log.info(f"Looking for categorical values in {table_name}")
+                # categorical_values_for_table_name = {'_id': ObjectId('66b9b890583ee775ef4edcb9'), 'categorical_values': [{...}, {...}, ...]}
+                categorical_values_for_table_name = self.database.find_operation(table_name=table_name, filter_dict={"categorical_values": {"$exists": 1}}, projection={"categorical_values": 1})
+                for one_tuple in categorical_values_for_table_name:
+                    # existing_categorical_value_for_table_name = [{...}, {...}, ...]}
+                    log.info(one_tuple)
+                    existing_categorical_values_for_table_name = one_tuple["categorical_values"]
+                    log.info(existing_categorical_values_for_table_name)
+                    for encoded_categorical_value in existing_categorical_values_for_table_name:
+                        existing_cc = CodeableConcept.from_json(encoded_categorical_value)
+                        log.info(existing_cc)
+                        existing_categorical_codeable_concepts[existing_cc.text] = existing_cc
+        log.debug(existing_categorical_codeable_concepts)
 
+        # 2. then, we associate each column to its set of categorical values
+        # if we already compute the cc of that value (e.g., several column have categorical values Yes/No/NA),
+        # we do not recompute it and take it from the mapping
         for index, row in self.metadata.iterrows():
             if is_not_nan(row[MetadataColumns.JSON_VALUES]):
-                log.info(row)
-                current_dicts = json.loads(row[MetadataColumns.JSON_VALUES])
-                parsed_dicts = []
-                for current_dict in current_dicts:
-                    # if we can convert the JSON value to a float or an int, we do it, otherwise we let it as a string
-                    current_dict["value"] = normalize_column_value(column_value=current_dict["value"])
-                    # if we can also convert the snomed_ct / loinc code, we do it
-                    # TODO Nelly: loop on all ontologies known in OntologyNames
-                    if Ontologies.SNOMEDCT["name"] in current_dict:
-                        current_dict[Ontologies.SNOMEDCT["name"]] = normalize_ontology_code(ontology_code=current_dict[Ontologies.SNOMEDCT["name"]])
-                    if Ontologies.LOINC["name"] in current_dict:
-                        current_dict[Ontologies.LOINC["name"]] = normalize_ontology_code(ontology_code=current_dict[Ontologies.LOINC["name"]])
-                    parsed_dicts.append(current_dict)
-                log.info(parsed_dicts)
-                self.mapping_categorical_values_to_codeable_concepts[row[MetadataColumns.COLUMN_NAME]] = {}
-                # we get the value of the mapping, e.g., F, or M, or NA
-                # we create a CodeableConcept with each code added to the mapping, e.g., snomed_ct and loinc
-                # recall that a mapping is of the form: {'value': 'X', 'explanation': '...', 'snomed_ct': '123', 'loinc': '456' }
-                # and we add each ontology code to that CodeableConcept
-                for one_dict in parsed_dicts:
-                    log.info(one_dict)
-                    cc = CodeableConcept()
-                    for key, val in one_dict.items():
-                        log.info(f"{key}: {val}")
-                        # for any key value pair that is not about the value or the explanation
-                        # (i.e., loinc and snomed_ct columns), we create a Coding, which we add to the CodeableConcept
-                        # we need to do a loop because there may be several ontology terms for a single mapping
-                        if key != "value" and key != "explanation":
-                            system = Ontologies.get_ontology_system(ontology=key)
-                            cc.add_coding(one_coding=Coding(system=system, code=val, name=one_dict["value"], description=one_dict["explanation"]))
-                    # {
-                    # 'sex': {'m': {"coding": [{"system": "snomed", "code": "248153007", "display": "m (Male)"}], "text": ""}}, {'f': {"coding": [{"system": "snomed", "code": "248152002", "display": "f (Female)"}], "text": ""}}}
-                    # 'sample_quality': {'inadeguata': {"coding": [{"system": "snomed", "code": "71978007", "display": "inadeguata (inadequate)"}], "text": ""}, ...}
-                    # }
-                    self.mapping_categorical_values_to_codeable_concepts[row[MetadataColumns.COLUMN_NAME]][one_dict["value"]] = cc
-        log.debug(f"{self.mapping_categorical_values_to_codeable_concepts}")
+                column_name = normalize_column_name(row[MetadataColumns.COLUMN_NAME])
+                log.info(f"{column_name}: {row[MetadataColumns.JSON_VALUES]}")
+                # we get the possible categorical values for the column, e.g., F, or M, or NA for sex
+                json_categorical_values = json.loads(row[MetadataColumns.JSON_VALUES])
+                log.info(json_categorical_values)
+                self.mapping_column_to_categorical_value[column_name] = []
+                for json_categorical_value in json_categorical_values:
+                    normalized_categorical_value = normalize_column_value(json_categorical_value["value"])
+                    if normalized_categorical_value not in self.mapping_categorical_value_to_cc:
+                        # the categorical value does not exist yet in the mapping, thus:
+                        # - it may be retrieved from the db and be added to the mapping
+                        # - or, it may be computed for the first time
+                        if normalized_categorical_value not in existing_categorical_codeable_concepts.keys():
+                            # this is a categorical value that we have never seen (not even in previous executions),
+                            # we need to create a CodeableConcept for it from scratch
+                            # json_categorical_value is of the form: {'value': 'X', 'snomed_ct': '123', 'loinc': '456' }
+                            # and we add each ontology code to that CodeableConcept
+                            cc = CodeableConcept(original_name=normalized_categorical_value)
+                            # TODO Nelly: do not compute cc for boolean (categorical) columns
+                            for key, val in json_categorical_value.items():
+                                log.info(f"{key}: {val}")
+                                # for any key value pair that is not about the value or the explanation
+                                # (i.e., loinc and snomed_ct columns), we create a Coding, which we add to the CodeableConcept
+                                # we need to do a loop because there may be several ontology terms for a single mapping
+                                if key != "value" and key != "explanation":
+                                    ontology = Ontologies.get_enum_from_name(ontology_name=normalize_ontology_name(key))
+                                    cc.add_coding(one_coding=Coding(ontology=ontology, code=normalize_ontology_code(val), display=None))
+                            # {
+                            #   'm': {"coding": [{"system": "snomed", "code": "248153007", "display": "m (Male)"}], "text": ""},
+                            #   'f': {"coding": [{"system": "snomed", "code": "248152002", "display": "f (Female)"}], "text": ""},
+                            #   'inadeguata': {"coding": [{"system": "snomed", "code": "71978007", "display": "inadeguata (inadequate)"}], "text": ""},
+                            #   ...
+                            # }
+                            self.mapping_categorical_value_to_cc[normalized_categorical_value] = cc
+                            self.mapping_column_to_categorical_value[column_name].append(normalized_categorical_value)
+                        else:
+                            # a CodeableConcept already exists for this value (it has been retrieved from the db),
+                            # we simply add it to the mapping
+                            log.debug(f"The categorical value {normalized_categorical_value} already existing in the database as a CC. Taking it from here.")
+                            self.mapping_categorical_value_to_cc[normalized_categorical_value] = existing_categorical_codeable_concepts[normalized_categorical_value]
+                    else:
+                        # this categorical value is already present in the mapping (it has either been retrieved from
+                        # the db or computed for the first time),
+                        # in any case, nothing more to do
+                        log.debug(f"{normalized_categorical_value} is already in the mapping: {self.mapping_categorical_value_to_cc}")
+                        pass
+            else:
+                # no JSON values for this column, pass
+                pass
+        log.debug(f"{self.mapping_categorical_value_to_cc}")
+        log.debug(f"{self.mapping_column_to_categorical_value}")
 
     def compute_column_to_dimension(self) -> None:
-        self.column_to_dimension = {}
+        self.mapping_column_to_dimension = {}
 
         for index, row in self.metadata.iterrows():
             column_name = row[MetadataColumns.COLUMN_NAME]
@@ -324,7 +323,7 @@ class Extract:
                     units_with_max_frequency.sort()
                     most_frequent_unit = units_with_max_frequency[0]
                     log.debug(f"most frequent dimension is {most_frequent_unit}")
-                    self.column_to_dimension[column_name] = most_frequent_unit
+                    self.mapping_column_to_dimension[column_name] = most_frequent_unit
                 else:
                     # no unit found in those values
                     add_dimension_from_metadata = True
@@ -338,13 +337,13 @@ class Extract:
                 column_expected_dimension = row[MetadataColumns.VAR_DIMENSION]
                 if is_not_nan(column_expected_dimension):
                     # if there is a dimension provided in the metadata (this may be overridden if there are dimensions in the cells values)
-                    self.column_to_dimension[column_name] = column_expected_dimension
+                    self.mapping_column_to_dimension[column_name] = column_expected_dimension
                 else:
-                    self.column_to_dimension[column_name] = None
-        log.debug(self.column_to_dimension)
+                    self.mapping_column_to_dimension[column_name] = None
+        log.debug(self.mapping_column_to_dimension)
 
     def run_value_analysis(self) -> None:
-        log.debug(f"{self.mapping_categorical_values_to_codeable_concepts}")
+        log.debug(f"{self.mapping_categorical_value_to_cc}")
         # for each column in the sample data (and not in the metadata because some (empty) data columns are not
         # present in the metadata file), we compare the set of values it takes against the accepted set of values
         # (available in the mapped_values variable)
@@ -358,10 +357,10 @@ class Extract:
             # TODO NELLY: complete this part
             expected_type = ""
             # trying to get expected values for the current column
-            if column in self.mapping_categorical_values_to_codeable_concepts:
+            if column in self.mapping_categorical_value_to_cc:
                 # self.mapped_values[column] contains the mappings (JSON dicts) for the given column
                 # we need to get only the set of values described in the mappings of the given column
-                accepted_values = get_values_from_json_values(json_values=self.mapping_categorical_values_to_codeable_concepts[column])
+                accepted_values = get_values_from_json_values(json_values=self.mapping_categorical_value_to_cc[column])
             else:
                 accepted_values = []
             value_analysis = ValueAnalysis(column_name=column, values=values, expected_type=expected_type, accepted_values=accepted_values)

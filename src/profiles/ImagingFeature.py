@@ -10,4 +10,4 @@ class ImagingFeature(Feature):
         # set up the resource ID
         super().__init__(id_value=id_value, code=code, column_type=permitted_datatype, dimension=dimension,
                          resource_type=TableNames.IMAGING_FEATURE, counter=counter, hospital_name=hospital_name,
-                         list_categorical_values=categorical_values)
+                         categorical_values=categorical_values)

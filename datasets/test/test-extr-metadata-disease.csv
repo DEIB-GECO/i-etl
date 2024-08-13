@@ -1,4 +1,0 @@
-"ontology","ontology_code","ontology_comment","secondary_ontology","secondary_ontology_code","secondary_ontology_comment","snomed_vartype","test h1","TEST H2","test_H3","dataset","name","Significato_it","description","vartype","etl_type","dimension","details","JSON_values","Multiplicity","Doubts"
-,,,,,,,1,0,0,"test-extracted-disease-data.csv","id","The Patient ID","The Patient ID","integer","int",,,,,
-"omim","1569-456",,,,,,1,0,0,"test-extracted-disease-data.csv","disease_name","The disease of the patient","The disease of the patient ","str","str",,,,,
-"omim","1245/983",,,,,,1,0,0,"test-extracted-disease-data.csv","disease_form","The form of the disease","The form of the disease","category","category",,,"{""value"": ""start"", ""explanation"": ""< 1 year"", ""pubchem"": ""023468""}, {""value"": ""middle"", ""explanation"": ""1 year <= ... <= 3 years"", ""pubchem"": ""203:468""}, {""value"": ""end"", ""explanation"": ""> 3 years"", ""pubchem"": ""4097625""}",,

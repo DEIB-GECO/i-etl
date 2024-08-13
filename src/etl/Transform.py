@@ -35,7 +35,9 @@ from utils.utils import is_not_nan, cast_value, write_in_file
 
 class Transform:
 
-    def __init__(self, database: Database, execution: Execution, data: DataFrame, metadata: DataFrame, mapping_categorical_values: dict, column_to_dimension: dict):
+    def __init__(self, database: Database, execution: Execution, data: DataFrame, metadata: DataFrame,
+                 mapping_categorical_value_to_cc: dict, mapping_column_to_categorical_value: dict,
+                 mapping_column_to_dimension: dict):
         self.database = database
         self.execution = execution
         self.counter = Counter()
@@ -43,8 +45,9 @@ class Transform:
         # get data, metadata and the mapped values computed in the Extract step
         self.data = data
         self.metadata = metadata
-        self.column_to_dimension = column_to_dimension
-        self.mapping_categorical_values = mapping_categorical_values
+        self.mapping_column_to_dimension = mapping_column_to_dimension
+        self.mapping_categorical_value_to_cc = mapping_categorical_value_to_cc
+        self.mapping_column_to_categorical_value = mapping_column_to_categorical_value
 
         # to record objects that will be further inserted in the database
         self.hospitals = []
@@ -81,7 +84,6 @@ class Transform:
 
         if self.execution.current_file_type == FileTypes.LABORATORY:
             self.create_laboratory_features()
-            log.info(f"LabFeature count: {self.database.count_documents(table_name=TableNames.LABORATORY_FEATURE, filter_dict={})}")
             self.create_samples()
             self.create_laboratory_records()
         elif self.execution.current_file_type == FileTypes.DIAGNOSIS:
@@ -112,38 +114,89 @@ class Transform:
 
     def create_laboratory_features(self) -> None:
         log.info(f"create Lab. Feat. instances in memory")
+
+        # 1. first, we retrieve the existing LabFeature instances to not recreate new CodeableConcepts for them
+        # this will avoid to send again API queries to re-build already-built CodeableConcept
+        result = self.database.find_operation(table_name=TableNames.LABORATORY_FEATURE, filter_dict={}, projection={"code.text": 1})
+        db_lab_feature_names = []
+        for res in result:
+            db_lab_feature_names.append(res["code"]["text"])
+        log.debug(db_lab_feature_names)
+
+        # 2., then we can create non-existing LabFeature instances
+        self.create_features(table_name=TableNames.LABORATORY_FEATURE, db_existing_features=db_lab_feature_names)
+
+    def create_features(self, table_name: str, db_existing_features: list[str]) -> None:
+        log.info(f"create Feature instances of type {table_name} in memory")
         count = 1
         for row_index, row in self.metadata.iterrows():
             column_name = row[MetadataColumns.COLUMN_NAME]
             if column_name not in SampleColumns.values() and column_name not in ColumnsToIgnore.values():
-                cc = self.create_codeable_concept_from_row(column_name=column_name)
-                if cc is not None:
-                    # some columns have no attributed ontology code
-                    # we still add the codeable_concept as a LabFeature
-                    # but, it will have only the text (such as "BIS", or "TooYoung") and no associated codings
-                    category = Transform.get_lab_feature_category(column_name=column_name)
-                    data_type = row[MetadataColumns.ETL_TYPE]  # this has been normalized while loading + we take ETL_type, not var_type, to get the narrowest type (in which we cast values)
-                    dimension = self.column_to_dimension[column_name]
-                    categorical_values = self.mapping_categorical_values[column_name] if column_name in self.mapping_categorical_values.keys() else None
-                    new_lab_feature = LaboratoryFeature(id_value=NO_ID, code=cc, category=category,
-                                                        permitted_datatype=data_type, dimension=dimension,
-                                                        counter=self.counter, hospital_name=self.execution.hospital_name,
-                                                        categorical_values=categorical_values)
-                    log.info(f"adding a new LabFeature instance about {cc.text}: {new_lab_feature}")
-                    self.laboratory_features.append(new_lab_feature)
-                    if len(self.laboratory_features) >= BATCH_SIZE:
-                        write_in_file(resource_list=self.laboratory_features, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_FEATURE, count=count)
-                        self.laboratory_features = []
-                        count = count + 1
+                if column_name not in db_existing_features:
+                    # we create a new Laboratory Feature from scratch
+                    cc = self.create_codeable_concept_from_row(column_name=column_name)
+                    if cc is not None:
+                        # some columns have no attributed ontology code
+                        # we still add the codeable_concept as a LabFeature
+                        # but, it will have only the text (such as "BIS", or "TooYoung") and no associated codings
+                        if table_name == TableNames.LABORATORY_FEATURE:
+                            category = Transform.get_lab_feature_category(column_name=column_name)
+                            data_type = row[MetadataColumns.ETL_TYPE]  # this has been normalized while loading + we take ETL_type, not var_type, to get the narrowest type (in which we cast values)
+                            dimension = self.mapping_column_to_dimension[column_name]
+                            # for categorical values, we first need to take the list of (normalized) values that are available for the current column, and then take their CC
+                            categorical_values = None
+                            if column_name in self.mapping_column_to_categorical_value:
+                                normalized_categorical_values = self.mapping_column_to_categorical_value[column_name]
+                                categorical_values = []
+                                for normalized_categorical_value in normalized_categorical_values:
+                                    categorical_values.append(self.mapping_categorical_value_to_cc[normalized_categorical_value])
+                            new_lab_feature = LaboratoryFeature(id_value=NO_ID, code=cc, category=category,
+                                                                permitted_datatype=data_type, dimension=dimension,
+                                                                counter=self.counter, hospital_name=self.execution.hospital_name,
+                                                                categorical_values=categorical_values)
+                            log.info(f"adding a new LabFeature instance about {cc.text}: {new_lab_feature}")
+                            self.laboratory_features.append(new_lab_feature)
+                            if len(self.laboratory_features) >= BATCH_SIZE:
+                                write_in_file(resource_list=self.laboratory_features, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_FEATURE, count=count)
+                                self.laboratory_features = []
+                                count = count + 1
+                        elif table_name == TableNames.DIAGNOSIS_FEATURE:
+                            data_type = row[MetadataColumns.ETL_TYPE]  # this has been normalized while loading + we take ETL_type, not var_type, to get the narrowest type (in which we cast values)
+                            dimension = None  # no dimension for Diagnosis data because we only associate patient to their diagnosis (a disease name)
+                            log.debug(f"for column {column_name}, dimension is {dimension}")
+                            new_diag_feature = DiagnosisFeature(id_value=NO_ID, code=cc,
+                                                                permitted_datatype=data_type,
+                                                                dimension=dimension, counter=self.counter,
+                                                                hospital_name=self.execution.hospital_name,
+                                                                categorical_values=None)
+                            log.info(f"adding a new DiagFeature instance about {cc.text}: {new_diag_feature}")
+                            self.diagnosis_features.append(new_diag_feature)
+                            if len(self.diagnosis_features) >= BATCH_SIZE:
+                                write_in_file(resource_list=self.diagnosis_features,
+                                              current_working_dir=self.execution.working_dir_current,
+                                              table_name=TableNames.DIAGNOSIS_FEATURE, count=count)
+                                self.diagnosis_features = []
+                                count = count + 1
+                        else:
+                            raise NotImplementedError("To be implemented")
+                    else:
+                        # the column was not present in the data, or it was present several times
+                        # this should never happen
+                        pass
                 else:
-                    # the column was not present in the data, or it was present several times
-                    # this should never happen
-                    pass
+                    # the LabFeature already exists, so no need to add it to the database again.
+                    log.error(f"The lab feature about {column_name} already exists. Not added.")
             else:
                 log.debug(f"I am skipping column {column_name} because it has been marked as not being part of LabFeature instances.")
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
-        write_in_file(resource_list=self.laboratory_features, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_FEATURE, count=count)
-        self.database.load_json_in_table(table_name=TableNames.LABORATORY_FEATURE, unique_variables=["code"])
+        self.write_remaining_instances_to_database(resources=self.laboratory_features, table_name=TableNames.LABORATORY_FEATURE, count=count, unique_variables=["code"])
+        self.write_remaining_instances_to_database(resources=self.diagnosis_features, table_name=TableNames.DIAGNOSIS_FEATURE, count=count, unique_variables=["code"])
+
+    def write_remaining_instances_to_database(self, resources: list, table_name: str, count: int, unique_variables: list[str]):
+        # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
+        write_in_file(resource_list=resources, current_working_dir=self.execution.working_dir_current,
+                      table_name=table_name, count=count)
+        self.database.load_json_in_table(table_name=table_name, unique_variables=unique_variables)
 
     def create_samples(self) -> None:
         if TableNames.SAMPLE in ID_COLUMNS[self.execution.hospital_name] and ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE] in self.data.columns:
@@ -253,43 +306,18 @@ class Transform:
 
     def create_diagnosis_features(self):
         log.info(f"create Diag. Feat. instances in memory")
-        count = 1
-        index_for_column_name = self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)
-        log.debug(f"The index of {MetadataColumns.COLUMN_NAME} is {index_for_column_name}")
-        for row_index, row in self.metadata.iterrows():
-            column_name = row[MetadataColumns.COLUMN_NAME]
-            log.debug(f"Row about {column_name}")
-            log.debug(ColumnsToIgnore.values())
-            if column_name not in SampleColumns.values() and column_name not in ColumnsToIgnore.values():
-                cc = self.create_codeable_concept_from_row(column_name=column_name)
-                log.debug(cc)
-                if cc is not None:
-                    # some columns have no attributed ontology code
-                    # we still add the codeable_concept as a LabFeature
-                    # but, it will have only the text (such as "BIS", or "TooYoung") and no associated codings
-                    data_type = row[MetadataColumns.ETL_TYPE]  # this has been normalized while loading + we take ETL_type, not var_type, to get the narrowest type (in which we cast values)
-                    dimension = None  # no dimension for Diagnosis data because we only associate patient to their diagnosis (a disease name)
-                    log.debug(f"for column {column_name}, dimension is {dimension}")
-                    new_diag_feature = DiagnosisFeature(id_value=NO_ID, code=cc, permitted_datatype=data_type,
-                                                        dimension=dimension, counter=self.counter, hospital_name=self.execution.hospital_name)
-                    log.info(f"adding a new DiagFeature instance about {cc.text}: {new_diag_feature}")
-                    self.diagnosis_features.append(new_diag_feature)
-                    if len(self.diagnosis_features) >= BATCH_SIZE:
-                        write_in_file(resource_list=self.diagnosis_features,
-                                      current_working_dir=self.execution.working_dir_current,
-                                      table_name=TableNames.DIAGNOSIS_FEATURE, count=count)
-                        self.diagnosis_features = []
-                        count = count + 1
-                else:
-                    # the column was not present in the data, or it was present several times
-                    # this should never happen
-                    pass
-            else:
-                log.debug(f"I am skipping column {column_name} because it has been marked as not being part of DiagFeature instances.")
-        # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
-        write_in_file(resource_list=self.diagnosis_features, current_working_dir=self.execution.working_dir_current,
-                      table_name=TableNames.DIAGNOSIS_FEATURE, count=count)
-        self.database.load_json_in_table(table_name=TableNames.DIAGNOSIS_FEATURE, unique_variables=["code"])
+
+        # 1. first, we retrieve the existing DiagFeature instances to not recreate new CodeableConcepts for them
+        # this will avoid to send again API queries to re-build already-built CodeableConcept
+        # TODO NELLY: select distinct based on coding system+code
+        # TODO Nelly: Do the same for laboratory records, etc...: get their codeableConcept in-memory first? or maybe compute the display only if we insert it in the db?
+        result = self.database.find_operation(table_name=TableNames.DIAGNOSIS_FEATURE, filter_dict={},
+                                              projection={"code.text": 1})
+        db_diag_feature_names = []
+        for res in result:
+            db_diag_feature_names.append(res["code"]["text"])
+        log.debug(db_diag_feature_names)
+        self.create_features(table_name=TableNames.DIAGNOSIS_FEATURE, db_existing_features=db_diag_feature_names)
 
     def create_diagnosis_records(self):
         log.info(f"create Diag. Rec. instances in memory")
@@ -368,27 +396,24 @@ class Transform:
     # Transform UTILITY methods
 
     def create_codeable_concept_from_row(self, column_name: str) -> CodeableConcept | None:
-        cc = CodeableConcept()
+        cc = CodeableConcept(original_name=column_name)
         rows = self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name]
         if len(rows) == 1:
             row = rows.iloc[0]
-            if is_not_nan(row[MetadataColumns.FIRST_ONTOLOGY_SYSTEM]):
-                coding = Coding(system=Ontologies.get_ontology_system(row[MetadataColumns.FIRST_ONTOLOGY_SYSTEM]),
+            if is_not_nan(row[MetadataColumns.FIRST_ONTOLOGY_NAME]):
+                coding = Coding(ontology=Ontologies.get_enum_from_name(row[MetadataColumns.FIRST_ONTOLOGY_NAME]),
                                 code=row[MetadataColumns.FIRST_ONTOLOGY_CODE],
-                                name=row[MetadataColumns.COLUMN_NAME],
-                                description=row[MetadataColumns.SIGNIFICATION_EN])
+                                display=None)
                 cc.add_coding(one_coding=coding)
-            if is_not_nan(row[MetadataColumns.SEC_ONTOLOGY_SYSTEM]):
-                coding = Coding(system=Ontologies.get_ontology_system(row[MetadataColumns.SEC_ONTOLOGY_SYSTEM]),
+            if is_not_nan(row[MetadataColumns.SEC_ONTOLOGY_NAME]):
+                coding = Coding(ontology=Ontologies.get_enum_from_name(row[MetadataColumns.SEC_ONTOLOGY_NAME]),
                                 code=row[MetadataColumns.SEC_ONTOLOGY_CODE],
-                                name=row[MetadataColumns.COLUMN_NAME],
-                                description=row[MetadataColumns.SIGNIFICATION_EN])
+                                display=None)
                 cc.add_coding(one_coding=coding)
             # NB July 18th 2024: for the text of a CC, this HAS TO be the column name ONLY (and not the column name and the description).
             # this is because we build a mapping between column names (variables) and their identifiers
             # if there is also the description in the text, then no column name would match the CC text.
             # NOPE   cc.text = LabFeature.get_display(column_name=row[MetadataColumns.COLUMN_NAME], column_description=row[MetadataColumns.SIGNIFICATION_EN])  # the column name + description
-            cc.text = row[MetadataColumns.COLUMN_NAME]
             return cc
         elif len(rows) == 0:
             # log.warn("Did not find the column '%s' in the metadata", column_name)
@@ -405,40 +430,42 @@ class Transform:
             return LabFeatureCategories.get_clinical()
 
     def fairify_value(self, column_name: str, value: Any) -> str | float | datetime | CodeableConcept:
-        # log.info(f"fairify {value} (of type {type(value)}) for column {column_name}")
+        log.info(f"fairify {value} (of type {type(value)}) for column {column_name}")
         current_column_info = DataFrame(self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name])
         etl_type = current_column_info[MetadataColumns.ETL_TYPE].iloc[0]  # we need to take the value itself, otherwise we end up with a series of 1 element (the ETL type)
         var_type = current_column_info[MetadataColumns.VAR_TYPE].iloc[0]
-        if column_name in self.column_to_dimension:
-            expected_unit = self.column_to_dimension[column_name]
+        log.info(f"var type is {var_type} vs. etl type is {etl_type}")
+        if column_name in self.mapping_column_to_dimension:
+            expected_unit = self.mapping_column_to_dimension[column_name]
         else:
             expected_unit = None  # in case no unit has been specified and no unit could be extracted form data
         # log.debug(f"ETL type is {etl_type}, var type is {var_type}, expected unit is {expected_unit}")
-        if (etl_type == DataTypes.CATEGORY or etl_type == DataTypes.BOOLEAN) and column_name in self.mapping_categorical_values.keys():
+        log.info(column_name)
+        log.debug(self.mapping_categorical_value_to_cc.keys())
+        if (etl_type == DataTypes.CATEGORY or etl_type == DataTypes.BOOLEAN) and column_name in self.mapping_column_to_categorical_value:
             # we iterate over all the mappings of a given column
-            for map_value_cc in self.mapping_categorical_values[column_name]:
-                # map_value_cc contains the value in the data and the associated CodeableConcept
-                # we get the value of the mapping, e.g., F, or M, or NA
-                # if the sample value is equal to the mapping value, we have found a match,
+            log.debug(self.mapping_column_to_categorical_value)
+            log.debug(self.mapping_column_to_categorical_value[column_name])
+            if value in self.mapping_column_to_categorical_value[column_name] and value in self.mapping_categorical_value_to_cc:
+                # if the value is equal to the mapping value, we have found a match,
                 # and we will record the associated ontology term instead of the value
-                if value in map_value_cc:
-                    # we create a CodeableConcept with each code added to the mapping, e.g., snomed_ct and loinc
-                    # recall that a mapping is of the form: {'value': 'X', 'explanation': '...', 'snomed_ct': '123', 'loinc': '456' }
-                    # and we add each ontology code to that CodeableConcept
-                    cc = self.mapping_categorical_values[column_name][value]
-                    log.info(cc)
-                    # now that we have constructed a CC from the value, we check whether this corresponds to the categorical value of booleans
-                    # i.e., True/False(/unknown), Sì/no, etc
-                    if etl_type == DataTypes.BOOLEAN:
-                        # this should rather be a boolean, let's cast it as boolean, instead of using Yes/No SNOMED_CT codes
-                        if cc == TrueFalse.get_true():
-                            return True
-                        elif cc == TrueFalse.get_false():
-                            return False
-                        else:
-                            return np.nan
+                # we create a CodeableConcept with each code added to the mapping, e.g., snomed_ct and loinc
+                # recall that a mapping is of the form: {'value': 'X', 'explanation': '...', 'snomed_ct': '123', 'loinc': '456' }
+                # and we add each ontology code to that CodeableConcept
+                cc = self.mapping_categorical_value_to_cc[value]
+                log.info(cc)
+                # now that we have constructed a CC from the value, we check whether this corresponds to the categorical value of booleans
+                # i.e., True/False(/unknown), Sì/no, etc
+                if etl_type == DataTypes.BOOLEAN:
+                    # this should rather be a boolean, let's cast it as boolean, instead of using Yes/No SNOMED_CT codes
+                    if cc == TrueFalse.get_true():
+                        return True
+                    elif cc == TrueFalse.get_false():
+                        return False
                     else:
-                        return cc  # return the CC computed out of the corresponding mapping
+                        return np.nan
+                else:
+                    return cc  # return the CC computed out of the corresponding mapping
             return cast_value(value=value)  # no coded value for that value, trying at least to normalize it a bit
         elif var_type == DataTypes.STRING and (etl_type == DataTypes.INTEGER or etl_type == DataTypes.FLOAT):
             # if the dimension is not the one of the feature, we simply leave the cell value as a string
