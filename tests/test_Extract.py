@@ -4,39 +4,59 @@ import unittest
 from database.Database import Database
 from database.Execution import Execution
 from enums.DataTypes import DataTypes
+from enums.FileTypes import FileTypes
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from enums.TheTestFiles import TheTestFiles
 from etl.Extract import Extract
-from utils.constants import DEFAULT_DB_CONNECTION, TEST_DB_NAME
+from utils.constants import TEST_DB_NAME, DOCKER_TEST_FOLDER
 from utils.setup_logger import log
-from utils.utils import is_not_nan
+from utils.utils import is_not_nan, set_env_variables_from_dict
 
 
 # personalized setup called at the beginning of each test
-def my_setup(metadata_path: str, data_paths: str, pids_path: str, hospital_name: str) -> Extract:
+def my_setup(metadata_path: str, data_paths: str, data_type: FileTypes, pids_path: str, hospital_name: str) -> Extract:
+    key_data_paths = FileTypes.get_execution_key(data_type)
     args = {
-        Execution.DB_CONNECTION_KEY: DEFAULT_DB_CONNECTION,
-        Execution.DB_DROP_KEY: True,
-        Execution.METADATA_PATH_KEY: metadata_path,
-        Execution.LABORATORY_PATHS_KEY: data_paths,
         Execution.HOSPITAL_NAME_KEY: hospital_name,
+        Execution.DB_NAME_KEY: TEST_DB_NAME,
+        Execution.DB_DROP_KEY: "True",
+        Execution.METADATA_PATH_KEY: metadata_path,
+        key_data_paths: data_paths,
         Execution.ANONYMIZED_PATIENT_IDS_KEY: pids_path
     }
-    TestExtract.execution.set_up(args_as_dict=args, setup_data_files=True)
-    TestExtract.execution.current_filepath = data_paths
+    set_env_variables_from_dict(env_vars=args)
+    TestExtract.execution.set_up(setup_data_files=True)
+    TestExtract.execution.current_filepath = get_filepath_from_execution(datatype=data_type)
+    log.debug(TestExtract.execution.current_filepath)
     database = Database(TestExtract.execution)
     extract = Extract(database=database, execution=TestExtract.execution)
     return extract
 
 
+def get_filepath_from_execution(datatype: FileTypes):
+    if datatype == FileTypes.LABORATORY:
+        return TestExtract.execution.laboratory_filepaths[0]
+    elif datatype == FileTypes.DIAGNOSIS:
+        return TestExtract.execution.diagnosis_filepaths[0]
+    elif datatype == FileTypes.MEDICINE:
+        return TestExtract.execution.medicine_filepaths[0]
+    elif datatype == FileTypes.GENOMIC:
+        return TestExtract.execution.genomic_filepaths[0]
+    elif datatype == FileTypes.IMAGING:
+        return TestExtract.execution.imaging_filepaths[0]
+    else:
+        return None
+
+
 class TestExtract(unittest.TestCase):
-    execution = Execution(TEST_DB_NAME)
+    execution = Execution()
 
     def test_load_metadata_file_H1_D1(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_LABORATORY_PATH,
+                           data_type=FileTypes.LABORATORY,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()
@@ -120,6 +140,7 @@ class TestExtract(unittest.TestCase):
     def test_load_metadata_file_H1_D2(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_DISEASE_PATH,
+                           data_type=FileTypes.DIAGNOSIS,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()
@@ -173,6 +194,7 @@ class TestExtract(unittest.TestCase):
     def test_load_metadata_file_H3_D1(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_GENOMICS_PATH,
+                           data_type=FileTypes.GENOMIC,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H3)
         extract.load_metadata_file()
@@ -223,9 +245,9 @@ class TestExtract(unittest.TestCase):
     def test_load_data_file_H1_D1(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_LABORATORY_PATH,
+                           data_type=FileTypes.LABORATORY,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-        extract.execution.current_filepath = TheTestFiles.ORIG_LABORATORY_PATH  # set the test data as the currently processed file
         extract.load_csv_data_file()
 
         # a. general size checks
@@ -251,9 +273,9 @@ class TestExtract(unittest.TestCase):
     def test_load_data_file_H3_D1(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_GENOMICS_PATH,
+                           data_type=FileTypes.GENOMIC,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H3)
-        extract.execution.current_filepath = TheTestFiles.ORIG_GENOMICS_PATH  # set the test data as the currently processed file
         extract.load_csv_data_file()
 
         # a. general size checks
@@ -290,6 +312,7 @@ class TestExtract(unittest.TestCase):
     def test_compute_mapped_values(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_LABORATORY_PATH,
+                           data_type=FileTypes.LABORATORY,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()  # required to compute mapped values
@@ -326,6 +349,7 @@ class TestExtract(unittest.TestCase):
     def test_removed_unused_columns(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_LABORATORY_PATH,
+                           data_type=FileTypes.LABORATORY,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()
@@ -352,6 +376,7 @@ class TestExtract(unittest.TestCase):
     def test_compute_column_to_dimension(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_LABORATORY_PATH,
+                           data_type=FileTypes.LABORATORY,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()
@@ -383,27 +408,29 @@ class TestExtract(unittest.TestCase):
     def test_load_empty_patient_id_mapping(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_LABORATORY_PATH,
+                           data_type=FileTypes.LABORATORY,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_patient_id_mapping()
 
         # when the file is empty, the Execution should write an empty list into it
-        assert os.stat(TheTestFiles.ORIG_EMPTY_PIDS_PATH).st_size > 0
+        assert os.stat(extract.execution.anonymized_patient_ids_filepath).st_size > 0
         assert extract.patient_ids_mapping == {}
 
         # get back to the original empty file
-        with open(TheTestFiles.ORIG_EMPTY_PIDS_PATH, "w") as file:
+        with open(os.path.join(DOCKER_TEST_FOLDER, TheTestFiles.ORIG_EMPTY_PIDS_PATH), "w") as file:
             file.write("")
 
     def test_load_filled_patient_id_mapping(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_LABORATORY_PATH,
+                           data_type=FileTypes.LABORATORY,
                            pids_path=TheTestFiles.ORIG_FILLED_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_patient_id_mapping()
 
         # when the file is not empty, all mappings should be loaded in Extract
-        assert os.stat(TheTestFiles.ORIG_FILLED_PIDS_PATH).st_size > 0
+        assert os.stat(extract.execution.anonymized_patient_ids_filepath).st_size > 0
         assert extract.patient_ids_mapping == {
                                                   "999999999": "h1:999",
                                                   "999999998": "h1:998",

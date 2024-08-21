@@ -190,6 +190,26 @@ def main_ontology_api():
     # print(Coding.compute_display_from_api(ontology_system=Ontologies.GSSO, ontology_code="GSSO_000818"))
 
 
+def main_write_in_file():
+    with open("test.txt", "w") as f:
+        f.write("a\n")
+        f.write("b")
+
+
+def main_load_empty_dict():
+    with open("test-load.json", "r") as f:
+        my_json = json.load(f)
+        print(my_json)
+
+
+def main_write_and_load_empty_dict():
+    with open("test-load-2.json", "w") as f:
+        f.write(json.dumps({}))
+    with open("test-load-2.json", "r") as f:
+        my_json = json.load(f)
+        print(my_json)
+
+
 if __name__ == '__main__':
     # main_load_json_from_file_as_bson()
     # main_python_parameters()
@@ -199,9 +219,15 @@ if __name__ == '__main__':
     # print({"a": 2, "b": 1} == {"b": 1, "a": 2})
     # main_read_pandas_csv()
     # main_json_pickle()
-    main_ontology_api()
+    # main_ontology_api()
 
-    openssl_dir, openssl_cafile = os.path.split(ssl.get_default_verify_paths().openssl_cafile)
-    print(openssl_dir)
-    print(openssl_cafile)
+    # openssl_dir, openssl_cafile = os.path.split(ssl.get_default_verify_paths().openssl_cafile)
+    # print(openssl_dir)
+    # print(openssl_cafile)
+
+    # main_write_in_file()
+
+    # main_load_empty_dict()
+    main_write_and_load_empty_dict()
+
     print("Done.")

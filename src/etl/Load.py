@@ -17,7 +17,7 @@ class Load:
         self.load_remaining_data()
 
         # if everything has been loaded, we can create indexes
-        if self.create_indexes and not self.execution.db_no_index:
+        if self.create_indexes:
             self.create_db_indexes()
 
     def load_remaining_data(self) -> None:

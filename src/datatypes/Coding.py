@@ -43,7 +43,6 @@ class Coding:
                     response = urlopen_with_api_key(url=url, api_key="d6fb9c05-3309-4158-892f-65434a9133b9", with_bearer=False)
                     data = parse_json_response(response)
                     if "prefLabel" in data:
-                        log.debug(data["prefLabel"])
                         return data["prefLabel"]
                     else:
                         return DEFAULT_CODING_DISPLAY

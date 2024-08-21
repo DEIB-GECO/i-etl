@@ -8,7 +8,6 @@ import pytest
 
 from database.Database import Database
 from database.Execution import Execution
-from datatypes.Identifier import Identifier
 from datatypes.PatientAnonymizedIdentifier import PatientAnonymizedIdentifier
 from datatypes.ResourceIdentifier import ResourceIdentifier
 from enums.HospitalNames import HospitalNames
@@ -17,22 +16,25 @@ from utils.Counter import Counter
 from enums.TableNames import TableNames
 from enums.UpsertPolicy import UpsertPolicy
 from utils.constants import TEST_DB_NAME, NO_ID
-from utils.constants import DEFAULT_DB_CONNECTION
+from utils.constants import DB_CONNECTION
 from utils.setup_logger import log
-from utils.utils import compare_tuples, wrong_number_of_docs, write_in_file
+from utils.utils import compare_tuples, wrong_number_of_docs, write_in_file, set_env_variables_from_dict
 
 
 class TestDatabase(unittest.TestCase):
-    execution = Execution(TEST_DB_NAME)
+    execution = Execution()
 
     def setUp(self):
         # before each test, get back to the original test configuration
         args = {
-            Execution.DB_CONNECTION_KEY: DEFAULT_DB_CONNECTION,
-            Execution.DB_DROP_KEY: True,
-            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.DO_NOTHING
+            Execution.DB_NAME_KEY: TEST_DB_NAME,
+            Execution.DB_DROP_KEY: "True",
+            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.DO_NOTHING,
+            Execution.HOSPITAL_NAME_KEY: HospitalNames.TEST_H1
         }
-        TestDatabase.execution.set_up(args, False)
+        set_env_variables_from_dict(env_vars=args)
+        log.debug("Set up before test")
+        TestDatabase.execution.set_up(setup_data_files=False)
 
     def test_check_server_is_up(self):
         # test with the correct (default) string
@@ -40,12 +42,12 @@ class TestDatabase(unittest.TestCase):
         # database.close()
 
         # test with a wrong connection string
-        args = {
-            Execution.DB_CONNECTION_KEY: "a_random_string"
-        }
-        TestDatabase.execution.set_up(args, False)
-        with pytest.raises(ConnectionError):
-            _ = Database(execution=TestDatabase.execution)  # this should return an exception (broken connection) because check_server_is_up() will return one
+        # NB Aug 20, 2024: this cannot be tested anymore because the MongoDB uri is now internal to Docker, thus cannot be changed.
+        # set_env_variables_from_dict(env_vars={ Execution.DB_CONNECTION_KEY: "a_random_string" })
+        # log.debug("Set up in test")
+        # TestDatabase.execution.set_up(setup_data_files=False)
+        # with pytest.raises(ConnectionError):
+        #     _ = Database(execution=TestDatabase.execution)  # this should return an exception (broken connection) because check_server_is_up() will return one
 
     def test_drop(self):
         # create a test database
@@ -65,10 +67,8 @@ class TestDatabase(unittest.TestCase):
         assert database.db_exists(TEST_DB_NAME) is True, "The database does not exist."  # we make sure that the db exists
 
         # 2. we create a new instance to the same database, with drop_db=False
-        args = {
-            Execution.DB_DROP_KEY: False
-        }
-        TestDatabase.execution.set_up(args, False)
+        set_env_variables_from_dict(env_vars={ Execution.DB_DROP_KEY: "False" })
+        TestDatabase.execution.set_up(setup_data_files=False)
         database = Database(execution=TestDatabase.execution)
 
         # 3. check that the database still exists (i.e., the constructor did not reset it)
@@ -147,9 +147,11 @@ class TestDatabase(unittest.TestCase):
         # and the current one should not be updated
         args = {
             Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.DO_NOTHING,
-            Execution.DB_DROP_KEY: False  # very important: we should not reset the database, otherwise we cannot test whether upsert works
+            Execution.DB_DROP_KEY: "False"
+            # very important: we should not reset the database, otherwise we cannot test whether upsert works
         }
-        TestDatabase.execution.set_up(args_as_dict=args, setup_data_files=False)
+        set_env_variables_from_dict(env_vars=args)
+        TestDatabase.execution.set_up(setup_data_files=False)
         database = Database(execution=TestDatabase.execution)
         my_tuple_age = {"name": "Nelly", "age": 27, "city": "Lyon"}  # same as my_tuple but with a different age and a new field
         database.upsert_one_tuple(table_name=TableNames.TEST, unique_variables=["name"], one_tuple=my_tuple_age)
@@ -161,10 +163,11 @@ class TestDatabase(unittest.TestCase):
         # no new tuple should be inserted (that document already exists)
         # the tuple should be updated
         args = {
-            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.REPLACE,
-            Execution.DB_DROP_KEY: False
+            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.REPLACE, 
+            Execution.DB_DROP_KEY: "False"
         }
-        TestDatabase.execution.set_up(args_as_dict=args, setup_data_files=False)
+        set_env_variables_from_dict(env_vars=args)
+        TestDatabase.execution.set_up(setup_data_files=False)
         database = Database(execution=TestDatabase.execution)
         my_tuple_age = {"name": "Nelly", "age": 27, "city": "Lyon"}  # same as my_tuple but with a different age and a new field city
         my_original_tuple_age = copy.deepcopy(my_tuple_age)
@@ -177,10 +180,11 @@ class TestDatabase(unittest.TestCase):
         # a new tuple should be inserted (that document does not already exist)
         # the former one should not have changed
         args = {
-            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.DO_NOTHING,
-            Execution.DB_DROP_KEY: False
+            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.DO_NOTHING, 
+            Execution.DB_DROP_KEY: "False"
         }
-        TestDatabase.execution.set_up(args_as_dict=args, setup_data_files=False)
+        set_env_variables_from_dict(env_vars=args)
+        TestDatabase.execution.set_up(setup_data_files=False)
         database = Database(execution=TestDatabase.execution)
         my_new_tuple = {"name": "Julien", "age": "30"}  # a new tuple (with a different key)
         my_original_new_tuple = copy.deepcopy(my_new_tuple)
@@ -221,11 +225,12 @@ class TestDatabase(unittest.TestCase):
         # a new tuple is added because no existing tuple has this combination (name, age)
         # and the current one should not be updated because no tuple should have matched
         args = {
-            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.DO_NOTHING,
-            Execution.DB_DROP_KEY: False
+            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.DO_NOTHING, 
             # very important: we should not reset the database, otherwise we cannot test whether upsert works
+            Execution.DB_DROP_KEY: "False"
         }
-        TestDatabase.execution.set_up(args_as_dict=args, setup_data_files=False)
+        set_env_variables_from_dict(env_vars=args)
+        TestDatabase.execution.set_up(setup_data_files=False)
         database = Database(execution=TestDatabase.execution)
         my_tuple_age = {"name": "Nelly", "age": 27, "city": "Lyon"}  # same as my_tuple but with a different age and a new field
         my_original_tuple_age = copy.deepcopy(my_tuple_age)
@@ -240,10 +245,11 @@ class TestDatabase(unittest.TestCase):
         # a new tuple is added because no existing tuple has this combination (name, age)
         # and the current one should not be updated because no tuple should have matched
         args = {
-            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.REPLACE,
-            Execution.DB_DROP_KEY: False
+            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.REPLACE, 
+            Execution.DB_DROP_KEY: "False"
         }
-        TestDatabase.execution.set_up(args_as_dict=args, setup_data_files=False)
+        set_env_variables_from_dict(env_vars=args)
+        TestDatabase.execution.set_up(setup_data_files=False)
         database = Database(execution=TestDatabase.execution)
         my_tuple_age = {"name": "Nelly", "age": 27, "city": "Lyon"}  # same as my_tuple but with a different age and a new field city
         my_original_tuple_age = copy.deepcopy(my_tuple_age)
@@ -259,9 +265,10 @@ class TestDatabase(unittest.TestCase):
         # the former one should not have changed (because DO_NOTHING)
         args = {
             Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.DO_NOTHING,
-            Execution.DB_DROP_KEY: False
+            Execution.DB_DROP_KEY: "False"
         }
-        TestDatabase.execution.set_up(args_as_dict=args, setup_data_files=False)
+        set_env_variables_from_dict(env_vars=args)
+        TestDatabase.execution.set_up(setup_data_files=False)
         database = Database(execution=TestDatabase.execution)
         my_new_tuple = {"name": "Nelly", "age": 26, "city": "Lyon"}
         database.upsert_one_tuple(table_name=TableNames.TEST, unique_variables=["name", "age"], one_tuple=my_new_tuple)
@@ -276,9 +283,10 @@ class TestDatabase(unittest.TestCase):
         # the former one should have changed (because REPLACE)
         args = {
             Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.REPLACE,
-            Execution.DB_DROP_KEY: False
+            Execution.DB_DROP_KEY: "False"
         }
-        TestDatabase.execution.set_up(args_as_dict=args, setup_data_files=False)
+        set_env_variables_from_dict(env_vars=args)
+        TestDatabase.execution.set_up(setup_data_files=False)
         database = Database(execution=TestDatabase.execution)
         my_new_tuple = {"name": "Nelly", "age": 26, "city": "Lyon"}
         my_original_new_tuple = copy.deepcopy(my_new_tuple)
@@ -315,9 +323,10 @@ class TestDatabase(unittest.TestCase):
         # with upsert policy being REPLACE
         args = {
             Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.REPLACE,
-            Execution.DB_DROP_KEY: False  # do not reset the database to keep the already existing upserted tuples
+            Execution.DB_DROP_KEY: "False"
         }
-        TestDatabase.execution.set_up(args_as_dict=args, setup_data_files=False)
+        set_env_variables_from_dict(env_vars=args)
+        TestDatabase.execution.set_up(setup_data_files=False)
         database = Database(TestDatabase.execution)
         my_batch_3 = [{"name": "Nelly", "age": 27}, {"name": "Anna", "citizenship": "Italian"}]
         database.upsert_one_batch_of_tuples(table_name=TableNames.TEST, unique_variables=["name"], the_batch=my_batch_3)
@@ -353,10 +362,10 @@ class TestDatabase(unittest.TestCase):
         # and the current tuples should not be updated because DO_NOTHING
         args = {
             Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.DO_NOTHING,
-            Execution.DB_DROP_KEY: False
-            # very important: we should not reset the database, otherwise we cannot test whether upsert works
+            Execution.DB_DROP_KEY: "False"
         }
-        TestDatabase.execution.set_up(args_as_dict=args, setup_data_files=False)
+        set_env_variables_from_dict(env_vars=args)
+        TestDatabase.execution.set_up(setup_data_files=False)
         database = Database(execution=TestDatabase.execution)
         my_tuples_age = [{"name": "Nelly", "age": 26, "city": "Lyon"}, {"name": "Anna", "age": -1, "city": "Milano"}]  # same as my_tuple but with a different age and a new field
         my_original_tuples_age = copy.deepcopy(my_tuples_age)
@@ -372,9 +381,10 @@ class TestDatabase(unittest.TestCase):
         # and the current ones should not be updated because no tuple should have matched
         args = {
             Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.REPLACE,
-            Execution.DB_DROP_KEY: False
+            Execution.DB_DROP_KEY: "False"
         }
-        TestDatabase.execution.set_up(args_as_dict=args, setup_data_files=False)
+        set_env_variables_from_dict(env_vars=args)
+        TestDatabase.execution.set_up(setup_data_files=False)
         database = Database(execution=TestDatabase.execution)
         my_tuples_age_2 = [{"name": "Nelly", "age": 26, "city": "Paris"}, {"name": "Pietro", "age": -1, "city": "Milano"}]
         my_original_tuple_age_2 = copy.deepcopy(my_tuples_age_2)

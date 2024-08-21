@@ -288,13 +288,18 @@ class Transform:
     def create_patients(self) -> None:
         log.info(f"create patient instances in memory")
         count = 1
+        log.info(self.patient_ids_mapping)
         for index, row in self.data.iterrows():
             row_patient_id = row[ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]]
+            log.info(f"Dealing with {row_patient_id}")
             if row_patient_id not in self.patient_ids_mapping:
+                log.info(f"the (anonymized) patient does not exist yet, we will create it")
                 # the (anonymized) patient does not exist yet, we will create it
                 new_patient = Patient(id_value=NO_ID, counter=self.counter, hospital_name=self.execution.hospital_name)
+                log.info(f"set {new_patient.identifier.value} for {row_patient_id}")
                 self.patient_ids_mapping[row_patient_id] = new_patient.identifier.value  # keep track of anonymized patient ids
             else:
+                log.info(f"the (anonymized) patient id already exists, we take it from the mapping")
                 # the (anonymized) patient id already exists, we take it from the mapping
                 new_patient = Patient(id_value=self.patient_ids_mapping[row_patient_id], counter=self.counter, hospital_name=self.execution.hospital_name)
             self.patients.append(new_patient)
@@ -307,6 +312,7 @@ class Transform:
         write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current, table_name=TableNames.PATIENT, count=count)
         # finally, we also write the mapping patient ID / anonymized ID in a file - this will be ingested for subsequent runs to not renumber existing anonymized patients
         log.debug(self.patient_ids_mapping)
+        log.debug(self.execution.anonymized_patient_ids_filepath)
         with open(self.execution.anonymized_patient_ids_filepath, "w") as data_file:
             try:
                 log.debug(f"Writing {len(self.patient_ids_mapping)} mappings for patient IDs")

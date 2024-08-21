@@ -4,8 +4,6 @@ from profiles.Hospital import Hospital
 from enums.TableNames import TableNames
 from utils.constants import NO_ID
 from utils.Counter import Counter
-from utils.setup_logger import log
-from utils.utils import get_mongodb_date_from_datetime
 
 
 class TestHospital:

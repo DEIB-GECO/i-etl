@@ -3,47 +3,47 @@ import logging
 import os.path
 import platform
 import shutil
-from argparse import Namespace
 from datetime import datetime
 
 import pymongo
 
+from enums.HospitalNames import HospitalNames
 from utils import setup_logger
 from enums.UpsertPolicy import UpsertPolicy
-from utils.constants import WORKING_DIR, DEFAULT_DB_CONNECTION
+from utils.constants import WORKING_DIR, DB_CONNECTION, \
+    DOCKER_METADATA_FOLDER, DOCKER_LABORATORY_FOLDER, DOCKER_DIAGNOSIS_FOLDER, DOCKER_MEDICINE_FOLDER, \
+    DOCKER_IMAGING_FOLDER, DOCKER_GENOMIC_FOLDER, DOCKER_ANONYMIZED_PATIENT_IDS_FOLDER, DOCKER_TEST_FOLDER
 from utils.setup_logger import log
 from utils.utils import split_list_of_files
 
+from dotenv import load_dotenv
+
 
 class Execution:
-    HOSPITAL_NAME_KEY = "hospital_name"
-    USE_EN_LOCALE_KEY = "use_en_locale"
-    DB_CONNECTION_KEY = "db_connection"
-    DB_NAME_KEY = "db_name"
-    DB_DROP_KEY = "db_drop"
-    DB_UPSERT_POLICY_KEY = "db_upsert_policy"
-    IS_EXTRACT_KEY = "extract"
-    IS_ANALYZE_KEY = "analyze"
-    IS_TRANSFORM_KEY = "transform"
-    IS_LOAD_KEY = "load"
-    METADATA_PATH_KEY = "metadata"
-    LABORATORY_PATHS_KEY = "laboratory"
-    DIAGNOSIS_PATHS_KEY = "diagnosis"
-    MEDICINE_PATHS_KEY = "medicine"
-    IMAGING_PATHS_KEY = "imaging"
-    GENOMIC_PATHS_KEY = "genomic"
-    ANONYMIZED_PATIENT_IDS_KEY = "anonymized_pids"
+    HOSPITAL_NAME_KEY = "HOSPITAL_NAME"
+    DB_NAME_KEY = "DB_NAME"
+    DB_DROP_KEY = "DB_DROP"
+    DB_UPSERT_POLICY_KEY = "DB_UPSERT_POLICY"
+    USE_EN_LOCALE_KEY = "USE_EN_LOCALE"
+    IS_EXTRACT_KEY = "EXTRACT"
+    IS_ANALYZE_KEY = "ANALYZE"
+    IS_TRANSFORM_KEY = "TRANSFORM"
+    IS_LOAD_KEY = "LOAD"
+    METADATA_PATH_KEY = "METADATA"
+    LABORATORY_PATHS_KEY = "LABORATORY"
+    DIAGNOSIS_PATHS_KEY = "DIAGNOSIS"
+    MEDICINE_PATHS_KEY = "MEDICINE"
+    IMAGING_PATHS_KEY = "IMAGING"
+    GENOMIC_PATHS_KEY = "GENOMIC"
+    ANONYMIZED_PATIENT_IDS_KEY = "ANONYMIZED_PIDS"
 
-    def __init__(self, db_name: str):
+    def __init__(self):
         self.execution_date = datetime.now().isoformat()
 
         # set up the working-dir structure based on the DB name
-        self.db_name = db_name
-        log.debug(f"creating new DB with name {self.db_name}")
+        self.db_name = None
         self.working_dir = os.path.join(os.getcwd(), WORKING_DIR)  # default in the code
         self.working_dir_current = None  # computed in create_current_working_dir()
-        self.create_current_working_dir()
-        self.setup_logging_files()
 
         # parameters related to the project structure and the input/output files
         self.metadata_filepath = None  # user input
@@ -56,80 +56,109 @@ class Execution:
         self.current_file_type = None  # set in the loop on files in ETL
         self.anonymized_patient_ids_filepath = None  # user input
         self.use_en_locale = True  # user input
+
         # parameters related to the database
-        self.db_connection = DEFAULT_DB_CONNECTION  # user input
+        self.db_connection = None  # user input
         self.db_drop = True  # user input
-        self.db_no_index = False  # user input
         self.db_upsert_policy = UpsertPolicy.DO_NOTHING  # user input
+
         # parameters related to the UC hospital
         self.hospital_name = None  # this will be given as input by users
+
         # parameters related to the execution context (python, pymongo, etc.)
         self.python_version = platform.python_version()
         self.pymongo_version = pymongo.version
         self.platform = platform.platform()
         self.platform_version = platform.version()
         self.user = getpass.getuser()
+
         # parameters related to the ETL pipeline
         self.is_extract = True
         self.is_transform = True
         self.is_load = True
         self.is_analyze = False
 
-    def set_up_with_user_params(self, args: Namespace) -> None:
-        self.set_up(args.__dict__, True)
+    def set_up(self, setup_data_files: bool) -> None:
+        log.info("in set_up")
 
-    def set_up(self, args_as_dict: dict, setup_data_files: bool) -> None:
-        log.debug("in set_up")
-        # A. set up user parameters
-        if Execution.HOSPITAL_NAME_KEY in args_as_dict:
-            self.hospital_name = args_as_dict[Execution.HOSPITAL_NAME_KEY]
-        if Execution.USE_EN_LOCALE_KEY in args_as_dict:
-            self.use_en_locale = args_as_dict[Execution.USE_EN_LOCALE_KEY] == "True" or args_as_dict[Execution.DB_DROP_KEY] is True
-        if Execution.DB_CONNECTION_KEY in args_as_dict:
-            self.db_connection = args_as_dict[Execution.DB_CONNECTION_KEY]
-        if Execution.DB_UPSERT_POLICY_KEY in args_as_dict:
-            self.db_upsert_policy = args_as_dict[Execution.DB_UPSERT_POLICY_KEY]
-        # the boolean parameters need to be compared to True (and not False),
-        # even if the default value is false, because:
-        # "True" == "True" -> true
-        # "False" == "False" -> true but here we want False
-        if Execution.DB_DROP_KEY in args_as_dict:
-            self.db_drop = args_as_dict[Execution.DB_DROP_KEY] == "True" or args_as_dict[Execution.DB_DROP_KEY] is True
-        if Execution.IS_EXTRACT_KEY in args_as_dict:
-            self.is_extract = args_as_dict[Execution.IS_EXTRACT_KEY] == "True" or args_as_dict[Execution.IS_EXTRACT_KEY] is True
-        if Execution.IS_ANALYZE_KEY in args_as_dict:
-            self.is_analyze = args_as_dict[Execution.IS_ANALYZE_KEY] == "True" or args_as_dict[Execution.IS_ANALYZE_KEY] is True
-        if Execution.IS_TRANSFORM_KEY in args_as_dict:
-            self.is_transform = args_as_dict[Execution.IS_TRANSFORM_KEY] == "True" or args_as_dict[Execution.IS_TRANSFORM_KEY] is True
-        if Execution.IS_LOAD_KEY in args_as_dict:
-            self.is_load = args_as_dict[Execution.IS_LOAD_KEY] == "True" or args_as_dict[Execution.IS_LOAD_KEY] is True
-        if Execution.ANONYMIZED_PATIENT_IDS_KEY in args_as_dict:
-            self.anonymized_patient_ids_filepath = args_as_dict[Execution.ANONYMIZED_PATIENT_IDS_KEY]
+        # A. load the env. variables defined in .env.
+        # note: specifying the .env in the compose.yml only gives access to those env. var. to Docker (not to Python)
+        load_dotenv(override=True)
+        log.info(os.environ)
 
-        # B. set up the data and metadata files
+        # B. set up env. variables into class
+        self.db_connection = DB_CONNECTION  # this is not a user parameter anymore because this is part of the Docker functioning, not something user should be able to change
+        self.db_name = self.check_parameter(key=Execution.DB_NAME_KEY, accepted_values=None, default_value=self.db_name)
+        log.debug(f"creating new DB with name {self.db_name}")
+        self.hospital_name = self.check_parameter(key=Execution.HOSPITAL_NAME_KEY, accepted_values=HospitalNames.values(), default_value=self.hospital_name)
+        self.use_en_locale = self.check_parameter(key=Execution.DB_DROP_KEY, accepted_values=["True", "False", True, False], default_value=self.use_en_locale)
+        self.db_upsert_policy = self.check_parameter(key=Execution.DB_UPSERT_POLICY_KEY, accepted_values=UpsertPolicy.values(), default_value=self.db_upsert_policy)
+        self.db_drop = self.check_parameter(key=Execution.DB_DROP_KEY, accepted_values=["True", "False", True, False], default_value=self.db_drop)
+        self.is_extract = self.check_parameter(key=Execution.IS_EXTRACT_KEY, accepted_values=["True", "False", True, False], default_value=self.is_extract)
+        self.is_analyze = self.check_parameter(key=Execution.IS_ANALYZE_KEY, accepted_values=["True", "False", True, False], default_value=self.is_analyze)
+        self.is_transform = self.check_parameter(key=Execution.IS_TRANSFORM_KEY, accepted_values=["True", "False", True, False], default_value=self.is_transform)
+        self.is_load = self.check_parameter(key=Execution.IS_LOAD_KEY, accepted_values=["True", "False", True, False], default_value=self.is_load)
+
+        # C. create working files for the ETL
+        self.create_current_working_dir()
+        self.setup_logging_files()
+
+        # D. set up the anonymized patient id data file
+        # this should NOT be merged with the setup of data files as this as to be set even though no data is provided
+        # (this happens in tests: data is given by hand, i.e., without set_up, but the anonymized patient IDs file still has to exist
+        log.debug(self.anonymized_patient_ids_filepath)
+        self.anonymized_patient_ids_filepath = self.check_parameter(key=Execution.ANONYMIZED_PATIENT_IDS_KEY, accepted_values=None, default_value=self.anonymized_patient_ids_filepath)
+        log.debug(self.anonymized_patient_ids_filepath)
+        self.setup_mapping_patient_ids()
+
+        # E. set up the data and metadata files
         if setup_data_files:
             log.debug("I will also set up data files")
-            if Execution.METADATA_PATH_KEY in args_as_dict:
-                self.metadata_filepath = args_as_dict[Execution.METADATA_PATH_KEY]
+            self.metadata_filepath = self.check_parameter(key=Execution.METADATA_PATH_KEY, accepted_values=None, default_value=self.metadata_filepath)
             log.debug(self.metadata_filepath)
-            if Execution.LABORATORY_PATHS_KEY in args_as_dict:
-                self.laboratory_filepaths = args_as_dict[Execution.LABORATORY_PATHS_KEY]
-            if Execution.DIAGNOSIS_PATHS_KEY in args_as_dict:
-                self.diagnosis_filepaths = args_as_dict[Execution.DIAGNOSIS_PATHS_KEY]
-            if Execution.MEDICINE_PATHS_KEY in args_as_dict:
-                self.medicine_filepaths = args_as_dict[Execution.MEDICINE_PATHS_KEY]
-            if Execution.IMAGING_PATHS_KEY in args_as_dict:
-                self.imaging_filepaths = args_as_dict[Execution.IMAGING_PATHS_KEY]
-            if Execution.GENOMIC_PATHS_KEY in args_as_dict:
-                self.genomic_filepaths = args_as_dict[Execution.GENOMIC_PATHS_KEY]
+            self.laboratory_filepaths = self.check_parameter(key=Execution.LABORATORY_PATHS_KEY, accepted_values=None, default_value=self.laboratory_filepaths)
             log.debug(self.laboratory_filepaths)
+            self.diagnosis_filepaths = self.check_parameter(key=Execution.DIAGNOSIS_PATHS_KEY, accepted_values=None, default_value=self.diagnosis_filepaths)
             log.debug(self.diagnosis_filepaths)
+            self.medicine_filepaths = self.check_parameter(key=Execution.MEDICINE_PATHS_KEY, accepted_values=None, default_value=self.medicine_filepaths)
             log.debug(self.medicine_filepaths)
+            self.imaging_filepaths = self.check_parameter(key=Execution.IMAGING_PATHS_KEY, accepted_values=None, default_value=self.imaging_filepaths)
             log.debug(self.imaging_filepaths)
+            self.genomic_filepaths = self.check_parameter(key=Execution.GENOMIC_PATHS_KEY, accepted_values=None, default_value=self.genomic_filepaths)
             log.debug(self.genomic_filepaths)
-            log.debug(self.anonymized_patient_ids_filepath)
+
             self.setup_data_files()
-            self.setup_mapping_patient_ids()
+
+
+    def check_parameter(self, key: str, accepted_values: list|None, default_value) -> str | bool | None:
+        try:
+            the_parameter = os.getenv(key)
+            if the_parameter is None:
+                log.error(f"The parameter {key} does not exist as an environment variable. Using default value: {default_value}.")
+                return default_value
+            elif the_parameter == "":
+                log.error(f"The parameter {key} value is empty. Using default value: {default_value}.")
+                return default_value
+            elif accepted_values is not None:
+                if True in accepted_values and False in accepted_values:
+                    if the_parameter.lower() == "true":
+                        return True
+                    elif the_parameter.lower() == "false":
+                        return False
+                    else:
+                        log.error(f"The value '{the_parameter.lower()}' for parameter {key} is not accepted. Using default value: {default_value}.")
+                        return default_value
+                else:
+                    if the_parameter not in accepted_values:
+                        log.error(f"The value '{the_parameter.lower()}' for parameter {key} is not accepted. Using default value: {default_value}.")
+                        return default_value
+                    else:
+                        return the_parameter
+            else:
+                return the_parameter
+        except:
+            log.error(f"The parameter {key} does not exist as an environment variable. Using default value: {default_value}.")
+            return default_value
 
     def create_current_working_dir(self):
         # 1. check whether the folder working-dir exists, if not create it
@@ -159,60 +188,73 @@ class Execution:
 
     def setup_data_files(self):
         log.debug("In setup_data_files")
-        # get metadata and data filepaths
-        try:
-            new_metadata_filename = f"metadata-{self.hospital_name}.csv"
-            new_metadata_filepath = os.path.join(self.working_dir_current, new_metadata_filename)
-            shutil.copyfile(self.metadata_filepath, new_metadata_filepath)
-            self.metadata_filepath = new_metadata_filepath
-        except Exception:
-            raise FileNotFoundError(f"The specified metadata file {self.metadata_filepath} does not exist.")
+        # 1. compute the (Docker-rooted) absolute path to the metadata file
+        log.debug(self.metadata_filepath)
+        log.debug(os.sep)
+        if os.sep in self.metadata_filepath:
+            raise ValueError(f"The provided metadata file {self.metadata_filepath} should be only the name of the metadata file, but it looks like a path.")
+        log.debug(os.getenv("CONTEXT_MODE"))
+        log.debug(os.getenv("CONTEXT_MODE") == "TEST")
+        if os.getenv("CONTEXT_MODE") == "TEST":
+            log.debug("ici")
+            self.metadata_filepath = os.path.join(DOCKER_TEST_FOLDER, self.metadata_filepath)
+        else:
+            log.debug("la")
+            self.metadata_filepath = os.path.join(DOCKER_METADATA_FOLDER, self.metadata_filepath)
 
-        # if there is a single file, this will put that file in a list
-        # otherwise, when the user provides several files, it will split them in an array
-        # also, we do not copy the data in our working dir because it is too large to be copied
-        # 1. we process laboratory data filepaths...
+        log.debug(self.metadata_filepath)
+
+        # 2. compute the (Docker-rooted) absolute paths to the data files
+        # A. if there is a single file, this will put that single file in a list (of one element)
+        #    otherwise, when the user provides several files, it will split them in an array
+        # B. then, we append to each the Docker rooted data folder (because Docker can't access data in the server itself, it has to be in the shared volumes)
+        # a. we process laboratory data filepaths...
         if self.laboratory_filepaths is not None:
             log.debug(f"{self.laboratory_filepaths}")
-            self.laboratory_filepaths = split_list_of_files(self.laboratory_filepaths)  # file 1,file 2, ...,file N
+            self.laboratory_filepaths = split_list_of_files(self.laboratory_filepaths, prefix_path=DOCKER_TEST_FOLDER if os.getenv("CONTEXT_MODE") == "TEST" else DOCKER_LABORATORY_FOLDER)  # file 1,file 2, ...,file N
             log.debug(f"{self.laboratory_filepaths}")
 
-        # 2. ...diagnosis filepaths...
+        # b. ...diagnosis filepaths...
         if self.diagnosis_filepaths is not None:
             log.debug(f"{self.diagnosis_filepaths}")
-            self.diagnosis_filepaths = split_list_of_files(self.diagnosis_filepaths)  # file 1,file 2, ...,file N
+            self.diagnosis_filepaths = split_list_of_files(self.diagnosis_filepaths, prefix_path=DOCKER_TEST_FOLDER if os.getenv("CONTEXT_MODE") == "TEST" else DOCKER_DIAGNOSIS_FOLDER)  # file 1,file 2, ...,file N
             log.debug(f"{self.diagnosis_filepaths}")
 
-        # 3. ...medicine filepaths ...
+        # c. ...medicine filepaths ...
         if self.medicine_filepaths is not None:
             log.debug(f"{self.medicine_filepaths}")
-            self.medicine_filepaths = split_list_of_files(self.medicine_filepaths)  # file 1,file 2, ...,file N
+            self.medicine_filepaths = split_list_of_files(self.medicine_filepaths, prefix_path=DOCKER_TEST_FOLDER if os.getenv("CONTEXT_MODE") == "TEST" else DOCKER_MEDICINE_FOLDER)  # file 1,file 2, ...,file N
             log.debug(f"{self.medicine_filepaths}")
 
-        # 4. ...imaging filepaths ...
+        # d. ...imaging filepaths ...
         if self.imaging_filepaths is not None:
             log.debug(f"{self.imaging_filepaths}")
-            self.imaging_filepaths = split_list_of_files(self.imaging_filepaths)  # file 1,file 2, ...,file N
+            self.imaging_filepaths = split_list_of_files(self.imaging_filepaths, prefix_path=DOCKER_TEST_FOLDER if os.getenv("CONTEXT_MODE") == "TEST" else DOCKER_IMAGING_FOLDER)  # file 1,file 2, ...,file N
             log.debug(f"{self.imaging_filepaths}")
 
-        # 5. ...genomic filepaths
+        # e. ...genomic filepaths
         if self.genomic_filepaths is not None:
             log.debug(f"{self.genomic_filepaths}")
-            self.genomic_filepaths = split_list_of_files(self.genomic_filepaths)  # file 1,file 2, ...,file N
+            self.genomic_filepaths = split_list_of_files(self.genomic_filepaths, prefix_path=DOCKER_TEST_FOLDER if os.getenv("CONTEXT_MODE") == "TEST" else DOCKER_GENOMIC_FOLDER)  # file 1,file 2, ...,file N
             log.debug(f"{self.genomic_filepaths}")
 
     def setup_mapping_patient_ids(self):
         log.debug(self.anonymized_patient_ids_filepath)
-        if os.stat(self.anonymized_patient_ids_filepath).st_size == 0:
-            log.info("write {} in patient ids mapping")
-            # the file is empty, we simply add the empty mapping
-            # otherwise the file cannot be read as a JSON file
-            with open(self.anonymized_patient_ids_filepath, "w") as file:
-                file.write("{}")
+        if os.sep in self.anonymized_patient_ids_filepath:
+            raise ValueError(f"The anonymized patient ids ({self.anonymized_patient_ids_filepath}) file should be a filename, but it looks like a filepath.")
         else:
-            log.info("patient ids mapping already contains data")
-            # there are some mappings there, nothing more to do
-            pass
+            self.anonymized_patient_ids_filepath = os.path.join(DOCKER_TEST_FOLDER if os.getenv("CONTEXT_MODE") == "TEST" else DOCKER_ANONYMIZED_PATIENT_IDS_FOLDER, self.anonymized_patient_ids_filepath)
+            log.debug(self.anonymized_patient_ids_filepath)
+            if not os.path.exists(self.anonymized_patient_ids_filepath) or os.stat(self.anonymized_patient_ids_filepath).st_size == 0:
+                log.info("write {} in patient ids mapping")
+                # the file is empty, we simply add the empty mapping
+                # otherwise the file cannot be read as a JSON file
+                with open(self.anonymized_patient_ids_filepath, "w") as file:
+                    file.write("{}")
+            else:
+                log.info("patient ids mapping already contains data")
+                # there are some mappings there, nothing more to do
+                pass
 
     def to_json(self):
         return {
@@ -228,7 +270,6 @@ class Execution:
                 Execution.IMAGING_PATHS_KEY: self.imaging_filepaths,
                 Execution.GENOMIC_PATHS_KEY: self.genomic_filepaths,
                 Execution.ANONYMIZED_PATIENT_IDS_KEY: self.anonymized_patient_ids_filepath,
-                Execution.DB_CONNECTION_KEY: self.db_connection,
                 Execution.DB_NAME_KEY: self.db_name,
                 Execution.DB_DROP_KEY: self.db_drop,
                 Execution.HOSPITAL_NAME_KEY: self.hospital_name,

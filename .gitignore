@@ -40,3 +40,5 @@ datasets/metadata
 
 # The whole working directory
 working-dir
+
+.env

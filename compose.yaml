@@ -1,0 +1,47 @@
+services:
+  mongo:
+    container_name: the-mongo
+    image: mongo
+    ports:
+      - 27018:27017  # left: port on host machine (for external usage, e.g., terminal); right: port in the Docker (for internal usage, i.e., to be used by the ETL)
+    command: mongod --port 27017 --quiet --logpath /dev/null
+    logging:
+      driver: none
+    volumes:  # docker run -v /path/on/host:/path/inside/container <image_name>
+      - ${SERVER_FOLDER_MONGODB}:/data/db
+    networks:
+      - network-fairificator
+  etl:
+    container_name: the-etl
+    image: fairificator
+    depends_on:
+      - mongo
+    env_file:
+      - ./.env  # this specifies that when one runs a "docker compose", a .env file should be next to it
+    working_dir: /home/better-deployed
+    volumes:
+      # we need to provide to Docker the access to the folders where there is the data and the metadata
+      # this is mandatory to access data in the hospital - otherwise Docker won't see any file outside those copied in the image
+      # SERVER_FOLDER_METADATA is the hospital server folder where the metadata is - this is a "ghost copy"/"open view" which will show the same files in /home/better-deployed/hospital-data/X
+      # same applies for SERVER_FOLDER_LABORATORY, SERVER_FOLDER_DIAGNOSIS, etc
+      # For the Docker image, the data, resp. metadata, is now in /home/better-deployed/hospital-data/lab, etc
+      # Therefore, the metadata and data paths given to the ETL should start with /home/better-deployed/hospital-data/
+      # And instead of asking users to provide such an absolute path (which they don't have to see because this is the Docker internal structure),
+      # we let the ETL build it by appending the data filename to that path
+      - ${SERVER_FOLDER_METADATA}:/home/better-deployed/hospital-data/metadata
+      - ${SERVER_FOLDER_LABORATORY}:/home/better-deployed/hospital-data/laboratory
+      - ${SERVER_FOLDER_DIAGNOSIS}:/home/better-deployed/hospital-data/diagnosis
+      - ${SERVER_FOLDER_MEDICINE}:/home/better-deployed/hospital-data/medicine
+      - ${SERVER_FOLDER_IMAGING}:/home/better-deployed/hospital-data/imaging
+      - ${SERVER_FOLDER_GENOMIC}:/home/better-deployed/hospital-data/genomic
+      - ${SERVER_FOLDER_PIDS}:/home/better-deployed/hospital-data/pids
+      - ${SERVER_FOLDER_TEST}:/home/better-deployed/hospital-data/test
+      - ${SERVER_FOLDER_LOG_ETL}:/home/better-deployed/working-dir
+    environment:
+      - CONTEXT_MODE=${CONTEXT_MODE:-DEV}
+    networks:
+      - network-fairificator
+networks:
+  network-fairificator:
+    name: network-fairificator
+    driver: bridge

@@ -122,6 +122,7 @@ class Extract:
 
         # 3. We keep the metadata of the current dataset
         filename = os.path.basename(self.execution.current_filepath).lower()
+        log.debug(self.execution.current_filepath)
         log.debug(f"{filename}")
         log.debug(f"{self.metadata[MetadataColumns.DATASET_NAME].unique()}")
         if filename not in self.metadata[MetadataColumns.DATASET_NAME.lower()].unique():
@@ -195,7 +196,8 @@ class Extract:
         self.patient_ids_mapping = {}
         log.debug(self.execution.anonymized_patient_ids_filepath)
         if self.execution.anonymized_patient_ids_filepath is not None:
-            self.patient_ids_mapping = json.load(open(self.execution.anonymized_patient_ids_filepath, "r"))
+            with open(self.execution.anonymized_patient_ids_filepath, "r") as f:
+                self.patient_ids_mapping = json.load(f)
         log.debug(type(self.patient_ids_mapping))
         log.debug(self.patient_ids_mapping)
         log.info(f"{len(self.patient_ids_mapping)} patient IDs in the mapping file.")

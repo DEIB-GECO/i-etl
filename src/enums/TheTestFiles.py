@@ -1,31 +1,35 @@
 import os
 
 from enums.EnumAsClass import EnumAsClass
+from utils.constants import DOCKER_TEST_FOLDER
 
 
 class TheTestFiles(EnumAsClass):
+    # for TEST files only, we set the absolute path with the Docker path
+    # this is because tests are to be run in Docker only and only have to share the folder datasets/test
+
     # original files for the Extract step
-    ORIG_METADATA_PATH = os.path.join("datasets", "test", "orig-metadata.csv")  # this describes several hospitals, several datasets per hospitals, etc
-    ORIG_LABORATORY_PATH = os.path.join("datasets", "test", "orig-data-lab.csv")
-    ORIG_DISEASE_PATH = os.path.join("datasets", "test", "orig-data-dis.csv")
-    ORIG_DYNAMIC_PATH = os.path.join("datasets", "test", "orig-data-dyn.csv")
-    ORIG_GENOMICS_PATH = os.path.join("datasets", "test", "orig-data-gen.csv")
-    ORIG_EMPTY_PIDS_PATH = os.path.join("datasets", "test", "orig-empty-pids.json")
-    ORIG_FILLED_PIDS_PATH = os.path.join("datasets", "test", "orig-filled-pids.json")
+    ORIG_METADATA_PATH = "orig-metadata.csv"  # this describes several hospitals, several datasets per hospitals, etc
+    ORIG_LABORATORY_PATH = "orig-data-lab.csv"
+    ORIG_DISEASE_PATH = "orig-data-dis.csv"
+    ORIG_DYNAMIC_PATH = "orig-data-dyn.csv"
+    ORIG_GENOMICS_PATH = "orig-data-gen.csv"
+    ORIG_EMPTY_PIDS_PATH = "orig-empty-pids.json"
+    ORIG_FILLED_PIDS_PATH = "orig-filled-pids.json"
 
     # files obtained after the Extract step
     # ued for the Transform step
-    EXTR_METADATA_LABORATORY_PATH = os.path.join("datasets", "test", "extr-metadata-lab.csv")
-    EXTR_METADATA_DISEASE_PATH = os.path.join("datasets", "test", "extr-metadata-dis.csv")
-    EXTR_METADATA_DYNAMIC_PATH = os.path.join("datasets", "test", "extr-metadata-dyn.csv")
-    EXTR_METADATA_GENOMICS_PATH = os.path.join("datasets", "test", "extr-metadata-gen.csv")
-    EXTR_LABORATORY_DATA_PATH = os.path.join("datasets", "test", "extr-data-lab.csv")
-    EXTR_DISEASE_DATA_PATH = os.path.join("datasets", "test", "extr-data-dis.csv")
-    EXTR_DYNAMIC_DATA_PATH = os.path.join("datasets", "test", "extr-data-dyn.csv")
-    EXTR_GENOMICS_DATA_PATH = os.path.join("datasets", "test", "extr-data-gen.csv")
-    EXTR_LABORATORY_CATEGORICAL_PATH = os.path.join("datasets", "test", "extr-data-lab-categorical.json")
-    EXTR_LABORATORY_COL_CAT_PATH = os.path.join("datasets", "test", "extr-data-lab-column-categorical.json")
-    EXTR_GENOMICS_CATEGORICAL_PATH = os.path.join("datasets", "test", "extr-data-gen-categorical.json")
-    EXTR_LABORATORY_DIMENSIONS_PATH = os.path.join("datasets", "test", "extr-data-lab-column-to-dimension.json")
-    EXTR_EMPTY_PIDS_PATH = os.path.join("datasets", "test", "extr-empty-pids.json")
-    EXTR_FILLED_PIDS_PATH = os.path.join("datasets", "test", "extr-filled-pids.json")
+    EXTR_METADATA_LABORATORY_PATH = "extr-metadata-lab.csv"
+    EXTR_METADATA_DISEASE_PATH = "extr-metadata-dis.csv"
+    EXTR_METADATA_DYNAMIC_PATH = "extr-metadata-dyn.csv"
+    EXTR_METADATA_GENOMICS_PATH = "extr-metadata-gen.csv"
+    EXTR_LABORATORY_DATA_PATH = "extr-data-lab.csv"
+    EXTR_DISEASE_DATA_PATH = "extr-data-dis.csv"
+    EXTR_DYNAMIC_DATA_PATH = "extr-data-dyn.csv"
+    EXTR_GENOMICS_DATA_PATH = "extr-data-gen.csv"
+    EXTR_LABORATORY_CATEGORICAL_PATH = "extr-data-lab-categorical.json"
+    EXTR_LABORATORY_COL_CAT_PATH = "extr-data-lab-column-categorical.json"
+    EXTR_GENOMICS_CATEGORICAL_PATH = "extr-data-gen-categorical.json"
+    EXTR_LABORATORY_DIMENSIONS_PATH = "extr-data-lab-column-to-dimension.json"
+    EXTR_EMPTY_PIDS_PATH = "extr-empty-pids.json"
+    EXTR_FILLED_PIDS_PATH = "extr-filled-pids.json"

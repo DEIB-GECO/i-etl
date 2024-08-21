@@ -9,20 +9,22 @@ from etl.Load import Load
 from enums.HospitalNames import HospitalNames
 from enums.Ontologies import Ontologies
 from enums.TableNames import TableNames
-from utils.constants import DEFAULT_DB_CONNECTION, TEST_DB_NAME
+from utils.constants import DB_CONNECTION, TEST_DB_NAME
 from utils.setup_logger import log
-from utils.utils import get_mongodb_date_from_datetime
+from utils.utils import get_mongodb_date_from_datetime, set_env_variables_from_dict
 
 
 # personalized setup called at the beginning of each test
 def my_setup(create_indexes: bool) -> Load:
     # 1. as usual, create a Load object (to setup the current working directory)
     args = {
-        Execution.DB_CONNECTION_KEY: DEFAULT_DB_CONNECTION,
-        Execution.DB_DROP_KEY: True,
+        Execution.DB_NAME_KEY: TEST_DB_NAME,
+        Execution.DB_DROP_KEY: "True"
         # no need to set the metadata and data filepaths as we get only insert data that is written in temporary JSON files
     }
-    TestLoad.execution.set_up(args_as_dict=args, setup_data_files=False)  # no need to setup the files, we get data and metadata as input
+    set_env_variables_from_dict(env_vars=args)
+
+    TestLoad.execution.set_up(setup_data_files=False)  # no need to setup the files, we get data and metadata as input
     database = Database(TestLoad.execution)
     load = Load(database=database, execution=TestLoad.execution, create_indexes=create_indexes)
 
@@ -84,7 +86,7 @@ def my_setup(create_indexes: bool) -> Load:
 
 
 class TestLoad(unittest.TestCase):
-    execution = Execution(TEST_DB_NAME)
+    execution = Execution()
 
     def test_run(self):
         pass

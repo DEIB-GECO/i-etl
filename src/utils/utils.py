@@ -382,15 +382,25 @@ def read_csv_file_as_string(filepath: str) -> pd.DataFrame:
     return pd.read_csv(filepath, index_col=False, dtype=str, keep_default_na=True)
 
 
-def split_list_of_files(joined_filepaths: str) -> [str]:
+def split_list_of_files(joined_filepaths: str, prefix_path: str) -> [str]:
     log.debug(f"{joined_filepaths}")
     split_files = joined_filepaths.split(",")
     log.debug(f"{split_files}")
-    for current_file in split_files:
-        if not os.path.isfile(current_file):
-            raise FileNotFoundError(f"The specified data file {current_file} does not exist.")
-    # we do not copy the data in our working dir because it is too large to be copied
-    return split_files  # file 1,file 2, ...,file N
+    for i in range(len(split_files)):
+        current_file = split_files[i]
+        if prefix_path is None:
+            if not os.path.isfile(current_file):
+                raise FileNotFoundError(f"The specified data file {current_file} does not exist.")
+        else:
+            prefixed_file = os.path.join(prefix_path, current_file)
+            if not os.path.isfile(prefixed_file):
+                raise FileNotFoundError(f"The specified data file {prefixed_file} does not exist.")
+            elif os.sep in current_file:
+                raise ValueError(f"The given file ({current_file}) should be a file name, but it looks like a path.")
+            else:
+                split_files[i] = prefixed_file
+
+    return split_files  # [file 1, file 2, ..., file N]
 
 
 # ARRAYS
@@ -444,7 +454,7 @@ def get_field_value_for_patient(lab_records: list, lab_features: list, patient_i
         log.debug(patient_id)
         for lab_record in lab_records:
             json_lab_record = lab_record.to_json()
-            log.info(f"checking {json_lab_record["subject"]["reference"]} vs. {patient_id} and {json_lab_record["instantiate"]["reference"]} vs. {lab_feature["identifier"]["value"]}")
+            log.info(f"checking {json_lab_record['subject']['reference']} vs. {patient_id} and {json_lab_record['instantiate']['reference']} vs. {lab_feature['identifier']['value']}")
             if json_lab_record["subject"]["reference"] == patient_id:
                 if json_lab_record["instantiate"]["reference"] == lab_feature["identifier"]["value"]:
                     return json_lab_record["value"]
@@ -476,26 +486,13 @@ def urlopen_with_api_key(url, api_key, with_bearer: bool):
         return requests.get(url, headers=headers)
     else:
         # simply concat it to the url with the key "apikey"
-        # log.debug("http://data.bioontology.org/ontologies/SNOMEDCT/classes/http%3A%2F%2Fpurl.bioontology.org%2Fontology%2FSNOMEDCT%2F373067005?apikey=d6fb9c05-3309-4158-892f-65434a9133b9")
-        # log.debug("http://data.bioontology.org/ontologies/SNOMEDCT?p=classes&conceptid=248152002&apikey=d6fb9c05-3309-4158-892f-65434a9133b9")
-        # expected: http://data.bioontology.org/ontologies/SNOMEDCT/classes/http%3A%2F%2Fpurl.bioontology.org%2Fontology%2FSNOMEDCT%2F28030000?apikey=d6fb9c05-3309-4158-892f-65434a9133b9
-        # given   : http://data.bioontology.org/ontologies/SNOMEDCT/classes/http%3A%2F%2Fpurl.bioontology.org%2Fontology%2FSNOMEDCT%2F248152002&apikey=d6fb9c05-3309-4158-892f-65434a9133b9
-        # expected: http://data.bioontology.org/ontologies/SNOMEDCT/classes/http%3A%2F%2Fpurl.bioontology.org%2Fontology%2FSNOMEDCT%2F373066001?apikey=d6fb9c05-3309-4158-892f-65434a9133b9
-        # given   : http://data.bioontology.org/ontologies/SNOMEDCT/classes/http%3A%2F%2Fpurl.bioontology.org%2Fontology%2FSNOMEDCT%2F373066001&apikey=d6fb9c05-3309-4158-892f-65434a9133b9
-        # url_with_apikey = requote_uri(f"{url}&apikey={api_key}")
-        # log.debug(url_with_apikey)
         url_with_apikey = f"{url}?apikey={api_key}"
-        log.debug(url_with_apikey)
-        # url_with_apikey = quote(f"{url}&apikey={api_key}", safe="")
-        # log.debug(url_with_apikey)
         return requests.get(url_with_apikey)
 
 
 def parse_json_response(response):
     # we need to load x2 and to dump to have a "real" JSON dict, parseable by Python
     # otherwise, we have a JSON-like string or JSNO-like text data
-    log.debug(response)
-    log.debug(response.content)
     return json.loads(json.dumps(json.loads(response.content)))
 
 
@@ -505,3 +502,8 @@ def parse_xml_response(response):
 
 def load_xml_file(filepath: str):
     return xml.dom.minidom.parse(filepath)
+
+
+def set_env_variables_from_dict(env_vars: dict):
+    for key, value in env_vars.items():
+        os.environ[key] = value

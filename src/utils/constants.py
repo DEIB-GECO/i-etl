@@ -1,3 +1,4 @@
+import os
 import re
 
 from enums.HospitalNames import HospitalNames
@@ -40,10 +41,18 @@ DATASET_LOCALES = {
 BATCH_SIZE = 50
 
 WORKING_DIR = "working-dir"
-DEFAULT_DB_CONNECTION = "mongodb://localhost:27017/"
 DEFAULT_DB_NAME = "better_default"
+DOCKER_DATA_FOLDER = "/home/better-deployed/hospital-data"
+DOCKER_METADATA_FOLDER = os.path.join(DOCKER_DATA_FOLDER, "metadata")
+DOCKER_LABORATORY_FOLDER = os.path.join(DOCKER_DATA_FOLDER, "laboratory")
+DOCKER_DIAGNOSIS_FOLDER = os.path.join(DOCKER_DATA_FOLDER, "diagnosis")
+DOCKER_MEDICINE_FOLDER = os.path.join(DOCKER_DATA_FOLDER, "medicine")
+DOCKER_IMAGING_FOLDER = os.path.join(DOCKER_DATA_FOLDER, "imaging")
+DOCKER_GENOMIC_FOLDER = os.path.join(DOCKER_DATA_FOLDER, "genomic")
+DOCKER_ANONYMIZED_PATIENT_IDS_FOLDER = os.path.join(DOCKER_DATA_FOLDER, "pids")
+DOCKER_TEST_FOLDER = os.path.join(DOCKER_DATA_FOLDER, "test")
+DB_CONNECTION = "mongodb://mongo:27017/"
 TEST_DB_NAME = "better_test"
-ANONYMIZED_PATIENT_IDS_FILE = "anonymized-patient-ids.json"
 
 PATTERN_VALUE_DIMENSION = re.compile(r'^ *([0-9]+) *([a-zA-Z_-]+) *$')  # we add start and end delimiters (^ and $) to not process cells with multiples values inside
 

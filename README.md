@@ -2,73 +2,76 @@
 The FAIRification tools for BETTER project.
 
 
-## Installation and execution
+## Installation and execution (with Docker)
 
-## With Docker image (recommended)
+**Requirements:**
+- Docker Desktop installed on the host machine
+- The Docker image of the FAIRification
+- The Docker image of mongo (publicly available in the DockerHub)
+- The `.env` (with no default values for the filepaths; to be completed manually with the server folder structure before running the ETL)
+- The `compose.yml`
 
-Requirements:
-- Docker Desktop installed
-- The Docker image
-
-**From the root of the project, i.e., in `BETTER-fairificator` folder**
-
-```shell
-sudo docker run fairificator -d
-```
-
-To check whether the ETL has finished, one can run `docker logs <container_id> --follow` where `<container_id>` is the id of the container (obtained by `docker ps`). Otherwise, one can also attach stdout to Docker to print logs "in real time".
-
-
-## Standalone
-
-Requirements:
-- A running MongoDB server (tested with v7)
-- Python (tested with 3.12)
-
-**From the root of the project, i.e., in `BETTER-fairificator` folder**, run the following instructions to 
-create a virtual environment dedicated to the FAIRificator and to install Python requirements. 
-```shell
-python3 -m venv .venv-better-fairificator
-source .venv-better-fairificator/bin/activate
-python3 -m pip install --upgrade pip
-pip3 install -r requirements.txt --no-cache-dir
-```
-
-To run the ETL script: `python3 src/main.py --hospital_name=X --database_name=Y ...` with the parameters listed below.
+**Steps:**
+1. Put `compose.yml`, `.env` and the two Docker images in the same folder
+2. From that specific folder, run `docker compose up -d`. _Note_: `-d` means `--daemon`, meaning that the ETL will run as a background process.
+    - To check whether the ETL has finished, one can run `docker ps`: 
+      if `the-etl` does not show, this means that it is done. 
 
 
-### Parameters
+## Parameters (in `.env` file)
 
-#### Related to the data to give to the ETL
-| Parameter name    | Description                                                                           | Required | Values                 |
-|-------------------|---------------------------------------------------------------------------------------|----------|------------------------|
-| `--metadata`      | the absolute path to the metadata file.                                               | True     |                        |
-| `--laboratory`    | the absolute path to one or several laboratory data files, separated with commas (,). | False    |                        | 
-| `--diagnosis`     | the absolute path to one or several diagnosis data files, separated with commas (,).  | False    |                        |
-| `--medicine`      | the absolute path to one or several medicine data files, separated with commas (,).   | False    |                        |
-| `--imaging`       | the absolute path to one or several imaging data files, separated with commas (,).    | False    |                        |
-| `--genomic`       | the absolute path to one or several genomic data files, separated with commas (,).    | False    |                        | 
-| `--use_en_locale` | Whether to use the en_US locale instead of the one of the country.                    | True     | - "True"<br/>- "False" |
+An example of a valid `.env` file is available in `.env.example`. 
+**The final file containing environment variables should ALWAYS be labelled `.env`.**
 
-#### Related to the ETL itself
+Parameters with a * (star) are required, others can be left empty.
 
-| Parameter name       | Description                                                                           | Required | Values                                                                                                                                   |
-|----------------------|---------------------------------------------------------------------------------------|----------|------------------------------------------------------------------------------------------------------------------------------------------|
-| `--hospital_name`    | the hospital name                                                                     | True     | - "it_buzzi_uc1"<br/>- "rs_imgge"<br/>- "es_hsjd"<br/>- "it_buzzi_uc3"<br/>- "es_terrassa"<br/>- "de-ukk"<br/>- "es_lafe"<br/>- "il_hmc" |
-| `--db_connection`    | The connection string to the mongodb server.                                          | True     |                                                                                                                                          | 
-| `--db_name`          | the database name.                                                                    | True     |                                                                                                                                          | 
-| `--db_drop`          | Whether to drop the database. WARNING: if set to True, this action is not reversible! | True     | - "True"<br/>- "False"                                                                                                                   |
-| `--extract`          | Whether to perform the Extract step of the ETL.                                       | True     | - "True"<br/>- "False"                                                                                                                   |
-| `--analyze`          | Whether to perform a data analysis on the provided files.                             | True     | - "True"<br/>- "False"                                                                                                                   |
-| `--transform`        | Whether to perform the Transform step of the ETL.                                     | True     | - "True"<br/>- "False"                                                                                                                   |
-| `--load`             | Whether to perform the Load step of the ETL.                                          | True     | - "True"<br/>- "False"                                                                                                                   |
-| `--db_upsert_policy` | Whether to update or do nothing when upserting tuples.                                | True     | - "DO_NOTHING"<br/>- "REPLACE"                                                                                                           |
+### Related to the data to give to the ETL
+| Parameter name             | Description                                                                                                        | 
+|----------------------------|--------------------------------------------------------------------------------------------------------------------|
+| `SERVER_FOLDER_METADATA`*  | The absolute (server) path to the folder containing the metadata file.                                             |
+| `METADATA`*                | The metadata filename.                                                                                             |
+| `SERVER_FOLDER_LABORATORY` | The absolute (server) path to the folder containing laboratory data.<br/>Default value: `/dev/null`                |
+| `LABORATORY`               | The list of one or several laboratory data filenames, separated with commas (,).<br/>Default value: empty          |
+| `SERVER_FOLDER_DIAGNOSIS`  | The absolute (server) path to the folder containing diagnosis data.<br/>Default value: `/dev/null`                 | 
+| `DIAGNOSIS`                | The list of one or several diagnosis data filenames, separated with commas (,).<br/>Default value: empty           | 
+| `SERVER_FOLDER_MEDICINE`   | The absolute (server) path to the folder containing medicine data.<br/>Default value: `/dev/null`                  |
+| `MEDICINE`                 | The list of one or several medicine data filenames, separated with commas (,).<br/>Default value: empty            |
+| `SERVER_FOLDER_IMAGING`    | The absolute (server) path to the folder containing imaging data.<br/>Default value: `/dev/null`                   |
+| `IMAGING`                  | The list of one or several imaging data filenames, separated with commas (,).<br/>Default value: empty             |
+| `SERVER_FOLDER_GENOMIC`    | The absolute (server) path to the folder containing genomic data.<br/>Default value: `/dev/null`                   |
+| `GENOMIC`                  | The list of one or several genomic data filenames, separated with commas (,).<br/>Default value: empty             |
+| `SERVER_FOLDER_PIDS`       | The absolute (server) path to the folder containing the patient anonymization data.<br/>Default value: `/dev/null` |
+| `ANONYMIZED_PIDS`          | The patient anonymized IDs filename. The ETL will create it if it does not exist.<br/>Default value: empty         |
+
+### Related to the database
+
+| Parameter name           | Description                                                                                                                        |
+|--------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| `HOSPITAL_NAME`*         | The hospital name.<br/>Values: `it_buzzi_uc1`, `rs_imgge`, `es_hsjd`, `it_buzzi_uc3`, `es_terrassa`, `de-ukk`, `es_lafe`, `il_hmc` | 
+| `DB_NAME`*               | The database name.<br/>Default value: `better_docker`                                                                              |                                                                                                                          | 
+| `DB_DROP`*               | Whether to drop the database. **WARNING: if set to True, this action is not reversible!**<br/>Values: `True`, `False`              | 
+| `SERVER_FOLDER_MONGODB`* | The absolute (server) path to the folder in which MongoDB will store its databases.                                                |                                                                                                                          |
+| `DB_UPSERT_POLICY`       | Whether to update or not existing data (duplicates)<br/>Values: `DO_NOTHING`, `REPLACE`<br/>Default value: `DO_NOTHING`            |
+
+### Related to the ETL
+| Parameter name           | Description                                                                                                               |
+|:-------------------------|---------------------------------------------------------------------------------------------------------------------------|
+| `SERVER_FOLDER_LOG_ETL`* | The absolute (server) path to the folder in which the ETL will write its log files.                                       |
+| `EXTRACT`                | Whether to perform the Extract step of the ETL.<br/>Values: `True`, `False`<br/>Default value: `True`                     |
+| `TRANSFORM`              | Whether to perform the Transform step of the ETL.<br/>Values: `True`, `False`<br/>Default value: `True`                   |
+| `LOAD`                   | Whether to perform the Load step of the ETL.<br/>Values: `True`, `False`<br/>Default value: `True`                        |
+| `ANALYZE`                | Whether to perform a data analysis on the provided files.<br/>Values: `True`, `False`<br/>Default value: `False`          |
+| `USE_EN_LOCALE`          | Whether to use the en_US locale instead of the one of the country.<br/>Values: `True`, `False`<br/>Default value: `False` |
 
 
 ## For developers
 
-To run the test suite (when installed without Docker): `python3 -m unittest discover`
-
 To build the Docker image: `sudo docker build . --tag fairificator` (at the project root). 
 If there are errors about credentials, remove the line `credsStore` in your Docker config file (probably at `~/.docker/config.json`). 
 You also need to have Docker Desktop installed and running to be able to build Docker instances. 
+
+### Building the Docker image
+
+1. Install Docker Desktop and open it
+2. From the root of the project, run `sudo docker build . --tag fairificator`
+3. If an error about `error getting credentials` occurs while building, go to your Docker config file (probably `~/.docker/config.json`) and remove the line `credsStore`. Then, save the file and build again the image.

@@ -1,6 +1,9 @@
 import json
+import os
 import re
 import unittest
+
+import pytest
 
 from database.Database import Database
 from database.Execution import Execution
@@ -17,11 +20,11 @@ from enums.TableNames import TableNames
 from enums.TheTestFiles import TheTestFiles
 from etl.Transform import Transform
 from profiles.Hospital import Hospital
-from utils.constants import DEFAULT_DB_CONNECTION, TEST_DB_NAME, DEFAULT_CODING_DISPLAY
+from utils.constants import DB_CONNECTION, TEST_DB_NAME, DEFAULT_CODING_DISPLAY, DOCKER_TEST_FOLDER
 from utils.setup_logger import log
 from utils.utils import compare_tuples, get_json_resource_file, get_lab_feature_by_text, \
     normalize_ontology_code, is_not_nan, cast_value, read_csv_file_as_string, \
-    get_field_value_for_patient, get_lab_records_for_patient
+    get_field_value_for_patient, get_lab_records_for_patient, set_env_variables_from_dict
 
 
 # personalized setup called at the beginning of each test
@@ -31,25 +34,30 @@ def my_setup(hospital_name: str, extracted_metadata_path: str, extracted_data_pa
              extracted_column_dimension_path: str,
              extracted_patient_ids_mapping_path: str) -> Transform:
     args = {
-        Execution.DB_CONNECTION_KEY: DEFAULT_DB_CONNECTION,
-        Execution.DB_DROP_KEY: True,
+        Execution.DB_NAME_KEY: TEST_DB_NAME,
+        Execution.DB_DROP_KEY: "True",
         Execution.HOSPITAL_NAME_KEY: hospital_name,
         Execution.ANONYMIZED_PATIENT_IDS_KEY: extracted_patient_ids_mapping_path
         # no need to set the metadata and data filepaths as we get already the loaded data and metadata as arguments
     }
-    log.debug(args)
-    TestTransform.execution.set_up(args_as_dict=args, setup_data_files=False)  # no need to setup the files, we get data and metadata as input
+    set_env_variables_from_dict(env_vars=args)
+    TestTransform.execution.set_up(setup_data_files=False)  # no need to setup the files, we get data and metadata as input
     database = Database(TestTransform.execution)
     # I load:
     # - the data and metadata from two CSV files that I obtained by running the Extract step
     # - and mapped_values as a JSON file that I obtained from the same Extract object
-    metadata = read_csv_file_as_string(extracted_metadata_path)
-    data = read_csv_file_as_string(extracted_data_paths)
-    mapping_categorical_values = json.load(open(extracted_mapping_categorical_values_path))
-    mapping_column_to_categorical_value = json.load(open(extracted_column_to_categorical_path))
-    column_to_dimension = json.load(open(extracted_column_dimension_path))
-    log.debug(extracted_patient_ids_mapping_path)
-    patient_ids_mapping = json.load(open(extracted_patient_ids_mapping_path))
+    metadata = read_csv_file_as_string(os.path.join(DOCKER_TEST_FOLDER, extracted_metadata_path))
+    data = read_csv_file_as_string(os.path.join(DOCKER_TEST_FOLDER, extracted_data_paths))
+    with open(os.path.join(DOCKER_TEST_FOLDER, extracted_mapping_categorical_values_path), "r") as f:
+        mapping_categorical_values = json.load(f)
+    with open(os.path.join(DOCKER_TEST_FOLDER, extracted_column_to_categorical_path), "r") as f:
+        mapping_column_to_categorical_value = json.load(f)
+    with open(os.path.join(DOCKER_TEST_FOLDER, extracted_column_dimension_path), "r") as f:
+        column_to_dimension = json.load(f)
+    with open(os.path.join(DOCKER_TEST_FOLDER, extracted_patient_ids_mapping_path), "r") as f:
+        log.debug(extracted_patient_ids_mapping_path)
+        patient_ids_mapping = json.load(f)
+        log.info(patient_ids_mapping)
     transform = Transform(database=database, execution=TestTransform.execution, data=data, metadata=metadata,
                           mapping_categorical_value_to_cc=mapping_categorical_values,
                           mapping_column_to_categorical_value=mapping_column_to_categorical_value,
@@ -58,11 +66,42 @@ def my_setup(hospital_name: str, extracted_metadata_path: str, extracted_data_pa
     return transform
 
 
-class TestTransform(unittest.TestCase):
-    execution = Execution(TEST_DB_NAME)
+@pytest.fixture(autouse=True)
+def run_before_and_after_tests(tmpdir):
+    """Fixture to execute asserts before and after a test is run"""
+    # Setup: fill with any logic you want
 
-    def test_run(self):
-        pass
+    yield  # this is where the testing happens
+
+    # Teardown : fill with any logic you want
+    get_back_to_original_pid_files()
+
+
+def get_back_to_original_pid_files():
+    with open(os.path.join(DOCKER_TEST_FOLDER, TheTestFiles.ORIG_EMPTY_PIDS_PATH), "w") as f:
+        f.write(json.dumps({}))
+    with open(os.path.join(DOCKER_TEST_FOLDER, TheTestFiles.EXTR_EMPTY_PIDS_PATH), "w") as f:
+        f.write(json.dumps({}))
+    original_filled_pids = json.dumps({
+                            "999999999": "h1:999",
+                            "999999998": "h1:998",
+                            "999999997": "h1:997",
+                            "999999996": "h1:996",
+                            "999999995": "h1:995",
+                            "999999994": "h1:994",
+                            "999999993": "h1:993",
+                            "999999992": "h1:992",
+                            "999999991": "h1:991",
+                            "999999990": "h1:990"
+                            })
+    with open(os.path.join(DOCKER_TEST_FOLDER, TheTestFiles.ORIG_FILLED_PIDS_PATH), "w") as f:
+        f.write(original_filled_pids)
+    with open(os.path.join(DOCKER_TEST_FOLDER, TheTestFiles.EXTR_FILLED_PIDS_PATH), "w") as f:
+        f.write(original_filled_pids)
+
+
+class TestTransform(unittest.TestCase):
+    execution = Execution()
 
     def test_set_resource_counter_id(self):
         # when there is nothing in the database, the counter should be 0
@@ -118,7 +157,8 @@ class TestTransform(unittest.TestCase):
 
         # b. check that the in-file hospital is correct
         hospital_file = get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, table_name=TableNames.HOSPITAL, count=1)
-        written_hospitals = json.load(open(hospital_file))
+        with open(hospital_file) as f:
+            written_hospitals = json.load(f)
         assert len(written_hospitals) == 1
         compare_tuples(original_tuple=current_json_hospital, inserted_tuple=written_hospitals[0])
 
@@ -251,7 +291,7 @@ class TestTransform(unittest.TestCase):
         log.debug(transform.laboratory_records)
         patient_id = transform.patient_ids_mapping["999999994"]
         log.info(patient_id)
-        assert patient_id == "h1:6"
+        assert patient_id == "h1:14"  # patient anonymized IDs start at h1:9, because 8 lab. feat. have been created beforehand.
         lab_records_patient = get_lab_records_for_patient(lab_records=transform.laboratory_records, patient_id=patient_id)
         log.debug(json.dumps(lab_records_patient))
         assert len(lab_records_patient) == 5
@@ -277,7 +317,7 @@ class TestTransform(unittest.TestCase):
         # we also check that conversions str->int/float and category->bool worked
         lab_recs = transform.laboratory_records
         lab_feats = transform.laboratory_features
-        assert transform.patient_ids_mapping["999999996"] == "h1:4"
+        assert transform.patient_ids_mapping["999999996"] == "h1:12"
         assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999999"], column_name="molecule_b") == 100  # this has been cast as int because it matches the expected unit
         assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999998"], column_name="molecule_b") == 111  # this has been cast as int because it matches the expected unit
         assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999997"], column_name="molecule_b") == "231 grams"  # this has not been converted as this does not match the expected dimension
@@ -356,8 +396,8 @@ class TestTransform(unittest.TestCase):
         assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999994"], column_name="molecule_b") is None  # no value
         assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999993"], column_name="molecule_b") is None  # null value
         assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999992"], column_name="molecule_b") == "116 kg"  # this has not been converted as this does not match the expected dimension
-
     # TODO Nelly: check there are no duplicates for LabFeature instances
+
     def test_create_lab_records_with_samples(self):
         # TODO NELLY: code this test
         pass
@@ -387,6 +427,10 @@ class TestTransform(unittest.TestCase):
         for i in range(0, len(sorted_patients)):
             # patients have their own anonymized ids
             assert sorted_patients[i].to_json()["identifier"]["value"] == PatientAnonymizedIdentifier(id_value=str(i+1), hospital_name=HospitalNames.TEST_H1).value
+
+        # get back to the original file
+        with open(self.execution.anonymized_patient_ids_filepath, "w") as f:
+            f.write("{}")
 
     def test_create_patients_with_pid(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
@@ -558,4 +602,3 @@ class TestTransform(unittest.TestCase):
         assert transform.fairify_value(column_name="ethnicity", value=transform.data.iloc[0][5]) == "white"
         assert not is_not_nan(transform.fairify_value(column_name="date_of_birth", value=transform.data.iloc[0][6]))  # no date here, we verify this is NaN
         assert transform.fairify_value(column_name="date_of_birth", value=transform.data.iloc[5][6]) == cast_value("2021-12-22 11:58:38.881")
-        
