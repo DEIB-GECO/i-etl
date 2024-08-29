@@ -1,9 +1,8 @@
 import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from pymongo.command_cursor import CommandCursor
-
-import matplotlib.pyplot as plt
 
 from src.utils.setup_logger import log
 

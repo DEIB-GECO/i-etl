@@ -1,7 +1,6 @@
 from datatypes.Identifier import Identifier
 from enums.HospitalNames import HospitalNames
 from utils.constants import DELIMITER_PATIENT_ID
-from utils.setup_logger import log
 
 
 class PatientAnonymizedIdentifier(Identifier):

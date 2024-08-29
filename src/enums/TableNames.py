@@ -1,5 +1,4 @@
 from enums.EnumAsClass import EnumAsClass
-from utils.setup_logger import log
 
 
 class TableNames(EnumAsClass):

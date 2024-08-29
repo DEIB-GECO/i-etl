@@ -1,0 +1,4 @@
+ontology,ontology_code,ontology_comment,secondary_ontology,secondary_ontology_code,secondary_ontology_comment,snomed_vartype,dataset,name,Significato_it,description,vartype,ETL_type,dimension,details,JSON_values,Multiplicity,Doubts
+loinc,57723-9,,,,,,test-antibiotics.csv,SampleBarcode,Barcode campione,Sample ID,str,str,,There may be several rows for same patient in case multiple tests have been done,,*,
+snomed ct,371070000,,,,,,test-antibiotics.csv,AntibioticsBaby,Assunzione antibiotici bambino ,Child taking antibiotics,category,bool,,{0} or {NA} No\\{1} Yes,"[{""value"": ""0"", ""explanation"": ""No"", ""snomed_ct"": ""373067005""}, {""value"": ""NA"", ""explanation"": ""NA"", ""snomed_ct"": ""276727009""}, {""value"": ""1"", ""explanation"": ""Yes"", ""snomed_ct"": ""373066001""}]",1,
+,,,,,,,test-antibiotics.csv,id,identifier,Identifier,int,int,,,,1,

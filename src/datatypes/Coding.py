@@ -2,11 +2,11 @@ from urllib.parse import quote
 
 import jsonpickle
 
+from enums.AccessTypes import AccessTypes
 from enums.Ontologies import Ontologies
 from utils.constants import DEFAULT_CODING_DISPLAY
 from utils.setup_logger import log
-from utils.utils import is_not_nan, normalize_ontology_code, get_display, urlopen_with_api_key, parse_xml_response, \
-    parse_json_response, urlopen_with_header, urlopen_with_authentication
+from utils.utils import is_not_nan, normalize_ontology_code, parse_xml_response, parse_json_response, send_query_to_api
 
 
 class Coding:
@@ -40,7 +40,7 @@ class Coding:
                 if ontology == Ontologies.SNOMEDCT:
                     url_resource = quote(f"http://purl.bioontology.org/ontology/SNOMEDCT/{ontology_code}", safe="")
                     url = f"http://data.bioontology.org/ontologies/SNOMEDCT/classes/{url_resource}"
-                    response = urlopen_with_api_key(url=url, api_key="d6fb9c05-3309-4158-892f-65434a9133b9", with_bearer=False)
+                    response = send_query_to_api(url=url, secret="d6fb9c05-3309-4158-892f-65434a9133b9", access_type=AccessTypes.API_KEY_IN_URL)
                     data = parse_json_response(response)
                     if "prefLabel" in data:
                         return data["prefLabel"]
@@ -48,7 +48,7 @@ class Coding:
                         return DEFAULT_CODING_DISPLAY
                 elif ontology == Ontologies.LOINC:
                     url = f"https://loinc.regenstrief.org/searchapi/loincs?query={ontology_code}"
-                    response = urlopen_with_authentication(url=url, username="nbarret", password="d7=47@xiz$g=-Ns")
+                    response = send_query_to_api(url=url, secret="nbarret d7=47@xiz$g=-Ns", access_type=AccessTypes.AUTHENTICATION)
                     data = parse_json_response(response)
                     if "Results" in data and len(data["Results"]) > 0 and "COMPONENT" in data["Results"][0]:
                         return data["Results"][0]["COMPONENT"]
@@ -56,7 +56,7 @@ class Coding:
                         return DEFAULT_CODING_DISPLAY
                 elif ontology == Ontologies.PUBCHEM:
                     url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{ontology_code}/description/JSON"
-                    response = urlopen_with_header(url)
+                    response = send_query_to_api(url, secret=None, access_type=AccessTypes.USER_AGENT)
                     data = parse_json_response(response)
                     if ("InformationList" in data
                             and "Information" in data["InformationList"]
@@ -71,7 +71,7 @@ class Coding:
                 elif ontology == Ontologies.GSSO:
                     iri = f"http://purl.obolibrary.org/obo/{ontology_code}"
                     url = f"https://ontobee.org/ontology/GSSO?iri={iri}"
-                    response = urlopen_with_api_key(url=url, api_key="d6fb9c05-3309-4158-892f-65434a9133b9", with_bearer=True)
+                    response = send_query_to_api(url=url, secret="d6fb9c05-3309-4158-892f-65434a9133b9", access_type=AccessTypes.API_KEY_IN_BEARER)
                     data = parse_xml_response(response)  # data is an XML document
                     classes = data.getElementsByTagName('Class')
                     for one_class in classes:
@@ -79,10 +79,19 @@ class Coding:
                             if len(one_class.getElementsByTagName("rdfs:label")) > 0:
                                 return one_class.getElementsByTagName("rdfs:label")[0].childNodes[0].data
                     return DEFAULT_CODING_DISPLAY
+                elif ontology == Ontologies.ORPHANET:
+                    ontology_code_without_prefix = ontology_code.replace("ORPHA:", "").replace("orpha:", "")
+                    url = f"https://api.orphacode.org/EN/ClinicalEntity/orphacode/{ontology_code_without_prefix}/Name"
+                    response = send_query_to_api(url=url, secret="nbarret", access_type=AccessTypes.API_KEY_IN_HEADER)
+                    data = parse_json_response(response)
+                    if "Preferred term" in data:
+                        return data["Preferred term"]
+                    else:
+                        return DEFAULT_CODING_DISPLAY
                 else:
                     # raise NotImplementedError("Not implemented yet.")
                     return DEFAULT_CODING_DISPLAY
-            except Exception as e:
+            except Exception:
                 # the API could not be queried, returning empty string.
                 return DEFAULT_CODING_DISPLAY
         else:

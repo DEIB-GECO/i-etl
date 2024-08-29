@@ -1,15 +1,12 @@
-import json
 from datetime import datetime
 
 import jsonpickle
 
-from datatypes.Identifier import Identifier
 from datatypes.PatientAnonymizedIdentifier import PatientAnonymizedIdentifier
 from datatypes.ResourceIdentifier import ResourceIdentifier
 from enums.TableNames import TableNames
 from utils import constants
 from utils.Counter import Counter
-from utils.setup_logger import log
 from utils.utils import get_mongodb_date_from_datetime, is_not_nan
 
 

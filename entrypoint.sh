@@ -5,7 +5,7 @@ if [ "${CONTEXT_MODE}" == "DEV" ]; then
   python3 src/main.py
 elif [ "${CONTEXT_MODE}" == "TEST" ]; then
   echo "Running tests"
-  pytest tests --log-cli-level=DEBUG
+  pytest tests/ --log-cli-level=DEBUG
 else
   echo "Unrecognised context mode '${CONTEXT_MODE}'"
 fi

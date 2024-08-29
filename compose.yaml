@@ -29,6 +29,8 @@ services:
       # And instead of asking users to provide such an absolute path (which they don't have to see because this is the Docker internal structure),
       # we let the ETL build it by appending the data filename to that path
       - ${SERVER_FOLDER_METADATA}:/home/better-deployed/hospital-data/metadata
+      - ${SERVER_FOLDER_DIAGNOSIS_CLASSIFICATION}:/home/better-deployed/hospital-data/classification
+      - ${SERVER_FOLDER_DIAGNOSIS_REGEXES}:/home/better-deployed/hospital-data/regexes
       - ${SERVER_FOLDER_LABORATORY}:/home/better-deployed/hospital-data/laboratory
       - ${SERVER_FOLDER_DIAGNOSIS}:/home/better-deployed/hospital-data/diagnosis
       - ${SERVER_FOLDER_MEDICINE}:/home/better-deployed/hospital-data/medicine

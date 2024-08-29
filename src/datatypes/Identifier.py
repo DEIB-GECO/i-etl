@@ -1,8 +1,5 @@
 import jsonpickle
 
-from enums.HospitalNames import HospitalNames
-from utils.constants import DELIMITER_PATIENT_ID
-
 
 class Identifier:
     def __init__(self, value: str):

@@ -1,0 +1,82 @@
+{
+    "Phenylketonuria": {
+        "coding": [
+            {
+                "system": "https://www.orpha.net/",
+                "code": "orpha:716",
+                "display": "Phenylketonuria"
+            }
+        ],
+        "text": "Phenylketonuria"
+    },
+    "Carnitine palmitoyltransferase deficiency": {
+        "coding": [
+            {
+                "system": "https://www.orpha.net/",
+                "code": "orpha:157",
+                "display": "Carnitine palmitoyltransferase II deficiency"
+            }
+        ],
+        "text": "Carnitine palmitoyltransferase deficiency"
+    },
+    "Very long chain aсyl-CoA dehydrogenase deficiency": {
+        "coding": [
+            {
+                "system": "https://www.orpha.net/",
+                "code": "orpha:26793",
+                "display": "Very long chain acyl-CoA dehydrogenase deficiency"
+            }
+        ],
+        "text": "Very long chain a\u0441yl-CoA dehydrogenase deficiency"
+    },
+    "Mitochondrial trifunctional protein deficiency": {
+        "coding": [
+            {
+                "system": "https://www.orpha.net/",
+                "code": "orpha:746",
+                "display": "Mitochondrial trifunctional protein deficiency"
+            }
+        ],
+        "text": "Mitochondrial trifunctional protein deficiency"
+    },
+    "Long-chain 3-hydroxy-acyl-CoA dehydrogenase deficiency": {
+        "coding": [
+            {
+                "system": "https://www.orpha.net/",
+                "code": "orpha:5",
+                "display": "Long chain 3-hydroxyacyl-CoA dehydrogenase deficiency"
+            }
+        ],
+        "text": "Long-chain 3-hydroxy-acyl-CoA dehydrogenase deficiency"
+    },
+    "Medium-chain acyl-CoA dehydrogenase deficiency": {
+        "coding": [
+            {
+                "system": "https://www.orpha.net/",
+                "code": "orpha:42",
+                "display": "Medium chain acyl-CoA dehydrogenase deficiency"
+            }
+        ],
+        "text": "Medium-chain acyl-CoA dehydrogenase deficiency"
+    },
+    "Medium/short chain 3-hydroxy-acyl-CoA dehydrogenase deficiency": {
+        "coding": [
+            {
+                "system": "https://www.orpha.net/",
+                "code": "orpha:71212",
+                "display": "Hyperinsulinism due to short chain 3-hydroxylacyl-CoA dehydrogenase deficiency"
+            }
+        ],
+        "text": "Medium/short chain 3-hydroxy-acyl-CoA dehydrogenase deficiency"
+    },
+    "3-methylcrotonyl-CoA carboxylase deficiency": {
+        "coding": [
+            {
+                "system": "https://www.orpha.net/",
+                "code": "orpha:6",
+                "display": "3-methylcrotonyl-CoA carboxylase deficiency"
+            }
+        ],
+        "text": "3-methylcrotonyl-CoA carboxylase deficiency"
+    }
+}

@@ -2,9 +2,9 @@ import json
 
 from pandas import Series
 
+from utils.setup_logger import log
 from utils.utils import get_int_from_str, is_not_nan, get_float_from_str, is_equal_insensitive, is_not_empty, \
     get_mongodb_date_from_datetime
-from utils.setup_logger import log
 
 
 class ValueAnalysis:

@@ -38,19 +38,22 @@ DATASET_LOCALES = {
 }
 
 
-BATCH_SIZE = 50
+BATCH_SIZE = 1000
 
 WORKING_DIR = "working-dir"
 DEFAULT_DB_NAME = "better_default"
-DOCKER_DATA_FOLDER = "/home/better-deployed/hospital-data"
-DOCKER_METADATA_FOLDER = os.path.join(DOCKER_DATA_FOLDER, "metadata")
-DOCKER_LABORATORY_FOLDER = os.path.join(DOCKER_DATA_FOLDER, "laboratory")
-DOCKER_DIAGNOSIS_FOLDER = os.path.join(DOCKER_DATA_FOLDER, "diagnosis")
-DOCKER_MEDICINE_FOLDER = os.path.join(DOCKER_DATA_FOLDER, "medicine")
-DOCKER_IMAGING_FOLDER = os.path.join(DOCKER_DATA_FOLDER, "imaging")
-DOCKER_GENOMIC_FOLDER = os.path.join(DOCKER_DATA_FOLDER, "genomic")
-DOCKER_ANONYMIZED_PATIENT_IDS_FOLDER = os.path.join(DOCKER_DATA_FOLDER, "pids")
-DOCKER_TEST_FOLDER = os.path.join(DOCKER_DATA_FOLDER, "test")
+# these constants have to exactly match the volume paths described in compose.yaml
+DOCKER_FOLDER_DATA = "/home/better-deployed/hospital-data"
+DOCKER_FOLDER_METADATA = os.path.join(DOCKER_FOLDER_DATA, "metadata")
+SERVER_FOLDER_DIAGNOSIS_CLASSIFICATION = os.path.join(DOCKER_FOLDER_DATA, "classification")
+SERVER_FOLDER_DIAGNOSIS_REGEXES = os.path.join(DOCKER_FOLDER_DATA, "regexes")
+DOCKER_FOLDER_LABORATORY = os.path.join(DOCKER_FOLDER_DATA, "laboratory")
+DOCKER_FOLDER_DIAGNOSIS = os.path.join(DOCKER_FOLDER_DATA, "diagnosis")
+DOCKER_FOLDER_MEDICINE = os.path.join(DOCKER_FOLDER_DATA, "medicine")
+DOCKER_FOLDER_IMAGING = os.path.join(DOCKER_FOLDER_DATA, "imaging")
+DOCKER_FOLDER_GENOMIC = os.path.join(DOCKER_FOLDER_DATA, "genomic")
+DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS = os.path.join(DOCKER_FOLDER_DATA, "pids")
+DOCKER_FOLDER_TEST = os.path.join(DOCKER_FOLDER_DATA, "test")
 DB_CONNECTION = "mongodb://mongo:27017/"
 TEST_DB_NAME = "better_test"
 

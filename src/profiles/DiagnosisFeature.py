@@ -1,12 +1,12 @@
 from datatypes.CodeableConcept import CodeableConcept
+from enums.TableNames import TableNames
 from profiles.Feature import Feature
 from utils.Counter import Counter
-from enums.TableNames import TableNames
 
 
 class DiagnosisFeature(Feature):
-    def __init__(self, id_value: str, code: CodeableConcept, permitted_datatype: str, dimension: str|None,
-                 counter: Counter, hospital_name: str, categorical_values: list[CodeableConcept]):
+    def __init__(self, id_value: str, code: CodeableConcept, permitted_datatype: str, dimension: str | None,
+                 counter: Counter, hospital_name: str, categorical_values: list[CodeableConcept] | None):
         """
         Create a new Disease instance.
         This is different from a DiseaseRecord:

@@ -4,7 +4,6 @@ from datatypes.Identifier import Identifier
 from datatypes.Reference import Reference
 from profiles.Resource import Resource
 from utils.Counter import Counter
-from utils.setup_logger import log
 
 
 class Record(Resource):

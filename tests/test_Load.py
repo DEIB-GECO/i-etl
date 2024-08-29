@@ -5,6 +5,7 @@ from datetime import datetime
 
 from database.Database import Database
 from database.Execution import Execution
+from enums.ParameterKeys import ParameterKeys
 from etl.Load import Load
 from enums.HospitalNames import HospitalNames
 from enums.Ontologies import Ontologies
@@ -18,8 +19,8 @@ from utils.utils import get_mongodb_date_from_datetime, set_env_variables_from_d
 def my_setup(create_indexes: bool) -> Load:
     # 1. as usual, create a Load object (to setup the current working directory)
     args = {
-        Execution.DB_NAME_KEY: TEST_DB_NAME,
-        Execution.DB_DROP_KEY: "True"
+        ParameterKeys.DB_NAME: TEST_DB_NAME,
+        ParameterKeys.DB_DROP: "True"
         # no need to set the metadata and data filepaths as we get only insert data that is written in temporary JSON files
     }
     set_env_variables_from_dict(env_vars=args)
@@ -129,10 +130,6 @@ class TestLoad(unittest.TestCase):
                     else:
                         assert "unique" not in index
                 else:
-                    log.debug(table_name)
-                    log.info(TableNames.features())
-                    log.info(TableNames.records())
-                    log.info(table_name in TableNames.features())
                     if table_name in TableNames.features():
                         # there is also a double index (code.coding.system and code.coding.code)
                         if "code.coding.system" in index_key and "code.coding.code" in index_key:

@@ -1,9 +1,8 @@
 from datetime import datetime
 
-from profiles.Resource import Resource
 from enums.TableNames import TableNames
+from profiles.Resource import Resource
 from utils.Counter import Counter
-from utils.utils import get_mongodb_date_from_datetime, is_not_nan
 
 
 class Sample(Resource):

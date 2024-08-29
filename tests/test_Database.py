@@ -10,6 +10,7 @@ from database.Database import Database
 from database.Execution import Execution
 from datatypes.PatientAnonymizedIdentifier import PatientAnonymizedIdentifier
 from datatypes.ResourceIdentifier import ResourceIdentifier
+from enums.ParameterKeys import ParameterKeys
 from enums.HospitalNames import HospitalNames
 from profiles.ResourceTest import ResourceTest
 from utils.Counter import Counter
@@ -27,10 +28,10 @@ class TestDatabase(unittest.TestCase):
     def setUp(self):
         # before each test, get back to the original test configuration
         args = {
-            Execution.DB_NAME_KEY: TEST_DB_NAME,
-            Execution.DB_DROP_KEY: "True",
-            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.DO_NOTHING,
-            Execution.HOSPITAL_NAME_KEY: HospitalNames.TEST_H1
+            ParameterKeys.DB_NAME: TEST_DB_NAME,
+            ParameterKeys.DB_DROP: "True",
+            ParameterKeys.DB_UPSERT_POLICY: UpsertPolicy.DO_NOTHING,
+            ParameterKeys.HOSPITAL_NAME: HospitalNames.TEST_H1
         }
         set_env_variables_from_dict(env_vars=args)
         log.debug("Set up before test")
@@ -43,7 +44,7 @@ class TestDatabase(unittest.TestCase):
 
         # test with a wrong connection string
         # NB Aug 20, 2024: this cannot be tested anymore because the MongoDB uri is now internal to Docker, thus cannot be changed.
-        # set_env_variables_from_dict(env_vars={ Execution.DB_CONNECTION_KEY: "a_random_string" })
+        # set_env_variables_from_dict(env_vars={ ExecutionKeys.DB_CONNECTION_KEY: "a_random_string" })
         # log.debug("Set up in test")
         # TestDatabase.execution.set_up(setup_data_files=False)
         # with pytest.raises(ConnectionError):
@@ -67,7 +68,7 @@ class TestDatabase(unittest.TestCase):
         assert database.db_exists(TEST_DB_NAME) is True, "The database does not exist."  # we make sure that the db exists
 
         # 2. we create a new instance to the same database, with drop_db=False
-        set_env_variables_from_dict(env_vars={ Execution.DB_DROP_KEY: "False" })
+        set_env_variables_from_dict(env_vars={ParameterKeys.DB_DROP: "False"})
         TestDatabase.execution.set_up(setup_data_files=False)
         database = Database(execution=TestDatabase.execution)
 
@@ -146,8 +147,8 @@ class TestDatabase(unittest.TestCase):
         # no new tuple should be inserted (that document already exists)
         # and the current one should not be updated
         args = {
-            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.DO_NOTHING,
-            Execution.DB_DROP_KEY: "False"
+            ParameterKeys.DB_UPSERT_POLICY: UpsertPolicy.DO_NOTHING,
+            ParameterKeys.DB_DROP: "False"
             # very important: we should not reset the database, otherwise we cannot test whether upsert works
         }
         set_env_variables_from_dict(env_vars=args)
@@ -163,8 +164,8 @@ class TestDatabase(unittest.TestCase):
         # no new tuple should be inserted (that document already exists)
         # the tuple should be updated
         args = {
-            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.REPLACE, 
-            Execution.DB_DROP_KEY: "False"
+            ParameterKeys.DB_UPSERT_POLICY: UpsertPolicy.REPLACE,
+            ParameterKeys.DB_DROP: "False"
         }
         set_env_variables_from_dict(env_vars=args)
         TestDatabase.execution.set_up(setup_data_files=False)
@@ -180,8 +181,8 @@ class TestDatabase(unittest.TestCase):
         # a new tuple should be inserted (that document does not already exist)
         # the former one should not have changed
         args = {
-            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.DO_NOTHING, 
-            Execution.DB_DROP_KEY: "False"
+            ParameterKeys.DB_UPSERT_POLICY: UpsertPolicy.DO_NOTHING,
+            ParameterKeys.DB_DROP: "False"
         }
         set_env_variables_from_dict(env_vars=args)
         TestDatabase.execution.set_up(setup_data_files=False)
@@ -225,9 +226,9 @@ class TestDatabase(unittest.TestCase):
         # a new tuple is added because no existing tuple has this combination (name, age)
         # and the current one should not be updated because no tuple should have matched
         args = {
-            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.DO_NOTHING, 
+            ParameterKeys.DB_UPSERT_POLICY: UpsertPolicy.DO_NOTHING,
             # very important: we should not reset the database, otherwise we cannot test whether upsert works
-            Execution.DB_DROP_KEY: "False"
+            ParameterKeys.DB_DROP: "False"
         }
         set_env_variables_from_dict(env_vars=args)
         TestDatabase.execution.set_up(setup_data_files=False)
@@ -245,8 +246,8 @@ class TestDatabase(unittest.TestCase):
         # a new tuple is added because no existing tuple has this combination (name, age)
         # and the current one should not be updated because no tuple should have matched
         args = {
-            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.REPLACE, 
-            Execution.DB_DROP_KEY: "False"
+            ParameterKeys.DB_UPSERT_POLICY: UpsertPolicy.REPLACE,
+            ParameterKeys.DB_DROP: "False"
         }
         set_env_variables_from_dict(env_vars=args)
         TestDatabase.execution.set_up(setup_data_files=False)
@@ -264,8 +265,8 @@ class TestDatabase(unittest.TestCase):
         # no new tuple should be inserted (that document does already exist)
         # the former one should not have changed (because DO_NOTHING)
         args = {
-            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.DO_NOTHING,
-            Execution.DB_DROP_KEY: "False"
+            ParameterKeys.DB_UPSERT_POLICY: UpsertPolicy.DO_NOTHING,
+            ParameterKeys.DB_DROP: "False"
         }
         set_env_variables_from_dict(env_vars=args)
         TestDatabase.execution.set_up(setup_data_files=False)
@@ -282,8 +283,8 @@ class TestDatabase(unittest.TestCase):
         # no new tuple should be inserted (that document does already exist)
         # the former one should have changed (because REPLACE)
         args = {
-            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.REPLACE,
-            Execution.DB_DROP_KEY: "False"
+            ParameterKeys.DB_UPSERT_POLICY: UpsertPolicy.REPLACE,
+            ParameterKeys.DB_DROP: "False"
         }
         set_env_variables_from_dict(env_vars=args)
         TestDatabase.execution.set_up(setup_data_files=False)
@@ -322,8 +323,8 @@ class TestDatabase(unittest.TestCase):
         # 3. upsert a batch with one similar tuple and one different
         # with upsert policy being REPLACE
         args = {
-            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.REPLACE,
-            Execution.DB_DROP_KEY: "False"
+            ParameterKeys.DB_UPSERT_POLICY: UpsertPolicy.REPLACE,
+            ParameterKeys.DB_DROP: "False"
         }
         set_env_variables_from_dict(env_vars=args)
         TestDatabase.execution.set_up(setup_data_files=False)
@@ -361,8 +362,8 @@ class TestDatabase(unittest.TestCase):
         # only one new tuple is added because no existing tuple has its combination (name, age)
         # and the current tuples should not be updated because DO_NOTHING
         args = {
-            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.DO_NOTHING,
-            Execution.DB_DROP_KEY: "False"
+            ParameterKeys.DB_UPSERT_POLICY: UpsertPolicy.DO_NOTHING,
+            ParameterKeys.DB_DROP: "False"
         }
         set_env_variables_from_dict(env_vars=args)
         TestDatabase.execution.set_up(setup_data_files=False)
@@ -380,8 +381,8 @@ class TestDatabase(unittest.TestCase):
         # a new tuple is added because no existing tuple has this combination (name, age)
         # and the current ones should not be updated because no tuple should have matched
         args = {
-            Execution.DB_UPSERT_POLICY_KEY: UpsertPolicy.REPLACE,
-            Execution.DB_DROP_KEY: "False"
+            ParameterKeys.DB_UPSERT_POLICY: UpsertPolicy.REPLACE,
+            ParameterKeys.DB_DROP: "False"
         }
         set_env_variables_from_dict(env_vars=args)
         TestDatabase.execution.set_up(setup_data_files=False)

@@ -1,0 +1,99 @@
+{
+    "3mcc (het) + btd (het)": {
+        "standard_name": "3-methylcrotonyl-CoA carboxylase deficiency",
+        "classification": "healthy"
+    },
+    "3mcc (het? i genitori si rifiutano)": {
+        "standard_name": "3-methylcrotonyl-CoA carboxylase deficiency",
+        "classification": "healthy"
+    },
+    "3mcc (ma analisi molecolare neg?)": {
+        "standard_name": "3-methylcrotonyl-CoA carboxylase deficiency"
+    },
+    "3mcc (mat)": {
+        "standard_name": "3-methylcrotonyl-CoA carboxylase deficiency",
+        "classification": "disease"
+    },
+    "lchad": {
+        "standard_name": "Long-chain 3-hydroxy-acyl-CoA dehydrogenase deficiency",
+        "classification": "disease"
+    },
+    "lchad - deceduta": {
+        "standard_name": "Long-chain 3-hydroxy-acyl-CoA dehydrogenase deficiency",
+        "classification": "disease"
+    },
+    "lchad deceduto no molecolare": {
+        "classification": "disease"
+    },
+    "mcad": {
+        "standard_name": "Medium-chain acyl-CoA dehydrogenase deficiency",
+        "classification": "disease"
+    },
+    "mcad (carrer)": {
+        "standard_name": "Medium-chain acyl-CoA dehydrogenase deficiency",
+        "classification": "healthy"
+    },
+    "mcad (carrier)": {
+        "standard_name": "Medium-chain acyl-CoA dehydrogenase deficiency",
+        "classification": "healthy"
+    },
+    "mcad (carrier) + scad (carrier)": {
+        "standard_name": "Medium-chain acyl-CoA dehydrogenase deficiency",
+        "classification": "healthy"
+    },
+    "mcad (carrier) + scad da controllare": {
+        "standard_name": "Medium-chain acyl-CoA dehydrogenase deficiency",
+        "classification": "healthy"
+    },
+    "mcad (carrier) 33%": {
+        "standard_name": "Medium-chain acyl-CoA dehydrogenase deficiency"
+    },
+    "mcad (carrier) 42%": {
+        "standard_name": "Medium-chain acyl-CoA dehydrogenase deficiency",
+        "classification": "healthy"
+    },
+    "mcad (het comp) c.244dupt": {
+        "standard_name": "Medium-chain acyl-CoA dehydrogenase deficiency",
+        "classification": "healthy"
+    },
+    "mcad (het comp) da controllare 42%": {
+        "standard_name": "Medium-chain acyl-CoA dehydrogenase deficiency",
+        "classification": "healthy"
+    },
+
+    "vlcad (het)": {
+        "classification": "healthy"
+    },
+    "vlcad (het) ?? lchad": {
+        "standard_name": "Very long chain aсyl-CoA dehydrogenase deficiency",
+        "classification": "healthy"
+    },
+    "vlcad (het) 29%": {
+        "standard_name": "Very long chain aсyl-CoA dehydrogenase deficiency",
+        "classification": "healthy"
+    },
+    "vlcad (het) attività 113%": {
+        "standard_name": "Very long chain aсyl-CoA dehydrogenase deficiency",
+        "classification": "healthy"
+    },
+    "vlcad (het) da controllare se scad": {
+        "standard_name": "Very long chain aсyl-CoA dehydrogenase deficiency",
+        "classification": "healthy"
+    },
+    "vlcad het comp": {
+        "standard_name": "Very long chain aсyl-CoA dehydrogenase deficiency",
+        "classification": "healthy"
+    },
+    "vlcad het compo enzim 31%": {
+        "standard_name": "Very long chain aсyl-CoA dehydrogenase deficiency",
+        "classification": "healthy"
+    },
+    "vlcad omo": {
+        "standard_name": "Very long chain aсyl-CoA dehydrogenase deficiency",
+        "classification": "disease"
+    },
+    "vlcad omo vedi la sorella": {
+        "standard_name": "Very long chain aсyl-CoA dehydrogenase deficiency",
+        "classification": "disease"
+    }
+}

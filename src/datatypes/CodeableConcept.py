@@ -60,14 +60,16 @@ class CodeableConcept:
             ontology2 = Ontologies.get_enum_from_name(ontology_name=ontology2)
             code2 = normalize_ontology_code(ontology_code=code2)
             cc.add_coding(one_coding=Coding(ontology=ontology2, code=code2, display=None))
-        log.debug(cc.coding)
         return cc
 
     def __eq__(self, other):
         if not isinstance(other, CodeableConcept):
             raise TypeError(f"Could not compare the current instance with an instance of type {type(other)}.")
 
-        return self.text == other.text and sorted(self.coding) == sorted(other.coding)
+        # we do not compare "text" field because his contains a column name or a value, from the data
+        # thus it may change over datasets, while the "display" field is always the same across datasets and hospitals
+        # because it comes from the API
+        return sorted(self.coding) == sorted(other.coding)
 
     def __str__(self) -> str:
         return jsonpickle.encode(self, unpicklable=False)

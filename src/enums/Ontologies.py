@@ -1,7 +1,5 @@
-import json
-
 from enums.EnumAsClass import EnumAsClass
-from utils.utils import normalize_ontology_name, is_not_nan, urlopen_with_header
+from utils.utils import normalize_ontology_name, is_not_nan
 
 
 class Ontologies(EnumAsClass):
@@ -11,6 +9,7 @@ class Ontologies(EnumAsClass):
     CLIR = {"name": normalize_ontology_name("CLIR"), "url": "https://clir.mayo.edu"}
     PUBCHEM = {"name": normalize_ontology_name("PUBCHEM"), "url": "https://pubchem.ncbi.nlm.nih.gov"}
     GSSO = {"name": normalize_ontology_name("GSSO"), "url": "http://purl.obolibrary.org/obo"}
+    ORPHANET = {"name": normalize_ontology_name("ORPHANET"), "url": "https://www.orpha.net/"}
 
     @classmethod
     def get_enum_from_name(cls, ontology_name: str):

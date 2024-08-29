@@ -1,6 +1,5 @@
 import os.path
 import sys
-import argparse
 
 from database.Database import Database
 from database.Execution import Execution

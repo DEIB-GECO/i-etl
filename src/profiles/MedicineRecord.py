@@ -1,6 +1,6 @@
 from datatypes.Identifier import Identifier
-from profiles.Record import Record
 from enums.TableNames import TableNames
+from profiles.Record import Record
 from utils.Counter import Counter
 
 

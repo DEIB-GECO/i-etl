@@ -1,8 +1,8 @@
 import json
 
 from enums.MetadataColumns import MetadataColumns
-from utils.utils import is_not_nan
 from utils.setup_logger import log
+from utils.utils import is_not_nan
 
 
 class VariableAnalysis:
@@ -42,7 +42,6 @@ class VariableAnalysis:
         for index, metadata_variable in self.metadata.iterrows():
             if metadata_variable[MetadataColumns.VAR_TYPE] == "category":
                 if not is_not_nan(metadata_variable[MetadataColumns.JSON_VALUES]):
-                    log.debug(f"{metadata_variable[MetadataColumns.COLUMN_NAME]}")
                     self.nb_categorical_features_without_mapping += 1
                 self.total_nb_categorical_features += 1
         self.ratio_categorical_feature_with_no_mapping = self.nb_categorical_features_without_mapping / self.total_nb_categorical_features

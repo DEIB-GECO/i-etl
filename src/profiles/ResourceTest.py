@@ -1,6 +1,5 @@
 from profiles.Resource import Resource
 from utils.Counter import Counter
-from enums.TableNames import TableNames
 
 
 class ResourceTest(Resource):

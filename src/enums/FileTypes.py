@@ -1,5 +1,9 @@
-from database.Execution import Execution
+import os
+
 from enums.EnumAsClass import EnumAsClass
+from enums.ParameterKeys import ParameterKeys
+from utils.constants import DOCKER_FOLDER_TEST, DOCKER_FOLDER_LABORATORY, DOCKER_FOLDER_IMAGING, DOCKER_FOLDER_MEDICINE, \
+    DOCKER_FOLDER_DIAGNOSIS, DOCKER_FOLDER_GENOMIC, DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS
 
 
 class FileTypes(EnumAsClass):
@@ -8,18 +12,47 @@ class FileTypes(EnumAsClass):
     MEDICINE = "medicine"
     GENOMIC = "genomic"
     IMAGING = "imaging"
+    DIAGNOSIS_CLASSIFICATION = "diagnosis_classification"
+    DIAGNOSIS_REGEX = "diagnosis_regex"
+    PATIENT_IDS = "patient_ids"
 
     @classmethod
-    def get_execution_key(cls, datatype) -> str|None:
-        if datatype == FileTypes.LABORATORY:
-            return Execution.LABORATORY_PATHS_KEY
-        elif datatype == FileTypes.DIAGNOSIS:
-            return Execution.DIAGNOSIS_PATHS_KEY
-        elif datatype == FileTypes.MEDICINE:
-            return Execution.MEDICINE_PATHS_KEY
-        elif datatype == FileTypes.GENOMIC:
-            return Execution.GENOMIC_PATHS_KEY
-        elif datatype == FileTypes.IMAGING:
-            return Execution.IMAGING_PATHS_KEY
+    def get_execution_key(cls, filetype) -> str | None:
+        if filetype == FileTypes.LABORATORY:
+            return ParameterKeys.LABORATORY_PATHS
+        elif filetype == FileTypes.DIAGNOSIS:
+            return ParameterKeys.DIAGNOSIS_PATHS
+        elif filetype == FileTypes.MEDICINE:
+            return ParameterKeys.MEDICINE_PATHS
+        elif filetype == FileTypes.GENOMIC:
+            return ParameterKeys.GENOMIC_PATHS
+        elif filetype == FileTypes.IMAGING:
+            return ParameterKeys.IMAGING_PATHS
+        elif filetype == FileTypes.DIAGNOSIS_REGEX:
+            return ParameterKeys.DIAGNOSIS_REGEXES
+        elif filetype == FileTypes.DIAGNOSIS_CLASSIFICATION:
+            return ParameterKeys.DIAGNOSIS_CLASSIFICATION
+        elif filetype == FileTypes.PATIENT_IDS:
+            return ParameterKeys.ANONYMIZED_PATIENT_IDS
         else:
             return None
+
+    @classmethod
+    def get_prefix_for_path(cls, filetype) -> str | None:
+        if os.getenv("CONTEXT_MODE") == "TEST":
+            return DOCKER_FOLDER_TEST
+        else:
+            if filetype == FileTypes.LABORATORY:
+                return DOCKER_FOLDER_LABORATORY
+            elif filetype == FileTypes.GENOMIC:
+                return DOCKER_FOLDER_GENOMIC
+            elif filetype == FileTypes.DIAGNOSIS:
+                return DOCKER_FOLDER_DIAGNOSIS
+            elif filetype == FileTypes.MEDICINE:
+                return DOCKER_FOLDER_MEDICINE
+            elif filetype == FileTypes.IMAGING:
+                return DOCKER_FOLDER_IMAGING
+            elif filetype == FileTypes.PATIENT_IDS:
+                return DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS
+            else:
+                return None

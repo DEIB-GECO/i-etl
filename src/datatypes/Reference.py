@@ -1,9 +1,6 @@
-import json
-
 import jsonpickle
 
 from datatypes.Identifier import Identifier
-from utils.setup_logger import log
 
 
 class Reference:

@@ -4,23 +4,19 @@ import locale
 import math
 import os
 import xml.dom.minidom
-from urllib.parse import quote
-
-import requests
-import urllib
 from datetime import datetime, timedelta
 from typing import Any
-from urllib.request import Request, urlopen
 
 import inflection
 import pandas as pd
+import requests
 from dateutil.parser import parse
 from pandas import DataFrame
-from requests.utils import requote_uri
+from requests import Response
 
+from enums.AccessTypes import AccessTypes
 from enums.DataTypes import DataTypes
 from utils.setup_logger import log
-
 
 # moving it to constants.py creates a circular dependency; also it is only used in this file
 THE_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
@@ -98,10 +94,6 @@ def get_datetime_from_str(str_value: str) -> datetime:
         return None
 
 
-def get_mongodb_date_from_datetime(current_datetime: datetime) -> dict:
-    return {"$date": current_datetime.strftime(THE_DATETIME_FORMAT)}
-
-
 # def normalize_value(input_string: str | float, keep_underscores: bool, replace_spaces: bool) -> str:
     # # replace_spaces = True: spaces are replaces by underscores
     # # replace_spaces = False: spaces are deleted
@@ -175,6 +167,8 @@ def normalize_type(data_type: str) -> str:
             return DataTypes.DATE
         elif data_type == "datetime" or data_type == "datetime64":
             return DataTypes.DATETIME
+        elif data_type == "regex":
+            return DataTypes.REGEX
         else:
             log.error(f"{data_type} is not a recognized data type; will use string")
             return DataTypes.STRING
@@ -183,6 +177,7 @@ def normalize_type(data_type: str) -> str:
 
 
 def cast_value(value: str | float | bool | datetime) -> str | float | bool | datetime:
+    log.info(f"{value} of type {type(value)}")
     if isinstance(value, str):
         # try to convert as boolean
         if normalize_column_value(column_value=value) == "true":
@@ -299,6 +294,10 @@ def mongodb_unwind(field: str) -> dict:
     }
 
 
+def get_mongodb_date_from_datetime(current_datetime: datetime) -> dict:
+    return {"$date": current_datetime.strftime(THE_DATETIME_FORMAT)}
+
+
 # LIST AND DICT CONVERSIONS
 
 
@@ -335,7 +334,6 @@ def compare_tuples(original_tuple: dict, inserted_tuple: dict) -> None:
             # for the special case of timestamp attributes, we check +/- few milliseconds
             # to avoid failing when conversions do not yield the exact same datetime value
             inserted_time = datetime.strptime(inserted_tuple[original_key]["$date"], THE_DATETIME_FORMAT)
-            log.debug(inserted_time)
             inserted_time_minus = inserted_time - timedelta(milliseconds=100)
             inserted_time_plus = inserted_time + timedelta(milliseconds=100)
             assert inserted_time_minus <= inserted_time <= inserted_time_plus
@@ -366,7 +364,7 @@ def write_in_file(resource_list: list, current_working_dir: str, table_name: str
     if len(resource_list) > 0:
         with open(filename, "w") as data_file:
             try:
-                log.debug(f"Writing resource list: {resource_list}")
+                log.debug(f"Dumping {len(resource_list)} in {filename}")
                 json.dump([resource.to_json() for resource in resource_list], data_file)
             except Exception:
                 raise ValueError(f"Could not dump the {len(resource_list)} JSON resources in the file located at {filename}.")
@@ -378,14 +376,17 @@ def get_json_resource_file(current_working_dir: str, table_name: str, count: int
     return os.path.join(current_working_dir, f"{table_name}{str(count)}.json")
 
 
-def read_csv_file_as_string(filepath: str) -> pd.DataFrame:
-    return pd.read_csv(filepath, index_col=False, dtype=str, keep_default_na=True)
+def read_tabular_file_as_string(filepath: str) -> pd.DataFrame:
+    if filepath.endswith(".csv"):
+        return pd.read_csv(filepath, index_col=False, dtype=str, keep_default_na=True)
+    elif filepath.endswith(".xls") or filepath.endswith(".xlsx"):
+        return pd.read_excel(filepath, index_col=False, dtype=str, keep_default_na=True)
+    else:
+        raise ValueError(f"The extension of the tabular file {filepath} is not recognised. Accepted extensions are .csv, .xls, and .xlsx.")
 
 
 def split_list_of_files(joined_filepaths: str, prefix_path: str) -> [str]:
-    log.debug(f"{joined_filepaths}")
     split_files = joined_filepaths.split(",")
-    log.debug(f"{split_files}")
     for i in range(len(split_files)):
         current_file = split_files[i]
         if prefix_path is None:
@@ -409,8 +410,6 @@ def get_lab_feature_by_text(lab_features: list, lab_feature_text: str) -> dict:
     :param lab_features: list of LabFeature instances
     """
     json_lab_features = [lab_feature.to_json() for lab_feature in lab_features]
-    log.debug(json_lab_features)
-    log.debug(lab_feature_text)
     for json_lab_feature in json_lab_features:
         if "code" in json_lab_feature and "text" in json_lab_feature["code"] and json_lab_feature["code"]["text"].startswith(lab_feature_text):
             return json_lab_feature
@@ -448,7 +447,6 @@ def get_field_value_for_patient(lab_records: list, lab_features: list, patient_i
         if lab_feat.to_json()["code"]["text"] == column_name:
             lab_feature = lab_feat.to_json()
             break
-    log.info(lab_feature)
     if lab_feature is not None:
         log.debug(lab_records)
         log.debug(patient_id)
@@ -461,33 +459,60 @@ def get_field_value_for_patient(lab_records: list, lab_features: list, patient_i
     return None
 
 
+def send_query(url: str, headers: dict | None) -> Response | None:
+    try:
+        if headers is None:
+            return requests.get(url, verify=True)
+        else:
+            return requests.get(url, headers=headers, verify=True)
+    except Exception:
+        # if there is an SSL problem, trying the same query without the SSL certificate verification
+        try:
+            if headers is None:
+                return requests.get(url, verify=False)
+            else:
+                return requests.get(url, headers=headers, verify=False)
+        except Exception:
+            return None
+
+
 # API ACCESS
-def urlopen_with_header(url):
-    # adds User-Agent header otherwise urlopen on its own gets an IP blocked response
-    request = Request(url)
-    request.add_header(key='User-Agent', val='Python')
-    # return urlopen(request).read()
-    return requests.get(url)
-
-
-def urlopen_with_authentication(url, username, password):
-    base64string = base64.b64encode(bytes('%s:%s' % (username, password), "ascii"))
-    headers = {
-        "Authorization": f"Basic {base64string.decode("utf-8")}"  # Make sure to prepend 'Bearer ' before your API key
-    }
-    return requests.get(url, headers=headers)
-
-
-def urlopen_with_api_key(url, api_key, with_bearer: bool):
-    if with_bearer:
+def send_query_to_api(url, secret: str | None, access_type: AccessTypes) -> Response | None:
+    # secret may contain an api key or (joint) username and passwort
+    if access_type == AccessTypes.USER_AGENT:
         headers = {
-            "Authorization": f"Bearer {api_key}"  # Make sure to prepend 'Bearer ' before your API key
+            "User-Agent": "Python"
         }
-        return requests.get(url, headers=headers)
+        return send_query(url=url, headers=headers)
+
+    elif access_type == AccessTypes.AUTHENTICATION:
+        username = secret.split(" ")[0]
+        password = secret.split(" ")[1]
+        base64string = base64.b64encode(bytes('%s:%s' % (username, password), "ascii"))
+        headers = {
+            "Authorization": f"Basic {base64string.decode("utf-8")}"  # Make sure to prepend 'Bearer ' before your API key
+        }
+        return send_query(url=url, headers=headers)
+
+    elif access_type == AccessTypes.API_KEY_IN_HEADER:
+        headers = {
+            'accept': '"application/json"',
+            'apiKey': secret
+        }
+        return send_query(url=url, headers=headers)
+
+    elif access_type == AccessTypes.API_KEY_IN_BEARER:
+        headers = {
+            "Authorization": f"Bearer {secret}"
+        }
+        return send_query(url=url, headers=headers)
+
+    elif access_type == AccessTypes.API_KEY_IN_URL:
+        url_with_apikey = f"{url}?apikey={secret}"
+        return send_query(url=url_with_apikey, headers=None)
     else:
-        # simply concat it to the url with the key "apikey"
-        url_with_apikey = f"{url}?apikey={api_key}"
-        return requests.get(url_with_apikey)
+        # unknown access type
+        return None
 
 
 def parse_json_response(response):

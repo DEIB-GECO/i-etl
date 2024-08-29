@@ -1,12 +1,6 @@
-from datetime import datetime
-
-import jsonpickle
-
-from profiles.Resource import Resource
 from enums.TableNames import TableNames
+from profiles.Resource import Resource
 from utils.Counter import Counter
-from utils.setup_logger import log
-from utils.utils import get_mongodb_date_from_datetime
 
 
 class Hospital(Resource):

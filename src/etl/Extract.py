@@ -3,7 +3,6 @@ import os
 import re
 
 import pandas as pd
-from pandas import DataFrame
 
 from analysis.ValueAnalysis import ValueAnalysis
 from analysis.VariableAnalysis import VariableAnalysis
@@ -11,6 +10,8 @@ from database.Database import Database
 from database.Execution import Execution
 from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Coding import Coding
+from enums.DiagnosisClassificationColumns import DiagnosisClassificationColumns
+from enums.DiagnosisRegexColumns import DiagnosisRegexColumns
 from enums.FileTypes import FileTypes
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
@@ -20,7 +21,7 @@ from utils.constants import ID_COLUMNS, PATTERN_VALUE_DIMENSION
 from utils.setup_logger import log
 from utils.utils import is_not_nan, get_values_from_json_values, normalize_column_name, \
     normalize_ontology_name, normalize_ontology_code, normalize_column_value, normalize_hospital_name, \
-    normalize_type, read_csv_file_as_string
+    normalize_type, read_tabular_file_as_string
 
 
 class Extract:
@@ -33,6 +34,8 @@ class Extract:
         self.mapping_column_to_categorical_value = {}  # each column name with its normalized accepted values (str, not cc)
         self.mapping_column_to_vartype = {}  # each column is associated to its var type (column "vartype" in metadata)
         self.mapping_column_to_dimension = {}  # each column is associated to its dimension, the union set of the dimension given in the metadata and the units found in the string values themselves
+        self.mapping_disease_to_classification = {}  # each (data) disease name is associated to a standard disease name and a classification healthy/disease
+        self.mapping_disease_to_cc = {}  # each standard disease name is associated to an OrphaNet code (and possibly omim)
 
         self.execution = execution
         self.database = database
@@ -65,6 +68,10 @@ class Extract:
         # if provided as input, load the mapping between patient IDs and anonymized IDs
         self.load_patient_id_mapping()
 
+        # if provided as input, load disease classification and codes
+        self.compute_mapping_disease_to_classification()
+        self.compute_mapping_disease_to_cc()
+
         # if asked, run some data analysis on the loaded data
         if self.execution.is_analyze:
             self.run_value_analysis()
@@ -74,16 +81,14 @@ class Extract:
         log.info(f"Metadata filepath is {self.execution.metadata_filepath}")
 
         # index_col is False to not add a column with line numbers
-        self.metadata = read_csv_file_as_string(self.execution.metadata_filepath)  # keep all metadata as str
+        self.metadata = read_tabular_file_as_string(self.execution.metadata_filepath)  # keep all metadata as str
         log.debug(self.metadata.dtypes)
-        # log.debug(self.metadata.to_string())
 
         log.info("Will preprocess metadata")
 
         # 1. normalize the header, e.g., "Significato it" becomes "significato_it"
         # this also normalizes hospital names if they are in the header (UC 2 and UC 3)
         self.metadata.rename(columns=lambda x: normalize_column_name(column_name=x), inplace=True)
-        # log.debug(self.metadata.to_string())
 
         # 2. Get the metadata associated to the current hospital (but any dataset within that hospital)
         log.debug(f"working on hospital {self.execution.hospital_name}")
@@ -100,7 +105,6 @@ class Extract:
                 log.info(f"rename {column_name} into {normalized_hospital_name}")
                 self.metadata.rename(columns={column_name: normalized_hospital_name}, inplace=True)
         log.debug(f"nb_hospitals_in_columns: {nb_hospitals_in_columns}")
-        # log.debug(self.metadata.to_string())
         if nb_hospitals_in_columns > 1:
             # there are more than one hospital described in this metadata
             # a. we filter the unnecessary hospital columns (for UC2 and UC3 there are several hospitals in the same metadata file)
@@ -118,7 +122,6 @@ class Extract:
             # so the metadata is only for the current hospital
             # thus, nothing to do
             pass
-        # log.debug(self.metadata.to_string())
 
         # 3. We keep the metadata of the current dataset
         filename = os.path.basename(self.execution.current_filepath).lower()
@@ -129,29 +132,24 @@ class Extract:
             raise ValueError(f"The current dataset ({filename}) is not described in the provided metadata file.")
         else:
             self.metadata = self.metadata[self.metadata[MetadataColumns.DATASET_NAME] == filename]
-        # log.debug(self.metadata.to_string())
 
         # normalize ontology names and codes
         self.metadata[MetadataColumns.FIRST_ONTOLOGY_NAME] = self.metadata[MetadataColumns.FIRST_ONTOLOGY_NAME].apply(lambda value: normalize_ontology_name(ontology_system=value))
         self.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE] = self.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE].apply(lambda value: normalize_ontology_code(ontology_code=value))
         self.metadata[MetadataColumns.SEC_ONTOLOGY_NAME] = self.metadata[MetadataColumns.SEC_ONTOLOGY_NAME].apply(lambda value: normalize_ontology_name(ontology_system=value))
         self.metadata[MetadataColumns.SEC_ONTOLOGY_CODE] = self.metadata[MetadataColumns.SEC_ONTOLOGY_CODE].apply(lambda value: normalize_ontology_code(ontology_code=value))
-        # log.debug(self.metadata.to_string())
 
         # we also normalize column names described in the metadata, inc. "sex", "dateOfBirth", "Ethnicity", etc
         self.metadata[MetadataColumns.COLUMN_NAME] = self.metadata[MetadataColumns.COLUMN_NAME].apply(lambda x: normalize_column_name(column_name=x))
-        # log.debug(self.metadata.to_string())
 
         # normalize the var_type and the ETL type
         self.metadata[MetadataColumns.VAR_TYPE] = self.metadata[MetadataColumns.VAR_TYPE].apply(lambda x: normalize_type(data_type=x))
         self.metadata[MetadataColumns.ETL_TYPE] = self.metadata[MetadataColumns.ETL_TYPE].apply(lambda x: normalize_type(data_type=x))
-        # log.debug(self.metadata.to_string())
 
         # reindex the remaining metadata rows, starting from 0
         # because when dropping rows, rows keep their original indexes
         # to ease tests, we reindex starting from 0
         self.metadata.reset_index(drop=True, inplace=True)
-        # log.debug(self.metadata.to_string())
 
         log.info(f"{len(self.metadata.columns)} columns and {len(self.metadata)} lines in the metadata file.")
 
@@ -163,7 +161,7 @@ class Extract:
 
         # index_col is False to not add a column with line numbers
         # we also keep all data as str (we will cast later)
-        self.data = read_csv_file_as_string(filepath=self.execution.current_filepath)
+        self.data = read_tabular_file_as_string(filepath=self.execution.current_filepath)
 
         # normalize column names ("sex", "dateOfBirth", "Ethnicity", etc) to match column names described in the metadata
         self.data.rename(columns=lambda x: normalize_column_name(column_name=x), inplace=True)
@@ -198,8 +196,6 @@ class Extract:
         if self.execution.anonymized_patient_ids_filepath is not None:
             with open(self.execution.anonymized_patient_ids_filepath, "r") as f:
                 self.patient_ids_mapping = json.load(f)
-        log.debug(type(self.patient_ids_mapping))
-        log.debug(self.patient_ids_mapping)
         log.info(f"{len(self.patient_ids_mapping)} patient IDs in the mapping file.")
 
     def remove_unused_csv_columns(self) -> None:
@@ -299,8 +295,8 @@ class Extract:
             else:
                 # no JSON values for this column, pass
                 pass
-        log.debug(f"{self.mapping_categorical_value_to_cc}")
-        log.debug(f"{self.mapping_column_to_categorical_value}")
+        # log.debug(f"{self.mapping_categorical_value_to_cc}")
+        # log.debug(f"{self.mapping_column_to_categorical_value}")
 
     def compute_column_to_dimension(self) -> None:
         self.mapping_column_to_dimension = {}
@@ -333,7 +329,6 @@ class Extract:
                     units_with_max_frequency = [unit for unit, frequency in units.items() if frequency == max_frequency]
                     units_with_max_frequency.sort()
                     most_frequent_unit = units_with_max_frequency[0]
-                    log.debug(f"most frequent dimension is {most_frequent_unit}")
                     self.mapping_column_to_dimension[column_name] = most_frequent_unit
                 else:
                     # no unit found in those values
@@ -351,7 +346,48 @@ class Extract:
                     self.mapping_column_to_dimension[column_name] = column_expected_dimension
                 else:
                     self.mapping_column_to_dimension[column_name] = None
-        log.debug(self.mapping_column_to_dimension)
+        # log.debug(self.mapping_column_to_dimension)
+
+    def compute_mapping_disease_to_classification(self) -> None:
+        self.mapping_disease_to_classification = {}
+
+        if self.execution.diagnosis_classification_filepath is not None:
+            diagnosis_csv = read_tabular_file_as_string(self.execution.diagnosis_classification_filepath)
+            # normalize the headers, e.g., "Classification" -> "classification"
+            diagnosis_csv.rename(columns=lambda x: normalize_column_name(column_name=x), inplace=True)
+            for index, line in diagnosis_csv.iterrows():
+                diagnosis_free_text = normalize_column_value(line[DiagnosisClassificationColumns.DIAGNOSIS_FREE_TEXT])
+                self.mapping_disease_to_classification[diagnosis_free_text] = {}
+                standard_name = line[DiagnosisClassificationColumns.DIAGNOSIS_NAME]
+                if is_not_nan(standard_name):
+                    # a standard name exists in the classification
+                    self.mapping_disease_to_classification[diagnosis_free_text]["standard_name"] = standard_name
+                else:
+                    # no standard name is associated to the free text
+                    # we need to explicitly specify None, otherwise we would have "nan" (which is not recognised in JSON documents)
+                    pass
+                classification = normalize_column_value(line[DiagnosisClassificationColumns.DIAGNOSIS_CLASSIFICATION])
+                if is_not_nan(classification) and (classification == normalize_column_value("healthy") or classification == normalize_column_value("disease")):
+                    # this disease is classified as Healthy/Disease
+                    self.mapping_disease_to_classification[diagnosis_free_text]["classification"] = classification
+                else:
+                    # no classification (Healthy/Disease) is provided for this disease.
+                    pass
+        # log.debug(self.mapping_disease_to_classification)
+
+    def compute_mapping_disease_to_cc(self) -> None:
+        self.mapping_disease_to_cc = {}
+
+        if self.execution.diagnosis_regexes_filepath is not None:
+            diagnosis_csv = read_tabular_file_as_string(self.execution.diagnosis_regexes_filepath)
+            # normalize the headers, e.g., "Classification" -> "classification"
+            diagnosis_csv.rename(columns=lambda x: normalize_column_name(column_name=x), inplace=True)
+            for index, line in diagnosis_csv.iterrows():
+                diagnosis_standard_name = line[DiagnosisRegexColumns.DIAGNOSIS_NAME]
+                cc = CodeableConcept(original_name=diagnosis_standard_name)
+                cc.add_coding(one_coding=Coding(ontology=Ontologies.ORPHANET, code=line[DiagnosisRegexColumns.ORPHANET_CODE], display=None))
+                self.mapping_disease_to_cc[diagnosis_standard_name] = cc.to_json()  # do not forget to add the JSONified CC, not the CC itlelf
+        # log.debug(self.mapping_disease_to_cc)
 
     def run_value_analysis(self) -> None:
         log.debug(f"{self.mapping_categorical_value_to_cc}")

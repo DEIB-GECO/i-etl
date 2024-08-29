@@ -1,7 +1,6 @@
 from enums.TableNames import TableNames
 from profiles.Resource import Resource
 from utils.Counter import Counter
-from utils.setup_logger import log
 
 
 class Patient(Resource):

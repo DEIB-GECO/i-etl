@@ -1,5 +1,4 @@
 import json
-import os.path
 import re
 from datetime import datetime
 from typing import Any
@@ -15,31 +14,32 @@ from datatypes.Identifier import Identifier
 from enums.ColumnsToIgnore import ColumnsToIgnore
 from enums.DataTypes import DataTypes
 from enums.FileTypes import FileTypes
-from enums.PhenotypicColumns import PhenotypicColumns
-from enums.SampleColumns import SampleColumns
-from enums.TrueFalse import TrueFalse
-from profiles.DiagnosisFeature import DiagnosisFeature
-from profiles.DiagnosisRecord import DiagnosisRecord
-from profiles.LaboratoryFeature import LaboratoryFeature
-from profiles.LaboratoryRecord import LaboratoryRecord
-from profiles.Hospital import Hospital
-from profiles.Patient import Patient
-from profiles.Sample import Sample
-from utils.Counter import Counter
 from enums.LabFeatureCategories import LabFeatureCategories
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
+from enums.PhenotypicColumns import PhenotypicColumns
+from enums.SampleColumns import SampleColumns
 from enums.TableNames import TableNames
+from enums.TrueFalse import TrueFalse
+from profiles.DiagnosisFeature import DiagnosisFeature
+from profiles.DiagnosisRecord import DiagnosisRecord
+from profiles.Hospital import Hospital
+from profiles.LaboratoryFeature import LaboratoryFeature
+from profiles.LaboratoryRecord import LaboratoryRecord
+from profiles.Patient import Patient
+from profiles.Sample import Sample
+from utils.Counter import Counter
 from utils.constants import NO_ID, BATCH_SIZE, ID_COLUMNS, PATTERN_VALUE_DIMENSION
 from utils.setup_logger import log
-from utils.utils import is_not_nan, cast_value, write_in_file
+from utils.utils import is_not_nan, cast_value, write_in_file, normalize_column_value
 
 
 class Transform:
 
     def __init__(self, database: Database, execution: Execution, data: DataFrame, metadata: DataFrame,
                  mapping_categorical_value_to_cc: dict, mapping_column_to_categorical_value: dict,
-                 mapping_column_to_dimension: dict, patient_ids_mapping: dict):
+                 mapping_column_to_dimension: dict, patient_ids_mapping: dict,
+                 diagnosis_classification: dict, mapping_diagnosis_to_cc: dict):
         self.database = database
         self.execution = execution
         self.counter = Counter()
@@ -53,21 +53,27 @@ class Transform:
         # to keep track of anonymized vs. hospital patient ids
         # this is empty if no file as been provided by the user, otherwise it contains some mappings <patient ID, anonymized ID>
         self.patient_ids_mapping = patient_ids_mapping
+        # to know how to map "free text" diagnosis values and their classification (healthy/disease)
+        self.diagnosis_classification = diagnosis_classification  # it may be None if this is not BUZZI
+        self.mapping_diagnosis_to_cc = mapping_diagnosis_to_cc  # it may be None if this is not BUZZI
 
         # to record objects that will be further inserted in the database
+        # features
+        self.laboratory_features = []
+        self.diagnosis_features = []
+        self.medicine_features = []
+        self.imaging_features = []
+        self.genomic_features = []
+        # records
+        self.laboratory_records = []
+        self.diagnosis_records = []
+        self.medicine_records = []
+        self.imaging_records = []
+        self.genomic_records = []
+        # other entities
         self.hospitals = []
         self.patients = []
-        self.laboratory_features = []
-        self.laboratory_records = []
         self.samples = []
-        self.diagnosis_features = []
-        self.diagnosis_records = []
-        self.medicine_features = []
-        self.medicine_records = []
-        self.imaging_features = []
-        self.medicine_records = []
-        self.genomic_features = []
-        self.genomic_records = []
 
         # to keep track off what is in the CSV and which objects (their identifiers) have been created out of it
         # this will also allow us to get resource identifiers of the referred resources
@@ -101,32 +107,11 @@ class Transform:
             self.create_genomic_features()
             self.create_genomic_records()
         else:
-            raise TypeError(
-                f"The type of the current file is unknown. It should be laboratory, diagnosis, medicine, imaging or genomic. It is of type: {self.execution.current_file_type}")
+            raise TypeError(f"The current file type ({self.execution.current_file_type} is unknown. It should be laboratory, diagnosis, medicine, imaging or genomic.")
 
-    def set_resource_counter_id(self) -> None:
-        self.counter.set_with_database(database=self.database)
-
-    def create_hospital(self) -> None:
-        log.info(f"create hospital instance in memory")
-        new_hospital = Hospital(id_value=NO_ID, name=self.execution.hospital_name, counter=self.counter)
-        self.hospitals.append(new_hospital)
-        write_in_file(resource_list=self.hospitals, current_working_dir=self.execution.working_dir_current, table_name=TableNames.HOSPITAL, count=1)
-        self.database.load_json_in_table(table_name=TableNames.HOSPITAL, unique_variables=["name"])
-
-    def create_laboratory_features(self) -> None:
-        log.info(f"create Lab. Feat. instances in memory")
-
-        # 1. first, we retrieve the existing LabFeature instances to not recreate new CodeableConcepts for them
-        # this will avoid to send again API queries to re-build already-built CodeableConcept
-        result = self.database.find_operation(table_name=TableNames.LABORATORY_FEATURE, filter_dict={}, projection={"code.text": 1})
-        db_lab_feature_names = []
-        for res in result:
-            db_lab_feature_names.append(res["code"]["text"])
-        log.debug(db_lab_feature_names)
-
-        # 2., then we can create non-existing LabFeature instances
-        self.create_features(table_name=TableNames.LABORATORY_FEATURE, db_existing_features=db_lab_feature_names)
+    ##############################################################
+    # FEATURES
+    ##############################################################
 
     def create_features(self, table_name: str, db_existing_features: list[str]) -> None:
         log.info(f"create Feature instances of type {table_name} in memory")
@@ -194,42 +179,47 @@ class Transform:
         self.write_remaining_instances_to_database(resources=self.laboratory_features, table_name=TableNames.LABORATORY_FEATURE, count=count, unique_variables=["code"])
         self.write_remaining_instances_to_database(resources=self.diagnosis_features, table_name=TableNames.DIAGNOSIS_FEATURE, count=count, unique_variables=["code"])
 
-    def write_remaining_instances_to_database(self, resources: list, table_name: str, count: int, unique_variables: list[str]):
-        # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
-        write_in_file(resource_list=resources, current_working_dir=self.execution.working_dir_current,
-                      table_name=table_name, count=count)
-        self.database.load_json_in_table(table_name=table_name, unique_variables=unique_variables)
+    def create_laboratory_features(self) -> None:
+        log.info(f"create Lab. Feat. instances in memory")
 
-    def create_samples(self) -> None:
-        if TableNames.SAMPLE in ID_COLUMNS[self.execution.hospital_name] and ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE] in self.data.columns:
-            # this is a dataset with samples
-            log.info(f"create Sample instances in memory")
-            created_sample_barcodes = set()
-            count = 1
-            for index, row in self.data.iterrows():
-                sample_barcode = row[SampleColumns.SAMPLE_BAR_CODE]
-                if sample_barcode not in created_sample_barcodes:
-                    sampling = row[SampleColumns.SAMPLING] if SampleColumns.SAMPLING in row else None
-                    sample_quality = row[SampleColumns.SAMPLE_QUALITY] if SampleColumns.SAMPLE_QUALITY in row else None
-                    time_collected = cast_value(value=row[SampleColumns.SAMPLE_COLLECTED]) if SampleColumns.SAMPLE_COLLECTED in row else None
-                    time_received = cast_value(value=row[SampleColumns.SAMPLE_RECEIVED]) if SampleColumns.SAMPLE_RECEIVED in row else None
-                    too_young = cast_value(value=row[SampleColumns.SAMPLE_TOO_YOUNG]) if SampleColumns.SAMPLE_TOO_YOUNG in row else None
-                    bis = cast_value(value=row[SampleColumns.SAMPLE_BIS]) if SampleColumns.SAMPLE_BIS in row else None
-                    new_sample = Sample(sample_barcode, sampling=sampling, quality=sample_quality,
-                                        time_collected=time_collected, time_received=time_received,
-                                        too_young=too_young, bis=bis, counter=self.counter, hospital_name=self.execution.hospital_name)
-                    created_sample_barcodes.add(sample_barcode)
-                    self.samples.append(new_sample)
-                    if len(self.samples) >= BATCH_SIZE:
-                        write_in_file(resource_list=self.samples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.SAMPLE, count=count)
-                        self.samples = []
-                        count = count + 1
-                        # no need to load Sample instances because they are referenced using their ID,
-                        # which was provided by the hospital (thus is known by the dataset)
-            write_in_file(resource_list=self.samples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.SAMPLE, count=count)
-            log.debug(f"Created distinct {len(created_sample_barcodes)} samples in total.")
-        else:
-            log.debug("This hospital should not have samples. Skipping it.")
+        # 1. first, we retrieve the existing LabFeature instances to not recreate new CodeableConcepts for them
+        # this will avoid to send again API queries to re-build already-built CodeableConcept
+        result = self.database.find_operation(table_name=TableNames.LABORATORY_FEATURE, filter_dict={}, projection={"code.text": 1})
+        db_lab_feature_names = []
+        for res in result:
+            db_lab_feature_names.append(res["code"]["text"])
+
+        # 2., then we can create non-existing LabFeature instances
+        self.create_features(table_name=TableNames.LABORATORY_FEATURE, db_existing_features=db_lab_feature_names)
+
+    def create_diagnosis_features(self):
+        log.info(f"create Diag. Feat. instances in memory")
+
+        # 1. first, we retrieve the existing DiagFeature instances to not recreate new CodeableConcepts for them
+        # this will avoid to send again API queries to re-build already-built CodeableConcept
+        # TODO NELLY: select distinct based on coding system+code
+        # TODO Nelly: Do the same for laboratory records, etc...: get their codeableConcept in-memory first? or maybe compute the display only if we insert it in the db?
+        result = self.database.find_operation(table_name=TableNames.DIAGNOSIS_FEATURE, filter_dict={}, projection={"code.text": 1})
+        db_diag_feature_names = []
+        for res in result:
+            db_diag_feature_names.append(res["code"]["text"])
+        self.create_features(table_name=TableNames.DIAGNOSIS_FEATURE, db_existing_features=db_diag_feature_names)
+
+    def create_medicine_features(self):
+        # TODO Nelly: implement this
+        pass
+
+    def create_imaging_features(self):
+        # TODO Nelly: implement this
+        pass
+
+    def create_genomic_features(self):
+        # TODO Nelly: implement this
+        pass
+
+    ##############################################################
+    # RECORDS
+    ##############################################################
 
     def create_laboratory_records(self) -> None:
         log.info(f"create Lab. Rec. instances in memory")
@@ -265,8 +255,8 @@ class Transform:
                         id_column_for_samples = ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE] if TableNames.SAMPLE in ID_COLUMNS[self.execution.hospital_name] else ""
                         sample_id = None
                         if id_column_for_samples != "":
+                            log.info(row)
                             sample_id = Identifier(value=row[id_column_for_samples])
-                        # TODO Nelly: we could even clean more the data, e.g., do not allow "Italy" as ethnicity (caucasian, etc)
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
                         new_laboratory_record = LaboratoryRecord(id_value=NO_ID, feature_id=lab_feature_id,
                                                                  patient_id=patient_id, hospital_id=hospital_id,
@@ -285,56 +275,6 @@ class Transform:
 
         write_in_file(resource_list=self.laboratory_records, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_RECORD, count=count)
 
-    def create_patients(self) -> None:
-        log.info(f"create patient instances in memory")
-        count = 1
-        log.info(self.patient_ids_mapping)
-        for index, row in self.data.iterrows():
-            row_patient_id = row[ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]]
-            log.info(f"Dealing with {row_patient_id}")
-            if row_patient_id not in self.patient_ids_mapping:
-                log.info(f"the (anonymized) patient does not exist yet, we will create it")
-                # the (anonymized) patient does not exist yet, we will create it
-                new_patient = Patient(id_value=NO_ID, counter=self.counter, hospital_name=self.execution.hospital_name)
-                log.info(f"set {new_patient.identifier.value} for {row_patient_id}")
-                self.patient_ids_mapping[row_patient_id] = new_patient.identifier.value  # keep track of anonymized patient ids
-            else:
-                log.info(f"the (anonymized) patient id already exists, we take it from the mapping")
-                # the (anonymized) patient id already exists, we take it from the mapping
-                new_patient = Patient(id_value=self.patient_ids_mapping[row_patient_id], counter=self.counter, hospital_name=self.execution.hospital_name)
-            self.patients.append(new_patient)
-            if len(self.patients) >= BATCH_SIZE:
-                write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current, table_name=TableNames.PATIENT, count=count)  # this will save the data if it has reached BATCH_SIZE
-                self.patients = []
-                count = count + 1
-                # no need to load Patient instances because they are referenced using their ID,
-                # which was provided by the hospital (thus is known by the dataset)
-        write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current, table_name=TableNames.PATIENT, count=count)
-        # finally, we also write the mapping patient ID / anonymized ID in a file - this will be ingested for subsequent runs to not renumber existing anonymized patients
-        log.debug(self.patient_ids_mapping)
-        log.debug(self.execution.anonymized_patient_ids_filepath)
-        with open(self.execution.anonymized_patient_ids_filepath, "w") as data_file:
-            try:
-                log.debug(f"Writing {len(self.patient_ids_mapping)} mappings for patient IDs")
-                json.dump(self.patient_ids_mapping, data_file)
-            except Exception:
-                raise ValueError(f"Could not dump the {len(self.patient_ids_mapping)} JSON resources in the file located at {self.execution.anonymized_patient_ids_filepath}.")
-
-    def create_diagnosis_features(self):
-        log.info(f"create Diag. Feat. instances in memory")
-
-        # 1. first, we retrieve the existing DiagFeature instances to not recreate new CodeableConcepts for them
-        # this will avoid to send again API queries to re-build already-built CodeableConcept
-        # TODO NELLY: select distinct based on coding system+code
-        # TODO Nelly: Do the same for laboratory records, etc...: get their codeableConcept in-memory first? or maybe compute the display only if we insert it in the db?
-        result = self.database.find_operation(table_name=TableNames.DIAGNOSIS_FEATURE, filter_dict={},
-                                              projection={"code.text": 1})
-        db_diag_feature_names = []
-        for res in result:
-            db_diag_feature_names.append(res["code"]["text"])
-        log.debug(db_diag_feature_names)
-        self.create_features(table_name=TableNames.DIAGNOSIS_FEATURE, db_existing_features=db_diag_feature_names)
-
     def create_diagnosis_records(self):
         log.info(f"create Diag. Rec. instances in memory")
 
@@ -346,7 +286,7 @@ class Transform:
         for index, row in self.data.iterrows():
             # create DiagRecord instances by associating diagnoses to patients
             for column_name, value in row.items():
-                log.debug(f"for row {index} (type: {type(index)} and column {column_name} (type: {type(column_name)}), value is {value}")
+                # log.debug(f"for row {index} and column {column_name}, value is {value}")
                 if value is None or value == "" or not is_not_nan(value):
                     # if there is no value for that LabFeature, no need to create a LabRecord instance
                     pass
@@ -363,20 +303,25 @@ class Transform:
                         # we cannot use PatientAnonymizedIdentifier otherwise we would concat a set hospital name to the anonymized patient id
                         # patient_id = PatientAnonymizedIdentifier(id_value=row[id_column_for_patients], hospital_name=self.execution.hospital_name)
                         patient_id = Identifier(value=self.patient_ids_mapping[row[id_column_for_patients]])
-                        log.debug(f"patient_id = {patient_id.to_json()} of type {type(patient_id)}")
+                        # log.debug(f"patient_id = {patient_id.to_json()} of type {type(patient_id)}")
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
-                        new_diag_record = DiagnosisRecord(id_value=NO_ID, feature_id=diag_feature_id,
-                                                          patient_id=patient_id, hospital_id=hospital_id,
-                                                          value=fairified_value, counter=self.counter,
-                                                          hospital_name=self.execution.hospital_name)
-                        self.diagnosis_records.append(new_diag_record)
-                        if len(self.diagnosis_records) >= BATCH_SIZE:
-                            write_in_file(resource_list=self.diagnosis_records,
-                                          current_working_dir=self.execution.working_dir_current,
-                                          table_name=TableNames.DIAGNOSIS_RECORD, count=count)
-                            # no need to load LabRecords instances because they are never referenced
-                            self.diagnosis_records = []
-                            count = count + 1
+                        if fairified_value is None:
+                            # the patient has geentic mutation but he is not ill
+                            # thus, we do not record it in database
+                            pass
+                        else:
+                            new_diag_record = DiagnosisRecord(id_value=NO_ID, feature_id=diag_feature_id,
+                                                              patient_id=patient_id, hospital_id=hospital_id,
+                                                              value=fairified_value, counter=self.counter,
+                                                              hospital_name=self.execution.hospital_name)
+                            self.diagnosis_records.append(new_diag_record)
+                            if len(self.diagnosis_records) >= BATCH_SIZE:
+                                write_in_file(resource_list=self.diagnosis_records,
+                                              current_working_dir=self.execution.working_dir_current,
+                                              table_name=TableNames.DIAGNOSIS_RECORD, count=count)
+                                # no need to load LabRecords instances because they are never referenced
+                                self.diagnosis_records = []
+                                count = count + 1
                     else:
                         # this should never happen
                         # this represents the case when a column has not been converted to a LabFeature resource
@@ -385,15 +330,7 @@ class Transform:
         write_in_file(resource_list=self.diagnosis_records, current_working_dir=self.execution.working_dir_current,
                       table_name=TableNames.DIAGNOSIS_RECORD, count=count)
 
-    def create_medicine_features(self):
-        # TODO Nelly: implement this
-        pass
-
     def create_medicine_records(self):
-        # TODO Nelly: implement this
-        pass
-
-    def create_imaging_features(self):
         # TODO Nelly: implement this
         pass
 
@@ -401,15 +338,91 @@ class Transform:
         # TODO Nelly: implement this
         pass
 
-    def create_genomic_features(self):
-        # TODO Nelly: implement this
-        pass
-
     def create_genomic_records(self):
         # TODO Nelly: implement this
         pass
 
-    # Transform UTILITY methods
+    ##############################################################
+    # OTHER ENTITIES
+    ##############################################################
+
+    def create_samples(self) -> None:
+        if TableNames.SAMPLE in ID_COLUMNS[self.execution.hospital_name] and ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE] in self.data.columns:
+            # this is a dataset with samples
+            log.info(f"create Sample instances in memory")
+            created_sample_barcodes = set()
+            count = 1
+            for index, row in self.data.iterrows():
+                sample_barcode = row[SampleColumns.SAMPLE_BAR_CODE]
+                if sample_barcode not in created_sample_barcodes:
+                    sampling = row[SampleColumns.SAMPLING] if SampleColumns.SAMPLING in row else None
+                    sample_quality = row[SampleColumns.SAMPLE_QUALITY] if SampleColumns.SAMPLE_QUALITY in row else None
+                    time_collected = cast_value(value=row[SampleColumns.SAMPLE_COLLECTED]) if SampleColumns.SAMPLE_COLLECTED in row else None
+                    time_received = cast_value(value=row[SampleColumns.SAMPLE_RECEIVED]) if SampleColumns.SAMPLE_RECEIVED in row else None
+                    too_young = cast_value(value=row[SampleColumns.SAMPLE_TOO_YOUNG]) if SampleColumns.SAMPLE_TOO_YOUNG in row else None
+                    bis = cast_value(value=row[SampleColumns.SAMPLE_BIS]) if SampleColumns.SAMPLE_BIS in row else None
+                    new_sample = Sample(sample_barcode, sampling=sampling, quality=sample_quality,
+                                        time_collected=time_collected, time_received=time_received,
+                                        too_young=too_young, bis=bis, counter=self.counter, hospital_name=self.execution.hospital_name)
+                    created_sample_barcodes.add(sample_barcode)
+                    self.samples.append(new_sample)
+                    if len(self.samples) >= BATCH_SIZE:
+                        write_in_file(resource_list=self.samples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.SAMPLE, count=count)
+                        self.samples = []
+                        count = count + 1
+                        # no need to load Sample instances because they are referenced using their ID,
+                        # which was provided by the hospital (thus is known by the dataset)
+            write_in_file(resource_list=self.samples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.SAMPLE, count=count)
+            log.debug(f"Created distinct {len(created_sample_barcodes)} samples in total.")
+        else:
+            log.debug("This hospital should not have samples. Skipping it.")
+
+    def create_patients(self) -> None:
+        log.info(f"create patient instances in memory")
+        count = 1
+        for index, row in self.data.iterrows():
+            row_patient_id = row[ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]]
+            if row_patient_id not in self.patient_ids_mapping:
+                # the (anonymized) patient does not exist yet, we will create it
+                new_patient = Patient(id_value=NO_ID, counter=self.counter, hospital_name=self.execution.hospital_name)
+                self.patient_ids_mapping[row_patient_id] = new_patient.identifier.value  # keep track of anonymized patient ids
+            else:
+                # the (anonymized) patient id already exists, we take it from the mapping
+                new_patient = Patient(id_value=self.patient_ids_mapping[row_patient_id], counter=self.counter, hospital_name=self.execution.hospital_name)
+            self.patients.append(new_patient)
+            if len(self.patients) >= BATCH_SIZE:
+                write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current, table_name=TableNames.PATIENT, count=count)  # this will save the data if it has reached BATCH_SIZE
+                self.patients = []
+                count = count + 1
+                # no need to load Patient instances because they are referenced using their ID,
+                # which was provided by the hospital (thus is known by the dataset)
+        write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current, table_name=TableNames.PATIENT, count=count)
+        # finally, we also write the mapping patient ID / anonymized ID in a file - this will be ingested for subsequent runs to not renumber existing anonymized patients
+        with open(self.execution.anonymized_patient_ids_filepath, "w") as data_file:
+            try:
+                json.dump(self.patient_ids_mapping, data_file)
+            except Exception:
+                raise ValueError(f"Could not dump the {len(self.patient_ids_mapping)} JSON resources in the file located at {self.execution.anonymized_patient_ids_filepath}.")
+
+    ##############################################################
+    # UTILITIES
+    ##############################################################
+
+    def set_resource_counter_id(self) -> None:
+        self.counter.set_with_database(database=self.database)
+
+    def create_hospital(self) -> None:
+        log.info(f"create hospital instance in memory")
+        new_hospital = Hospital(id_value=NO_ID, name=self.execution.hospital_name, counter=self.counter)
+        self.hospitals.append(new_hospital)
+        write_in_file(resource_list=self.hospitals, current_working_dir=self.execution.working_dir_current, table_name=TableNames.HOSPITAL, count=1)
+        self.database.load_json_in_table(table_name=TableNames.HOSPITAL, unique_variables=["name"])
+
+    def write_remaining_instances_to_database(self, resources: list, table_name: str, count: int, unique_variables: list[str]):
+        # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
+        write_in_file(resource_list=resources, current_working_dir=self.execution.working_dir_current,
+                      table_name=table_name, count=count)
+        self.database.load_json_in_table(table_name=table_name, unique_variables=unique_variables)
 
     def create_codeable_concept_from_row(self, column_name: str) -> CodeableConcept | None:
         cc = CodeableConcept(original_name=column_name)
@@ -426,10 +439,6 @@ class Transform:
                                 code=row[MetadataColumns.SEC_ONTOLOGY_CODE],
                                 display=None)
                 cc.add_coding(one_coding=coding)
-            # NB July 18th 2024: for the text of a CC, this HAS TO be the column name ONLY (and not the column name and the description).
-            # this is because we build a mapping between column names (variables) and their identifiers
-            # if there is also the description in the text, then no column name would match the CC text.
-            # NOPE   cc.text = LabFeature.get_display(column_name=row[MetadataColumns.COLUMN_NAME], column_description=row[MetadataColumns.SIGNIFICATION_EN])  # the column name + description
             return cc
         elif len(rows) == 0:
             # log.warn("Did not find the column '%s' in the metadata", column_name)
@@ -446,16 +455,20 @@ class Transform:
             return LabFeatureCategories.get_clinical()
 
     def fairify_value(self, column_name: str, value: Any) -> str | float | datetime | CodeableConcept:
-        log.info(f"fairify {value} (of type {type(value)}) for column {column_name}")
         current_column_info = DataFrame(self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name])
         etl_type = current_column_info[MetadataColumns.ETL_TYPE].iloc[0]  # we need to take the value itself, otherwise we end up with a series of 1 element (the ETL type)
         var_type = current_column_info[MetadataColumns.VAR_TYPE].iloc[0]
+        the_cast_value = cast_value(value=value)  # we compute only once the cast value and return it whenever we cannot FAIRify deeply the value
+        return_value = None  # to ease logging, we also save the return value in a variable and return it at the very end
         if column_name in self.mapping_column_to_dimension:
             expected_unit = self.mapping_column_to_dimension[column_name]
         else:
             expected_unit = None  # in case no unit has been specified and no unit could be extracted form data
-        # log.debug(f"ETL type is {etl_type}, var type is {var_type}, expected unit is {expected_unit}")
+        log.debug(f"ETL type is {etl_type}, var type is {var_type}, expected unit is {expected_unit}")
+        log.info(self.mapping_column_to_categorical_value)
         if (etl_type == DataTypes.CATEGORY or etl_type == DataTypes.BOOLEAN) and column_name in self.mapping_column_to_categorical_value:
+            log.info(self.mapping_column_to_categorical_value[column_name])
+            log.info(self.mapping_categorical_value_to_cc)
             # we iterate over all the mappings of a given column
             if value in self.mapping_column_to_categorical_value[column_name] and value in self.mapping_categorical_value_to_cc:
                 # if the value is equal to the mapping value, we have found a match,
@@ -469,14 +482,20 @@ class Transform:
                 if etl_type == DataTypes.BOOLEAN:
                     # this should rather be a boolean, let's cast it as boolean, instead of using Yes/No SNOMED_CT codes
                     if cc == TrueFalse.get_true():
-                        return True
+                        log.info("return True")
+                        return_value = True
                     elif cc == TrueFalse.get_false():
-                        return False
+                        log.info("return False")
+                        return_value = False
                     else:
-                        return np.nan
+                        log.info("return the cast value")
+                        return_value = the_cast_value
                 else:
-                    return cc  # return the CC computed out of the corresponding mapping
-            return cast_value(value=value)  # no coded value for that value, trying at least to normalize it a bit
+                    log.info("return cc")
+                    return_value = cc  # return the CC computed out of the corresponding mapping
+            else:
+                log.info("return the cast value")
+                return_value = the_cast_value  # no coded value for that value, trying at least to normalize it a bit
         elif var_type == DataTypes.STRING and (etl_type == DataTypes.INTEGER or etl_type == DataTypes.FLOAT):
             # if the dimension is not the one of the feature, we simply leave the cell value as a string
             # otherwise, convert the numeric value
@@ -487,19 +506,62 @@ class Transform:
                 unit = m.group(2)
                 if unit == expected_unit:
                     if etl_type == DataTypes.INTEGER:
-                        return int(the_value)
+                        log.info("return int")
+                        return_value = int(the_value)
                     elif etl_type == DataTypes.FLOAT:
-                        return float(the_value)
+                        log.info("return float")
+                        return_value = float(the_value)
                     else:
-                        return the_value
+                        log.info("return the value")
+                        return_value = the_value
                 else:
                     # the feature dimension does not correspond, we return the value as is
-                    return value
+                    log.info("return the value")
+                    return_value = value
             else:
                 # this value does not contain a dimension or is not of the form "value dimension"
                 # we simply cast it as much as we can
-                return cast_value(value=value)
+                log.info("return the cast value")
+                return_value = the_cast_value
+        elif etl_type == DataTypes.REGEX:
+            # this corresponds to a diagnosis name, for which we need to find the corresponding ORPHANET code
+            if value in self.diagnosis_classification:
+                # the "free text" diagnosis value has a corresponding standard (textual) diagnosis name
+                if "classification" in self.diagnosis_classification[value]:
+                    if self.diagnosis_classification[value]["classification"] == normalize_column_value("Disease"):
+                        if "standard_name" in self.diagnosis_classification[value]:
+                            diagnosis_name = self.diagnosis_classification[value]["standard_name"]
+                            if diagnosis_name in self.mapping_diagnosis_to_cc:
+                                # the standard diagnosis name has corresponding codes (ORPHANET and OMIM)
+                                the_cc = self.mapping_diagnosis_to_cc[diagnosis_name]
+                                log.info("return cc")
+                                return_value = the_cc
+                            else:
+                                log.error(f"For '{diagnosis_name}', no existing CC has been found. Will return '{cast_value(value=value)}'")
+                                log.info("return the cast value")
+                                return_value = the_cast_value
+                        else:
+                            log.error(f"'{value}' has no associated standard name. Will return '{cast_value(value=value)}'")
+                            log.info("return the cast value")
+                            return_value = the_cast_value
+                    else:
+                        log.error("This disease is not a real disease (because such patient do not show abnormal conditions). Will return None")
+                        log.info("return None")
+                        return_value = None
+                else:
+                    log.error(f"No classification for '{value}'. Will return '{cast_value(value=value)}'")
+                    log.info("return the cast value")
+                    return_value = the_cast_value
+            else:
+                log.error(f"For '{value}', no diagnosis name has been found. Will return '{cast_value(value=value)}'")
+                log.info("return the cast value")
+                return_value = the_cast_value
         else:
             # this is not a category, not a boolean and not an int/float value
             # we simply cast it as much as we can
-            return cast_value(value=value)
+            log.info("return the cast value")
+            return_value = the_cast_value
+
+        # we use type(..).__name__ to get the class name, e.g., "str" or "bool", instead of "<class 'float'>"
+        log.info(f"Column '{column_name}': fairify {type(value).__name__} value '{value}' (unit: {expected_unit}) into {type(return_value).__name__}: {return_value}")
+        return return_value

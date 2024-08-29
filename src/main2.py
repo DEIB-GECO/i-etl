@@ -1,27 +1,22 @@
 import copy
 import json
-import os
-import ssl
-
-import inflection
 
 import bson
+import inflection
 import jsonpickle
+from bson.json_util import loads
 from dateutil.parser import parse
 from pymongo.mongo_client import MongoClient
-from bson.json_util import loads
 
-from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Coding import Coding
 from datatypes.Reference import Reference
 from enums.HospitalNames import HospitalNames
 from enums.Ontologies import Ontologies
-from profiles.LaboratoryRecord import LaboratoryRecord
 from profiles.Hospital import Hospital
+from profiles.LaboratoryRecord import LaboratoryRecord
 from utils.Counter import Counter
-from utils.utils import get_mongodb_date_from_datetime, normalize_column_value, read_csv_file_as_string, \
-    normalize_hospital_name, urlopen_with_header, urlopen_with_authentication, urlopen_with_api_key, \
-    parse_json_response, parse_xml_response, load_xml_file
+from utils.utils import get_mongodb_date_from_datetime, normalize_column_value, read_tabular_file_as_string, \
+    normalize_hospital_name
 
 
 def to_snake_case(name):
@@ -137,7 +132,7 @@ def main_to_snake_case():
 
 
 def main_read_pandas_csv():
-    data = read_csv_file_as_string("../datasets/my_data.csv")
+    data = read_tabular_file_as_string("../datasets/my_data.csv")
     print(data)
     print("#####")
     for index, row in data.iterrows():
@@ -179,15 +174,16 @@ def main_json_pickle():
 
 
 def main_ontology_api():
-    print()
     # does not work due to ssl certificates
-    print(Coding.compute_display_from_api(ontology=Ontologies.SNOMEDCT, ontology_code="248152002"))
+    # print(Coding.compute_display_from_api(ontology=Ontologies.SNOMEDCT, ontology_code="248152002"))
     # print()
-    # print(Coding.compute_display_from_api(ontology_system=Ontologies.LOINC, ontology_code="4544-3"))
+    # print(Coding.compute_display_from_api(ontology=Ontologies.LOINC, ontology_code="4544-3"))
     # print()
-    # print(Coding.compute_display_from_api(ontology_system=Ontologies.PUBCHEM, ontology_code="126894"))
+    # print(Coding.compute_display_from_api(ontology=Ontologies.PUBCHEM, ontology_code="126894"))
     # print()
-    # print(Coding.compute_display_from_api(ontology_system=Ontologies.GSSO, ontology_code="GSSO_000818"))
+    # print(Coding.compute_display_from_api(ontology=Ontologies.GSSO, ontology_code="GSSO_000818"))
+    # print()
+    print(Coding.compute_display_from_api(ontology=Ontologies.ORPHANET, ontology_code="ORPHA:159"))
 
 
 def main_write_in_file():
@@ -210,6 +206,19 @@ def main_write_and_load_empty_dict():
         print(my_json)
 
 
+def main_compare_dicts():
+    d1 = { "a": { "b": [ { "c": "1", "d": "2", "e": "3" } ], "f": "4" }, "g": "5" }  # ref
+    d2 = { "a": { "b": [ { "c": "2", "d": "2", "e": "3" } ], "f": "4" }, "g": "5" }  # False (one different value)
+    d3 = { "g": "5", "a": { "b": [ { "c": "1", "d": "2", "e": "3" } ], "f": "4" } }  # True? (two top inverted keys)
+    d4 = { "a": { "f": "4", "b": [ { "c": "1", "d": "2", "e": "3" } ] }, "g": "5" }  # True? (two level-1 inverted keys)
+    d5 = { "a": { "b": [ { "d": "2", "c": "1", "e": "3" } ], "f": "4" }, "g": "5" }  # True? (two level-2 inverted keys)
+
+    print(d1 == d2)
+    print(d1 == d3)
+    print(d1 == d4)
+    print(d1 == d5)
+
+
 if __name__ == '__main__':
     # main_load_json_from_file_as_bson()
     # main_python_parameters()
@@ -219,15 +228,17 @@ if __name__ == '__main__':
     # print({"a": 2, "b": 1} == {"b": 1, "a": 2})
     # main_read_pandas_csv()
     # main_json_pickle()
-    # main_ontology_api()
 
     # openssl_dir, openssl_cafile = os.path.split(ssl.get_default_verify_paths().openssl_cafile)
     # print(openssl_dir)
     # print(openssl_cafile)
+    # main_ontology_api()
 
     # main_write_in_file()
 
     # main_load_empty_dict()
-    main_write_and_load_empty_dict()
+    # main_write_and_load_empty_dict()
+
+    main_compare_dicts()
 
     print("Done.")

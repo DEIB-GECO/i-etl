@@ -2,7 +2,7 @@
 ,,,,,,,1,0,0,"orig-data-lab.csv","ID","The Patient ID","The Patient ID","integer","int",,,,
 "loinc",1234,"bla",,,,"float",1,0,0,"orig-data-lab.csv","molecule_A","The molecule Alpha","The molecule Alpha","float","float","mg/L","How much moleculeA is in the blood",,,
 ,,"Bla 2",,,,"float",1,0,0,"orig-data-lab.csv","molecule_b","The molecule Beta","The molecule Beta","str","INTEGER",,,,,
-"snomed_ct","421416008","Bla 3",,,,"float",1,0,0,"orig-data-lab.csv","molecule_G","The molecule Gamma","The molecule Gamma","boolean","bool",,"Whether moleculeG is present",,,
+"snomed_ct","421416008","Bla 3",,,,"float",1,0,0,"orig-data-lab.csv","molecule_G","The molecule Gamma","The molecule Gamma","category","bool",,"Whether moleculeG is present",,,
 "snomed_CT","123: 789","Bla 4",,,,,1,0,0,"orig-data-lab.csv","sex","The sex at birth","The sex at birth","category","category",,"The sex of patient at birth","[{""value"": ""M"", ""explanation"": ""Male"", ""snomed_ct"": ""248153007""}, {""value"": ""F"", ""explanation"": ""Female"", ""snomed ct"": ""248152002""}]",,
 "Loinc "," 46463-6 ","Bla 5","snomed_ct","345: 678","Bla 5-2",,1,0,0,"orig-data-lab.csv","ethnicity","The ethnicity","The ethnicity","str","str",,,,,
 "snomed ct","456:7z9","Bla 6",,,,,1,0,0,"orig-data-lab.csv","dateOfBirth","The date of birth","The date of birth","datetime","datetime",,,,,

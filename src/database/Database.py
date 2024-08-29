@@ -45,8 +45,6 @@ class Database:
             # Instead, the constructor returns immediately and launches the connection process on background threads.
             # You can check if the server is available with a ping.
             self.client = MongoClient(host=self.execution.db_connection, serverSelectionTimeoutMS=Database.SERVER_TIMEOUT)  # timeout after 5 sec instead of 20 (the default)
-            log.debug(f"{self.execution.db_connection}")
-            log.debug(f"{self.client}")
         except Exception:
             raise ConnectionError(f"Could not connect to the MongoDB client located at {self.execution.db_connection} and with a timeout of {Database.SERVER_TIMEOUT} ms.")
 
@@ -147,12 +145,10 @@ class Database:
                     filter_dict[unique_variable] = one_tuple[unique_variable]
             update_stmt = self.create_update_stmt(the_tuple=one_tuple)
             operations.append(pymongo.UpdateOne(filter=filter_dict, update=update_stmt, upsert=True))
-        log.debug(f"Table {table_name}: sending a bulk write of {len(operations)} operations")
         # July 18th, 2024: bulk_write modifies the hospital lists in Transform (avan if I use deep copies everywhere)
         # It changes (only?) the timestamp value with +1/100, e.g., 2024-07-18T14:34:32Z becomes 2024-07-18T14:34:33Z
         # in the tests I use a delta to compare datetime
-        result_upsert = self.db[table_name].bulk_write(copy.deepcopy(operations))
-        log.info(f"In {table_name}, {result_upsert.inserted_count} inserted, {result_upsert.upserted_count} upserted, {result_upsert.modified_count} modified tuples")
+        self.db[table_name].bulk_write(copy.deepcopy(operations))
         return filter_dict
 
     def retrieve_identifiers(self, table_name: str, projection: str) -> dict:
@@ -169,11 +165,9 @@ class Database:
                 # this covers the case when the project is a nested key, e.g., code.text
                 projected_value = projected_value[key]
             mapping[projected_value] = result["identifier"]["value"]
-        log.debug(f"{mapping}")
         return mapping
 
     def load_json_in_table(self, table_name: str, unique_variables) -> None:
-        log.info(f"insert data in {table_name}")
         for filename in os.listdir(self.execution.working_dir_current):
             if re.search(table_name+"[0-9]+", filename) is not None:
                 # implementation note: we cannot simply use filename.startswith(table_name)
