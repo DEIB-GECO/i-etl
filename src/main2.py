@@ -9,6 +9,7 @@ from dateutil.parser import parse
 from pymongo.mongo_client import MongoClient
 
 from datatypes.Coding import Coding
+from datatypes.OntologyCode import OntologyCode
 from datatypes.Reference import Reference
 from enums.HospitalNames import HospitalNames
 from enums.Ontologies import Ontologies
@@ -219,6 +220,12 @@ def main_compare_dicts():
     print(d1 == d5)
 
 
+def main_ontology_code_class():
+    # o1 = OntologyCode(full_code="422549004|patient-relatedidentificationcode|")
+    # o2 = OntologyCode(full_code="71239000|zygositydetermination|")
+    o3 = OntologyCode(full_code="365471004|finding of details of relatives|:247591002|affected|=(410515003|known present(qualifier value)|=782964007|genetic disease|)")
+
+
 if __name__ == '__main__':
     # main_load_json_from_file_as_bson()
     # main_python_parameters()
@@ -239,6 +246,8 @@ if __name__ == '__main__':
     # main_load_empty_dict()
     # main_write_and_load_empty_dict()
 
-    main_compare_dicts()
+    # main_compare_dicts()
+
+    main_ontology_code_class()
 
     print("Done.")

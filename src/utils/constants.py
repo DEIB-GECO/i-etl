@@ -12,6 +12,12 @@ ID_COLUMNS = {
         TableNames.PATIENT: normalize_column_name("id"),
         TableNames.SAMPLE: normalize_column_name("SampleBarcode")
     },
+    HospitalNames.RS_IMGGE: {
+        TableNames.PATIENT: normalize_column_name("IMGGI ID")
+    },
+    HospitalNames.ES_HSJD: {
+        TableNames.PATIENT: normalize_column_name("patient_id")
+    },
     HospitalNames.TEST_H1: {
         TableNames.PATIENT: normalize_column_name("id")
     },
@@ -26,7 +32,7 @@ ID_COLUMNS = {
 DATASET_LOCALES = {
     # use-case 1
     HospitalNames.IT_BUZZI_UC1: "it_IT",
-    HospitalNames.RS_IMGGE: "sr_RS",
+    HospitalNames.RS_IMGGE: "ru_RU",
     HospitalNames.ES_HSJD: "es_ES",
     # use-case 2
     HospitalNames.ES_LAFE: "es_ES",
@@ -55,6 +61,20 @@ DOCKER_FOLDER_GENOMIC = os.path.join(DOCKER_FOLDER_DATA, "genomic")
 DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS = os.path.join(DOCKER_FOLDER_DATA, "pids")
 DOCKER_FOLDER_TEST = os.path.join(DOCKER_FOLDER_DATA, "test")
 DB_CONNECTION = "mongodb://mongo:27017/"
+
+# # to work locally without Docker
+# DOCKER_FOLDER_DATA = "/Users/nelly/better-deployed/hospital-data"
+# DOCKER_FOLDER_METADATA = os.path.join(DOCKER_FOLDER_DATA, "metadata")
+# SERVER_FOLDER_DIAGNOSIS_CLASSIFICATION = os.path.join(DOCKER_FOLDER_DATA, "classification")
+# SERVER_FOLDER_DIAGNOSIS_REGEXES = os.path.join(DOCKER_FOLDER_DATA, "regexes")
+# DOCKER_FOLDER_LABORATORY = os.path.join(DOCKER_FOLDER_DATA, "laboratory")
+# DOCKER_FOLDER_DIAGNOSIS = os.path.join(DOCKER_FOLDER_DATA, "diagnosis")
+# DOCKER_FOLDER_MEDICINE = os.path.join(DOCKER_FOLDER_DATA, "medicine")
+# DOCKER_FOLDER_IMAGING = os.path.join(DOCKER_FOLDER_DATA, "imaging")
+# DOCKER_FOLDER_GENOMIC = os.path.join(DOCKER_FOLDER_DATA, "genomic")
+# DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS = os.path.join(DOCKER_FOLDER_DATA, "pids")
+# DOCKER_FOLDER_TEST = os.path.join(DOCKER_FOLDER_DATA, "test")
+# DB_CONNECTION = "mongodb://localhost:27017/"
 TEST_DB_NAME = "better_test"
 
 PATTERN_VALUE_DIMENSION = re.compile(r'^ *([0-9]+) *([a-zA-Z_-]+) *$')  # we add start and end delimiters (^ and $) to not process cells with multiples values inside

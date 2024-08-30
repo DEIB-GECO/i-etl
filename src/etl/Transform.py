@@ -11,6 +11,7 @@ from database.Execution import Execution
 from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Coding import Coding
 from datatypes.Identifier import Identifier
+from datatypes.OntologyCode import OntologyCode
 from enums.ColumnsToIgnore import ColumnsToIgnore
 from enums.DataTypes import DataTypes
 from enums.FileTypes import FileTypes
@@ -21,6 +22,7 @@ from enums.PhenotypicColumns import PhenotypicColumns
 from enums.SampleColumns import SampleColumns
 from enums.TableNames import TableNames
 from enums.TrueFalse import TrueFalse
+from etl.Task import Task
 from profiles.DiagnosisFeature import DiagnosisFeature
 from profiles.DiagnosisRecord import DiagnosisRecord
 from profiles.Hospital import Hospital
@@ -34,14 +36,13 @@ from utils.setup_logger import log
 from utils.utils import is_not_nan, cast_value, write_in_file, normalize_column_value
 
 
-class Transform:
+class Transform(Task):
 
     def __init__(self, database: Database, execution: Execution, data: DataFrame, metadata: DataFrame,
                  mapping_categorical_value_to_cc: dict, mapping_column_to_categorical_value: dict,
                  mapping_column_to_dimension: dict, patient_ids_mapping: dict,
                  diagnosis_classification: dict, mapping_diagnosis_to_cc: dict):
-        self.database = database
-        self.execution = execution
+        super().__init__(database, execution)
         self.counter = Counter()
 
         # get data, metadata and the mapped values computed in the Extract step
@@ -431,12 +432,12 @@ class Transform:
             row = rows.iloc[0]
             if is_not_nan(row[MetadataColumns.FIRST_ONTOLOGY_NAME]):
                 coding = Coding(ontology=Ontologies.get_enum_from_name(row[MetadataColumns.FIRST_ONTOLOGY_NAME]),
-                                code=row[MetadataColumns.FIRST_ONTOLOGY_CODE],
+                                code=OntologyCode(full_code=row[MetadataColumns.FIRST_ONTOLOGY_CODE]),
                                 display=None)
                 cc.add_coding(one_coding=coding)
             if is_not_nan(row[MetadataColumns.SEC_ONTOLOGY_NAME]):
                 coding = Coding(ontology=Ontologies.get_enum_from_name(row[MetadataColumns.SEC_ONTOLOGY_NAME]),
-                                code=row[MetadataColumns.SEC_ONTOLOGY_CODE],
+                                code=OntologyCode(full_code=row[MetadataColumns.SEC_ONTOLOGY_CODE]),
                                 display=None)
                 cc.add_coding(one_coding=coding)
             return cc

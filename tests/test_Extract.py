@@ -102,8 +102,8 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][1] == "1234"
         assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][2])
         assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][3] == "421416008"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][4] == "123:789"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][5] == "46463-6"
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][4] == "123: 789"  # this will be normalized later while building OntologyCode objects
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][5] == " 46463-6 "  # same as above
         assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][6] == "456:7z9"
         assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][7] == "124678"
         assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][0])
@@ -151,7 +151,7 @@ class TestExtract(unittest.TestCase):
 
         # b. checking the first line completely
         assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_NAME][2] == "omim"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][2] == "1245/983"
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][2] == "1245/   983 "  # this will be normalized later when building OntologyCode objects
         assert not is_not_nan(extract.metadata[MetadataColumns.SEC_ONTOLOGY_NAME][2])  # this should be nan as the cell is empty
         assert not is_not_nan(extract.metadata[MetadataColumns.SEC_ONTOLOGY_CODE][2])  # this should be empty too
         assert extract.metadata[MetadataColumns.COLUMN_NAME][2] == "disease_form"  # all lower case, with an underscore
@@ -172,8 +172,8 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_NAME][2] == "omim"
         assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_NAME][0])
 
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][1] == "1569-456"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][2] == "1245/983"
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][1] == "1569 - 456"  # this will be normalized later with OntologyCode
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][2] == "1245/   983 "
         assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][0])
 
         # e. more general checks
@@ -441,6 +441,8 @@ class TestExtract(unittest.TestCase):
 
         with open(os.path.join(DOCKER_FOLDER_TEST, TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH), "r") as f:
             expected_dict = json.load(f)
+        log.info(expected_dict)
+        log.info(extract.mapping_disease_to_cc)
         assert expected_dict == extract.mapping_disease_to_cc  # == performs a deep equality
 
     # def test_run_value_analysis(self):

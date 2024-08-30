@@ -5,6 +5,7 @@ from database.Execution import Execution
 from enums.FileTypes import FileTypes
 from etl.Extract import Extract
 from etl.Load import Load
+from etl.Reporting import Reporting
 from etl.Transform import Transform
 from utils.constants import DATASET_LOCALES
 from utils.setup_logger import log
@@ -31,6 +32,7 @@ class ETL:
         self.extract = None
         self.transform = None
         self.load = None
+        self.reporting = None
 
     def run(self) -> None:
         is_last_file = False
@@ -88,3 +90,6 @@ class ETL:
                         # create indexes only if this is the last file (otherwise, we would create useless intermediate indexes)
                         self.load = Load(database=self.database, execution=self.execution, create_indexes=is_last_file)
                         self.load.run()
+        # finally, compute a report on the ETL
+        self.reporting = Reporting(database=self.database, execution=self.execution)
+        self.reporting.run()

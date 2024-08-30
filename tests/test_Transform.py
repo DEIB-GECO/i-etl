@@ -10,6 +10,7 @@ from database.Database import Database
 from database.Execution import Execution
 from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Coding import Coding
+from datatypes.OntologyCode import OntologyCode
 from datatypes.PatientAnonymizedIdentifier import PatientAnonymizedIdentifier
 from enums.DataTypes import DataTypes
 from enums.HospitalNames import HospitalNames
@@ -25,9 +26,9 @@ from etl.Transform import Transform
 from profiles.Hospital import Hospital
 from utils.constants import TEST_DB_NAME, DEFAULT_CODING_DISPLAY, DOCKER_FOLDER_TEST
 from utils.setup_logger import log
-from utils.utils import compare_tuples, get_json_resource_file, get_lab_feature_by_text, \
-    normalize_ontology_code, is_not_nan, cast_value, read_tabular_file_as_string, \
-    get_field_value_for_patient, get_lab_records_for_patient, set_env_variables_from_dict
+from utils.utils import (compare_tuples, get_json_resource_file, get_lab_feature_by_text, is_not_nan, cast_value,
+                         read_tabular_file_as_string, get_field_value_for_patient, get_lab_records_for_patient,
+                         set_env_variables_from_dict)
 
 
 # personalized setup called at the beginning of each test
@@ -328,7 +329,7 @@ class TestTransform(unittest.TestCase):
         cc_female = CodeableConcept(original_name="f")
         cc_female.add_coding(one_coding=Coding(
             ontology=Ontologies.SNOMEDCT,
-            code=normalize_ontology_code(ontology_code="248152002"), display=None))
+            code=OntologyCode(full_code="248152002"), display=None))
         assert lab_records_patient[2]["value"] == cc_female.to_json()  # the value as been replaced by its ontology code (sex is a categorical value)r
 
         # we also check that conversions str->int/float and category->bool worked
@@ -400,7 +401,7 @@ class TestTransform(unittest.TestCase):
         cc_female = CodeableConcept(original_name="f")
         cc_female.add_coding(one_coding=Coding(
             ontology=Ontologies.SNOMEDCT,
-            code=normalize_ontology_code(ontology_code="248152002"), display=None))
+            code=OntologyCode(full_code="248152002"), display=None))
         assert lab_records_patient[2]["value"] == cc_female.to_json()  # the value as been replaced by its ontology code (sex is a categorical value)r
 
         # we also check that conversions str->int/float and category->bool worked
@@ -504,7 +505,7 @@ class TestTransform(unittest.TestCase):
         assert cc.coding is not None
         assert len(cc.coding) == 1
         assert cc.text == "molecule_a"
-        assert cc.coding[0].to_json() == Coding(ontology=Ontologies.LOINC, code="1234", display=None).to_json()
+        assert cc.coding[0].to_json() == Coding(ontology=Ontologies.LOINC, code=OntologyCode(full_code="1234"), display=None).to_json()
 
         # two associated ontology codes
         cc = transform.create_codeable_concept_from_row(column_name="ethnicity")
@@ -512,8 +513,8 @@ class TestTransform(unittest.TestCase):
         assert cc.coding is not None
         assert len(cc.coding) == 2
         assert cc.text == "ethnicity"
-        assert cc.coding[0].to_json() == Coding(ontology=Ontologies.LOINC, code="46463-6", display=None).to_json()
-        assert cc.coding[1].to_json() == Coding(ontology=Ontologies.SNOMEDCT, code="397731000", display=None).to_json()
+        assert cc.coding[0].to_json() == Coding(ontology=Ontologies.LOINC, code=OntologyCode(full_code="46463-6"), display=None).to_json()
+        assert cc.coding[1].to_json() == Coding(ontology=Ontologies.SNOMEDCT, code=OntologyCode(full_code="397731000"), display=None).to_json()
 
     def test_coding(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
@@ -527,17 +528,17 @@ class TestTransform(unittest.TestCase):
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
         # no associated ontology code (patient id line)
         first_row = transform.metadata.iloc[0]
+        log.info(first_row)
         coding = Coding(ontology=Ontologies.get_enum_from_name(first_row[MetadataColumns.FIRST_ONTOLOGY_NAME]),
-                        code=first_row[MetadataColumns.FIRST_ONTOLOGY_CODE],
+                        code=OntologyCode(full_code=first_row[MetadataColumns.FIRST_ONTOLOGY_CODE]),
                         display=None)
-        log.debug(coding)
-        log.debug(type(coding))
         assert coding.system is None
 
         # one associated ontology code (molecule_g line)
         third_row = transform.metadata.iloc[3]
         coding = Coding(ontology=Ontologies.get_enum_from_name(third_row[MetadataColumns.FIRST_ONTOLOGY_NAME]),
-                        code=third_row[MetadataColumns.FIRST_ONTOLOGY_CODE], display=None)
+                        code=OntologyCode(full_code=third_row[MetadataColumns.FIRST_ONTOLOGY_CODE]),
+                        display=None)
         assert coding is not None
         assert coding.system == Ontologies.SNOMEDCT["url"]
         assert coding.code == "421416008"
@@ -548,13 +549,15 @@ class TestTransform(unittest.TestCase):
         # so, we need to create them in two times
         fifth_row = transform.metadata.iloc[5]
         coding1 = Coding(ontology=Ontologies.get_enum_from_name(fifth_row[MetadataColumns.FIRST_ONTOLOGY_NAME]),
-                         code=fifth_row[MetadataColumns.FIRST_ONTOLOGY_CODE], display=None)
+                         code=OntologyCode(full_code=fifth_row[MetadataColumns.FIRST_ONTOLOGY_CODE]),
+                         display=None)
         assert coding1 is not None
         assert coding1.system == Ontologies.LOINC["url"]
         assert coding1.code == "46463-6"
         assert coding1.display == "Race or ethnicity"
         coding2 = Coding(ontology=Ontologies.get_enum_from_name(fifth_row[MetadataColumns.SEC_ONTOLOGY_NAME]),
-                         code=fifth_row[MetadataColumns.SEC_ONTOLOGY_CODE], display=None)
+                         code=OntologyCode(full_code=fifth_row[MetadataColumns.SEC_ONTOLOGY_CODE]),
+                         display=None)
         assert coding2.system == Ontologies.SNOMEDCT["url"]
         assert coding2.code == "397731000"
         assert coding2.display == "Ethnic group finding"
@@ -632,7 +635,7 @@ class TestTransform(unittest.TestCase):
         assert np.isnan(transform.fairify_value(column_name="molecule_g", value=transform.data.iloc[6][3]))
         assert np.isnan(transform.fairify_value(column_name="molecule_g", value=transform.data.iloc[7][3]))
         cc_female = CodeableConcept(original_name="f")
-        cc_female.add_coding(one_coding=Coding(ontology=Ontologies.SNOMEDCT, code="248152002", display=None))
+        cc_female.add_coding(one_coding=Coding(ontology=Ontologies.SNOMEDCT, code=OntologyCode(full_code="248152002"), display=None))
         fairified_value = transform.fairify_value(column_name="sex", value=transform.data.iloc[0][4])
         assert fairified_value == cc_female.to_json()
         assert transform.fairify_value(column_name="ethnicity", value=transform.data.iloc[0][5]) == "white"

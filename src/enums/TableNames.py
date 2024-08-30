@@ -16,21 +16,32 @@ class TableNames(EnumAsClass):
     IMAGING_FEATURE = "ImagingFeature"
     IMAGING_RECORD = "ImagingRecord"
     EXECUTION = "Execution"
+    REPORTING = "Reporting"
     TEST = "Test"
 
     @classmethod
     def features(cls):
-        xs = []
-        for name, value in vars(cls).items():
-            if not (name.startswith('__') or isinstance(value, classmethod)) and value.endswith("Feature"):
-                xs.append(value)
-        return xs
+        return cls.get_tables(filters=["Feature"])
 
     @classmethod
     def records(cls):
-        xs = []
+        return cls.get_tables(filters=["Record"])
+
+    @classmethod
+    def features_and_records(cls):
+        return cls.get_tables(filters=["Feature", "Record"])
+
+    @classmethod
+    def data_tables(cls):
+        return cls.get_tables(filters=["Feature", "Record", "Hospital", "Patient", "Sample"])
+
+    @classmethod
+    def get_tables(cls, filters):
+        table_names = []
         for name, value in vars(cls).items():
-            if not (name.startswith('__') or isinstance(value, classmethod)) and value.endswith("Record"):
-                xs.append(value)
-        return xs
+            if not (name.startswith('__') or isinstance(value, classmethod)):
+                for one_filter in filters:
+                    if value.endswith(one_filter):
+                        table_names.append(value)
+        return table_names
 

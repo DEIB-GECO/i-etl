@@ -2,6 +2,7 @@ import json
 import os
 import re
 
+import numpy as np
 import pandas as pd
 
 from analysis.ValueAnalysis import ValueAnalysis
@@ -12,21 +13,26 @@ from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Coding import Coding
 from enums.DiagnosisClassificationColumns import DiagnosisClassificationColumns
 from enums.DiagnosisRegexColumns import DiagnosisRegexColumns
+from datatypes.OntologyCode import OntologyCode
+from enums.DiagnosisClassificationColumns import DiagnosisClassificationColumns
+from enums.DiagnosisRegexColumns import DiagnosisRegexColumns
 from enums.FileTypes import FileTypes
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from enums.TableNames import TableNames
+from etl.Task import Task
 from utils.constants import ID_COLUMNS, PATTERN_VALUE_DIMENSION
 from utils.setup_logger import log
 from utils.utils import is_not_nan, get_values_from_json_values, normalize_column_name, \
-    normalize_ontology_name, normalize_ontology_code, normalize_column_value, normalize_hospital_name, \
+    normalize_ontology_name, normalize_column_value, normalize_hospital_name, \
     normalize_type, read_tabular_file_as_string
 
 
-class Extract:
+class Extract(Task):
 
     def __init__(self, database: Database, execution: Execution):
+        super().__init__(database, execution)
         self.metadata = None
         self.data = None
         self.patient_ids_mapping = None
@@ -36,9 +42,6 @@ class Extract:
         self.mapping_column_to_dimension = {}  # each column is associated to its dimension, the union set of the dimension given in the metadata and the units found in the string values themselves
         self.mapping_disease_to_classification = {}  # each (data) disease name is associated to a standard disease name and a classification healthy/disease
         self.mapping_disease_to_cc = {}  # each standard disease name is associated to an OrphaNet code (and possibly omim)
-
-        self.execution = execution
-        self.database = database
 
     def run(self) -> None:
         # load and pre-process metadata
@@ -109,7 +112,7 @@ class Extract:
             # there are more than one hospital described in this metadata
             # a. we filter the unnecessary hospital columns (for UC2 and UC3 there are several hospitals in the same metadata file)
             columns_to_keep = []
-            columns_to_keep.extend([normalize_column_name(column_name=meta_variable) for meta_variable in MetadataColumns.required_columns()])
+            columns_to_keep.extend([normalize_column_name(column_name=meta_variable) for meta_variable in MetadataColumns.values()])
             columns_to_keep.append(normalize_hospital_name(self.execution.hospital_name))
             log.debug(f"{self.metadata.columns}")
             log.debug(f"{columns_to_keep}")
@@ -124,20 +127,17 @@ class Extract:
             pass
 
         # 3. We keep the metadata of the current dataset
-        filename = os.path.basename(self.execution.current_filepath).lower()
-        log.debug(self.execution.current_filepath)
-        log.debug(f"{filename}")
-        log.debug(f"{self.metadata[MetadataColumns.DATASET_NAME].unique()}")
-        if filename not in self.metadata[MetadataColumns.DATASET_NAME.lower()].unique():
+        filename = os.path.basename(self.execution.current_filepath)
+        log.debug(f"current file path is: {self.execution.current_filepath}; thus filename is: {filename}")
+        log.debug(f"List of datasets described in the metadata is: {self.metadata[MetadataColumns.DATASET_NAME].unique()}")
+        if filename not in self.metadata[MetadataColumns.DATASET_NAME].unique():
             raise ValueError(f"The current dataset ({filename}) is not described in the provided metadata file.")
         else:
             self.metadata = self.metadata[self.metadata[MetadataColumns.DATASET_NAME] == filename]
 
-        # normalize ontology names and codes
+        # normalize ontology names (but not codes because they will be normalized within OntologyCode)
         self.metadata[MetadataColumns.FIRST_ONTOLOGY_NAME] = self.metadata[MetadataColumns.FIRST_ONTOLOGY_NAME].apply(lambda value: normalize_ontology_name(ontology_system=value))
-        self.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE] = self.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE].apply(lambda value: normalize_ontology_code(ontology_code=value))
         self.metadata[MetadataColumns.SEC_ONTOLOGY_NAME] = self.metadata[MetadataColumns.SEC_ONTOLOGY_NAME].apply(lambda value: normalize_ontology_name(ontology_system=value))
-        self.metadata[MetadataColumns.SEC_ONTOLOGY_CODE] = self.metadata[MetadataColumns.SEC_ONTOLOGY_CODE].apply(lambda value: normalize_ontology_code(ontology_code=value))
 
         # we also normalize column names described in the metadata, inc. "sex", "dateOfBirth", "Ethnicity", etc
         self.metadata[MetadataColumns.COLUMN_NAME] = self.metadata[MetadataColumns.COLUMN_NAME].apply(lambda x: normalize_column_name(column_name=x))
@@ -205,6 +205,7 @@ class Extract:
         # for this, we get the union of both sets and remove the columns that are not described in the metadata
         data_columns = list(self.data.columns)
         columns_described_in_metadata = list(self.metadata[MetadataColumns.COLUMN_NAME])
+        columns_described_in_metadata = [col_name if is_not_nan(col_name) else "" for col_name in columns_described_in_metadata]  # it may happen that some columns have no name, thus they appear as nan in the list; thus, we label them '' (empty string)
         variables_to_keep = []
         variables_to_keep.extend(data_columns)
         variables_to_keep.extend(columns_described_in_metadata)
@@ -212,6 +213,9 @@ class Extract:
         for one_column in variables_to_keep:
             if one_column not in columns_described_in_metadata:
                 variables_to_keep.remove(one_column)
+        log.debug(f"Columns present in the data: {data_columns}")
+        log.debug(f"Columns described in the metadata: {columns_described_in_metadata}")
+        log.debug(f"Variables to keep: {variables_to_keep}")
         data_columns.sort()
         columns_described_in_metadata.sort()
         variables_to_keep.sort()
@@ -252,9 +256,11 @@ class Extract:
                 column_name = normalize_column_name(row[MetadataColumns.COLUMN_NAME])
                 # we get the possible categorical values for the column, e.g., F, or M, or NA for sex
                 json_categorical_values = json.loads(row[MetadataColumns.JSON_VALUES])
+                # log.info(f"For column {column_name}, JSON values are: {json_categorical_values}")
                 self.mapping_column_to_categorical_value[column_name] = []
                 for json_categorical_value in json_categorical_values:
                     normalized_categorical_value = normalize_column_value(json_categorical_value["value"])
+                    # log.info(f"For column {column_name}, processing value: {normalized_categorical_value}")
                     if normalized_categorical_value not in self.mapping_categorical_value_to_cc:
                         # the categorical value does not exist yet in the mapping, thus:
                         # - it may be retrieved from the db and be added to the mapping
@@ -272,7 +278,7 @@ class Extract:
                                 # we need to do a loop because there may be several ontology terms for a single mapping
                                 if key != "value" and key != "explanation":
                                     ontology = Ontologies.get_enum_from_name(ontology_name=normalize_ontology_name(key))
-                                    cc.add_coding(one_coding=Coding(ontology=ontology, code=normalize_ontology_code(val), display=None))
+                                    cc.add_coding(one_coding=Coding(ontology=ontology, code=OntologyCode(full_code=val), display=None))
                             # {
                             #   'm': {"coding": [{"system": "snomed", "code": "248153007", "display": "m (Male)"}], "text": ""},
                             #   'f': {"coding": [{"system": "snomed", "code": "248152002", "display": "f (Female)"}], "text": ""},
@@ -287,11 +293,14 @@ class Extract:
                             log.debug(f"The categorical value {normalized_categorical_value} already exists in the database as a CC. Taking it from here.")
                             self.mapping_categorical_value_to_cc[normalized_categorical_value] = existing_categorical_codeable_concepts[normalized_categorical_value]
                     else:
-                        # this categorical value is already present in the mapping (it has either been retrieved from
-                        # the db or computed for the first time),
-                        # in any case, nothing more to do
-                        log.debug(f"{normalized_categorical_value} is already in the mapping: {self.mapping_categorical_value_to_cc}")
-                        pass
+                        # this categorical value is already present in the mapping self.mapping_categorical_value_to_cc
+                        # (it has either been retrieved from the db or computed for the first time),
+                        # so no need to add it again
+                        # log.debug(f"{normalized_categorical_value} is already in the mapping: {self.mapping_categorical_value_to_cc}")
+
+                        # however, we still need to add it as a categorical value for the current column
+                        if normalized_categorical_value not in self.mapping_column_to_categorical_value[column_name]:
+                            self.mapping_column_to_categorical_value[column_name].append(normalized_categorical_value)
             else:
                 # no JSON values for this column, pass
                 pass
@@ -385,7 +394,7 @@ class Extract:
             for index, line in diagnosis_csv.iterrows():
                 diagnosis_standard_name = line[DiagnosisRegexColumns.DIAGNOSIS_NAME]
                 cc = CodeableConcept(original_name=diagnosis_standard_name)
-                cc.add_coding(one_coding=Coding(ontology=Ontologies.ORPHANET, code=line[DiagnosisRegexColumns.ORPHANET_CODE], display=None))
+                cc.add_coding(one_coding=Coding(ontology=Ontologies.ORPHANET, code=OntologyCode(full_code=line[DiagnosisRegexColumns.ORPHANET_CODE]), display=None))
                 self.mapping_disease_to_cc[diagnosis_standard_name] = cc.to_json()  # do not forget to add the JSONified CC, not the CC itlelf
         # log.debug(self.mapping_disease_to_cc)
 

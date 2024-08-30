@@ -177,7 +177,6 @@ def normalize_type(data_type: str) -> str:
 
 
 def cast_value(value: str | float | bool | datetime) -> str | float | bool | datetime:
-    log.info(f"{value} of type {type(value)}")
     if isinstance(value, str):
         # try to convert as boolean
         if normalize_column_value(column_value=value) == "true":
@@ -364,7 +363,7 @@ def write_in_file(resource_list: list, current_working_dir: str, table_name: str
     if len(resource_list) > 0:
         with open(filename, "w") as data_file:
             try:
-                log.debug(f"Dumping {len(resource_list)} in {filename}")
+                log.debug(f"Dumping {len(resource_list)} instances in {filename}")
                 json.dump([resource.to_json() for resource in resource_list], data_file)
             except Exception:
                 raise ValueError(f"Could not dump the {len(resource_list)} JSON resources in the file located at {filename}.")

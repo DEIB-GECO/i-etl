@@ -190,6 +190,17 @@ class Database:
         """
         return self.db[table_name].find(filter_dict, projection)
 
+    def find_distinct_operation(self, table_name: str, key: str, filter: dict):
+        """
+        Perform a distinct operation on a field "key", with some filters on instances ("filter")
+        :param table_name: A string being the table name in which the find operation is performed.
+        :param key: A string being the key on which to apply the distinct; this is also the returned field.
+        :param filter: A dict being the set of filters (conditions) to apply on the data in the given table. Give {} to apply no filter.
+        :return: A Cursor on the results, i.e., the distinct results.
+        """
+        # db["LaboratoryRecord"].distinct("instantiate", {"value": {"$exists": 0}})
+        return self.db[table_name].distinct(key, filter)
+
     def count_documents(self, table_name: str, filter_dict: dict) -> int:
         """
         Count the number of documents in a table and matching a given filter.

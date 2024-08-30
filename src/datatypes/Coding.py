@@ -2,15 +2,16 @@ from urllib.parse import quote
 
 import jsonpickle
 
+from datatypes.OntologyCode import OntologyCode
 from enums.AccessTypes import AccessTypes
 from enums.Ontologies import Ontologies
 from utils.constants import DEFAULT_CODING_DISPLAY
 from utils.setup_logger import log
-from utils.utils import is_not_nan, normalize_ontology_code, parse_xml_response, parse_json_response, send_query_to_api
+from utils.utils import is_not_nan, parse_xml_response, parse_json_response, send_query_to_api
 
 
 class Coding:
-    def __init__(self, ontology: Ontologies, code: str, display: str|None):
+    def __init__(self, ontology: Ontologies, code: OntologyCode, display: str|None):
         if not is_not_nan(value=ontology):
             # no ontology code has been provided for that variable name, let's skip it
             log.error("Could not create a Coding with no ontology resource.")
@@ -19,7 +20,7 @@ class Coding:
             self.display = None
         else:
             self.system = ontology["url"]  # this is the ontology url, not the ontology name
-            self.code = normalize_ontology_code(ontology_code=code)
+            self.code = code.concat_ids
             if display is None:
                 # when we create a new CodeableConcept from scratch, we need to compute the display with ontology API
                 # if the query to the API does not work, we can still use the column name as the display of the coding
@@ -42,28 +43,25 @@ class Coding:
                     url = f"http://data.bioontology.org/ontologies/SNOMEDCT/classes/{url_resource}"
                     response = send_query_to_api(url=url, secret="d6fb9c05-3309-4158-892f-65434a9133b9", access_type=AccessTypes.API_KEY_IN_URL)
                     data = parse_json_response(response)
-                    if "prefLabel" in data:
+                    try:
                         return data["prefLabel"]
-                    else:
+                    except:
                         return DEFAULT_CODING_DISPLAY
                 elif ontology == Ontologies.LOINC:
                     url = f"https://loinc.regenstrief.org/searchapi/loincs?query={ontology_code}"
                     response = send_query_to_api(url=url, secret="nbarret d7=47@xiz$g=-Ns", access_type=AccessTypes.AUTHENTICATION)
                     data = parse_json_response(response)
-                    if "Results" in data and len(data["Results"]) > 0 and "COMPONENT" in data["Results"][0]:
+                    try:
                         return data["Results"][0]["COMPONENT"]
-                    else:
+                    except:
                         return DEFAULT_CODING_DISPLAY
                 elif ontology == Ontologies.PUBCHEM:
                     url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{ontology_code}/description/JSON"
                     response = send_query_to_api(url, secret=None, access_type=AccessTypes.USER_AGENT)
                     data = parse_json_response(response)
-                    if ("InformationList" in data
-                            and "Information" in data["InformationList"]
-                            and len(data["InformationList"]["Information"]) > 0
-                            and "Title" in data["InformationList"]["Information"][0]):
+                    try:
                         return data["InformationList"]["Information"][0]["Title"]
-                    else:
+                    except:
                         return DEFAULT_CODING_DISPLAY
                 elif ontology == Ontologies.CLIR:
                     # TODO Nelly: code this
@@ -84,12 +82,11 @@ class Coding:
                     url = f"https://api.orphacode.org/EN/ClinicalEntity/orphacode/{ontology_code_without_prefix}/Name"
                     response = send_query_to_api(url=url, secret="nbarret", access_type=AccessTypes.API_KEY_IN_HEADER)
                     data = parse_json_response(response)
-                    if "Preferred term" in data:
+                    try:
                         return data["Preferred term"]
-                    else:
+                    except:
                         return DEFAULT_CODING_DISPLAY
                 else:
-                    # raise NotImplementedError("Not implemented yet.")
                     return DEFAULT_CODING_DISPLAY
             except Exception:
                 # the API could not be queried, returning empty string.

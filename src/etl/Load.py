@@ -1,13 +1,13 @@
 from database.Database import Database
 from database.Execution import Execution
 from enums.TableNames import TableNames
+from etl.Task import Task
 from utils.setup_logger import log
 
 
-class Load:
+class Load(Task):
     def __init__(self, database: Database, execution: Execution, create_indexes: bool):
-        self.database = database
-        self.execution = execution
+        super().__init__(database, execution)
         self.create_indexes = create_indexes
 
     def run(self) -> None:
