@@ -557,6 +557,15 @@ class Transform(Task):
                 log.error(f"For '{value}', no diagnosis name has been found. Will return '{cast_value(value=value)}'")
                 log.info("return the cast value")
                 return_value = the_cast_value
+                return cast_value(value=value)
+        elif var_type == DataTypes.DATETIME or (var_type == DataTypes.STRING and etl_type == DataTypes.DATETIME):
+            # we first process the date and they maybe hide the day if asked
+            cast_date = cast_value(value=value)
+            if self.execution.expose_complete_dates:
+                # hide the date
+                cast_date_without_day = cast_date   # TODO NElly: finish this
+            else:
+                return cast_date
         else:
             # this is not a category, not a boolean and not an int/float value
             # we simply cast it as much as we can

@@ -199,7 +199,7 @@ class Extract(Task):
         log.info(f"{len(self.patient_ids_mapping)} patient IDs in the mapping file.")
 
     def remove_unused_csv_columns(self) -> None:
-        # removes the data columns that are NOT described in the metadata
+        # removes the data columns that are NOT described in the metadata or that are explicitly marked as not be loaded
         # if a column is described in the metadata but is not present in the data or this column is empty we keep it
         # because people took the time to describe it.
         # for this, we get the union of both sets and remove the columns that are not described in the metadata
@@ -211,7 +211,7 @@ class Extract(Task):
         variables_to_keep.extend(columns_described_in_metadata)
         variables_to_keep = list(set(variables_to_keep))  # we have appended two lists, mostly containing the same columns, thus we have duplicates
         for one_column in variables_to_keep:
-            if one_column not in columns_described_in_metadata:
+            if one_column not in columns_described_in_metadata or one_column in self.execution.columns_to_remove:
                 variables_to_keep.remove(one_column)
         log.debug(f"Columns present in the data: {data_columns}")
         log.debug(f"Columns described in the metadata: {columns_described_in_metadata}")
@@ -221,6 +221,7 @@ class Extract(Task):
         variables_to_keep.sort()
         log.debug(f"Columns present in the data: {data_columns}")
         log.debug(f"Columns described in the metadata: {columns_described_in_metadata}")
+        log.debug(f"Columns to be explicitly removed: {self.execution.columns_to_remove}")
         log.debug(f"Variables to keep: {variables_to_keep}")
 
         for column in self.data.columns:

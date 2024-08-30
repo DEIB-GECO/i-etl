@@ -45,6 +45,8 @@ class Execution:
         self.db_connection = None  # user input
         self.db_drop = True  # user input
         self.db_upsert_policy = UpsertPolicy.DO_NOTHING  # user input
+        self.columns_to_remove = []  # user input
+        self.expose_complete_dates = False  # user input
 
         # parameters related to the UC hospital
         self.hospital_name = None  # this will be given as input by users
@@ -61,6 +63,9 @@ class Execution:
         self.is_transform = True
         self.is_load = True
         self.is_analyze = False
+        self.expose_complete_dates = False
+        self.columns_to_remove = []
+        self.expose_complete_dates = False
 
     def set_up(self, setup_data_files: bool) -> None:
         log.info("in set_up")
@@ -81,6 +86,8 @@ class Execution:
         self.is_analyze = self.check_parameter(key=ParameterKeys.IS_ANALYZE, accepted_values=["True", "False", True, False], default_value=self.is_analyze)
         self.is_transform = self.check_parameter(key=ParameterKeys.IS_TRANSFORM, accepted_values=["True", "False", True, False], default_value=self.is_transform)
         self.is_load = self.check_parameter(key=ParameterKeys.IS_LOAD, accepted_values=["True", "False", True, False], default_value=self.is_load)
+        self.columns_to_remove = self.check_parameter(key=ParameterKeys.COLUMNS_TO_REMOVE_KEY, accepted_values=None, default_value=self.columns_to_remove)
+        self.expose_complete_dates = self.check_parameter(key=ParameterKeys.EXPOSE_COMPLETE_DATES_KEY, accepted_values=["True", "False", True, False], default_value=self.expose_complete_dates)
 
         # C. create working files for the ETL
         self.create_current_working_dir()
