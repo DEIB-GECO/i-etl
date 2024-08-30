@@ -39,7 +39,7 @@ class Execution:
         self.current_filepath = None  # set in the loop on files in ETL
         self.current_file_type = None  # set in the loop on files in ETL
         self.anonymized_patient_ids_filepath = None  # user input
-        self.use_en_locale = True  # user input
+        self.use_en_locale = False  # user input
 
         # parameters related to the database
         self.db_connection = None  # user input
@@ -63,9 +63,6 @@ class Execution:
         self.is_transform = True
         self.is_load = True
         self.is_analyze = False
-        self.expose_complete_dates = False
-        self.columns_to_remove = []
-        self.expose_complete_dates = False
 
     def set_up(self, setup_data_files: bool) -> None:
         log.info("in set_up")

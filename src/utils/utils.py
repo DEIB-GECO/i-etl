@@ -73,14 +73,14 @@ def is_equal_insensitive(value: str | float, compared: str | float) -> bool:
 def get_int_from_str(str_value: str):
     try:
         return int(str_value)
-    except ValueError:
+    except:
         return None  # this was not an int value
 
 
 def get_float_from_str(str_value: str):
     try:
         return locale.atof(str_value)
-    except ValueError:
+    except:
         return None  # this was not a float value
 
 
@@ -89,7 +89,7 @@ def get_datetime_from_str(str_value: str) -> datetime:
         datetime_value = parse(str_value)
         # %Y-%m-%d %H:%M:%S is the format used by default by parse (the output is always of this form)
         return datetime_value
-    except ValueError:
+    except:  # this may raise ValueError if this is not a date, or OverflowError in case of weird int (BUZZI data)
         # this was not a datetime value, and we signal it with None
         return None
 

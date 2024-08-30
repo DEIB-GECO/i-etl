@@ -3,7 +3,6 @@ import re
 from datetime import datetime
 from typing import Any
 
-import numpy as np
 from pandas import DataFrame
 
 from database.Database import Database
@@ -12,7 +11,6 @@ from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Coding import Coding
 from datatypes.Identifier import Identifier
 from datatypes.OntologyCode import OntologyCode
-from enums.ColumnsToIgnore import ColumnsToIgnore
 from enums.DataTypes import DataTypes
 from enums.FileTypes import FileTypes
 from enums.LabFeatureCategories import LabFeatureCategories
@@ -119,7 +117,9 @@ class Transform(Task):
         count = 1
         for row_index, row in self.metadata.iterrows():
             column_name = row[MetadataColumns.COLUMN_NAME]
-            if column_name not in SampleColumns.values() and column_name not in ColumnsToIgnore.values():
+            # columns to remove have already been removed in the Extract part from the metadata
+            # here, we need to ensure that we create Features only for still-existing columns and not for sample (that are managed aside) nor for ID column
+            if column_name in self.metadata[MetadataColumns.COLUMN_NAME].values and column_name not in SampleColumns.values() and column_name != ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]:
                 if column_name not in db_existing_features:
                     # we create a new Laboratory Feature from scratch
                     cc = self.create_codeable_concept_from_row(column_name=column_name)
@@ -256,7 +256,6 @@ class Transform(Task):
                         id_column_for_samples = ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE] if TableNames.SAMPLE in ID_COLUMNS[self.execution.hospital_name] else ""
                         sample_id = None
                         if id_column_for_samples != "":
-                            log.info(row)
                             sample_id = Identifier(value=row[id_column_for_samples])
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
                         new_laboratory_record = LaboratoryRecord(id_value=NO_ID, feature_id=lab_feature_id,
@@ -271,7 +270,7 @@ class Transform(Task):
                             count = count + 1
                     else:
                         # this represents the case when a column has not been converted to a LabFeature resource
-                        # this should never happen
+                        # this may happen for ID column for instance
                         pass
 
         write_in_file(resource_list=self.laboratory_records, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_RECORD, count=count)
@@ -465,12 +464,13 @@ class Transform(Task):
             expected_unit = self.mapping_column_to_dimension[column_name]
         else:
             expected_unit = None  # in case no unit has been specified and no unit could be extracted form data
-        log.debug(f"ETL type is {etl_type}, var type is {var_type}, expected unit is {expected_unit}")
-        log.info(self.mapping_column_to_categorical_value)
+        # log.debug(f"ETL type is {etl_type}, var type is {var_type}, expected unit is {expected_unit}")
+        # log.info(self.mapping_column_to_categorical_value)
         if (etl_type == DataTypes.CATEGORY or etl_type == DataTypes.BOOLEAN) and column_name in self.mapping_column_to_categorical_value:
-            log.info(self.mapping_column_to_categorical_value[column_name])
-            log.info(self.mapping_categorical_value_to_cc)
             # we iterate over all the mappings of a given column
+            # the value exists in the mapping (a) as is (str or int), or (b) it has to be converted to int value (0.0 -> 0 -- this happens when there are NaN values in the column)
+            value = "1" if value == "1.0" else "0" if value == "0.0" else value
+            # and that same value is also available in the mapping to cc
             if value in self.mapping_column_to_categorical_value[column_name] and value in self.mapping_categorical_value_to_cc:
                 # if the value is equal to the mapping value, we have found a match,
                 # and we will record the associated ontology term instead of the value
@@ -483,19 +483,19 @@ class Transform(Task):
                 if etl_type == DataTypes.BOOLEAN:
                     # this should rather be a boolean, let's cast it as boolean, instead of using Yes/No SNOMED_CT codes
                     if cc == TrueFalse.get_true():
-                        log.info("return True")
+                        # log.info("return True")
                         return_value = True
                     elif cc == TrueFalse.get_false():
-                        log.info("return False")
+                        # log.info("return False")
                         return_value = False
                     else:
-                        log.info("return the cast value")
+                        # log.info("return the cast value")
                         return_value = the_cast_value
                 else:
-                    log.info("return cc")
+                    # log.info("return cc")
                     return_value = cc  # return the CC computed out of the corresponding mapping
             else:
-                log.info("return the cast value")
+                # log.info("return the cast value")
                 return_value = the_cast_value  # no coded value for that value, trying at least to normalize it a bit
         elif var_type == DataTypes.STRING and (etl_type == DataTypes.INTEGER or etl_type == DataTypes.FLOAT):
             # if the dimension is not the one of the feature, we simply leave the cell value as a string
@@ -507,22 +507,22 @@ class Transform(Task):
                 unit = m.group(2)
                 if unit == expected_unit:
                     if etl_type == DataTypes.INTEGER:
-                        log.info("return int")
+                        # log.info("return int")
                         return_value = int(the_value)
                     elif etl_type == DataTypes.FLOAT:
-                        log.info("return float")
+                        # log.info("return float")
                         return_value = float(the_value)
                     else:
-                        log.info("return the value")
+                        # log.info("return the value")
                         return_value = the_value
                 else:
                     # the feature dimension does not correspond, we return the value as is
-                    log.info("return the value")
+                    # log.info("return the value")
                     return_value = value
             else:
                 # this value does not contain a dimension or is not of the form "value dimension"
                 # we simply cast it as much as we can
-                log.info("return the cast value")
+                # log.info("return the cast value")
                 return_value = the_cast_value
         elif etl_type == DataTypes.REGEX:
             # this corresponds to a diagnosis name, for which we need to find the corresponding ORPHANET code
@@ -557,7 +557,6 @@ class Transform(Task):
                 log.error(f"For '{value}', no diagnosis name has been found. Will return '{cast_value(value=value)}'")
                 log.info("return the cast value")
                 return_value = the_cast_value
-                return cast_value(value=value)
         elif var_type == DataTypes.DATETIME or (var_type == DataTypes.STRING and etl_type == DataTypes.DATETIME):
             # we first process the date and they maybe hide the day if asked
             cast_date = cast_value(value=value)
@@ -565,11 +564,11 @@ class Transform(Task):
                 # hide the date
                 cast_date_without_day = cast_date   # TODO NElly: finish this
             else:
-                return cast_date
+                return_value = cast_date
         else:
             # this is not a category, not a boolean and not an int/float value
             # we simply cast it as much as we can
-            log.info("return the cast value")
+            # log.info("return the cast value")
             return_value = the_cast_value
 
         # we use type(..).__name__ to get the class name, e.g., "str" or "bool", instead of "<class 'float'>"

@@ -191,6 +191,7 @@ class TestTransform(unittest.TestCase):
         log.debug(transform.metadata.to_string())
         transform.create_laboratory_features()
 
+        log.info(len(transform.laboratory_features))
         assert len(transform.laboratory_features) == 8 - 1  # id does not count as a LabFeature
         # assert the first, second and sixth LabFeature instances:
         # lab_feature_a has one associated code, and is clinical

@@ -211,7 +211,10 @@ class Extract(Task):
         variables_to_keep.extend(columns_described_in_metadata)
         variables_to_keep = list(set(variables_to_keep))  # we have appended two lists, mostly containing the same columns, thus we have duplicates
         for one_column in variables_to_keep:
-            if one_column not in columns_described_in_metadata or one_column in self.execution.columns_to_remove:
+            # we remove the column if:
+            # a. it is not described in the metadata
+            # or b. it is explicitly marked as a column to remove (except if this is the ID column, that we need to keep)
+            if one_column not in columns_described_in_metadata or (one_column in self.execution.columns_to_remove and one_column not in ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]):
                 variables_to_keep.remove(one_column)
         log.debug(f"Columns present in the data: {data_columns}")
         log.debug(f"Columns described in the metadata: {columns_described_in_metadata}")

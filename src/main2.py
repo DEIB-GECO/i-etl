@@ -17,7 +17,7 @@ from profiles.Hospital import Hospital
 from profiles.LaboratoryRecord import LaboratoryRecord
 from utils.Counter import Counter
 from utils.utils import get_mongodb_date_from_datetime, normalize_column_value, read_tabular_file_as_string, \
-    normalize_hospital_name
+    normalize_hospital_name, cast_value
 
 
 def to_snake_case(name):
@@ -226,6 +226,26 @@ def main_ontology_code_class():
     o3 = OntologyCode(full_code="365471004|finding of details of relatives|:247591002|affected|=(410515003|known present(qualifier value)|=782964007|genetic disease|)")
 
 
+def main_cast_value():
+    print(cast_value("2,008834223164761,75778122740468"))
+
+    value = "1.0"
+    value = "1" if value == "1.0" else "0" if value == "0.0" else value
+    print(value)
+
+    value = "0.0"
+    value = "1" if value == "1.0" else "0" if value == "0.0" else value
+    print(value)
+
+    value = "abc"
+    value = "1" if value == "1.0" else "0" if value == "0.0" else value
+    print(value)
+
+    value = "10"
+    value = "1" if value == "1.0" else "0" if value == "0.0" else value
+    print(value)
+
+
 if __name__ == '__main__':
     # main_load_json_from_file_as_bson()
     # main_python_parameters()
@@ -248,6 +268,8 @@ if __name__ == '__main__':
 
     # main_compare_dicts()
 
-    main_ontology_code_class()
+    # main_ontology_code_class()
+
+    main_cast_value()
 
     print("Done.")

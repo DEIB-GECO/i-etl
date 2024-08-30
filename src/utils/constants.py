@@ -75,9 +75,10 @@ DB_CONNECTION = "mongodb://mongo:27017/"
 # DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS = os.path.join(DOCKER_FOLDER_DATA, "pids")
 # DOCKER_FOLDER_TEST = os.path.join(DOCKER_FOLDER_DATA, "test")
 # DB_CONNECTION = "mongodb://localhost:27017/"
+
 TEST_DB_NAME = "better_test"
 
-PATTERN_VALUE_DIMENSION = re.compile(r'^ *([0-9]+) *([a-zA-Z_-]+) *$')  # we add start and end delimiters (^ and $) to not process cells with multiples values inside
+PATTERN_VALUE_DIMENSION = re.compile(r'^ *([0-9]+[.,]*[0-9]*) *([a-zA-Z_.-]+) *$')  # we add start and end delimiters (^ and $) to not process cells with multiples values inside
 
 DELIMITER_PATIENT_ID = ":"
 
