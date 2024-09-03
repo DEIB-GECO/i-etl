@@ -11,7 +11,6 @@ class OntologyCode:
         # or 406506008 |Attention deficit hyperactivity disorder|
         # or 726527001 |Weight| : 410671006 |Date|
         # or 3332001 |Occipitofrontal diameter of head| : 246454002 |Occurrence| = 3950001 |Birth|
-        log.info(full_code)
         self.full_code = full_code
         # this may happen that no ontology code is given foe a column, resp. value
         # in that case, full_code is nan and we cannot compute its ids and names: they are nan too

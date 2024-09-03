@@ -48,6 +48,8 @@ class Extract(Task):
         self.load_metadata_file()
         self.compute_mapping_categorical_value_to_cc()
         log.debug(self.metadata.columns)
+        log.info(self.mapping_column_to_categorical_value)
+        log.info(self.mapping_categorical_value_to_cc)
 
         # load and pre-process data (all kinds)
         if self.execution.current_file_type in (FileTypes.LABORATORY, FileTypes.DIAGNOSIS, FileTypes.MEDICINE):
@@ -260,7 +262,7 @@ class Extract(Task):
                 column_name = normalize_column_name(row[MetadataColumns.COLUMN_NAME])
                 # we get the possible categorical values for the column, e.g., F, or M, or NA for sex
                 json_categorical_values = json.loads(row[MetadataColumns.JSON_VALUES])
-                # log.info(f"For column {column_name}, JSON values are: {json_categorical_values}")
+                log.info(f"For column {column_name}, JSON values are: {json_categorical_values}")
                 self.mapping_column_to_categorical_value[column_name] = []
                 for json_categorical_value in json_categorical_values:
                     normalized_categorical_value = normalize_column_value(json_categorical_value["value"])
@@ -275,12 +277,11 @@ class Extract(Task):
                             # json_categorical_value is of the form: {'value': 'X', 'snomed_ct': '123', 'loinc': '456' }
                             # and we add each ontology code to that CodeableConcept
                             cc = CodeableConcept(original_name=normalized_categorical_value)
-                            # TODO Nelly: do not compute cc for boolean (categorical) columns
                             for key, val in json_categorical_value.items():
                                 # for any key value pair that is not about the value or the explanation
                                 # (i.e., loinc and snomed_ct columns), we create a Coding, which we add to the CodeableConcept
                                 # we need to do a loop because there may be several ontology terms for a single mapping
-                                if key != "value" and key != "explanation":
+                                if key != "value":
                                     ontology = Ontologies.get_enum_from_name(ontology_name=normalize_ontology_name(key))
                                     cc.add_coding(one_coding=Coding(ontology=ontology, code=OntologyCode(full_code=val), display=None))
                             # {
@@ -290,12 +291,14 @@ class Extract(Task):
                             #   ...
                             # }
                             self.mapping_categorical_value_to_cc[normalized_categorical_value] = cc
-                            self.mapping_column_to_categorical_value[column_name].append(normalized_categorical_value)
                         else:
                             # a CodeableConcept already exists for this value (it has been retrieved from the db),
                             # we simply add it to the mapping
                             log.debug(f"The categorical value {normalized_categorical_value} already exists in the database as a CC. Taking it from here.")
                             self.mapping_categorical_value_to_cc[normalized_categorical_value] = existing_categorical_codeable_concepts[normalized_categorical_value]
+                        # in any case (regardless how the CC is build), we need to record that this value is a categorical value for that column
+                        if normalized_categorical_value not in self.mapping_column_to_categorical_value[column_name]:
+                            self.mapping_column_to_categorical_value[column_name].append(normalized_categorical_value)
                     else:
                         # this categorical value is already present in the mapping self.mapping_categorical_value_to_cc
                         # (it has either been retrieved from the db or computed for the first time),
@@ -350,16 +353,18 @@ class Extract(Task):
                 # this column is described in the metadata but not in the data
                 add_dimension_from_metadata = True
 
+            log.debug(f"For column {column_name}, add dimension from metadata is {add_dimension_from_metadata}")
             if add_dimension_from_metadata:
                 # 1. if there is a dimension provided by the description, we use it
                 # 2. otherwise, we set it to None
                 column_expected_dimension = row[MetadataColumns.VAR_DIMENSION]
+                log.debug(row[MetadataColumns.VAR_DIMENSION])
                 if is_not_nan(column_expected_dimension):
                     # if there is a dimension provided in the metadata (this may be overridden if there are dimensions in the cells values)
                     self.mapping_column_to_dimension[column_name] = column_expected_dimension
                 else:
                     self.mapping_column_to_dimension[column_name] = None
-        # log.debug(self.mapping_column_to_dimension)
+        log.debug(self.mapping_column_to_dimension)
 
     def compute_mapping_disease_to_classification(self) -> None:
         self.mapping_disease_to_classification = {}

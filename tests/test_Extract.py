@@ -82,7 +82,7 @@ class TestExtract(unittest.TestCase):
         assert not is_not_nan(extract.metadata[MetadataColumns.JSON_VALUES][1])  # empty cell thus nan
         # test JSON values in the fourth line (sex)
         # pandas dataframe does not allow json objects, so we have to store them as JSON-like string
-        # expected_json_values = [{"value": "m", "explanation": "Male", "snomedct": "248152002"}, {"value": "f", "explanation": "Female", "snomedct": "248152002"}]
+        # expected_json_values = [{"value": "m", "snomedct": "248152002"}, {"value": "f", "snomedct": "248152002"}]
         # assert extract.metadata[MetadataColumns.JSON_VALUES][4] == json.dumps(expected_json_values)
 
         # c. test the first (Patient ID) line, because there are no ontologies for this one
@@ -160,7 +160,7 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.ETL_TYPE][2] == "category"  # all lower case
         # test JSON values in the second line (disease form)
         # pandas dataframe does not allow json objects, so we have to store them as JSON-like string
-        # expected_json_values = [{"value": "start", "explanation": "< 1 year", "pubchem": "023468"}, {"value": "middle", "explanation": "1 year <= ... <= 3 years", "pubchem": "203:468"}, {"value": "end", "explanation": "> 3 years", "pubchem": "4097625"}]
+        # expected_json_values = [{"value": "start", "pubchem": "023468"}, {"value": "middle", "pubchem": "203:468"}, {"value": "end", "pubchem": "4097625"}]
         # assert extract.metadata[MetadataColumns.JSON_VALUES][2] == json.dumps(expected_json_values)
 
         # c. test the first (Patient ID) line, because there are no ontologies for this one

@@ -3,7 +3,7 @@ import json
 from pandas import Series
 
 from utils.setup_logger import log
-from utils.utils import get_int_from_str, is_not_nan, get_float_from_str, is_equal_insensitive, is_not_empty, \
+from utils.utils import cast_str_to_int, is_not_nan, cast_str_to_float, is_equal_insensitive, is_not_empty, \
     get_mongodb_date_from_datetime
 
 
@@ -50,7 +50,7 @@ class ValueAnalysis:
                         for value in self.unique_values:
                             # check that all values can be cast to int or are NaN
                             value_is_not_nan = is_not_nan(value=value)
-                            int_value = get_int_from_str(str_value=value)
+                            int_value = cast_str_to_int(str_value=value)
                             if value_is_not_nan and int_value is None:
                                 log.debug(f"Could not convert {value} to int value")
                                 wrong_type = True
@@ -58,7 +58,7 @@ class ValueAnalysis:
                         for value in self.unique_values:
                             # check that all values can be cast to float or are NaN
                             value_is_not_nan = is_not_nan(value=value)
-                            float_value = get_float_from_str(str_value=value)
+                            float_value = cast_str_to_float(str_value=value)
                             if value_is_not_nan and float_value is None:
                                 log.debug(f"Could not convert {value} to float value")
                                 wrong_type = True

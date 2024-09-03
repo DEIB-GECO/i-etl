@@ -16,8 +16,9 @@ from enums.Ontologies import Ontologies
 from profiles.Hospital import Hospital
 from profiles.LaboratoryRecord import LaboratoryRecord
 from utils.Counter import Counter
+from utils.setup_logger import log
 from utils.utils import get_mongodb_date_from_datetime, normalize_column_value, read_tabular_file_as_string, \
-    normalize_hospital_name, cast_value
+    normalize_hospital_name, cast_str_to_float
 
 
 def to_snake_case(name):
@@ -226,9 +227,7 @@ def main_ontology_code_class():
     o3 = OntologyCode(full_code="365471004|finding of details of relatives|:247591002|affected|=(410515003|known present(qualifier value)|=782964007|genetic disease|)")
 
 
-def main_cast_value():
-    print(cast_value("2,008834223164761,75778122740468"))
-
+def main_cast_value_bool():
     value = "1.0"
     value = "1" if value == "1.0" else "0" if value == "0.0" else value
     print(value)
@@ -244,6 +243,14 @@ def main_cast_value():
     value = "10"
     value = "1" if value == "1.0" else "0" if value == "0.0" else value
     print(value)
+
+
+def main_cast_value_float_double_commas():
+    log.debug(cast_str_to_float("102,1"))
+    log.debug(cast_str_to_float("102.1"))
+    log.debug(cast_str_to_float("87637"))
+    log.debug(cast_str_to_float("230,834228,03"))
+    log.debug(cast_str_to_float("2,008834223164761,75778122740468"))
 
 
 if __name__ == '__main__':
@@ -270,6 +277,7 @@ if __name__ == '__main__':
 
     # main_ontology_code_class()
 
-    main_cast_value()
+    # main_cast_value_bool()
+    main_cast_value_float_double_commas()
 
     print("Done.")

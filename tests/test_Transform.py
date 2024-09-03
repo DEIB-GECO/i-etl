@@ -26,9 +26,9 @@ from etl.Transform import Transform
 from profiles.Hospital import Hospital
 from utils.constants import TEST_DB_NAME, DEFAULT_CODING_DISPLAY, DOCKER_FOLDER_TEST
 from utils.setup_logger import log
-from utils.utils import (compare_tuples, get_json_resource_file, get_lab_feature_by_text, is_not_nan, cast_value,
+from utils.utils import (compare_tuples, get_json_resource_file, get_lab_feature_by_text, is_not_nan,
                          read_tabular_file_as_string, get_field_value_for_patient, get_lab_records_for_patient,
-                         set_env_variables_from_dict)
+                         set_env_variables_from_dict, cast_str_to_datetime)
 
 
 # personalized setup called at the beginning of each test
@@ -641,4 +641,4 @@ class TestTransform(unittest.TestCase):
         assert fairified_value == cc_female.to_json()
         assert transform.fairify_value(column_name="ethnicity", value=transform.data.iloc[0][5]) == "white"
         assert not is_not_nan(transform.fairify_value(column_name="date_of_birth", value=transform.data.iloc[0][6]))  # no date here, we verify this is NaN
-        assert transform.fairify_value(column_name="date_of_birth", value=transform.data.iloc[5][6]) == cast_value("2021-12-22 11:58:38.881")
+        assert transform.fairify_value(column_name="date_of_birth", value=transform.data.iloc[5][6]) == cast_str_to_datetime(str_value="2021-12-22 11:58:38.881")

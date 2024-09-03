@@ -70,24 +70,38 @@ def is_equal_insensitive(value: str | float, compared: str | float) -> bool:
 
 # NORMALIZE DATA
 
-def get_int_from_str(str_value: str):
+def cast_str_to_int(str_value: str):
     try:
         return int(str_value)
     except:
         return None  # this was not an int value
 
 
-def get_float_from_str(str_value: str):
+def cast_str_to_float(str_value: str):
     try:
         return locale.atof(str_value)
     except:
         return None  # this was not a float value
 
 
-def get_datetime_from_str(str_value: str) -> datetime:
+def cast_str_to_boolean(str_value: str):
+    # try to convert as boolean
+    normalized_value = normalize_column_value(column_value=str_value)
+    if normalized_value == "true" or normalized_value == "1" or normalized_value == "1.0":
+        return True
+    elif normalized_value == "false" or normalized_value == "0" or normalized_value == "0.0":
+        return False
+    else:
+        return None # this was not a boolean value
+
+
+def cast_str_to_datetime(str_value: str) -> datetime:
     try:
         datetime_value = parse(str_value)
         # %Y-%m-%d %H:%M:%S is the format used by default by parse (the output is always of this form)
+        log.info(datetime_value.year)
+        log.info(datetime_value.month)
+        log.info(datetime_value.day)
         return datetime_value
     except:  # this may raise ValueError if this is not a date, or OverflowError in case of weird int (BUZZI data)
         # this was not a datetime value, and we signal it with None
@@ -174,36 +188,6 @@ def normalize_type(data_type: str) -> str:
             return DataTypes.STRING
     else:
         return data_type
-
-
-def cast_value(value: str | float | bool | datetime) -> str | float | bool | datetime:
-    if isinstance(value, str):
-        # try to convert as boolean
-        if normalize_column_value(column_value=value) == "true":
-            return True
-        elif normalize_column_value(column_value=value) == "false":
-            return False
-
-        # try to cast as float
-        float_value = get_float_from_str(str_value=value)
-        if float_value is not None:
-            return float_value
-
-        # try to cast as date
-        datetime_value = get_datetime_from_str(str_value=value)
-        if datetime_value is not None:
-            return datetime_value
-
-        # finally, try to cast as integer
-        int_value = get_int_from_str(str_value=value)
-        if int_value is not None:
-            return int_value
-
-        # no cast could be applied, we return the value as is
-        return value
-    else:
-        # this is already cast to the right type, nothing more to do
-        return value
 
 
 def get_display(name: str, description: str) -> str:
