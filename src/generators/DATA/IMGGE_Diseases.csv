@@ -1,0 +1,81 @@
+disease_name,OMIM_Phenotype,OMIM_Gene,Gene,ICD_10
+Aicardi-Goutieres syndrome 2,# 610181,* 610326,RNASEH2B,E79.81
+Alexander disease type I,# 203450,* 137780,GFAP,G37.8
+"ALLAN-HERNDON-DUDLEY SYNDROME, AHDS",# 300523,,SLC16A2,E70.8
+Alpha-methylacetoacetic aciduria,# 203750,,ACAT1,E71.19
+"Angiopathy, hereditary, with nephropathy, aneurysms, and muscle cramps; Brain small vessel disease with or without ocular anomalies","# 611773, #175780",,COL4A1,"I77.9, N08, I72.9, Q87.89, I67.89, H49.9, G46.8, H55.9"
+Association of TRPC3 with epilepsy,,* 602345,TRPC3,"G40.9, G40.8"
+Ataxia-telangiectasia,# 208900,,ATM,g13.11
+Bardet-Biedl syndrome 7,,*607590,BBS7,Q87.83
+Borjeson-Forssman-Lehmann syndrome,# 301900,,PHF6,Q87.89
+"Brain small vessel disease 1 with or without ocular anomalies, BSVD1",# 175780,,COL4A1,"I67.89, H35.8"
+"Cardiomyopathy, dilated, 1S; Congenital myopathy 7A, myosin storage",,* 160760,MYH7,"I42.0, G71.2"
+"Ceroid lipofuscinosis, neuronal, 1",# 256730,,PPT1,E75.4
+"Ceroid lipofuscinosis, neuronal, 7",# 610951,,MFSD8,E75.4
+"Cognitive impairment with or without cerebellar ataxia; Developmental and epileptic encephalopathy, DEE13","# 614306, # 614558",,SCN8A,"R41.3, F84.0, G11.1, G40.0, F84.2"
+Combined oxidative phosphorylation deficiency 12,# 614924,,EARS2,E88.40
+Darier disease,# 124200,,ATP2A2,L11.2
+Developmental and epileptic encephalopathy 104,,,ATP6V0A1,G40.8
+"Developmental and epileptic encephalopathy 104, Neurodevelopmental disorder with impaired language and ataxia and with or without seizures, Epilepsy, nocturnal frontal lobe, 1","# 619970, # 619580, #600513",,"ATP6V0A1,CHRNA4,GRIK2","G40.8, F84.9, G40.3"
+Developmental and epileptic encephalopathy 11,#613721,,SCN2A,"G40.8, G40.9"
+"Developmental and epileptic encephalopathy 11, Episodic ataxia, type 9, Seizures, benign familial infantile, 3; Dystonia-1, torsion","# 613721, # 618924, # 607745",* 182390,"SCN2A,TOR1A","G40.8, G25.3, G40.4, G24.0"
+Developmental and epileptic encephalopathy 2 (DEE2),,,CDKL5,G40.8
+"Developmental and epileptic encephalopathy 28, Spinocerebellar ataxia type 12","# 616211, # 614322",,WWOX,"G40.8, G11.1"
+"Developmental and epileptic encephalopathy 36, Blepharophimosis-impaired intellectual development syndrome, Nicolaides-Baraitser syndrome",,"* 600014, * 300776","ALG13,SMARCA2","G40.9, Q87.1, Q87.3"
+Developmental and epileptic encephalopathy 5,# 613477,,SPTAN1,G40.9
+Developmental and epileptic encephalopathy 6B,# 619317,,SCN1A,G40.9
+"Developmental and epileptic encephalopathy 6B, non-Dravet; Dravet syndrome; Generalised epilepsy with febrile seizures plus, type 2; Intellectual developmental disorder, X-linked syndromic 13", # 300055,* 182389,"SCN1A,MECP2","G40.9, G40.89, G40.8, Q93.0"
+"Developmental and epileptic encephalopathy 7, DEE7", 613720,,KCNQ2,G40.809
+Ethylmalonic encephalopathy,# 602473,,ETHE1,E71.89
+Glycine encephalopathy,# 620398,,AMT,E71.0
+Hyperkalemic periodic paralysis,# 170500,,SCN4A,G72.3
+"Homocystinuria, B6-responsive and nonresponsive types",# 236200,,CBS,E72.11
+Hyperphosphatasia with impaired intellectual development syndrome 1,# 239300,* 610274,PIGV,E83.39
+Hypertrichotic osteochondrodysplasia (Cantu syndrome),# 239850,,ABCC9,Q87.8
+"Hypotonia, infantile, with psychomotor retardation and characteristic facies 2",# 616801,,UNC80,Q87.0
+Impaired intellectual development and distinctive facial features with or without cardiac defects,# 616789,,MED13L,Q87.0
+Intellectual developmental disorder 5,# 612621,,SYNGAP1,F70
+Intellectual developmental disorder with autism and macrocephaly,# 615032,,CHD8,"F84.0, Q75.2"
+"Intellectual developmental disorder, autosomal dominant 61, MRD61, Cleft palate, cardiac defects, and impaired intellectual development"," # 618009, #600987",,"MED13,MEIS2","F70, Q35, Q20"
+"Intellectual developmental disorder, autosomal recessive 46",# 616116,,NDST1,Q93.8
+"Intellectual developmental disorder, X-linked",# 309530,,IQSEC2,Q93.2
+"Intellectual developmental disorder, X-linked 41",# 300849,,GDI1,Q93.2
+"Intellectual developmental disorder, X-linked syndromic 14",# 300676,,UPF3B,Q93.4
+"Intellectual developmental disorder, X-linked syndromic 35",# 300998,,RPL10,Q93.4
+"Intellectual developmental disorder, X-linked syndromic 35; King-Denborough and Congenital myopathy 1A, autosomal dominant, with susceptibility to malignant hyperthermia",# 300998,* 180901,"RPL10,RYR1","F70, G72.1"
+"Intellectual developmental disorder, X-linked syndromic, Turner type",# 309590,,HUWE1,Q87.2
+Kabuki syndrome-2,# 300867,,KDM6A,Q87.8
+L-2-HYDROXYGLUTARATE DEHYDROGENASE; L2HGDH,,* 609584,L2HGDH,Q87.8
+"L-2-hydroxyglutaric aciduria, L2HGA",# 236792,,L2HGDH,E72.3
+Leber congenital amaurosis,# 204000,,CEP290,H47.1
+Lesch-Nyhan syndrome (LNS),# 300322,,HPRT1,E79.1
+Lowe syndrome,# 309000,,OCRL,E72.03
+MED13-associated syndrome or Intellectual developmental disorder 61,"# 618009, #143465",* 603808,"MED13,DRD4",F70
+"METHYLMALONIC ACIDURIA, type cba1",# 251100,,MMAA,E71.2
+"Microcephaly with or without chorioretinopathy, lymphedema, or mental retardation, MCLID",# 152950,,KIF11,Q02
+Mitochondrial DNA depletion syndrome 7,# 271245,,TWNK,E88.4
+Myoclonic-atonic epilepsy,# 616421,,SLC6A1,G40.8
+"Nemaline myopathy 2, autosomal recessive; Scapuloperoneal spinal muscular atrophy i Congenital distal spinal muscular atrophy",# 256030,* 605427,"NEB,TRPV4","G72.4, G12.0"
+Neurodegeneration due to cerebral folate transport deficiency,# 613068,,FOLR1,E75.2
+Neurodevelopmental disorder with nonspecific brain abnormalities and with or without seizures,"# 618709, # 300908",,DLL1,F88
+"Neurodevelopmental disorder with or without hyperkinetic movements and seizures, autosomal dominant",# 614254,,GRIN1,F82
+Neurodevelopmental disorder with visual defects and brain anomalies (NEDVIBA),# 618547,,HK1,H54
+"NEUROFIBROMATOSIS, TYPE I; NF1",# 162200,,NF1,Q85.01
+"Noonan syndrome 4, MIRAGE syndrome","# 610733, # 617053",,"SOS1,SAMD9","Q87.1, Q87.8"
+Noonan syndrome type 3,# 609942,,KRAS,Q87.1
+Noonan syndrome type I,# 163950,,PTPN11,Q87.1
+Noonan syndrome-like disorder with or without juvenile myelomonocytic leukaemia,# 613563,,CBL,Q87.1
+Phenylketonuria,# 261600,,PAH,E70.0
+Pierpont syndrome,# 602342,,TBL1XR1,C94.0
+Pitt-Hopkins syndrome,# 610954,,TCF4,Q87.0
+POLG-related disorders,,* 174763,POLG,E88.8
+Pyridoxine-Dependent Epilepsy�ALDH7A1,# 266100,,ALDH7A1,E70.0
+Rett syndrome,# 312750,,MECP2,F84.2
+"Seizures, benign familial infantile; Convulsions, familial infantile, with paroxysmal choreoathetosis; Episodic kinesigenic dyskinesia",,* 614386,PRRT2,"G40.4, G40.8, G24.1"
+"Short stature, Hyperextensibility, Hernia, Ocular depression, Rieger anomaly, and Teething delay, SHORT syndrome",# 269880,,PIK3R1,"R62.0, K40.9, Q87.2, Q87.8"
+"Spastic paraplegia 47,  Epilepsy, familial temporal lobe, 5","# 614066, # 614417",,"AP4B1,CPA6","G11.4, G40.1"
+"SPECC1L syndrome, Craniosynostosis","# 614140, # 604757",,"MSX2,SPECC1L","Q87.8, Q75.0"
+"Subcortical laminar heterotopia, Lissencephaly",# 607432,,PAFAH1B1,Q04.0
+Tuberous sclerosis-2,# 613254,,TSC2,Q85.1
+X-linked lissencephaly i X-linked subcortical laminal heterotopia,# 300067,,DCX,Q04.4
+ZMYND11-related syndromic intellectual disability,# 616083,,ZMYND11,F70
