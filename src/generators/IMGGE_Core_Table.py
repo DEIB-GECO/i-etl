@@ -4,6 +4,9 @@ import headfake.transformer
 import scipy
 import operator
 import sys
+import datetime
+import pandas as pd
+import re
 
 import scipy.stats
 
@@ -34,22 +37,39 @@ def generate_fields():
     sexProbabilites = {"1":0.4, "2":0.5, "99":0.1} # {MALE, FEMALE, INDETERMINATE SEX}
     sex = headfake.field.OptionValueField(probabilities=sexProbabilites, name="sex")
 
-    # age_sent_for_genet
-    # TODO: Pending answer from headfake developers
-    ageWhenTested = headfake.field.ConstantField(name="age_sent_for_genet", value=None)
+    # NUMBER OF YEARS WHEN TESTED
+    dobFieldValue = headfake.field.LookupField(field="dob", hidden=True)
+    currentAge = headfake.field.derived.AgeField(from_value=dobFieldValue, to_value=datetime.datetime.now(), from_format="%d.%m.%Y", to_format="%d.%m.%Y", hidden=True)
+    testedYears = headfake.field.OperationField(name="age_number_y", operator=operator.floordiv, first_value=currentAge, second_value=2)
 
-    # age_number_y
-    # TODO: Pending answer from headfake developers
-    testedYears = headfake.field.ConstantField(name="age_number_y", value=None)
+    # NUMBER OF MONTHS WHEN TESTED
+    def age_months(dob, now):
+        first_month = datetime.datetime.strptime(dob, "%d.%m.%Y").month
+        second_month = now.month
+        if second_month >= first_month:
+            return second_month - first_month
+        else:
+            return 0
+    
+    testedMonths = headfake.field.OperationField(name="age_number_m", operator=None, first_value=dobFieldValue, second_value=datetime.datetime.now(), operator_fn=age_months)
 
-    # age_number_m:
-    # TODO: Pending answer from headfake developers
-    testedMonths = headfake.field.ConstantField(name="age_number_m", value=None)
+    # AGE WHEN TESTED IN YEARS
+    def age_summary(age_number_y, age_number_m):
+        return (age_number_y + age_number_m)/12
 
-    # age_summary
-    # TODO: Pending answer from headfake developers
-    testedsummary = headfake.field.ConstantField(name="age_summary", value=None)
+    testedsummary = headfake.field.OperationField(name="age_summary", operator=None, first_value=testedYears, second_value=testedMonths, operator_fn=age_summary)
 
+    # AGE WHEN SENT FOR GENETIC TESTING
+    def age_to_string(years, months):
+        if years == 0:
+            return f"{months}m"
+        elif months == 0:
+            return f"{years}y"
+        else:
+            return f"{years}y, {months}m"
+    
+    ageWhenTested = headfake.field.OperationField(name="age_sent_for_genet", operator=None, first_value=testedYears, second_value=testedMonths, operator_fn=age_to_string)
+    
     # THERE IS CONSANGUINITY
     consanguinityProbabilities = {"1":0.8, "2":0.1, "99":0.1} # {No, Yes, Not applicable}
     hasConsanguinity = headfake.field.OptionValueField(probabilities=consanguinityProbabilities, name="consangui_offsp")
@@ -84,29 +104,63 @@ def generate_fields():
     ivProbabilities = {"1":0.7, "2":0.2, "99":0.1} # {No, Yes, Unknown}
     inVitroFertilization = headfake.field.OptionValueField(probabilities=ivProbabilities, name="ivf")
       
-    # hpo_descriptive
-    # TODO:
-    hpo_descriptive = headfake.field.ConstantField(name="hpo_descriptive", value=None)
+    # LIST OF SYMPTOMS WITH HPO IDENTIFIER
+    def transform_omimID(omimID, dummy_value):
+        if omimID != None:
+            return omimID.replace("# ", "OMIM:")
+        else:
+            return omimID
 
-    # hpo_data
-    # TODO:
-    hpo_data = headfake.field.ConstantField(name="hpo_data", value=None)
+    # TODO: There can be more than one OMIM ID
+    # TODO: Remove undesired HP values such as Recessive inheritance
+    # TODO: Check how to extrac read_csv from this function
+    def get_hpo_descriptive(omim_id, symptoms_max_number):
+        if omim_id != None:
+            df = pd.read_csv('DATA/genes_to_phenotype.txt', sep="\t")
+            x = df.loc[df['disease_id'] == omim_id]
 
-    # age_onset
-    # TODO: Pending answer from headfake developers
-    ange_onset = headfake.field.ConstantField(name="age_onset", value=None)
+            result =[]
 
-    # age_onset_number_y
-    # TODO: Pending answer from headfake developers
-    age_onset_number_y = headfake.field.ConstantField(name="age_onset_number_y", value=None)
+            for i, row in x.iterrows():
+                hpo = row["hpo_id"]
+                hpo_name = row["hpo_name"]
+                result.append(f"{hpo_name} {hpo}")
 
-    # age_onset_number_m
-    # TODO: Pending answer from headfake developers
-    age_onset_number_m = headfake.field.ConstantField(name="age_onset_number_m", value=None)
+                if len(result) > symptoms_max_number:
+                    result = result[1:symptoms_max_number]
+            
+            return ','.join(result)
+        else:
+            return None
 
-    # age_onset_summary
-    # TODO: Pending answer from headfake developers
-    age_onset_summary = headfake.field.ConstantField(name="age_onset_summary", value=None)
+    omimID = headfake.field.OperationField(operator=None, first_value=diagnosis_omimID, second_value=None, operator_fn=transform_omimID, hidden=True)
+    hpo_descriptive = headfake.field.OperationField(name="hpo_descriptive", operator=None, first_value=omimID, second_value=5, operator_fn=get_hpo_descriptive)
+
+    # LIST OF SYMPTOMS HPO IDENTIFIERS
+    def get_hpo_identifiers(symptoms, dummy_value):
+        if symptoms != None:
+            symptoms_list = symptoms.split(",")
+            result = []
+            for symptom in symptoms_list:
+                m = re.search('HP:[0-9]+', symptom)
+                if m:
+                    result.append(m.group(0))
+            return ", ".join(result)
+        return None
+
+    hpo_data = headfake.field.OperationField(name="hpo_data", operator=None, first_value=hpo_descriptive, second_value=None, operator_fn=get_hpo_identifiers)
+
+    # YEARS AT ONSET
+    onsetYears = headfake.field.OperationField(name="age_onset_number_y", operator=operator.floordiv, first_value=currentAge, second_value=2)
+
+    # MONTHS AT ONSET
+    onsetMonths = headfake.field.OperationField(name="age_onset_number_m", operator=None, first_value=dobFieldValue, second_value=datetime.datetime.now(), operator_fn=age_months)
+
+    # AGE AT ONSET IN YEARS
+    onsetSummary = headfake.field.OperationField(name="age_onset_summary", operator=None, first_value=testedYears, second_value=testedMonths, operator_fn=age_summary)
+
+    # AGE AT ONSET (DESCRIPTIVE)
+    ageOnset = headfake.field.OperationField(name="age_onset", operator=None, first_value=onsetYears, second_value=onsetMonths, operator_fn=age_to_string)
 
     # HAS INTELECTUAL DISABILITY
     idProbabilities = {"1":0.1, "2":0.8, "99":0.1} # {No, Yes, Not applicable}
@@ -183,17 +237,22 @@ def generate_fields():
     # TODO:
     clinic = headfake.field.ConstantField(name="clinic", value=None)
     
-    # TODO:
-    karyotype = headfake.field.ConstantField(name="karyotype", value=None)
+    # HAS PREVIOUS KARYOTYPE
+    karyotypeProbabilities = {"1":0.5, "2":0.4, "99":0.1} # {No, Yes, Not applicable}
+    hasPreviouskaryotype = headfake.field.OptionValueField(name="karyotype", probabilities=karyotypeProbabilities)
     
     # TODO:
     karyotype_result = headfake.field.ConstantField(name="karyotype_result", value=None)
     
-    # TODO:
-    microarray = headfake.field.ConstantField(name="microarray", value=None)
+    # HAS PREVIOUS MICROARRAY
+    microarrayProbabilities = {"1":0.5, "2":0.4, "99":0.1} # {No, Yes, Not applicable}
+    hasPreviousMicroarray = headfake.field.OptionValueField(name="microarray", probabilities=microarrayProbabilities)
     
-    # TODO:
-    microarray_result = headfake.field.ConstantField(name="microarray_result", value=None)
+    # PREVIOUS MICROARRAY RESULT
+    microarrayResultProbabilities = {"positive":0.5, "negative":0.4, "inconclusive":0.1}
+    condition = headfake.field.Condition(field="microarray", operator=operator.eq, value="2")
+    true_value = headfake.field.OptionValueField(probabilities=microarrayResultProbabilities)
+    microarrayResult = headfake.field.IfElseField(name="microarray_result", condition=condition, true_value=true_value, false_value=None)
     
     # TODO:
     microarray_sig = headfake.field.ConstantField(name="microarray_sig", value=None)
@@ -210,44 +269,58 @@ def generate_fields():
     # TODO:
     microarray_details = headfake.field.ConstantField(name="microarray_details", value=None)
     
-    # TODO:
-    other_gen_test = headfake.field.ConstantField(name="other_gen_test", value=None)
+    # HAS OTHER PREVIOUS GENETIC TEST
+    previousProbabilities = {"1":0.5, "2":0.4, "99":0.1} # {No, Yes, Not applicable}
+    hasPreviousOther = headfake.field.OptionValueField(name="other_gen_test", probabilities=previousProbabilities)
+    
+    # OTHER GENETIC TEST TYPE
+    otherProbabilities = {"MLPA":0.3, "FraX":0.3, "DNA methylation test":0.2, "other":0.2}
+    condition = headfake.field.Condition(field="other_gen_test", operator=operator.eq, value="2")
+    true_value = headfake.field.OptionValueField(probabilities=otherProbabilities)
+    otherType = headfake.field.IfElseField(name="other_gen_test_type", condition=condition, true_value=true_value, false_value=None)
+    
+    # OTHER GENETIC TEST RESULT
+    otherResultProbabilities = {"positive":0.5, "negative":0.4, "inconclusive":0.1}
+    condition = headfake.field.Condition(field="other_gen_test", operator=operator.eq, value="2")
+    true_value = headfake.field.OptionValueField(probabilities=otherResultProbabilities)
+    otherResult = headfake.field.IfElseField(name="other_gen_test_typeresult", condition=condition, true_value=true_value, false_value=None)
+    
+    # GENETIC TEST RESULT
+    genProbabilities = {"positive":0.7, "negative":0.2, "inconclusive":0.1}
+    ngsTestResult = headfake.field.OptionValueField(name="gen_result", probabilities=genProbabilities)
+    
+    # GENETIC TEST APPROACH
+    approachProbabilities = {"CES":0.3, "WES":0.4, "WGS":0.3}
+    ngsTestApproach = headfake.field.OptionValueField(name="gen_result", probabilities=approachProbabilities)
+    
+    # SEQUENCING PLATFORM
+    platformProbabilities = {"MiSeq, Illumina":0.2, "NextSeq550, Illumina":0.3, "NextSeq 2000, Illumina":0.2, "DNBSEQ G-400, MGI":0.3}
+    ngsTestPlatform = headfake.field.OptionValueField(name="gen_ngsplatform", probabilities=platformProbabilities)
     
     # TODO:
-    other_gen_test_type = headfake.field.ConstantField(name="other_gen_test_ type", value=None)
+    ngsTestOtherPlatform = headfake.field.ConstantField(name="oth_gen_ngsplatform", value=None)
     
-    # TODO:
-    other_gen_tests_typeresult = headfake.field.ConstantField(name="other_gen_test_typeresult", value=None)
+    # REFERENCE GENOME
+    refProbabilities = {"GRCh 37 (hg19)":0.5, "GRCh 38":0.5}
+    refGenome = headfake.field.OptionValueField(name="gen_ref", probabilities=refProbabilities)
     
-    # TODO:
-    gen_result = headfake.field.ConstantField(name="gen_result", value=None)
-    
-    # TODO:
-    gen_approach = headfake.field.ConstantField(name="gen_approach", value=None)
-    
-    # TODO:
-    gen_ngsplatform = headfake.field.ConstantField(name="gen_nsgplatform", value=None)
-    
-    # TODO:
-    oth_gen_ngsplatform = headfake.field.ConstantField(name="oth_gen_ngsplatform", value=None)
-   
-    # TODO:
-    gen_ref = headfake.field.ConstantField(name="gen_ref", value=None)
-    
-    # TODO:
+    # GENE 1 NAME
     gen_gen1 = headfake.field.ConstantField(name="gen_gen1", value=None)
     
     # TODO:
     gen_chromosome1 = headfake.field.ConstantField(name="gen_chromosome1", value=None)
     
-    # TODO:
-    gen_novar1 = headfake.field.ConstantField(name="gen_novar1", value=None)
+    # NUMBER OF VARIANTS FOUND IN GENE 1
+    novarProbabilities = {1:0.5, 2:0.5}
+    gen_novar1 = headfake.field.OptionValueField(name="gen_novar1", probabilities=novarProbabilities)
     
-    # TODO:
-    gen_inheritance1 = headfake.field.ConstantField(name="gen_inheritance1", value=None)
+    # VARIANT INHERITANCE IN GENE 1
+    inheritanceProbabilities = {"2":0.3, "1":0.3, "3":0.2, "4":0.1, "5":0.1} # {"Autosomal recessive inheritance", "Autosomal dominant inheritance", "X-linked inheritance, dominant", "X-linked inheritance, recessive", "Mitochondrial mutation"}
+    variantInheritance1 = headfake.field.OptionValueField(name="gen_inheritance1", probabilities=inheritanceProbabilities)
     
-    # TODO:
-    gen_zigosity1 = headfake.field.ConstantField(name="gen_zigosity1", value=None)
+    # VARIANT 1 ZYGOSITY
+    zygosityProbabilities={"heterozygosis":0.3, "het":0.3, "homozygosis":0.2, "hom":0.1, "hemizygous":0.1}
+    zygosity1 = headfake.field.OptionValueField(name="gen_zigosity1", probabilities=zygosityProbabilities)
     
     # TODO:
     gen_transcript1 = headfake.field.ConstantField(name="gen_transcript1", value=None)
@@ -259,7 +332,8 @@ def generate_fields():
     gen_varnameprot1_1 = headfake.field.ConstantField(name="gen_varnameprot1_1", value=None)
     
     # TODO:
-    segregation_result1_1 = headfake.field.ConstantField(name="segregarion_result1", value=None)
+    segregationProbabilities = {"No":0.2, "1":0.2, "2":0.2, "3":0.2, "4":0.2}
+    segregation1 = headfake.field.OptionValueField(name="segregarion_result1", probabilities=segregationProbabilities)
     
     # TODO:
     gen_varnamecdna1_2 = headfake.field.ConstantField(name="gen_varname_cdna1_2", value=None)
@@ -326,17 +400,16 @@ def generate_fields():
     fs = headfake.Fieldset(fields=[patientID, diagnosisName, diagnosis_omimID, gene_omimID, icd10Code, dateOfBirth, countryOfBirth, sex,
                             ageWhenTested, testedYears, testedMonths, testedsummary, hasConsanguinity, consanguinityRelation, 
                             hasAffectedRelatives, affectedRelatives, hasSpontaneousAbortions, numberOfAbortions, inVitroFertilization,
-                            hpo_descriptive, hpo_data, ange_onset, age_onset_number_y, age_onset_number_m, age_onset_summary, hasID, 
+                            hpo_descriptive, hpo_data, ageOnset, onsetYears, onsetMonths, onsetSummary, hasID, 
                             testResult,IQTestDescription, otherIdTest, otherIdTestName, otherIDTestResult, hasMetabolicDisease, 
-                            hasMetabolicMeasures, hasCT, hasMR, hasEEG, clinic, karyotype, karyotype_result, microarray, microarray_result,
-                            microarray_sig, microarray_type, microarray_reg_no, microarray_lenght, microarray_details, other_gen_test,
-                            other_gen_test_type, other_gen_tests_typeresult, gen_result, gen_approach, gen_ngsplatform,
-                            oth_gen_ngsplatform, gen_ref, gen_gen1, gen_chromosome1, gen_novar1, gen_inheritance1,
-                            gen_zigosity1, gen_transcript1, gen_varnamecdna1_1, gen_varnameprot1_1, segregation_result1_1, gen_varnamecdna1_2,
-                            gen_varnameprot1_2, segregation_result1_2, secgen2, secgen_gene2, secgen_chromosome2, secgen_novar2,
-                            secgen_inheritance2, secgen_zigosity2, secgen_transcript2, secgen_varnamecdna2_1, secgen_varnameprot2_1,
-                            secgen_segregation2_1, secgen_varnamecdna2_2, secgen_varnameprot2_2, secgen_segregation2_2,
-                            loc_vcf, oth_loc_vcf, oth_loc_vcf_ext, comment])
+                            hasMetabolicMeasures, hasCT, hasMR, hasEEG, clinic, hasPreviouskaryotype, karyotype_result, hasPreviouskaryotype, 
+                            microarrayResult, microarray_sig, microarray_type, microarray_reg_no, microarray_lenght, microarray_details, otherResult,
+                            otherType, otherResult, ngsTestResult, ngsTestApproach, ngsTestPlatform, ngsTestOtherPlatform, refGenome, gen_gen1, 
+                            gen_chromosome1, gen_novar1, variantInheritance1, zygosity1, gen_transcript1, gen_varnamecdna1_1, gen_varnameprot1_1, 
+                            segregation1, gen_varnamecdna1_2, gen_varnameprot1_2, segregation_result1_2, secgen2, secgen_gene2, secgen_chromosome2, 
+                            secgen_novar2, secgen_inheritance2, secgen_zigosity2, secgen_transcript2, secgen_varnamecdna2_1, secgen_varnameprot2_1,
+                            secgen_segregation2_1, secgen_varnamecdna2_2, secgen_varnameprot2_2, secgen_segregation2_2, loc_vcf, oth_loc_vcf, oth_loc_vcf_ext, 
+                            comment])
     
     return fs
 
