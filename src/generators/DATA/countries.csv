@@ -1,51 +1,51 @@
-Name
-Albania
-Andorra
-Armenia
-Austria
-Azerbaijan
-Belarus
-Belgium
-Bosnia and Herzegovina
-Bulgaria
-Croatia
-Cyprus
-Czech Republic
-Denmark
-Estonia
-Finland
-France
-Georgia
-Germany
-Greece
-Hungary
-Iceland
-Ireland
-Italy
-Kosovo
-Latvia
-Liechtenstein
-Lithuania
-Luxembourg
-Malta
-Moldova
-Monaco
-Montenegro
-Netherlands
-North Macedonia
-Norway
-Poland
-Portugal
-Romania
-Russia
-San Marino
-Serbia
-Slovakia
-Slovenia
-Spain
-Sweden
-Switzerland
-Turkey
-Ukraine
-United Kingdom
-Vatican City
+"Name","Adjectives","Locations","hospital_terms"
+"Albania","Gjeneral,Shenjt,Rajonal,Universitar,Qendror,Kombetar","Mal, Lume, Qytet, Pyll, Liqen","Hospital, Medical Center, Clinic, Health Institute"
+"Andorra","General, Sant, Regional, Universitari, Central, Nacional","Muntanya, Riu, Ciutat, Bosc, Llac","Hospital, Centre Medic, Clinica, Institut de Salut"
+"Armenia","Royal, St., National, County, University, Central","Hill, River, City, Wood, Lake","Hospital, Medical Center, Clinic, Health Institute"
+"Austria","Allgemeines, Landes, Universitats, Zentrales, Klinisches, Stadtisches","Berg, Tal, Stadt, Wald, See","Krankenhaus, Klinik, Medizinisches Zentrum, Gesundheitszentrum"
+"Azerbaijan","Royal, St., National, County, University, Central","Hill, River, City, Wood, Lake","Hospital, Medical Center, Clinic, Health Institute"
+"Belarus","Royal, St., National, County, University, Central","Hill, River, City, Wood, Lake","Hospital, Medical Center, Clinic, Health Institute"
+"Belgium","General, Saint, Regional, Universite, Hopital, Communautaire","Mont, Riviere, Ville, Bois, Lac","Hopital, Centre Medical, Clinique, Institut de Sante"
+"Bosnia and Herzegovina","Opia, Univerzitetska, Regionalna, Centralna, Bolnica, Nacionalna","Brdo, Rijeka, Grad, Suma, Jezero","Bolnica, Medicinski Centar, Klinika, Zdravstveni Institut"
+"Bulgaria","Royal, St., National, County, University, Central","Hill, River, City, Wood, Lake","Hospital, Medical Center, Clinic, Health Institute"
+"Croatia","Opia, Sveuvilisna, Regionalna, Centralna, Bolnica, Nacionalna","Brdo, Rijeka, Grad, Suma, Jezero","Hospital, Medical Center, Clinic, Health Institute"
+"Cyprus","Royal, St., National, County, University, Central","Hill, River, City, Wood, Lake","Hospital, Medical Center, Clinic, Health Institute"
+"Czech Republic","Royal, St., National, County, University, Central","Hill, River, City, Wood, Lake","Hospital, Medical Center, Clinic, Health Institute"
+"Denmark","Generelt, Universitet, Regionalt, Centralt, Hospital, Nationale","Bakke, Flod, By, Skov, So","Hospital, Medicinsk Center, Klinik, Sundhedsinstitut"
+"Estonia","Royal, St., National, County, University, Central","Hill, River, City, Wood, Lake","Hospital, Medical Center, Clinic, Health Institute"
+"Finland","Yleinen, Yliopisto, Alueellinen, Keskus, Sairaala, Kansallinen","Maki, Joki, Kaupunki, Metsa, Jarvi","Sairaala, Laaketieteellinen Keskus, Klinikka, Terveyslaitos"
+"France","General, Saint, Regional, Universite, Hopital, Communautaire","Mont, Riviere, Ville, Bois, Lac","Hopital, Centre Medical, Clinique, Institut de Sante"
+"Georgia","Royal, St., National, County, University, Central","Hill, River, City, Wood, Lake","Hospital, Medical Center, Clinic, Health Institute"
+"Germany","Deutsche, Central, Saint, Regional, University, Northern, Southern","Berg, Tal, Stadt, Wald, See","Krankenhaus, Klinik, Medizinisches Zentrum, Gesundheitszentrum"
+"Greece","Royal, St., National, County, University, Central","Hill, River, City, Wood, Lake","Hospital, Medical Center, Clinic, Health Institute"
+"Hungary","Altalanos, Egyetemi, Regionalis, Kozponti, Korhaz, Nemzeti","Hegy, Folyo, Varos, Erd, To","Korhaz, Orvosi Kozpont, Klinika, Egeszsegugyi Intezet"
+"Iceland","Almenn, Haskola, Svaoisbundin, Miostoo, Sjukrahus, Pjoo","Heo, A, Borg, Skogur, Vatn","Sjukrahus, Leknamiostoo, Heilsugeslustoo, Heilsustofnun"
+"Ireland","General, University, Regional, St., Central, County","Hill, River, City, Wood, Lake","Hospital, Medical Center, Clinic, Health Institute"
+"Italy","Generale, Santo, Regionale, Ospedale, Universita, Comunita","Monte, Fiume, Citta, Bosco, Lago","Ospedale, Centro Medico, Clinica, Istituto di Salute"
+"Kosovo","I pergjithshem, Shen, Rajonal, Universitar, Qendror, Kombetar","Mal, Lume, Qytet, Pyll, Liqen","Spitali, Qendra Mjekesore, Klinika, Instituti i Shendetit"
+"Latvia","Royal, St., National, County, University, Central","Hill, River, City, Wood, Lake","Hospital, Medical Center, Clinic, Health Institute"
+"Liechtenstein","Allgemeines, Universitats, Regional, Zentral, Klinik, National","Berg, Fluss, Stadt, Wald, See","Krankenhaus, Klinik, Medizinisches Zentrum, Gesundheitszentrum"
+"Lithuania","Bendroji, Universiteto, Regionin, Centrin, Ligonin, Valstybin","Kalnas, Up, Miestas, Miskas, Ezeras","Ligonin?, Medicinos Centras, Klinika, Sveikatos Institutas"
+"Luxembourg","General, Saint, Regional, Universite, Hopital, Communautaire","Mont, Riviere, Ville, Bois, Lac","Hopital, Centre Medical, Clinique, Institut de Sante"
+"Malta","Royal, St., National, County, University, Central","Hill, River, City, Wood, Lake","Hospital, Medical Center, Clinic, Health Institute"
+"Moldova","Royal, St., National, County, University, Central","Hill, River, City, Wood, Lake","Hospital, Medical Center, Clinic, Health Institute"
+"Monaco","General, Saint, Regional, Universite, Hopital, Communautaire","Mont, Riviere, Ville, Bois, Lac","Hopital, Centre Medical, Clinique, Institut de Sante"
+"Montenegro","Opsta, Univerzitetska, Regionalna, Centralna, Bolnica, Nacionalna","Planina, Rijeka, Grad, Suma, Jezero","Bolnica, Medicinski Centar, Klinika, Institut za Zdravlje"
+"Netherlands","Algemeen, Centraal, Ziekenhuis, Universitair, Regionaal","Heuvel, Rivier, Stad, Bos, Meer","Ziekenhuis, Medisch Centrum, Kliniek, Gezondheidsinstituut"
+"North Macedonia","Royal, St., National, County, University, Central","Hill, River, City, Wood, Lake","Hospital, Medical Center, Clinic, Health Institute"
+"Norway","Generell, Universitet, Regionalt, Sentral, Sykehus, Nasjonal","Fjell, Elv, By, Skog, Innsjo","Sykehus, Medisinsk Senter, Klinikk, Helseinstitutt"
+"Poland","Royal, St., National, County, University, Central","Hill, River, City, Wood, Lake","Hospital, Medical Center, Clinic, Health Institute"
+"Portugal","Geral, Santo, Regional, Universitario, Central, Nacional","Monte, Rio, Cidade, Bosque, Lago","Hospital, Centro Medico, Clinica, Instituto de Saude"
+"Romania","Royal, St., National, County, University, Central","Hill, River, City, Wood, Lake","Hospital, Medical Center, Clinic, Health Institute"
+"Russia","Royal, St., National, County, University, Central","Hill, River, City, Wood, Lake","Hospital, Medical Center, Clinic, Health Institute"
+"San Marino","Generale, Santo, Regionale, Universitario, Centrale, Nazionale","Monte, Fiume, Citta, Bosco, Lago","Ospedale, Centro Medico, Clinica, Istituto di Salute"
+"Serbia","Opsta, Univerzitetska, Regionalna, Centralna, Bolnica, Nacionalna","Brdo, Reka, Grad, Suma, Jezero","Bolnica, Medicinski Centar, Klinika, Institut za Zdravlje"
+"Slovakia","Vseobecna, Univerzitna, Regionalna, Centralna, Nemocnica, Narodna","Hora, Rieka, Mesto, Les, Jazero","Nemocnica, Lekarske Centrum, Klinika, Zdravotnicky Institut"
+"Slovenia","Splosna, Univerzitetna, Regionalna, Centralna, Bolnisnica, Nacionalna","Gora, Reka, Mesto, Gozd, Jezero","Bolnisnica, Medicinski Center, Klinika, Zdravstveni Institut"
+"Spain","General, Virgen del, Regional, Universitario, Central, Nacional","Monte, Río, Ciudad, Bosque, Lago","Hospital, Centro Médico, Clínica, Instituto de Salud"
+"Sweden","Allmanna, Universitet, Regionalt, Centralt, Sjukhus, Sankt","Kulle, Flod, Stad, Skog, Sjo","Sjukhus, Medicinskt Centrum, Klinik, Halsoinstitut"
+"Switzerland","Allgemeines, Universitat, Regionale, Zentral, Spital, Klinik","Berg, Fluss, Stadt, Wald, See","Spital, Klinik, Medizinisches Zentrum, Gesundheitszentrum"
+"Turkey","Royal, St., National, County, University, Central","Hill, River, City, Wood, Lake","Hospital, Medical Center, Clinic, Health Institute"
+"Ukraine","Royal, St., National, County, University, Central","Hill, River, City, Wood, Lake","Hospital, Medical Center, Clinic, Health Institute"
+"United Kingdom","Royal, St., National, County, University, Central","Hill, River, City, Wood, Lake","Hospital, Medical Center, Clinic, Health Institute"
+"Vatican City","Generale, Santo, Regionale, Universitario, Centrale, Nazionale","Monte, Fiume, Citta, Giardino, Fontana","Ospedale, Centro Medico, Clinica, Istituto di Salute"

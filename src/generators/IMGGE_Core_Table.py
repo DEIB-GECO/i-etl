@@ -7,8 +7,101 @@ import sys
 import datetime
 import pandas as pd
 import re
+import random
 
 import scipy.stats
+
+def age_months(dob, now):
+        first_month = datetime.datetime.strptime(dob, "%d.%m.%Y").month
+        second_month = now.month
+        if second_month >= first_month:
+            return second_month - first_month
+        else:
+            return 0
+
+# TODO: Truncate result to only 2 decimals
+def age_summary(age_number_y, age_number_m):
+        return (age_number_y + age_number_m)/12
+
+def age_to_string(years, months):
+    if years == 0:
+        return f"{months}m"
+    elif months == 0:
+        return f"{years}y"
+    else:
+        return f"{years}y, {months}m"
+
+def transform_omimID(omimID, dummy_value):
+    if omimID != None:
+        return omimID.replace("# ", "OMIM:")
+    else:
+        return omimID
+
+# TODO: There can be more than one OMIM ID
+# TODO: Remove undesired HP values such as Recessive inheritance
+# TODO: Check how to extrac read_csv from this function
+def get_hpo_descriptive(omim_id, symptoms_max_number):
+    if omim_id != None:
+        df = pd.read_csv('DATA/genes_to_phenotype.txt', sep="\t")
+        x = df.loc[df['disease_id'] == omim_id]
+
+        result =[]
+
+        for i, row in x.iterrows():
+            hpo = row["hpo_id"]
+            hpo_name = row["hpo_name"]
+            result.append(f"{hpo_name} {hpo}")
+
+            if len(result) > symptoms_max_number:
+                result = result[1:symptoms_max_number]
+            
+        return ','.join(result)
+    else:
+        return None
+
+def get_hpo_identifiers(symptoms, dummy_value):
+    if symptoms != None:
+        symptoms_list = symptoms.split(",")
+        result = []
+        for symptom in symptoms_list:
+            m = re.search('HP:[0-9]+', symptom)
+            if m:
+                result.append(m.group(0))
+        return ", ".join(result)
+    return None
+
+# TODO: Refine hospital names
+def generate_hospital_name_by_country(country, dummy_value):
+
+    df = pd.read_csv('DATA/countries.csv', sep=",")
+    x = df.loc[df['Name'] == country]
+    
+    if len(x) is None:
+        return "Country not supported."
+    
+    adjectives = []
+    locations = []
+    hospital_terms = []
+
+    for i, row in x.iterrows():
+        adjectives = row["Adjectives"].split(",")
+        locations = row["Locations"].split(",")
+        hospital_terms = row["hospital_terms"].split(",")
+    
+    adjective = random.choice(adjectives)
+    location = random.choice(locations)
+    hospital_term = random.choice(hospital_terms)
+
+    hospital_name = f"{adjective} {location} {hospital_term}"
+    return hospital_name
+
+def generate_karyotype_result(sex, dummy_value):
+    if sex == "1": # Male
+        random.choices(["46, XY", "47,XY,+21", "46,XY,del(1)(p36)", "46,XY,del(18)(q21.3q33)"])
+    elif sex == "2": # Female
+        random.choices(["46, XX", "47,XX,+21", "46,XX,del(1)(p36)", "46,XX,del(18)(q21.3q33)"])
+    else:
+        random.choices(["46, XY", "46, XX"])
 
 def generate_fields():
     # PATIENT ID
@@ -43,31 +136,12 @@ def generate_fields():
     testedYears = headfake.field.OperationField(name="age_number_y", operator=operator.floordiv, first_value=currentAge, second_value=2)
 
     # NUMBER OF MONTHS WHEN TESTED
-    def age_months(dob, now):
-        first_month = datetime.datetime.strptime(dob, "%d.%m.%Y").month
-        second_month = now.month
-        if second_month >= first_month:
-            return second_month - first_month
-        else:
-            return 0
-    
     testedMonths = headfake.field.OperationField(name="age_number_m", operator=None, first_value=dobFieldValue, second_value=datetime.datetime.now(), operator_fn=age_months)
 
     # AGE WHEN TESTED IN YEARS
-    def age_summary(age_number_y, age_number_m):
-        return (age_number_y + age_number_m)/12
-
     testedsummary = headfake.field.OperationField(name="age_summary", operator=None, first_value=testedYears, second_value=testedMonths, operator_fn=age_summary)
 
     # AGE WHEN SENT FOR GENETIC TESTING
-    def age_to_string(years, months):
-        if years == 0:
-            return f"{months}m"
-        elif months == 0:
-            return f"{years}y"
-        else:
-            return f"{years}y, {months}m"
-    
     ageWhenTested = headfake.field.OperationField(name="age_sent_for_genet", operator=None, first_value=testedYears, second_value=testedMonths, operator_fn=age_to_string)
     
     # THERE IS CONSANGUINITY
@@ -105,49 +179,10 @@ def generate_fields():
     inVitroFertilization = headfake.field.OptionValueField(probabilities=ivProbabilities, name="ivf")
       
     # LIST OF SYMPTOMS WITH HPO IDENTIFIER
-    def transform_omimID(omimID, dummy_value):
-        if omimID != None:
-            return omimID.replace("# ", "OMIM:")
-        else:
-            return omimID
-
-    # TODO: There can be more than one OMIM ID
-    # TODO: Remove undesired HP values such as Recessive inheritance
-    # TODO: Check how to extrac read_csv from this function
-    def get_hpo_descriptive(omim_id, symptoms_max_number):
-        if omim_id != None:
-            df = pd.read_csv('DATA/genes_to_phenotype.txt', sep="\t")
-            x = df.loc[df['disease_id'] == omim_id]
-
-            result =[]
-
-            for i, row in x.iterrows():
-                hpo = row["hpo_id"]
-                hpo_name = row["hpo_name"]
-                result.append(f"{hpo_name} {hpo}")
-
-                if len(result) > symptoms_max_number:
-                    result = result[1:symptoms_max_number]
-            
-            return ','.join(result)
-        else:
-            return None
-
     omimID = headfake.field.OperationField(operator=None, first_value=diagnosis_omimID, second_value=None, operator_fn=transform_omimID, hidden=True)
     hpo_descriptive = headfake.field.OperationField(name="hpo_descriptive", operator=None, first_value=omimID, second_value=5, operator_fn=get_hpo_descriptive)
 
     # LIST OF SYMPTOMS HPO IDENTIFIERS
-    def get_hpo_identifiers(symptoms, dummy_value):
-        if symptoms != None:
-            symptoms_list = symptoms.split(",")
-            result = []
-            for symptom in symptoms_list:
-                m = re.search('HP:[0-9]+', symptom)
-                if m:
-                    result.append(m.group(0))
-            return ", ".join(result)
-        return None
-
     hpo_data = headfake.field.OperationField(name="hpo_data", operator=None, first_value=hpo_descriptive, second_value=None, operator_fn=get_hpo_identifiers)
 
     # YEARS AT ONSET
@@ -234,15 +269,18 @@ def generate_fields():
     eegProbabilities = {"1":0.3, "2":0.6, "99":0.1} # {No, Yes, Unknown}
     hasEEG = headfake.field.OptionValueField(name="eeg", probabilities=eegProbabilities)
     
-    # TODO:
-    clinic = headfake.field.ConstantField(name="clinic", value=None)
-    
+    # CLINICAL CENTER OF REFERRAL
+    country_value = headfake.field.LookupField(field="country_birth")
+    clinic = headfake.field.OperationField(operator=None, first_value=country_value, second_value=None, operator_fn=generate_hospital_name_by_country)
+
     # HAS PREVIOUS KARYOTYPE
     karyotypeProbabilities = {"1":0.5, "2":0.4, "99":0.1} # {No, Yes, Not applicable}
     hasPreviouskaryotype = headfake.field.OptionValueField(name="karyotype", probabilities=karyotypeProbabilities)
     
-    # TODO:
-    karyotype_result = headfake.field.ConstantField(name="karyotype_result", value=None)
+    # PREVIOUS KARYOTYPE RESULT
+    condition = headfake.field.Condition(field="karyotype", operator=operator.eq, value="2")
+    true_value = headfake.field.OperationField(operator=None, first_value=sex, second_value=None, operator_fn=generate_karyotype_result)
+    karyotype_result = headfake.field.IfElseField(condition=condition, true_value=true_value, false_value="no")
     
     # HAS PREVIOUS MICROARRAY
     microarrayProbabilities = {"1":0.5, "2":0.4, "99":0.1} # {No, Yes, Not applicable}
@@ -322,8 +360,10 @@ def generate_fields():
     zygosityProbabilities={"heterozygosis":0.3, "het":0.3, "homozygosis":0.2, "hom":0.1, "hemizygous":0.1}
     zygosity1 = headfake.field.OptionValueField(name="gen_zigosity1", probabilities=zygosityProbabilities)
     
-    # TODO:
-    gen_transcript1 = headfake.field.ConstantField(name="gen_transcript1", value=None)
+    # TRANSCRIPT IDENTIFIER OF GENE 1
+    # TODO: Change to random for the generation of random patches
+    generator = headfake.field.RandomReuseIdGenerator(length=6, min_value=1645)
+    gen_transcript1 = headfake.field.IdField(name="gen_transcript1", prefix='NM_', suffix=".4", generator=generator)
     
     # TODO:
     gen_varnamecdna1_1 = headfake.field.ConstantField(name="gen_varnamecdna1_1", value=None)
@@ -362,8 +402,10 @@ def generate_fields():
     # TODO:
     secgen_zigosity2 = headfake.field.ConstantField(name="secgen_zigosity2", value=None)
     
-    # TODO:
-    secgen_transcript2 = headfake.field.ConstantField(name="secgen_transcript2", value=None)
+    # TRANSCRIPT IDENTIFIER OF GENE 2
+    # TODO: Change to random for the generation of random patches
+    generator = headfake.field.RandomReuseIdGenerator(length=6, min_value=1645)
+    secgen_transcript2 = headfake.field.IdField(name="secgen_transcript2", prefix='NM_', suffix=".4", generator=generator)
     
     # TODO:
     secgen_varnamecdna2_1 = headfake.field.ConstantField(name="secgen_varnamecdna2_1", value=None)
@@ -401,9 +443,9 @@ def generate_fields():
                             ageWhenTested, testedYears, testedMonths, testedsummary, hasConsanguinity, consanguinityRelation, 
                             hasAffectedRelatives, affectedRelatives, hasSpontaneousAbortions, numberOfAbortions, inVitroFertilization,
                             hpo_descriptive, hpo_data, ageOnset, onsetYears, onsetMonths, onsetSummary, hasID, 
-                            testResult,IQTestDescription, otherIdTest, otherIdTestName, otherIDTestResult, hasMetabolicDisease, 
-                            hasMetabolicMeasures, hasCT, hasMR, hasEEG, clinic, hasPreviouskaryotype, karyotype_result, hasPreviouskaryotype, 
-                            microarrayResult, microarray_sig, microarray_type, microarray_reg_no, microarray_lenght, microarray_details, otherResult,
+                            testResult,IQTestDescription,otherIdTest, otherIdTestName, otherIDTestResult, hasMetabolicDisease, 
+                            hasMetabolicMeasures, hasCT, hasMR, hasEEG, clinic, hasPreviouskaryotype, karyotype_result, hasPreviousMicroarray, 
+                            microarrayResult, microarray_sig, microarray_type, microarray_reg_no, microarray_lenght, microarray_details, hasPreviousOther,
                             otherType, otherResult, ngsTestResult, ngsTestApproach, ngsTestPlatform, ngsTestOtherPlatform, refGenome, gen_gen1, 
                             gen_chromosome1, gen_novar1, variantInheritance1, zygosity1, gen_transcript1, gen_varnamecdna1_1, gen_varnameprot1_1, 
                             segregation1, gen_varnamecdna1_2, gen_varnameprot1_2, segregation_result1_2, secgen2, secgen_gene2, secgen_chromosome2, 
@@ -414,16 +456,17 @@ def generate_fields():
     return fs
 
 def main():
-    if len(sys.argv) < 1:
-        print("Ussage: py BETTER_IMGGE_Core_Table.py <output_file_name>")
+    if len(sys.argv) < 2:
+        print("Ussage: py BETTER_IMGGE_Core_Table.py <num_rows> <output_file_name>")
     else:
-        output_file = sys.argv[1]
+        num_rows = int(sys.argv[1])
+        output_file = sys.argv[2]
     
         fieldset = generate_fields()
         hf = headfake.HeadFake.from_python({"fieldset":fieldset})
 
         # Create the dataset
-        data = hf.generate(num_rows=10)
+        data = hf.generate(num_rows=num_rows)
 
         # Create CSV output
         data.to_csv(output_file, index=False)
