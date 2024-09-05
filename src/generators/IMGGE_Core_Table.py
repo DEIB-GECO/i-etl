@@ -11,17 +11,19 @@ import random
 
 import scipy.stats
 
-# TODO: Move access to data files out of the functions
+# READ COMPLEMENTARY DATASETS
+df_genes_to_phenotype = pd.read_csv('DATA/genes_to_phenotype.txt', sep="\t")
+df_countries = pd.read_csv('DATA/countries.csv', sep=",")
+df_diseases = pd.read_csv('DATA/IMGGE_Diseases.csv', sep=",")
 
 def age_months(dob, now):
-        first_month = datetime.datetime.strptime(dob, "%d.%m.%Y").month
-        second_month = now.month
-        if second_month >= first_month:
-            return second_month - first_month
-        else:
-            return 0
+    first_month = datetime.datetime.strptime(dob, "%d.%m.%Y").month
+    second_month = now.month
+    if second_month >= first_month:
+        return second_month - first_month
+    else:
+        return 0
 
-# TODO: Truncate result to only 2 decimals
 def age_summary(age_number_y, age_number_m):
         return round((age_number_y + age_number_m)/12, 2)
 
@@ -39,20 +41,20 @@ def transform_omimID(omimID, dummy_value):
     else:
         return omimID
 
-# TODO: There can be more than one OMIM ID
-# TODO: Remove undesired HP values such as Recessive inheritance
-# TODO: Check how to extrac read_csv from this function
 def get_hpo_descriptive(omim_id, symptoms_max_number):
     if omim_id != None:
-        df = pd.read_csv('DATA/genes_to_phenotype.txt', sep="\t")
-        x = df.loc[df['disease_id'] == omim_id]
+        omim_id_list = omim_id.split(", ") # There cane be more than one OMIM ID if phenotype is a disease set
+        x = df_genes_to_phenotype.loc[df_genes_to_phenotype['disease_id'] == omim_id_list[0]] # We compare with the first OMIM ID
 
-        result =[]
+        result = []
 
         for i, row in x.iterrows():
             hpo = row["hpo_id"]
-            hpo_name = row["hpo_name"]
-            result.append(f"{hpo_name} {hpo}")
+            
+            # Do not consider inheritance hpo identifiers
+            if hpo not in ["HP:0000007","HP:0000006","HP:0001417","HP:0001419","HP:0001423","HP:0001426","HP:0001427","HP:0001450","HP:0012275","HP:0010984","HP:0010983","HP:0010982"]:
+                hpo_name = row["hpo_name"]
+                result.append(f"{hpo_name} {hpo}")
 
             if len(result) > symptoms_max_number:
                 result = result[1:symptoms_max_number]
@@ -74,9 +76,7 @@ def get_hpo_identifiers(symptoms, dummy_value):
 
 # TODO: Refine hospital names
 def generate_hospital_name_by_country(country, dummy_value):
-
-    df = pd.read_csv('DATA/countries.csv', sep=",")
-    x = df.loc[df['Name'] == country]
+    x = df_countries.loc[df_countries['Name'] == country]
     
     if len(x) is None:
         return "Country not supported."
@@ -108,6 +108,37 @@ def generate_karyotype_result(sex, dummy_value):
 def generate_chromosome(dummy_value1, dummy_value2):
     options = ["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","X","Y"]
     return random.choice(options)
+
+def get_microarray_significance(microarray_result, dummy_value):
+    if microarray_result == "positive":
+        return random.choice(["Pathogenic", "Likely pathogenic"])
+    elif microarray_result == "negative":
+        return random.choice(["Benign", "Likely benign"])
+    else:
+        return "VUS"
+
+def generate_cytogenetic_location(dummy_value1, dummy_value2):
+    cytogenetic_locations_list = ["16q11.3", "12p6.2", "3q9.4", "22p4.3", "17q11.5", "2p4.3"]
+    return random.choice(cytogenetic_locations_list)
+
+def generate_microarray_details(region, type):
+    return f"The identified {region} {type} is frequently associated with developmental and neurobehavioral disorders, including intellectual disability."
+
+def generate_microarray_length(dummy_value1, dummy_value2):
+    return f"{random.randint(a=100, b=999)} kb"      
+
+def get_protein_name(coding_name, dummy_value):
+    df = pd.read_csv('DATA/variants.csv', sep=",")
+    x = df.loc[df['coding_name'] == coding_name]
+    
+    if len(x) == 0:
+        return None
+
+    protein_name = ""
+    for i, row in x.iterrows():
+        protein_name = row["protein_name"]
+        
+    return protein_name     
 
 def generate_fields():
     # PATIENT ID
@@ -200,11 +231,9 @@ def generate_fields():
     onsetMonths = headfake.field.OperationField(name="age_onset_number_m", operator=None, first_value=dobFieldValue, second_value=datetime.datetime.now(), operator_fn=age_months)
 
     # AGE AT ONSET IN YEARS
-    # TODO: Create different than testing
     onsetSummary = headfake.field.OperationField(name="age_onset_summary", operator=None, first_value=testedYears, second_value=testedMonths, operator_fn=age_summary)
 
     # AGE AT ONSET (DESCRIPTIVE)
-    # TODO: Create different than testing
     ageOnset = headfake.field.OperationField(name="age_onset", operator=None, first_value=onsetYears, second_value=onsetMonths, operator_fn=age_to_string)
 
     # HAS INTELECTUAL DISABILITY
@@ -303,15 +332,6 @@ def generate_fields():
     microarrayResult = headfake.field.IfElseField(name="microarray_result", condition=condition, true_value=true_value, false_value=None)
     
     # MICROARRAY RESULT SIGNIFICANCE
-    # {'Benign','Likely benign','VUS','Likely pathogenic','Pathogenic'}
-    def get_microarray_significance(microarray_result, dummy_value):
-        if microarray_result == "positive":
-            return random.choice(["Pathogenic", "Likely pathogenic"])
-        elif microarray_result == "negative":
-            return random.choice(["Benign", "Likely benign"])
-        else:
-            return "VUS"
-        
     true_value = headfake.field.OperationField(operator=None, first_value=microarrayResult, second_value=None, operator_fn=get_microarray_significance)
     microarray_sig = headfake.field.IfElseField(name="microarray_sig", condition=condition, true_value=true_value, false_value=None)
     
@@ -320,23 +340,14 @@ def generate_fields():
     microarray_type = headfake.field.OptionValueField(name="microarray_type", probabilities=microarrayTypeProbabilities)
     
     # MICROARRAY RESULT REGION
-    def generate_cytogenetic_location(dummy_value1, dummy_value2):
-        cytogenetic_locations_list = ["16q11.3", "12p6.2", "3q9.4", "22p4.3", "17q11.5", "2p4.3"]
-        return random.choice(cytogenetic_locations_list)
-    
     true_value = headfake.field.OperationField(operator=None, first_value=None, second_value=None, operator_fn=generate_cytogenetic_location)
     microarray_reg_no = headfake.field.IfElseField(name="microarray_reg_no", condition=condition, true_value=true_value, false_value=None)
     
     # MICROARRAY RESULT LENGTH
-    def generate_microarray_length(dummy_value1, dummy_value2):
-        return f"{random.randint(a=100, b=999)} kb"
-    
     true_value = headfake.field.OperationField(operator=None, first_value=None, second_value=None, operator_fn=generate_microarray_length)
     microarray_length = headfake.field.IfElseField(name="microarray_length", condition=condition, true_value=true_value, false_value=None)
     
     # MICROARRAY RESULT DETAILS
-    def generate_microarray_details(region, type):
-        return f"The identified {region} {type} is frequently associated with developmental and neurobehavioral disorders, including intellectual disability."
     true_value = headfake.field.OperationField(operator=None, first_value=microarray_reg_no, second_value=microarray_type, operator_fn=generate_microarray_details)
     microarray_details = headfake.field.IfElseField(name="microarray_details", condition=condition, true_value=true_value, false_value=None)
     
@@ -365,18 +376,21 @@ def generate_fields():
     ngsTestApproach = headfake.field.OptionValueField(name="gen_result", probabilities=approachProbabilities)
     
     # SEQUENCING PLATFORM
-    platformProbabilities = {"MiSeq, Illumina":0.2, "NextSeq550, Illumina":0.3, "NextSeq 2000, Illumina":0.2, "DNBSEQ G-400, MGI":0.3}
+    platformProbabilities = {"MiSeq, Illumina":0.2, "NextSeq550, Illumina":0.2, "NextSeq 2000, Illumina":0.2, "DNBSEQ G-400, MGI":0.2, None:0.2}
     ngsTestPlatform = headfake.field.OptionValueField(name="gen_ngsplatform", probabilities=platformProbabilities)
     
-    # TODO:
-    ngsTestOtherPlatform = headfake.field.ConstantField(name="oth_gen_ngsplatform", value=None)
+    # OTHER SEQUENCING PLATFORM
+    condition = headfake.field.Condition(field="gen_ngsplatform", operator=operator.eq, value=None)
+    otherplatformProbabilities = {"Ion S5, Thermo Fisher Scientific":0.4, "Sequel II, Pacific Biosciences":0.4, "GridION, Oxford Nanopore Technologies":0.1, "SOLiD 5500xl, SOLiD":0.1}
+    true_value = headfake.field.OptionValueField(probabilities=otherplatformProbabilities)
+    ngsTestOtherPlatform = headfake.field.IfElseField(name="oth_gen_ngsplatform", condition=condition, true_value=true_value, false_value=None)
     
     # REFERENCE GENOME
     refProbabilities = {"GRCh 37 (hg19)":0.5, "GRCh 38":0.5}
     refGenome = headfake.field.OptionValueField(name="gen_ref", probabilities=refProbabilities)
     
     # GENE 1 NAME
-    # TODO: Puede haber más de un gen
+    # TODO: THERE CAN BE MORE THAN ONE GENE
     gen_gen1 = headfake.field.LookupMapFileField(name="gen_gen1", lookup_value_field="Gene", map_file_field="diagnosis")
     
     # CHROMOSOME NAME
@@ -419,19 +433,6 @@ def generate_fields():
     
     # PROTEIN VARIANT 2 NAME
     # TODO: Create a HGVS name generator
-    def get_protein_name(coding_name, dummy_value):
-        df = pd.read_csv('DATA/variants.csv', sep=",")
-        x = df.loc[df['coding_name'] == coding_name]
-    
-        if len(x) == 0:
-            return None
-
-        protein_name = ""
-        for i, row in x.iterrows():
-            protein_name = row["protein_name"]
-        
-        return protein_name
-    
     condition = headfake.field.Condition(field="gen_novar1", operator=operator.eq, value=2)
     true_value = headfake.field.OperationField(operator=None, first_value=gen_varnamecdna1_2, second_value=None, operator_fn=get_protein_name)
     gen_varnameprot1_2 = headfake.field.IfElseField(name="gen_varnameprot1_2", condition=condition, true_value=true_value, false_value=None)
@@ -506,10 +507,10 @@ def generate_fields():
     vcfOtherLocProbabilities = {"External HD":0.8, None:0.2}
     oth_loc_vcf = headfake.field.OptionValueField(name="other_loc_vcf", probabilities=vcfOtherLocProbabilities)
     
-    # TODO:
+    # TODO: Unknown metadata
     oth_loc_vcf_ext = headfake.field.ConstantField(name="other_loc_vcf_ext", value=None)
     
-    # TODO:
+    # TODO: Unknown metadata
     comment = headfake.field.ConstantField(name="comment", value=None)
 
 
@@ -534,8 +535,11 @@ def main():
     if len(sys.argv) < 2:
         print("Ussage: py BETTER_IMGGE_Core_Table.py <num_rows> <output_file_name>")
     else:
-        num_rows = int(sys.argv[1])
-        output_file = sys.argv[2]
+        #num_rows = int(sys.argv[1])
+        #output_file = sys.argv[2]
+        
+        num_rows = 100
+        output_file = "test.csv"
     
         fieldset = generate_fields()
         hf = headfake.HeadFake.from_python({"fieldset":fieldset})
