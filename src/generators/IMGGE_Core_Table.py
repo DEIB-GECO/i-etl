@@ -535,12 +535,9 @@ def main():
     if len(sys.argv) < 2:
         print("Ussage: py BETTER_IMGGE_Core_Table.py <num_rows> <output_file_name>")
     else:
-        #num_rows = int(sys.argv[1])
-        #output_file = sys.argv[2]
+        num_rows = int(sys.argv[1])
+        output_file = sys.argv[2]
         
-        num_rows = 100
-        output_file = "test.csv"
-    
         fieldset = generate_fields()
         hf = headfake.HeadFake.from_python({"fieldset":fieldset})
 
