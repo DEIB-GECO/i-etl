@@ -11,6 +11,8 @@ import random
 
 import scipy.stats
 
+# TODO: Move access to data files out of the functions
+
 def age_months(dob, now):
         first_month = datetime.datetime.strptime(dob, "%d.%m.%Y").month
         second_month = now.month
@@ -21,7 +23,7 @@ def age_months(dob, now):
 
 # TODO: Truncate result to only 2 decimals
 def age_summary(age_number_y, age_number_m):
-        return (age_number_y + age_number_m)/12
+        return round((age_number_y + age_number_m)/12, 2)
 
 def age_to_string(years, months):
     if years == 0:
@@ -102,6 +104,10 @@ def generate_karyotype_result(sex, dummy_value):
         random.choices(["46, XX", "47,XX,+21", "46,XX,del(1)(p36)", "46,XX,del(18)(q21.3q33)"])
     else:
         random.choices(["46, XY", "46, XX"])
+
+def generate_chromosome(dummy_value1, dummy_value2):
+    options = ["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","X","Y"]
+    return random.choice(options)
 
 def generate_fields():
     # PATIENT ID
@@ -186,15 +192,19 @@ def generate_fields():
     hpo_data = headfake.field.OperationField(name="hpo_data", operator=None, first_value=hpo_descriptive, second_value=None, operator_fn=get_hpo_identifiers)
 
     # YEARS AT ONSET
+    # TODO: Create different than testing
     onsetYears = headfake.field.OperationField(name="age_onset_number_y", operator=operator.floordiv, first_value=currentAge, second_value=2)
 
     # MONTHS AT ONSET
+    # TODO: Create different than testing
     onsetMonths = headfake.field.OperationField(name="age_onset_number_m", operator=None, first_value=dobFieldValue, second_value=datetime.datetime.now(), operator_fn=age_months)
 
     # AGE AT ONSET IN YEARS
+    # TODO: Create different than testing
     onsetSummary = headfake.field.OperationField(name="age_onset_summary", operator=None, first_value=testedYears, second_value=testedMonths, operator_fn=age_summary)
 
     # AGE AT ONSET (DESCRIPTIVE)
+    # TODO: Create different than testing
     ageOnset = headfake.field.OperationField(name="age_onset", operator=None, first_value=onsetYears, second_value=onsetMonths, operator_fn=age_to_string)
 
     # HAS INTELECTUAL DISABILITY
@@ -271,7 +281,7 @@ def generate_fields():
     
     # CLINICAL CENTER OF REFERRAL
     country_value = headfake.field.LookupField(field="country_birth")
-    clinic = headfake.field.OperationField(operator=None, first_value=country_value, second_value=None, operator_fn=generate_hospital_name_by_country)
+    clinic = headfake.field.OperationField(name="clinic", operator=None, first_value=country_value, second_value=None, operator_fn=generate_hospital_name_by_country)
 
     # HAS PREVIOUS KARYOTYPE
     karyotypeProbabilities = {"1":0.5, "2":0.4, "99":0.1} # {No, Yes, Not applicable}
@@ -280,7 +290,7 @@ def generate_fields():
     # PREVIOUS KARYOTYPE RESULT
     condition = headfake.field.Condition(field="karyotype", operator=operator.eq, value="2")
     true_value = headfake.field.OperationField(operator=None, first_value=sex, second_value=None, operator_fn=generate_karyotype_result)
-    karyotype_result = headfake.field.IfElseField(condition=condition, true_value=true_value, false_value="no")
+    karyotype_result = headfake.field.IfElseField(name="karyotype_result", condition=condition, true_value=true_value, false_value="no")
     
     # HAS PREVIOUS MICROARRAY
     microarrayProbabilities = {"1":0.5, "2":0.4, "99":0.1} # {No, Yes, Not applicable}
@@ -292,20 +302,43 @@ def generate_fields():
     true_value = headfake.field.OptionValueField(probabilities=microarrayResultProbabilities)
     microarrayResult = headfake.field.IfElseField(name="microarray_result", condition=condition, true_value=true_value, false_value=None)
     
-    # TODO:
-    microarray_sig = headfake.field.ConstantField(name="microarray_sig", value=None)
+    # MICROARRAY RESULT SIGNIFICANCE
+    # {'Benign','Likely benign','VUS','Likely pathogenic','Pathogenic'}
+    def get_microarray_significance(microarray_result, dummy_value):
+        if microarray_result == "positive":
+            return random.choice(["Pathogenic", "Likely pathogenic"])
+        elif microarray_result == "negative":
+            return random.choice(["Benign", "Likely benign"])
+        else:
+            return "VUS"
+        
+    true_value = headfake.field.OperationField(operator=None, first_value=microarrayResult, second_value=None, operator_fn=get_microarray_significance)
+    microarray_sig = headfake.field.IfElseField(name="microarray_sig", condition=condition, true_value=true_value, false_value=None)
     
-    # TODO:
-    microarray_type = headfake.field.ConstantField(name="microarray_type", value=None)
+    # MICROARRAY RESULT TYPE
+    microarrayTypeProbabilities = {"1":0.4, "2":0.3, "3":0.3} # {"deletion","microdeletion","duplication"}
+    microarray_type = headfake.field.OptionValueField(name="microarray_type", probabilities=microarrayTypeProbabilities)
     
-    # TODO:
-    microarray_reg_no = headfake.field.ConstantField(name="microarray_reg_no", value=None)
+    # MICROARRAY RESULT REGION
+    def generate_cytogenetic_location(dummy_value1, dummy_value2):
+        cytogenetic_locations_list = ["16q11.3", "12p6.2", "3q9.4", "22p4.3", "17q11.5", "2p4.3"]
+        return random.choice(cytogenetic_locations_list)
     
-    # TODO:
-    microarray_lenght = headfake.field.ConstantField(name="microarray_length", value=None)
+    true_value = headfake.field.OperationField(operator=None, first_value=None, second_value=None, operator_fn=generate_cytogenetic_location)
+    microarray_reg_no = headfake.field.IfElseField(name="microarray_reg_no", condition=condition, true_value=true_value, false_value=None)
     
-    # TODO:
-    microarray_details = headfake.field.ConstantField(name="microarray_details", value=None)
+    # MICROARRAY RESULT LENGTH
+    def generate_microarray_length(dummy_value1, dummy_value2):
+        return f"{random.randint(a=100, b=999)} kb"
+    
+    true_value = headfake.field.OperationField(operator=None, first_value=None, second_value=None, operator_fn=generate_microarray_length)
+    microarray_length = headfake.field.IfElseField(name="microarray_length", condition=condition, true_value=true_value, false_value=None)
+    
+    # MICROARRAY RESULT DETAILS
+    def generate_microarray_details(region, type):
+        return f"The identified {region} {type} is frequently associated with developmental and neurobehavioral disorders, including intellectual disability."
+    true_value = headfake.field.OperationField(operator=None, first_value=microarray_reg_no, second_value=microarray_type, operator_fn=generate_microarray_details)
+    microarray_details = headfake.field.IfElseField(name="microarray_details", condition=condition, true_value=true_value, false_value=None)
     
     # HAS OTHER PREVIOUS GENETIC TEST
     previousProbabilities = {"1":0.5, "2":0.4, "99":0.1} # {No, Yes, Not applicable}
@@ -343,10 +376,11 @@ def generate_fields():
     refGenome = headfake.field.OptionValueField(name="gen_ref", probabilities=refProbabilities)
     
     # GENE 1 NAME
-    gen_gen1 = headfake.field.ConstantField(name="gen_gen1", value=None)
+    # TODO: Puede haber más de un gen
+    gen_gen1 = headfake.field.LookupMapFileField(name="gen_gen1", lookup_value_field="Gene", map_file_field="diagnosis")
     
-    # TODO:
-    gen_chromosome1 = headfake.field.ConstantField(name="gen_chromosome1", value=None)
+    # CHROMOSOME NAME
+    gen_chromosome1 = headfake.field.OperationField(name="gen_chromosome1", operator=None, first_value=None, second_value=None, operator_fn=generate_chromosome)
     
     # NUMBER OF VARIANTS FOUND IN GENE 1
     novarProbabilities = {1:0.5, 2:0.5}
@@ -365,71 +399,112 @@ def generate_fields():
     generator = headfake.field.RandomReuseIdGenerator(length=6, min_value=1645)
     gen_transcript1 = headfake.field.IdField(name="gen_transcript1", prefix='NM_', suffix=".4", generator=generator)
     
-    # TODO:
-    gen_varnamecdna1_1 = headfake.field.ConstantField(name="gen_varnamecdna1_1", value=None)
+    # CODING VARIANT 1 NAME
+    # TODO: Create a HGVS name generator
+    gen_varnamecdna1_1 = headfake.field.MapFileField(mapping_file="DATA/variants.csv", key_field="coding_name", name="gen_varnamecdna1_1")
     
-    # TODO:
-    gen_varnameprot1_1 = headfake.field.ConstantField(name="gen_varnameprot1_1", value=None)
+    # PROTEIN VARIANT 1 NAME
+    # TODO: Create a HGVS name generator
+    gen_varnameprot1_1 = headfake.field.LookupMapFileField(name="gen_varnameprot1_1", lookup_value_field="protein_name", map_file_field="gen_varnamecdna1_1")
     
-    # TODO:
-    segregationProbabilities = {"No":0.2, "1":0.2, "2":0.2, "3":0.2, "4":0.2}
-    segregation1 = headfake.field.OptionValueField(name="segregarion_result1", probabilities=segregationProbabilities)
+    # VARIANT 1 SEGREGATION
+    segregationProbabilities = {"No":0.2, "1":0.2, "2":0.2, "3":0.2, "4":0.2} # {"No","Not applicable","De novo","Maternal","Paternal"}
+    segregation1 = headfake.field.OptionValueField(name="segregation_result1_1", probabilities=segregationProbabilities)
     
-    # TODO:
-    gen_varnamecdna1_2 = headfake.field.ConstantField(name="gen_varname_cdna1_2", value=None)
+    # CODING VARIANT 2 NAME
+    # TODO: Create a HGVS name generator
+    condition = headfake.field.Condition(field="gen_novar1", operator=operator.eq, value=2)
+    true_value = headfake.field.MapFileField(mapping_file="DATA/variants.csv", key_field="coding_name", name="gen_varnamecdna1_2")
+    gen_varnamecdna1_2 = headfake.field.IfElseField(name="gen_varnamecdna1_2", condition=condition, true_value=true_value, false_value=None)
     
-    # TODO:
-    gen_varnameprot1_2 = headfake.field.ConstantField(name="gen_varnameprot1_2", value=None)
+    # PROTEIN VARIANT 2 NAME
+    # TODO: Create a HGVS name generator
+    def get_protein_name(coding_name, dummy_value):
+        df = pd.read_csv('DATA/variants.csv', sep=",")
+        x = df.loc[df['coding_name'] == coding_name]
     
-    # TODO:
-    segregation_result1_2 = headfake.field.ConstantField(name="segregation_result1_2", value=None)
+        if len(x) == 0:
+            return None
+
+        protein_name = ""
+        for i, row in x.iterrows():
+            protein_name = row["protein_name"]
+        
+        return protein_name
     
-    # TODO:
-    secgen2 = headfake.field.ConstantField(name="secgen2", value=None)
+    condition = headfake.field.Condition(field="gen_novar1", operator=operator.eq, value=2)
+    true_value = headfake.field.OperationField(operator=None, first_value=gen_varnamecdna1_2, second_value=None, operator_fn=get_protein_name)
+    gen_varnameprot1_2 = headfake.field.IfElseField(name="gen_varnameprot1_2", condition=condition, true_value=true_value, false_value=None)
     
-    # TODO:
-    secgen_gene2 = headfake.field.ConstantField(name="secgen_gene2", value=None)
+    # VARIANT 2 SEGREGATION
+    segregation_result1_2 = headfake.field.OptionValueField(name="segregarion_result1_2", probabilities=segregationProbabilities)
     
-    # TODO:
-    secgen_chromosome2 = headfake.field.ConstantField(name="secgen_chromosome2", value=None)
+    # THERE ARE OTHER GENES NOT RELATED TO ID OR METABOLIC DISEASE AFFECTED
+    otherAffectedGenes = {"Yes":0.2, "No":0.8} # {"Yes","No"}
+    secgen2 = headfake.field.OptionValueField(probabilities=otherAffectedGenes, name="secgen2")
     
-    # TODO:
-    secgen_novar2 = headfake.field.ConstantField(name="secgen_novar2", value=None)
+    # NAME OF GENE 2
+    condition = headfake.field.Condition(field="secgen2", operator=operator.eq, value="Yes")
+    true_value = headfake.field.MapFileField(mapping_file="DATA/variants.csv", key_field="other_gene")
+    secgen_gene2 = headfake.field.IfElseField(name="secgen_gene2", condition=condition, true_value=true_value, false_value=None)
     
-    # TODO:
-    secgen_inheritance2 = headfake.field.ConstantField(name="secgen_inheritance2", value=None)
+    # CHROMOSOME 2
+    true_value = headfake.field.OperationField(operator=None, first_value=None, second_value=None, operator_fn=generate_chromosome)
+    secgen_chromosome2 = headfake.field.IfElseField(name="secgen_chromosome2", condition=condition, true_value=true_value, false_value=None)
     
-    # TODO:
-    secgen_zigosity2 = headfake.field.ConstantField(name="secgen_zigosity2", value=None)
+    # NUMBER OF VARIANTS FOUND IN GENE 2
+    true_value = headfake.field.OptionValueField(probabilities=novarProbabilities)
+    secgen_novar2 = headfake.field.IfElseField(name="secgen_novar2", condition=condition, true_value=true_value, false_value=None)
+    
+    # VARIANT INHERITANCE REGARDING GENE 2
+    true_value = headfake.field.OptionValueField(probabilities=inheritanceProbabilities)
+    secgen_inheritance2 = headfake.field.IfElseField(name="secgen_inheritance2", condition=condition, true_value=true_value, false_value=None)
+    
+    # VARIANT ZYGOSITY REGARDING GENE 2
+    true_value = headfake.field.OptionValueField(probabilities=zygosityProbabilities)
+    secgen_zigosity2 = headfake.field.IfElseField(name="secgen_zigosity2", condition=condition, true_value=true_value, false_value=None)
     
     # TRANSCRIPT IDENTIFIER OF GENE 2
     # TODO: Change to random for the generation of random patches
     generator = headfake.field.RandomReuseIdGenerator(length=6, min_value=1645)
-    secgen_transcript2 = headfake.field.IdField(name="secgen_transcript2", prefix='NM_', suffix=".4", generator=generator)
+    true_value = headfake.field.IdField(prefix='NM_', suffix=".4", generator=generator)
+    secgen_transcript2 = headfake.field.IfElseField(name="secgen_transcript2", condition=condition, true_value=true_value, false_value=None)
     
-    # TODO:
-    secgen_varnamecdna2_1 = headfake.field.ConstantField(name="secgen_varnamecdna2_1", value=None)
+    # CODING NAME OF VARIANT 1
+    true_value = headfake.field.MapFileField(mapping_file="DATA/variants.csv", key_field="coding_name", name="secgen_varnamecdna2_1")
+    secgen_varnamecdna2_1 = headfake.field.IfElseField(name="secgen_varnamecdna2_1", condition=condition, true_value=true_value, false_value=None)
     
-    # TODO:
-    secgen_varnameprot2_1 = headfake.field.ConstantField(name="secgen_varnameprot2_1", value=None)
+    # PROTEIN NAME OF VARIANT 1
+    true_value = headfake.field.OperationField(operator=None, first_value=secgen_varnamecdna2_1, second_value=None, operator_fn=get_protein_name)
+    secgen_varnameprot2_1 = headfake.field.IfElseField(name="secgen_varnameprot2_1", condition=condition, true_value=true_value, false_value=None)
     
-    # TODO:
-    secgen_segregation2_1 = headfake.field.ConstantField(name="secgen_segregation2_1", value=None)
+    # VARIANT 1 SEGREGATION 
+    true_value = headfake.field.OptionValueField(probabilities=segregationProbabilities)
+    secgen_segregation2_1 = headfake.field.IfElseField(name="secgen_segregation2_1", condition=condition, true_value=true_value, false_value=None)
     
-    # TODO:
-    secgen_varnamecdna2_2 = headfake.field.ConstantField(name="secgen_varnamecdna2_2", value=None)
+    # CODING NAME OF VARIANT 2
+    condition = headfake.field.Condition(field="secgen_novar2", operator=operator.eq, value=2)
+    true_value = headfake.field.MapFileField(mapping_file="DATA/variants.csv", key_field="coding_name", name="secgen_varnamecdna2_1")
+    true_value_2 = headfake.field.IfElseField(condition=condition, true_value=true_value, false_value=None)
+    secgen_varnamecdna2_2 = headfake.field.IfElseField(name="secgen_varnamecdna2_2", condition=condition, true_value=true_value_2, false_value=None)
     
-    # TODO:
-    secgen_varnameprot2_2 = headfake.field.ConstantField(name="secgen_varnameprot2_2", value=None)
+    # PROTEIN NAME OF VARIANT 2
+    condition = headfake.field.Condition(field="secgen_novar2", operator=operator.eq, value=2)
+    true_value = headfake.field.OperationField(operator=None, first_value=secgen_varnamecdna2_2, second_value=None, operator_fn=get_protein_name)
+    true_value_2 = headfake.field.IfElseField(condition=condition, true_value=true_value, false_value=None)
+    secgen_varnameprot2_2 = headfake.field.IfElseField(name="gen_varnameprot2_2", condition=condition, true_value=true_value_2, false_value=None)
     
-    # TODO:
-    secgen_segregation2_2 = headfake.field.ConstantField(name="secgen_segregation2_2", value=None)
+    # VARIANT 2 SEGREGATION
+    true_value = headfake.field.OptionValueField(probabilities=segregationProbabilities)
+    secgen_segregation2_2 = headfake.field.IfElseField(name="secgen_segregation2_2", condition=condition, true_value=true_value, false_value=None)
     
-    # TODO:
-    loc_vcf = headfake.field.ConstantField(name="loc_vcf", value=None)
+    # LOCATION OF THE VCF FILE
+    vcfLocProbabilities = {"IMGGE Server":0.8, None:0.2}
+    loc_vcf = headfake.field.OptionValueField(name="loc_vcf", probabilities=vcfLocProbabilities)
     
-    # TODO:
-    oth_loc_vcf = headfake.field.ConstantField(name="other_loc_vcf", value=None)
+    # OTHER LOCATION OF THE VCF FILE
+    vcfOtherLocProbabilities = {"External HD":0.8, None:0.2}
+    oth_loc_vcf = headfake.field.OptionValueField(name="other_loc_vcf", probabilities=vcfOtherLocProbabilities)
     
     # TODO:
     oth_loc_vcf_ext = headfake.field.ConstantField(name="other_loc_vcf_ext", value=None)
@@ -445,13 +520,13 @@ def generate_fields():
                             hpo_descriptive, hpo_data, ageOnset, onsetYears, onsetMonths, onsetSummary, hasID, 
                             testResult,IQTestDescription,otherIdTest, otherIdTestName, otherIDTestResult, hasMetabolicDisease, 
                             hasMetabolicMeasures, hasCT, hasMR, hasEEG, clinic, hasPreviouskaryotype, karyotype_result, hasPreviousMicroarray, 
-                            microarrayResult, microarray_sig, microarray_type, microarray_reg_no, microarray_lenght, microarray_details, hasPreviousOther,
+                            microarrayResult, microarray_sig, microarray_type, microarray_reg_no, microarray_length, microarray_details, hasPreviousOther,
                             otherType, otherResult, ngsTestResult, ngsTestApproach, ngsTestPlatform, ngsTestOtherPlatform, refGenome, gen_gen1, 
                             gen_chromosome1, gen_novar1, variantInheritance1, zygosity1, gen_transcript1, gen_varnamecdna1_1, gen_varnameprot1_1, 
                             segregation1, gen_varnamecdna1_2, gen_varnameprot1_2, segregation_result1_2, secgen2, secgen_gene2, secgen_chromosome2, 
                             secgen_novar2, secgen_inheritance2, secgen_zigosity2, secgen_transcript2, secgen_varnamecdna2_1, secgen_varnameprot2_1,
-                            secgen_segregation2_1, secgen_varnamecdna2_2, secgen_varnameprot2_2, secgen_segregation2_2, loc_vcf, oth_loc_vcf, oth_loc_vcf_ext, 
-                            comment])
+                            secgen_segregation2_1, secgen_varnamecdna2_2, secgen_varnameprot2_2, secgen_segregation2_2, loc_vcf, oth_loc_vcf, oth_loc_vcf_ext, comment
+                            ])
     
     return fs
 
