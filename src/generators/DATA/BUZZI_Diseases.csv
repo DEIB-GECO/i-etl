@@ -1,0 +1,37 @@
+disease_name	acronym	omim_id
+Phenylketonuria	PKU	261600
+Benign hyperphenylalaninemia	HPA	261600
+Deficiency of the biosynthesis of the biopterin cofactor	BiOPT (BS)	261640
+Deficit in the regeneration of the biopterin cofactor	BIOPT (REG)	261630
+Tyrosinemia type I	TYR I	276700
+Tyrosinemia type II	TYR II	276600
+Maple syrup urine disease	MSUD	248600
+Homocystinuria (CBS defect)	HCY	236200
+Homocystinuria (severe MTHFR defect)	MTHFR	236250
+Glutaric acidemia type I	GA I	231670
+Isovaleric acidemia	IVA	243500
+Beta-ketothiola deficiency	BKT	203750
+3-hydroxy 3-methylglutaric acidemia	HMG	246450
+Propionic acidemia	PA	606054
+Methylmaionic acidemia (Mut)	MUT	251000
+Methylmaionic acidemia (Cbl-A)	Cbl A	251100
+Methylmaionic acidemia (Cbl-B)	Cbl B	251110
+Methylmaionic acidemia with homocystinuria (Cbl C deficiency)	Cbl C	277400
+Methylmaionic acidemia with homocystinuria (Cbl D deficiency)	CblD	277410
+2-methylbutyryl-CoA dehydrogenase deficiency	2MBG	610006
+Malonic aciduria	MAL	606761
+Multiple carboxylase deficiency	MCD	253270
+Citrulinemia type I	CIT I	215700
+Cytrullinemia type II (Citrine deficiency)	CIT Il	605814
+Argininosuccinic acidemia	ASA	207900
+Argininemia	ARG	207800
+Carnitine transport deficiency	CUD	212140
+Carnitine palmitoyltransferase deficiency	CPT Ia	255120
+Carnitine-acylcarnitine translocase deficiency	CACT	212138
+Carnitine palmitoyltransferase deficiency	CPT II	600650
+Very long chain a?yl-CoA dehydrogenase deficiency	VLCAD	609575
+Mitochondrial trifunctional protein deficiency	TFP	609015
+Long-chain 3-hydroxy-acyl-CoA dehydrogenase deficiency	LCHAD	609016
+Medium-chain acyl-CoA dehydrogenase deficiency	MCAD	201450
+Medium/short chain 3-hydroxy-acyl-CoA dehydrogenase deficiency	M/SCHAD	231530
+Glutaric acidemia type II	GA ll/MADD	231680
