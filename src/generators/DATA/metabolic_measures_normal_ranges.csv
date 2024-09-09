@@ -1,0 +1,74 @@
+measure;min;max;units
+argininosuccinic acid;0;0;micromol/L
+alanine;20;80;micromol/L
+arginine;20;150;micromol/L
+citrulline;10;50;micromol/L
+glutamic acid;3;100;micromol/L
+glycine;150;450;micromol/L
+leucine_isoleucine_hydroxyproline;20;170;micromol/L
+methionine;10;50;micromol/L
+ornithine;30;150;micromol/L
+phenylalanine;30;80;micromol/L
+proline;120;320;micromol/L
+tyrosine;40;120;micromol/L
+valina;150;300;micromol/L
+human biotinidase activity;90;100;
+free carnitine;25;50;micromol/L
+acetylcarnitine;5;25;micromol/L
+propionylcarnitine;0.2;3;micromol/L
+malonylcarnitine_3-hydroxy-butyrylcarnitine;0.1;0.4;micromol/L
+butyrylcarnitine;0.1;0.5;micromol/L
+methylmalonyl_3-hydroxy-isovalerylcarnitine;0;0.4;micromol/L
+isovalerylcarnitine;0.2;0.4;micromol/L
+tiglylcarnitine;0.01;0.2;micromol/L
+glutarylcarnitine_3-hydroxy-hexanoylcarnitine;0.001;0.1;micromol/L
+hexanoylcarnitine;0.05;0.5;micromol/L
+adipylcarnitine;0.001;0.1;micromol/L
+octanoylcarnitine;0.1;0.6;micromol/L
+octenoylcarnitine;0.001;0.4;micromol/L
+decanoylcarnitine;0.005;0.5;micromol/L
+decenoylcarnitine;0.001;0.3;micromol/L
+decayenoylcarnitine;0.01;0.1;micromol/L
+dodecanoylcarnitine;0.001;0.4;micromol/L
+dodecenoylcarnitine;0.001;0.2;micromol/L
+tetradecanoylcarnitine (myristoylcarnitine);0.05;0.5;micromol/L
+tetradecenoylcarnitine;0.005;0.5;micromol/L
+tetradecadienoylcarnitine;0;0.2;micromol/L
+3-hydroxy-tetradecanoylcarnitine;0;0.1;micromol/L
+hexadecanoylcarnitine;0.1;0.6;micromol/L
+hexadecenoylcarnitine;0;0.2;micromol/L
+3-hydroxy-hexadecanoylcarnitine;0;0.1;micromol/L
+3-hydroxy-hexadecenoylcarnitine;0;0.1;micromol/L
+octadecanoylcarnitine (stearoylcarnitine);0.1;0.5;micromol/L
+octadecenoylcarnitine (oleylcarnitine);0.05;0.5;micromol/L
+octadecadienoylcarnitine (linoleylcarnitine);0;0.2;micromol/L
+3-hydroxy-octadecanoylcarnitine;0;0.1;micromol/L
+3-hydroxy-octacedecenoylcarnitine;0;0.1;micromol/L
+3-hydroxy-octadecadienoylcarnitine;0;0.1;micromol/L
+eicosanoylcarnitine (peanutylcarnitine);0;0.1;micromol/L
+docosanoylcarnitine (beenonylcarnitine);0;0.1;micromol/L
+tetracosanoylcarnitine (lignoceroylcarnitine);0;0.1;micromol/L
+hexacosanoylcarnitine (cerotolcarnitine);0;0.02;micromol/L
+succinylacetone;0;1.1;micromol/L
+adenosine;0.2;0.7;micromol/L
+2_deoxyadenosine;0;0;micromol/L
+C20:0 lysophosphatidylcholine;0.2;0.7;micromol/L
+C22:0 lysophosphatidylcholine;0.1;0.6;micromol/L
+C24:0 lysophosphatidylcholine;0.1;0.5;micromol/L
+C26:0 lysophosphatidylcholine;0;0.02;micromol/L
+human thyroid stimulating hormone;0.7;15;mIU/L
+human immunoreactive trypsin(ogen);0;60;ng/mL
+total galactose (galactose and galactose 1-phospate);0;10;mg/dL
+methylmalonic acid;0;0.4;micromol/L
+ethylmalonic acid;0;1;micromol/L
+glutaric acid;0;3;micromol/L
+2-OH glutaric acid;0;1;micromol/L
+3-OH glutaric acid;0;0.5;micromol/L
+homocysteine;5;15;micromol/L
+3-OH propionic acid;0;0.1;micromol/L
+methylcitric acid;0;0.5;micromol/L
+orotic acid;0;1.2;micromol/L
+pivaloylcarnitine;0.05;0.5;micromol/L
+2-methylbutyrylcarnitine;0.05;0.5;micromol/L
+butyrylcarnitine;0.05;0.5;micromol/L
+isobutyrylcarnitine;0.05;0.5;micromol/L
