@@ -3,7 +3,7 @@
         "coding": [
             {
                 "system": "https://www.orpha.net/",
-                "code": "orpha:716",
+                "code": "716",
                 "display": "Phenylketonuria"
             }
         ],
@@ -13,7 +13,7 @@
         "coding": [
             {
                 "system": "https://www.orpha.net/",
-                "code": "orpha:157",
+                "code": "157",
                 "display": "Carnitine palmitoyltransferase II deficiency"
             }
         ],
@@ -23,7 +23,7 @@
         "coding": [
             {
                 "system": "https://www.orpha.net/",
-                "code": "orpha:26793",
+                "code": "26793",
                 "display": "Very long chain acyl-CoA dehydrogenase deficiency"
             }
         ],
@@ -33,7 +33,7 @@
         "coding": [
             {
                 "system": "https://www.orpha.net/",
-                "code": "orpha:746",
+                "code": "746",
                 "display": "Mitochondrial trifunctional protein deficiency"
             }
         ],
@@ -43,7 +43,7 @@
         "coding": [
             {
                 "system": "https://www.orpha.net/",
-                "code": "orpha:5",
+                "code": "5",
                 "display": "Long chain 3-hydroxyacyl-CoA dehydrogenase deficiency"
             }
         ],
@@ -53,7 +53,7 @@
         "coding": [
             {
                 "system": "https://www.orpha.net/",
-                "code": "orpha:42",
+                "code": "42",
                 "display": "Medium chain acyl-CoA dehydrogenase deficiency"
             }
         ],
@@ -63,7 +63,7 @@
         "coding": [
             {
                 "system": "https://www.orpha.net/",
-                "code": "orpha:71212",
+                "code": "71212",
                 "display": "Hyperinsulinism due to short chain 3-hydroxylacyl-CoA dehydrogenase deficiency"
             }
         ],
@@ -73,7 +73,7 @@
         "coding": [
             {
                 "system": "https://www.orpha.net/",
-                "code": "orpha:6",
+                "code": "6",
                 "display": "3-methylcrotonyl-CoA carboxylase deficiency"
             }
         ],

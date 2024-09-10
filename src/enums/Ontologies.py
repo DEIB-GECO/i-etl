@@ -10,6 +10,7 @@ class Ontologies(EnumAsClass):
     PUBCHEM = {"name": normalize_ontology_name("PUBCHEM"), "url": "https://pubchem.ncbi.nlm.nih.gov"}
     GSSO = {"name": normalize_ontology_name("GSSO"), "url": "http://purl.obolibrary.org/obo"}
     ORPHANET = {"name": normalize_ontology_name("ORPHANET"), "url": "https://www.orpha.net/"}
+    GENE_ONTOLOGY = {"name": normalize_ontology_name("GENEONTOLOGY"), "url": "https://amigo.geneontology.org/amigo"}
 
     @classmethod
     def get_enum_from_name(cls, ontology_name: str):
@@ -47,7 +48,3 @@ class Ontologies(EnumAsClass):
         # at the end of the loop, no enum value could match the given ontology
         # thus we need to raise an error
         raise ValueError(f"The given ontology system {ontology_name} is not known.")
-
-    @classmethod
-    def get_ontology_resource_uri(cls, ontology_system: str, resource_code: str) -> str:
-        return f"{ontology_system}/{resource_code}"

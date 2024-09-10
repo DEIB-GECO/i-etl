@@ -1,0 +1,3266 @@
+{
+    "422549004 |Patient-related Identification code|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "422549004|Patient-related Identification code|",
+        "concat_codes": "422549004",
+        "concat_names": "Patient-related Identification code"
+    },
+    "71239000 |Zygosity determination|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "71239000|Zygosity determination|",
+        "concat_codes": "71239000",
+        "concat_names": "Zygosity determination"
+    },
+    "272398008 |Inheritance types|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "272398008|Inheritance types|",
+        "concat_codes": "272398008",
+        "concat_names": "Inheritance types"
+    },
+    "782964007 |Genetic disease|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "782964007|Genetic disease|",
+        "concat_codes": "782964007",
+        "concat_names": "Genetic disease"
+    },
+    "8116006 |Phenotype finding|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "8116006|Phenotype finding|",
+        "concat_codes": "8116006",
+        "concat_names": "Phenotype"
+    },
+    "184099003 |Date of birth|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "184099003|Date of birth|",
+        "concat_codes": "184099003",
+        "concat_names": "Date of birth"
+    },
+    "734000001 |Biological sex|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "734000001|Biological sex|",
+        "concat_codes": "734000001",
+        "concat_names": "Biological sex"
+    },
+    "842009 |Consanguinity|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "842009|Consanguinity|",
+        "concat_codes": "842009",
+        "concat_names": "Consanguinity"
+    },
+    "365471004 |Finding of details of relatives| : 247591002 |Affected| = (410515003 |Known present (qualifier value)| = 782964007 |Genetic disease|)": {
+        "ontology": "http://snomed.info/sct",
+        "code": "365471004|Finding of details of relatives|:247591002|Affected|=(410515003|Known present qualifier value |=782964007|Genetic disease|)",
+        "concat_codes": "365471004:247591002=(410515003=782964007)",
+        "concat_names": "Details of relatives:Affecting=(Known present=Genetic disease)"
+    },
+    "165252001 |No aid for walking|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "165252001|No aid for walking|",
+        "concat_codes": "165252001",
+        "concat_names": "No aid for walking"
+    },
+    "165252001 |No aid for walking| : 246454002 |Occurrence| = 397669002 |Age|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "165252001|No aid for walking|:246454002|Occurrence|=397669002|Age|",
+        "concat_codes": "165252001:246454002=397669002",
+        "concat_names": "No aid for walking:Occurrence=Age"
+    },
+    "286370002 |Does speak|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "286370002|Does speak|",
+        "concat_codes": "286370002",
+        "concat_names": "Does speak"
+    },
+    "286370002 |Does speak| : 246454002 |Occurrence| = 397669002 |Age|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "286370002|Does speak|:246454002|Occurrence|=397669002|Age|",
+        "concat_codes": "286370002:246454002=397669002",
+        "concat_names": "Does speak:Occurrence=Age"
+    },
+    "248290002 |Developmental delay|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "248290002|Developmental delay|",
+        "concat_codes": "248290002",
+        "concat_names": "Developmental delay"
+    },
+    "110359009 |Intellectual disability|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "110359009|Intellectual disability|",
+        "concat_codes": "110359009",
+        "concat_names": "Intellectual disability"
+    },
+    "110359009 |Intellectual disability| : 276625007 |Level|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "110359009|Intellectual disability|:276625007|Level|",
+        "concat_codes": "110359009:276625007",
+        "concat_names": "Intellectual disability:Level"
+    },
+    "35919005 |Pervasive developmental disorder|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "35919005|Pervasive developmental disorder|",
+        "concat_codes": "35919005",
+        "concat_names": "Autism spectrum disorder"
+    },
+    "406506008 |Attention deficit hyperactivity disorder|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "406506008|Attention deficit hyperactivity disorder|",
+        "concat_codes": "406506008",
+        "concat_names": "Attention deficit hyperactivity disorder"
+    },
+    "870307006 |Pervasive developmental disorder with abscence of functional language|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "870307006|Pervasive developmental disorder with abscence of functional language|",
+        "concat_codes": "870307006",
+        "concat_names": "Pervasive developmental disorder with abscence of functional language"
+    },
+    "412726003 |Length of gestation at birth|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "412726003|Length of gestation at birth|",
+        "concat_codes": "412726003",
+        "concat_names": "Length of gestation at birth"
+    },
+    "47340003 |Birth weight|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "47340003|Birth weight|",
+        "concat_codes": "47340003",
+        "concat_names": "Birth weight finding"
+    },
+    "169886007 |Birth length|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "169886007|Birth length|",
+        "concat_codes": "169886007",
+        "concat_names": "Birth length"
+    },
+    "3332001 |Occipitofrontal diameter of head| : 246454002 |Occurrence| = 3950001 |Birth|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "3332001|Occipitofrontal diameter of head|:246454002|Occurrence|=3950001|Birth|",
+        "concat_codes": "3332001:246454002=3950001",
+        "concat_names": "Occipitofrontal diameter of head:Occurrence=Birth"
+    },
+    "8116006 |Phenotype finding| : 398302004 |Congenital anomaly of face|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "8116006|Phenotype finding|:398302004|Congenital anomaly of face|",
+        "concat_codes": "8116006:398302004",
+        "concat_names": "Phenotype:Congenital anomaly of face"
+    },
+    "8116006 |Phenotype finding| : 398302004 |Congenital anomaly of face| = (278201002 |Classification| = \"HPO\")": {
+        "ontology": "http://snomed.info/sct",
+        "code": "8116006|Phenotype finding|:398302004|Congenital anomaly of face|=(278201002|Classification|=\"HPO\")",
+        "concat_codes": "8116006:398302004=(278201002=\"HPO\")",
+        "concat_names": "Phenotype:Congenital anomaly of face=(Classification=\"HPO\")"
+    },
+    "12953007 |File, device| : 246267002 |Location|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "12953007|File device|:246267002|Location|",
+        "concat_codes": "12953007:246267002",
+        "concat_names": "File:Location"
+    },
+    "48745007 |Western blot assay|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "48745007|Western blot assay|",
+        "concat_codes": "48745007",
+        "concat_names": "Western blot assay"
+    },
+    "252370006 |Polymerase chain reaction analysis for genomic fingerprinting|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "252370006|Polymerase chain reaction analysis for genomic fingerprinting|",
+        "concat_codes": "252370006",
+        "concat_names": "PCR for genomic fingerprinting"
+    },
+    "264275001 |Fluorescence polarization immunoassay technique| : 250895007 |Intensity change|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "264275001|Fluorescence polarization immunoassay technique|:250895007|Intensity change|",
+        "concat_codes": "264275001:250895007",
+        "concat_names": "Fluorescence polarization immunoassay technique:Intensity change"
+    },
+    "88878007 |Protein| : 250895007 |Intensity change|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "88878007|Protein|:250895007|Intensity change|",
+        "concat_codes": "88878007:250895007",
+        "concat_names": "Protein:Intensity change"
+    },
+    "67185001 |Subcellular structure|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "67185001|Subcellular structure|",
+        "concat_codes": "67185001",
+        "concat_names": "Subcellular structure"
+    },
+    "107674006 |Cytologic finding|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "107674006|Cytologic finding|",
+        "concat_codes": "107674006",
+        "concat_names": "Cytologic finding"
+    },
+    "782964007 |Genetic disease| : 278109006 |Mechanism|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "782964007|Genetic disease|:278109006|Mechanism|",
+        "concat_codes": "782964007:278109006",
+        "concat_names": "Genetic disease:Mechanism"
+    },
+    "GO:0000380": {
+        "ontology": "https://amigo.geneontology.org/amigo",
+        "code": "0000380",
+        "concat_codes": "0000380",
+        "concat_names": "alternative mRNA splicing via spliceosome"
+    },
+    "88878007 |Protein| : 70804004 |Molecular stability|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "88878007|Protein|:70804004|Molecular stability|",
+        "concat_codes": "88878007:70804004",
+        "concat_names": "Protein:Molecular stability"
+    },
+    "726527001 |Weight| : 410671006 |Date|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "726527001|Weight|:410671006|Date|",
+        "concat_codes": "726527001:410671006",
+        "concat_names": "Weight:Date"
+    },
+    "726527001 |Weight|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "726527001|Weight|",
+        "concat_codes": "726527001",
+        "concat_names": "Weight"
+    },
+    "271603002 |Height / growth measure| : 410671006 |Date|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "271603002|Height / growth measure|:410671006|Date|",
+        "concat_codes": "271603002:410671006",
+        "concat_names": "Height / growth measure:Date"
+    },
+    "271603002 |Height / growth measure|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "271603002|Height / growth measure|",
+        "concat_codes": "271603002",
+        "concat_names": "Height / growth measure"
+    },
+    "3332001 |Occipitofrontal diameter of head| : 410671006 |Date|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "3332001|Occipitofrontal diameter of head|:410671006|Date|",
+        "concat_codes": "3332001:410671006",
+        "concat_names": "Occipitofrontal diameter of head:Date"
+    },
+    "3332001 |Occipitofrontal diameter of head|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "3332001|Occipitofrontal diameter of head|",
+        "concat_codes": "3332001",
+        "concat_names": "Occipitofrontal diameter of head"
+    },
+    "18470003 |Genome| : 308910008 |Reference documentation|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "18470003|Genome|:308910008|Reference documentation|",
+        "concat_codes": "18470003:308910008",
+        "concat_names": "Genome:Reference documentation"
+    },
+    "48013-7": {
+        "ontology": "http://loinc.org",
+        "code": "48013-7",
+        "concat_codes": "48013-7",
+        "concat_names": "Genomic reference sequence identifier"
+    },
+    "54828006 |Nucleotide base sequence| : 246268007 |Position| = 77374008 |Onset of|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "54828006|Nucleotide base sequence|:246268007|Position|=77374008|Onset of|",
+        "concat_codes": "54828006:246268007=77374008",
+        "concat_names": "Nucleotide base sequence:Position=Onset of"
+    },
+    "54828006 |Nucleotide base sequence| : 246268007 |Position| = 263517009 |End point of test|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "54828006|Nucleotide base sequence|:246268007|Position|=263517009|End point of test|",
+        "concat_codes": "54828006:246268007=263517009",
+        "concat_names": "Nucleotide base sequence:Position=End point of test"
+    },
+    "18470003 |Genome| : 900000000000530003 |ALTERNATIVE association reference set|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "18470003|Genome|:900000000000530003|ALTERNATIVE association reference set|",
+        "concat_codes": "18470003:900000000000530003",
+        "concat_names": "Genome:ALTERNATIVE association reference set"
+    },
+    "10589004 |Genetic transcription| : 308910008 |Reference documentation|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "10589004|Genetic transcription|:308910008|Reference documentation|",
+        "concat_codes": "10589004:308910008",
+        "concat_names": "Genetic transcription:Reference documentation"
+    },
+    "51958-7": {
+        "ontology": "http://loinc.org",
+        "code": "51958-7",
+        "concat_codes": "51958-7",
+        "concat_names": "Transcript reference sequence identifier"
+    },
+    "106221001 |Genetic finding| : 410656007 |Type|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "106221001|Genetic finding|:410656007|Type|",
+        "concat_codes": "106221001:410656007",
+        "concat_names": "Genetic finding:Type"
+    },
+    "82256003 |Human gene| : 734841007 |Name (property)|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "82256003|Human gene|:734841007|Name|",
+        "concat_codes": "82256003:734841007",
+        "concat_names": "Human gene:Name"
+    },
+    "91272006 |Chromosome|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "91272006|Chromosome|",
+        "concat_codes": "91272006",
+        "concat_names": "Chromosome"
+    },
+    "14556007": {
+        "ontology": "http://snomed.info/sct",
+        "code": "14556007",
+        "concat_codes": "14556007",
+        "concat_names": "Heterozygote"
+    },
+    "22061001": {
+        "ontology": "http://snomed.info/sct",
+        "code": "22061001",
+        "concat_codes": "22061001",
+        "concat_names": "Homozygote"
+    },
+    "55064000": {
+        "ontology": "http://snomed.info/sct",
+        "code": "55064000",
+        "concat_codes": "55064000",
+        "concat_names": "Hemizygote"
+    },
+    "272399000": {
+        "ontology": "http://snomed.info/sct",
+        "code": "272399000",
+        "concat_codes": "272399000",
+        "concat_names": "Dominant types"
+    },
+    "272400007": {
+        "ontology": "http://snomed.info/sct",
+        "code": "272400007",
+        "concat_codes": "272400007",
+        "concat_names": "Recessive types"
+    },
+    "ORPHA:404443": {
+        "ontology": "https://www.orpha.net/",
+        "code": "404443",
+        "concat_codes": "404443",
+        "concat_names": "Tatton-Brown-Rahman syndrome"
+    },
+    "ORPHA:2268": {
+        "ontology": "https://www.orpha.net/",
+        "code": "2268",
+        "concat_codes": "2268",
+        "concat_names": "ICF syndrome"
+    },
+    "ORPHA:821": {
+        "ontology": "https://www.orpha.net/",
+        "code": "821",
+        "concat_codes": "821",
+        "concat_names": "Sotos syndrome"
+    },
+    "ORPHA:597738": {
+        "ontology": "https://www.orpha.net/",
+        "code": "597738",
+        "concat_codes": "597738",
+        "concat_names": "Luscan-Lumish syndrome"
+    },
+    "ORPHA:3447": {
+        "ontology": "https://www.orpha.net/",
+        "code": "3447",
+        "concat_codes": "3447",
+        "concat_names": "Weaver syndrome"
+    },
+    "ORPHA:2322": {
+        "ontology": "https://www.orpha.net/",
+        "code": "2322",
+        "concat_codes": "2322",
+        "concat_names": "Kabuki syndrome"
+    },
+    "ORPHA:261494": {
+        "ontology": "https://www.orpha.net/",
+        "code": "261494",
+        "concat_codes": "261494",
+        "concat_names": "Kleefstra syndrome"
+    },
+    "ORPHA:798": {
+        "ontology": "https://www.orpha.net/",
+        "code": "798",
+        "concat_codes": "798",
+        "concat_names": "Schinzel-Giedion syndrome"
+    },
+    "ORPHA:783": {
+        "ontology": "https://www.orpha.net/",
+        "code": "783",
+        "concat_codes": "783",
+        "concat_names": "Rubinstein-Taybi syndrome"
+    },
+    "ORPHA:3047": {
+        "ontology": "https://www.orpha.net/",
+        "code": "3047",
+        "concat_codes": "3047",
+        "concat_names": "Blepharophimosis-intellectual disability syndrome SBBYS type"
+    },
+    "ORPHA:192": {
+        "ontology": "https://www.orpha.net/",
+        "code": "192",
+        "concat_codes": "192",
+        "concat_names": "Coffin-Lowry syndrome"
+    },
+    "ORPHA:2322\u00a0": {
+        "ontology": "https://www.orpha.net/",
+        "code": "2322",
+        "concat_codes": "2322",
+        "concat_names": "Kabuki syndrome"
+    },
+    "ORPHA:85279": {
+        "ontology": "https://www.orpha.net/",
+        "code": "85279",
+        "concat_codes": "85279",
+        "concat_names": "KDM5C-related syndromic X-linked intellectual disability"
+    },
+    "ORPHA:85287": {
+        "ontology": "https://www.orpha.net/",
+        "code": "85287",
+        "concat_codes": "85287",
+        "concat_names": "X-linked intellectual disability Siderius type"
+    },
+    "ORPHA:199": {
+        "ontology": "https://www.orpha.net/",
+        "code": "199",
+        "concat_codes": "199",
+        "concat_names": "Cornelia de Lange syndrome"
+    },
+    "ORPHA:1465": {
+        "ontology": "https://www.orpha.net/",
+        "code": "1465",
+        "concat_codes": "1465",
+        "concat_names": "Coffin-Siris syndrome"
+    },
+    "ORPHA:3051": {
+        "ontology": "https://www.orpha.net/",
+        "code": "3051",
+        "concat_codes": "3051",
+        "concat_names": "Nicolaides-Baraitser syndrome"
+    },
+    "ORPHA:2044": {
+        "ontology": "https://www.orpha.net/",
+        "code": "2044",
+        "concat_codes": "2044",
+        "concat_names": "Floating-Harbor syndrome"
+    },
+    "ORPHA:1830": {
+        "ontology": "https://www.orpha.net/",
+        "code": "1830",
+        "concat_codes": "1830",
+        "concat_names": "Schimke immuno-osseous dysplasia"
+    },
+    "ORPHA:404448": {
+        "ontology": "https://www.orpha.net/",
+        "code": "404448",
+        "concat_codes": "404448",
+        "concat_names": "ADNP syndrome"
+    },
+    "ORPHA:847": {
+        "ontology": "https://www.orpha.net/",
+        "code": "847",
+        "concat_codes": "847",
+        "concat_names": "X-linked alpha-thalassemia-intellectual disability syndrome"
+    },
+    "ORPHA:138": {
+        "ontology": "https://www.orpha.net/",
+        "code": "138",
+        "concat_codes": "138",
+        "concat_names": "CHARGE syndrome"
+    },
+    "248153007": {
+        "ontology": "http://snomed.info/sct",
+        "code": "248153007",
+        "concat_codes": "248153007",
+        "concat_names": "Male"
+    },
+    "248152002": {
+        "ontology": "http://snomed.info/sct",
+        "code": "248152002",
+        "concat_codes": "248152002",
+        "concat_names": "Female"
+    },
+    "373067005": {
+        "ontology": "http://snomed.info/sct",
+        "code": "373067005",
+        "concat_codes": "373067005",
+        "concat_names": "No"
+    },
+    "373066001": {
+        "ontology": "http://snomed.info/sct",
+        "code": "373066001",
+        "concat_codes": "373066001",
+        "concat_names": "Yes"
+    },
+    "276727009": {
+        "ontology": "http://snomed.info/sct",
+        "code": "276727009",
+        "concat_codes": "276727009",
+        "concat_names": "Null"
+    },
+    "260366006": {
+        "ontology": "http://snomed.info/sct",
+        "code": "260366006",
+        "concat_codes": "260366006",
+        "concat_names": "Increase"
+    },
+    "260370003": {
+        "ontology": "http://snomed.info/sct",
+        "code": "260370003",
+        "concat_codes": "260370003",
+        "concat_names": "Decrease"
+    },
+    "371928007": {
+        "ontology": "http://snomed.info/sct",
+        "code": "371928007",
+        "concat_codes": "371928007",
+        "concat_names": "Not significant"
+    },
+    "88878007 : 116685008 = 71412006": {
+        "ontology": "http://snomed.info/sct",
+        "code": "88878007:116685008=71412006",
+        "concat_codes": "88878007:116685008=71412006",
+        "concat_names": "Protein:Has property=Tolerance"
+    },
+    "88878007 : 116685008 = (71412006, 425404009)": {
+        "ontology": "http://snomed.info/sct",
+        "code": "88878007:116685008=(71412006,425404009)",
+        "concat_codes": "88878007:116685008=(71412006,425404009)",
+        "concat_names": "Protein:Has property=(Tolerance,Slightly)"
+    },
+    "88878007 : 116685008 = 261981004": {
+        "ontology": "http://snomed.info/sct",
+        "code": "88878007:116685008=261981004",
+        "concat_codes": "88878007:116685008=261981004",
+        "concat_names": "Protein:Has property=Neutral zone"
+    },
+    "88878007 : 116685008 = (29544009, 425404009)": {
+        "ontology": "http://snomed.info/sct",
+        "code": "88878007:116685008=(29544009,425404009)",
+        "concat_codes": "88878007:116685008=(29544009,425404009)",
+        "concat_names": "Protein:Has property=(Intolerance,Slightly)"
+    },
+    "88878007 : 116685008 = 29544009": {
+        "ontology": "http://snomed.info/sct",
+        "code": "88878007:116685008=29544009",
+        "concat_codes": "88878007:116685008=29544009",
+        "concat_names": "Protein:Has property=Intolerance"
+    },
+    "37782003": {
+        "ontology": "http://snomed.info/sct",
+        "code": "37782003",
+        "concat_codes": "37782003",
+        "concat_names": "Damage"
+    },
+    "361083003": {
+        "ontology": "http://snomed.info/sct",
+        "code": "361083003",
+        "concat_codes": "361083003",
+        "concat_names": "Normal anatomy"
+    },
+    "70804004": {
+        "ontology": "http://snomed.info/sct",
+        "code": "70804004",
+        "concat_codes": "70804004",
+        "concat_names": "Molecular stability"
+    },
+    "263922001": {
+        "ontology": "http://snomed.info/sct",
+        "code": "263922001",
+        "concat_codes": "263922001",
+        "concat_names": "Unstable status"
+    },
+    "258210006": {
+        "ontology": "http://snomed.info/sct",
+        "code": "258210006",
+        "concat_codes": "258210006",
+        "concat_names": "Double heterozygote"
+    },
+    "17523003": {
+        "ontology": "http://snomed.info/sct",
+        "code": "17523003",
+        "concat_codes": "17523003",
+        "concat_names": "Genetic mosaic"
+    },
+    "184099003 |Date of birth| : 258707000 |year|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "184099003|Date of birth|:258707000|year|",
+        "concat_codes": "184099003:258707000",
+        "concat_names": "Date of birth:year"
+    },
+    "364699009 |Ethnic group| : 66839005 |Father|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "364699009|Ethnic group|:66839005|Father|",
+        "concat_codes": "364699009:66839005",
+        "concat_names": "Ethnic group:Father"
+    },
+    "364699009 |Ethnic group| : 72705000 |Mother|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "364699009|Ethnic group|:72705000|Mother|",
+        "concat_codes": "364699009:72705000",
+        "concat_names": "Ethnic group:Mother"
+    },
+    "445518008 |Age at onset of clinical finding|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "445518008|Age at onset of clinical finding|",
+        "concat_codes": "445518008",
+        "concat_names": "Age at onset of clinical finding"
+    },
+    "15188001 |Hearing loss|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "15188001|Hearing loss|",
+        "concat_codes": "15188001",
+        "concat_names": "Hearing loss"
+    },
+    "55446002 |Genetic mutation|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "55446002|Genetic mutation|",
+        "concat_codes": "55446002",
+        "concat_names": "Genetic mutation"
+    },
+    "106221001 |Genetic finding| : 255216001 |First|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "106221001|Genetic finding|:255216001|First|",
+        "concat_codes": "106221001:255216001",
+        "concat_names": "Genetic finding:First"
+    },
+    "106221001 |Genetic finding| : 81170007 |Second|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "106221001|Genetic finding|:81170007|Second|",
+        "concat_codes": "106221001:81170007",
+        "concat_names": "Genetic finding:Second"
+    },
+    "397669002 |Age| : 305674005 |Seen by geneticist|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "397669002|Age|:305674005|Seen by geneticist|",
+        "concat_codes": "397669002:305674005",
+        "concat_names": "Age:Seen by geneticist"
+    },
+    "419775003 |Best corrected visual acuity| : 272741003 |laterality| = 24028007 |Right|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "419775003|Best corrected visual acuity|:272741003|laterality|=24028007|Right|",
+        "concat_codes": "419775003:272741003=24028007",
+        "concat_names": "Best corrected visual acuity:Laterality=Right"
+    },
+    "419775003 |Best corrected visual acuity| : 272741003 |laterality| = 7771000 |Left|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "419775003|Best corrected visual acuity|:272741003|laterality|=7771000|Left|",
+        "concat_codes": "419775003:272741003=7771000",
+        "concat_names": "Best corrected visual acuity:Laterality=Left"
+    },
+    "21324001 |Refraction of eye, function| : 272741003 |laterality| = 24028007 |Right|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "21324001|Refraction of eye function|:272741003|laterality|=24028007|Right|",
+        "concat_codes": "21324001:272741003=24028007",
+        "concat_names": "Refraction of eye:Laterality=Right"
+    },
+    "21324001 |Refraction of eye, function| : 272741003 |laterality| = 7771000 |Left|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "21324001|Refraction of eye function|:272741003|laterality|=7771000|Left|",
+        "concat_codes": "21324001:272741003=7771000",
+        "concat_names": "Refraction of eye:Laterality=Left"
+    },
+    "252783009 |Scotopic rod electroretinography| : 272741003 |laterality| = 24028007 |Right|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "252783009|Scotopic rod electroretinography|:272741003|laterality|=24028007|Right|",
+        "concat_codes": "252783009:272741003=24028007",
+        "concat_names": "Scotopic rod electroretinography:Laterality=Right"
+    },
+    "252783009 |Scotopic rod electroretinography| : 272741003 |laterality| = 7771000 |Left|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "252783009|Scotopic rod electroretinography|:272741003|laterality|=7771000|Left|",
+        "concat_codes": "252783009:272741003=7771000",
+        "concat_names": "Scotopic rod electroretinography:Laterality=Left"
+    },
+    "252780007 |Dark adapted single bright flash electroretinography| : { 272063003 |Alphanumeric entity| = 420512001 |Lower case Roman letter a|, 272741003 |laterality| = 24028007 |Right|}": {
+        "ontology": "http://snomed.info/sct",
+        "code": "252780007|Dark adapted single bright flash electroretinography|:{272063003|Alphanumeric entity|=420512001|Lower case Roman letter a|,272741003|laterality|=24028007|Right|}",
+        "concat_codes": "252780007:{272063003=420512001,272741003=24028007}",
+        "concat_names": "Dark adapted single bright flash ERG:{Alphanumeric=a,Laterality=Right}"
+    },
+    "252780007 |Dark adapted single bright flash electroretinography| : { 272063003 |Alphanumeric entity| = 420512001 |Lower case Roman letter a|, 272741003 |laterality| = 7771000 |Left|}": {
+        "ontology": "http://snomed.info/sct",
+        "code": "252780007|Dark adapted single bright flash electroretinography|:{272063003|Alphanumeric entity|=420512001|Lower case Roman letter a|,272741003|laterality|=7771000|Left|}",
+        "concat_codes": "252780007:{272063003=420512001,272741003=7771000}",
+        "concat_names": "Dark adapted single bright flash ERG:{Alphanumeric=a,Laterality=Left}"
+    },
+    "252780007 |Dark adapted single bright flash electroretinography| : { 272063003 |Alphanumeric entity| = 257983009 |Lower case Roman letter b|, 272741003 |laterality| = 24028007 |Right|}": {
+        "ontology": "http://snomed.info/sct",
+        "code": "252780007|Dark adapted single bright flash electroretinography|:{272063003|Alphanumeric entity|=257983009|Lower case Roman letter b|,272741003|laterality|=24028007|Right|}",
+        "concat_codes": "252780007:{272063003=257983009,272741003=24028007}",
+        "concat_names": "Dark adapted single bright flash ERG:{Alphanumeric=b,Laterality=Right}"
+    },
+    "252780007 |Dark adapted single bright flash electroretinography| : { 272063003 |Alphanumeric entity| = 257983009 |Lower case Roman letter b|, 272741003 |laterality| = 7771000 |Left|}": {
+        "ontology": "http://snomed.info/sct",
+        "code": "252780007|Dark adapted single bright flash electroretinography|:{272063003|Alphanumeric entity|=257983009|Lower case Roman letter b|,272741003|laterality|=7771000|Left|}",
+        "concat_codes": "252780007:{272063003=257983009,272741003=7771000}",
+        "concat_names": "Dark adapted single bright flash ERG:{Alphanumeric=b,Laterality=Left}"
+    },
+    "419862005 |Accommodative amplitude| : { 276218009 |Procedure type| = 252782004 |Photopic electroretinography|, 272741003 |laterality| = 24028007 |Right| }": {
+        "ontology": "http://snomed.info/sct",
+        "code": "419862005|Accommodative amplitude|:{276218009|Procedure type|=252782004|Photopic electroretinography|,272741003|laterality|=24028007|Right|}",
+        "concat_codes": "419862005:{276218009=252782004,272741003=24028007}",
+        "concat_names": "Accommodative amplitude:{Procedure type=Photopic electroretinography,Laterality=Right}"
+    },
+    "419862005 |Accommodative amplitude| : { 276218009 |Procedure type| = 252782004 |Photopic electroretinography|, 272741003 |laterality| = 7771000 |Left| }": {
+        "ontology": "http://snomed.info/sct",
+        "code": "419862005|Accommodative amplitude|:{276218009|Procedure type|=252782004|Photopic electroretinography|,272741003|laterality|=7771000|Left|}",
+        "concat_codes": "419862005:{276218009=252782004,272741003=7771000}",
+        "concat_names": "Accommodative amplitude:{Procedure type=Photopic electroretinography,Laterality=Left}"
+    },
+    "419862005 |Accommodative amplitude| : { 276218009 |Procedure type| = 252782004 |Photopic electroretinography|, 122869004 |Measurement procedure| = 410669006 |Time|, 272741003 |laterality| = 24028007 |Right|}": {
+        "ontology": "http://snomed.info/sct",
+        "code": "419862005|Accommodative amplitude|:{276218009|Procedure type|=252782004|Photopic electroretinography|,122869004|Measurement procedure|=410669006|Time|,272741003|laterality|=24028007|Right|}",
+        "concat_codes": "419862005:{276218009=252782004,122869004=410669006,272741003=24028007}",
+        "concat_names": "Accommodative amplitude:{Procedure type=Photopic electroretinography,Measurement=Time,Laterality=Right}"
+    },
+    "419862005 |Accommodative amplitude| : { 276218009 |Procedure type| = 252782004 |Photopic electroretinography|, 122869004 |Measurement procedure| = 410669006 |Time|, 272741003 |laterality| = 7771000 |Left|}": {
+        "ontology": "http://snomed.info/sct",
+        "code": "419862005|Accommodative amplitude|:{276218009|Procedure type|=252782004|Photopic electroretinography|,122869004|Measurement procedure|=410669006|Time|,272741003|laterality|=7771000|Left|}",
+        "concat_codes": "419862005:{276218009=252782004,122869004=410669006,272741003=7771000}",
+        "concat_names": "Accommodative amplitude:{Procedure type=Photopic electroretinography,Measurement=Time,Laterality=Left}"
+    },
+    "33048000 |Peripheral visual field defect| : 272741003 |laterality| = 24028007 |Right|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "33048000|Peripheral visual field defect|:272741003|laterality|=24028007|Right|",
+        "concat_codes": "33048000:272741003=24028007",
+        "concat_names": "Peripheral visual field defect:Laterality=Right"
+    },
+    "33048000 |Peripheral visual field defect| : 272741003 |laterality| = 7771000 |Left|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "33048000|Peripheral visual field defect|:272741003|laterality|=7771000|Left|",
+        "concat_codes": "33048000:272741003=7771000",
+        "concat_names": "Peripheral visual field defect:Laterality=Left"
+    },
+    "698606000 |Localized visual field defect| : 272741003 |laterality| = 24028007 |Right|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "698606000|Localized visual field defect|:272741003|laterality|=24028007|Right|",
+        "concat_codes": "698606000:272741003=24028007",
+        "concat_names": "Localized visual field defect:Laterality=Right"
+    },
+    "698606000 |Localized visual field defect| : 272741003 |laterality| = 7771000 |Left|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "698606000|Localized visual field defect|:272741003|laterality|=7771000|Left|",
+        "concat_codes": "698606000:272741003=7771000",
+        "concat_names": "Localized visual field defect:Laterality=Left"
+    },
+    "20067007 |Ocular fundus photography| : 276218009 |Procedure type| = 250429001 |Macroscopic specimen observation|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "20067007|Ocular fundus photography|:276218009|Procedure type|=250429001|Macroscopic specimen observation|",
+        "concat_codes": "20067007:276218009=250429001",
+        "concat_names": "Ocular fundus photography:Procedure type=Macroscopic specimen observation"
+    },
+    "20067007 |Ocular fundus photography| : 272741003 |laterality| = 24028007 |Right|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "20067007|Ocular fundus photography|:272741003|laterality|=24028007|Right|",
+        "concat_codes": "20067007:272741003=24028007",
+        "concat_names": "Ocular fundus photography:Laterality=Right"
+    },
+    "20067007 |Ocular fundus photography| : 272741003 |laterality| = 7771000 |Left|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "20067007|Ocular fundus photography|:272741003|laterality|=7771000|Left|",
+        "concat_codes": "20067007:272741003=7771000",
+        "concat_names": "Ocular fundus photography:Laterality=Left"
+    },
+    "20067007 |Ocular fundus photography| : { 276218009 |Procedure type| = 252822006 |Angiography of posterior segment of eye using fluorescein| , 272741003 |laterality| = 24028007 |Right|}": {
+        "ontology": "http://snomed.info/sct",
+        "code": "20067007|Ocular fundus photography|:{276218009|Procedure type|=252822006|Angiography of posterior segment of eye using fluorescein|,272741003|laterality|=24028007|Right|}",
+        "concat_codes": "20067007:{276218009=252822006,272741003=24028007}",
+        "concat_names": "Ocular fundus photography:{Procedure type=Angiography of posterior segment of eye using fluorescein,Laterality=Right}"
+    },
+    "20067007 |Ocular fundus photography| : { 276218009 |Procedure type| = 252822006 |Angiography of posterior segment of eye using fluorescein| , 272741003 |laterality| = 7771000 |Left|}": {
+        "ontology": "http://snomed.info/sct",
+        "code": "20067007|Ocular fundus photography|:{276218009|Procedure type|=252822006|Angiography of posterior segment of eye using fluorescein|,272741003|laterality|=7771000|Left|}",
+        "concat_codes": "20067007:{276218009=252822006,272741003=7771000}",
+        "concat_names": "Ocular fundus photography:{Procedure type=Angiography of posterior segment of eye using fluorescein,Laterality=Left}"
+    },
+    "37231002 |Macular retinal edema| : 272741003 |laterality| = 24028007 |Right|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "37231002|Macular retinal edema|:272741003|laterality|=24028007|Right|",
+        "concat_codes": "37231002:272741003=24028007",
+        "concat_names": "Macular retinal edema:Laterality=Right"
+    },
+    "37231002 |Macular retinal edema| : 272741003 |laterality| = 7771000 |Left|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "37231002|Macular retinal edema|:272741003|laterality|=7771000|Left|",
+        "concat_codes": "37231002:272741003=7771000",
+        "concat_names": "Macular retinal edema:Laterality=Left"
+    },
+    "416369006 |Integrated optical coherence tomography and scanning laser ophthalmoscopy| : 272741003 |laterality| = 24028007 |Right|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "416369006|Integrated optical coherence tomography and scanning laser ophthalmoscopy|:272741003|laterality|=24028007|Right|",
+        "concat_codes": "416369006:272741003=24028007",
+        "concat_names": "Integrated optical coherence tomography and scanning laser ophthalmoscopy:Laterality=Right"
+    },
+    "416369006 |Integrated optical coherence tomography and scanning laser ophthalmoscopy| : 272741003 |laterality| = 7771000 |Left|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "416369006|Integrated optical coherence tomography and scanning laser ophthalmoscopy|:272741003|laterality|=7771000|Left|",
+        "concat_codes": "416369006:272741003=7771000",
+        "concat_names": "Integrated optical coherence tomography and scanning laser ophthalmoscopy:Laterality=Left"
+    },
+    "310418000 |Blindness certification|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "310418000|Blindness certification|",
+        "concat_codes": "310418000",
+        "concat_names": "Blindness certification"
+    },
+    "81706006": {
+        "ontology": "http://snomed.info/sct",
+        "code": "81706006",
+        "concat_codes": "81706006",
+        "concat_names": "Ashkenazi Jew follower of religion"
+    },
+    "397731000 : 160543007 = 275586009": {
+        "ontology": "http://snomed.info/sct",
+        "code": "397731000:160543007=275586009",
+        "concat_codes": "397731000:160543007=275586009",
+        "concat_names": "Ethnic group finding:Jewish follower of religion=Black North African"
+    },
+    "51827000": {
+        "ontology": "http://snomed.info/sct",
+        "code": "51827000",
+        "concat_codes": "51827000",
+        "concat_names": "Oriental Jews"
+    },
+    "397731000 : 160543007 = 315590007": {
+        "ontology": "http://snomed.info/sct",
+        "code": "397731000:160543007=315590007",
+        "concat_codes": "397731000:160543007=315590007",
+        "concat_names": "Ethnic group finding:Jewish follower of religion=Born in Yemen"
+    },
+    "397731000 : 160543007 = 315424008": {
+        "ontology": "http://snomed.info/sct",
+        "code": "397731000:160543007=315424008",
+        "concat_codes": "397731000:160543007=315424008",
+        "concat_names": "Ethnic group finding:Jewish follower of religion=Born in Ethiopia"
+    },
+    "397731000 : 160543007 = 59487007": {
+        "ontology": "http://snomed.info/sct",
+        "code": "397731000:160543007=59487007",
+        "concat_codes": "397731000:160543007=59487007",
+        "concat_names": "Ethnic group finding:Jewish follower of religion=Syrians"
+    },
+    "397731000 : 160543007 = 223579001": {
+        "ontology": "http://snomed.info/sct",
+        "code": "397731000:160543007=223579001",
+        "concat_codes": "397731000:160543007=223579001",
+        "concat_names": "Ethnic group finding:Jewish follower of religion=Uzbekistan"
+    },
+    "397731000 : 160543007 = 29343004": {
+        "ontology": "http://snomed.info/sct",
+        "code": "397731000:160543007=29343004",
+        "concat_codes": "397731000:160543007=29343004",
+        "concat_names": "Ethnic group finding:Jewish follower of religion=Bulgarian"
+    },
+    "397731000 : 160543007 = 64483007": {
+        "ontology": "http://snomed.info/sct",
+        "code": "397731000:160543007=64483007",
+        "concat_codes": "397731000:160543007=64483007",
+        "concat_names": "Ethnic group finding:Jewish follower of religion=Indians Hindi-speaking"
+    },
+    "397731000 : 160543007 = 315449007": {
+        "ontology": "http://snomed.info/sct",
+        "code": "397731000:160543007=315449007",
+        "concat_codes": "397731000:160543007=315449007",
+        "concat_names": "Ethnic group finding:Jewish follower of religion=Born in Israel"
+    },
+    "397731000 : 160543007 = 160551005": {
+        "ontology": "http://snomed.info/sct",
+        "code": "397731000:160543007=160551005",
+        "concat_codes": "397731000:160543007=160551005",
+        "concat_names": "Ethnic group finding:Jewish follower of religion=Mixed religion"
+    },
+    "160551005": {
+        "ontology": "http://snomed.info/sct",
+        "code": "160551005",
+        "concat_codes": "160551005",
+        "concat_names": "Mixed religion"
+    },
+    "397731000 : 160543007 = 32045009": {
+        "ontology": "http://snomed.info/sct",
+        "code": "397731000:160543007=32045009",
+        "concat_codes": "397731000:160543007=32045009",
+        "concat_names": "Ethnic group finding:Jewish follower of religion=Georgians"
+    },
+    "397731000 : 160543007 = 1451003": {
+        "ontology": "http://snomed.info/sct",
+        "code": "397731000:160543007=1451003",
+        "concat_codes": "397731000:160543007=1451003",
+        "concat_names": "Ethnic group finding:Jewish follower of religion=Greeks"
+    },
+    "397731000 : 160543007 = 44460002": {
+        "ontology": "http://snomed.info/sct",
+        "code": "397731000:160543007=44460002",
+        "concat_codes": "397731000:160543007=44460002",
+        "concat_names": "Ethnic group finding:Jewish follower of religion=Turks"
+    },
+    "397731000 : 160543007 = 1919006": {
+        "ontology": "http://snomed.info/sct",
+        "code": "397731000:160543007=1919006",
+        "concat_codes": "397731000:160543007=1919006",
+        "concat_names": "Ethnic group finding:Jewish follower of religion=Egyptians"
+    },
+    "261665006": {
+        "ontology": "http://snomed.info/sct",
+        "code": "261665006",
+        "concat_codes": "261665006",
+        "concat_names": "Unknown"
+    },
+    "397731000 : 90027003 = 309884000": {
+        "ontology": "http://snomed.info/sct",
+        "code": "397731000:90027003=309884000",
+        "concat_codes": "397731000:90027003=309884000",
+        "concat_names": "Ethnic group finding:Arabs=Muslim follower of religion"
+    },
+    "397731000 : 90027003 = 276116000": {
+        "ontology": "http://snomed.info/sct",
+        "code": "397731000:90027003=276116000",
+        "concat_codes": "397731000:90027003=276116000",
+        "concat_names": "Ethnic group finding:Arabs=Christian religion"
+    },
+    "ORPHA:14": {
+        "ontology": "https://www.orpha.net/",
+        "code": "14",
+        "concat_codes": "14",
+        "concat_names": "Abetalipoproteinemia"
+    },
+    "ORPHA:49382": {
+        "ontology": "https://www.orpha.net/",
+        "code": "49382",
+        "concat_codes": "49382",
+        "concat_names": "Achromatopsia"
+    },
+    "ORPHA:64": {
+        "ontology": "https://www.orpha.net/",
+        "code": "64",
+        "concat_codes": "64",
+        "concat_names": "Alstr\u00f6m syndrome"
+    },
+    "ORPHA:110": {
+        "ontology": "https://www.orpha.net/",
+        "code": "110",
+        "concat_codes": "110",
+        "concat_names": "Bardet-Biedl syndrome"
+    },
+    "ORPHA:1243": {
+        "ontology": "https://www.orpha.net/",
+        "code": "1243",
+        "concat_codes": "1243",
+        "concat_names": "Best vitelliform macular dystrophy"
+    },
+    "ORPHA:41751": {
+        "ontology": "https://www.orpha.net/",
+        "code": "41751",
+        "concat_codes": "41751",
+        "concat_names": "Bietti crystalline dystrophy"
+    },
+    "ORPHA:16": {
+        "ontology": "https://www.orpha.net/",
+        "code": "16",
+        "concat_codes": "16",
+        "concat_names": "Blue cone monochromatism"
+    },
+    "ORPHA:75377": {
+        "ontology": "https://www.orpha.net/",
+        "code": "75377",
+        "concat_codes": "75377",
+        "concat_names": "Central areolar choroidal dystrophy"
+    },
+    "ORPHA:180": {
+        "ontology": "https://www.orpha.net/",
+        "code": "180",
+        "concat_codes": "180",
+        "concat_names": "Choroideremia"
+    },
+    "ORPHA:1871": {
+        "ontology": "https://www.orpha.net/",
+        "code": "1871",
+        "concat_codes": "1871",
+        "concat_names": "Progressive cone dystrophy"
+    },
+    "ORPHA:1872": {
+        "ontology": "https://www.orpha.net/",
+        "code": "1872",
+        "concat_codes": "1872",
+        "concat_names": "Cone rod dystrophy"
+    },
+    "ORPHA:75382": {
+        "ontology": "https://www.orpha.net/",
+        "code": "75382",
+        "concat_codes": "75382",
+        "concat_names": "Oguchi disease"
+    },
+    "ORPHA:75376": {
+        "ontology": "https://www.orpha.net/",
+        "code": "75376",
+        "concat_codes": "75376",
+        "concat_names": "Familial drusen"
+    },
+    "ORPHA:53540": {
+        "ontology": "https://www.orpha.net/",
+        "code": "53540",
+        "concat_codes": "53540",
+        "concat_names": "Goldmann-Favre syndrome"
+    },
+    "ORPHA:891": {
+        "ontology": "https://www.orpha.net/",
+        "code": "891",
+        "concat_codes": "891",
+        "concat_names": "Familial exudative vitreoretinopathy"
+    },
+    "ORPHA:227796": {
+        "ontology": "https://www.orpha.net/",
+        "code": "227796",
+        "concat_codes": "227796",
+        "concat_names": "Fundus albipunctatus"
+    },
+    "ORPHA:157855": {
+        "ontology": "https://www.orpha.net/",
+        "code": "157855",
+        "concat_codes": "157855",
+        "concat_names": "HARP syndrome"
+    },
+    "ORPHA:475": {
+        "ontology": "https://www.orpha.net/",
+        "code": "475",
+        "concat_codes": "475",
+        "concat_names": "Joubert syndrome"
+    },
+    "ORPHA:480": {
+        "ontology": "https://www.orpha.net/",
+        "code": "480",
+        "concat_codes": "480",
+        "concat_names": "Kearns-Sayre syndrome"
+    },
+    "ORPHA:1571": {
+        "ontology": "https://www.orpha.net/",
+        "code": "1571",
+        "concat_codes": "1571",
+        "concat_names": "Knobloch syndrome"
+    },
+    "ORPHA:65": {
+        "ontology": "https://www.orpha.net/",
+        "code": "65",
+        "concat_codes": "65",
+        "concat_names": "Leber congenital amaurosis"
+    },
+    "ORPHA:519302": {
+        "ontology": "https://www.orpha.net/",
+        "code": "519302",
+        "concat_codes": "519302",
+        "concat_names": "Isolated macular dystrophy"
+    },
+    "ORPHA:649": {
+        "ontology": "https://www.orpha.net/",
+        "code": "649",
+        "concat_codes": "649",
+        "concat_names": "Norrie disease"
+    },
+    "ORPHA:791": {
+        "ontology": "https://www.orpha.net/",
+        "code": "791",
+        "concat_codes": "791",
+        "concat_names": "Retinitis pigmentosa"
+    },
+    "ORPHA:52427": {
+        "ontology": "https://www.orpha.net/",
+        "code": "52427",
+        "concat_codes": "52427",
+        "concat_names": "Retinitis punctata albescens"
+    },
+    "ORPHA:792": {
+        "ontology": "https://www.orpha.net/",
+        "code": "792",
+        "concat_codes": "792",
+        "concat_names": "X-linked retinoschisis"
+    },
+    "ORPHA:3156": {
+        "ontology": "https://www.orpha.net/",
+        "code": "3156",
+        "concat_codes": "3156",
+        "concat_names": "Senior-Loken syndrome"
+    },
+    "ORPHA:59181": {
+        "ontology": "https://www.orpha.net/",
+        "code": "59181",
+        "concat_codes": "59181",
+        "concat_names": "Sorsby pseudoinflammatory fundus dystrophy"
+    },
+    "ORPHA:827": {
+        "ontology": "https://www.orpha.net/",
+        "code": "827",
+        "concat_codes": "827",
+        "concat_names": "Stargardt disease"
+    },
+    "ORPHA:886": {
+        "ontology": "https://www.orpha.net/",
+        "code": "886",
+        "concat_codes": "886",
+        "concat_names": "Usher syndrome"
+    },
+    "258211005": {
+        "ontology": "http://snomed.info/sct",
+        "code": "258211005",
+        "concat_codes": "258211005",
+        "concat_names": "Autosomal recessive inheritance"
+    },
+    "263681008": {
+        "ontology": "http://snomed.info/sct",
+        "code": "263681008",
+        "concat_codes": "263681008",
+        "concat_names": "Autosomal dominant inheritance"
+    },
+    "263934009": {
+        "ontology": "http://snomed.info/sct",
+        "code": "263934009",
+        "concat_codes": "263934009",
+        "concat_names": "X-linked inheritance"
+    },
+    "422549004 |Patient-related Identification code|  : 258734002 |counts| = 81170007 |Second|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "422549004|Patient-related Identification code|:258734002|counts|=81170007|Second|",
+        "concat_codes": "422549004:258734002=81170007",
+        "concat_names": "Patient-related Identification code:counts=Second"
+    },
+    "422549004 |Patient-related Identification code| : 258734002 |counts| = 70905002 |Third|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "422549004|Patient-related Identification code|:258734002|counts|=70905002|Third|",
+        "concat_codes": "422549004:258734002=70905002",
+        "concat_names": "Patient-related Identification code:counts=Third"
+    },
+    "224095004 |Number of siblings|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "224095004|Number of siblings|",
+        "concat_codes": "224095004",
+        "concat_names": "Number of siblings"
+    },
+    "224098002 |Place in family order|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "224098002|Place in family order|",
+        "concat_codes": "224098002",
+        "concat_names": "Place in family order"
+    },
+    "780823005 |Number of dependant children|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "780823005|Number of dependant children|",
+        "concat_codes": "780823005",
+        "concat_names": "Number of dependant children"
+    },
+    "406543005 |Date of visit|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "406543005|Date of visit|",
+        "concat_codes": "406543005",
+        "concat_names": "Date of visit"
+    },
+    "ORPHA:209932": {
+        "ontology": "https://www.orpha.net/",
+        "code": "209932",
+        "concat_codes": "209932",
+        "concat_names": "Cone dystrophy with supernormal rod response"
+    },
+    "397669002 |Age| : 408731000 |temporal context| = 406543005 |Date of visit|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "397669002|Age|:408731000|temporal context|=406543005|Date of visit|",
+        "concat_codes": "397669002:408731000=406543005",
+        "concat_names": "Age:Temporal context=Date of visit"
+    },
+    "271649006 |Systolic blood pressure|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "271649006|Systolic blood pressure|",
+        "concat_codes": "271649006",
+        "concat_names": "Systolic blood pressure"
+    },
+    "271650006 |Diastolic blood pressure|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "271650006|Diastolic blood pressure|",
+        "concat_codes": "271650006",
+        "concat_names": "Diastolic blood pressure"
+    },
+    "307294006 |Personal history finding| : 246454002 |Occurrence|= 64572001 |Disease|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "307294006|Personal history finding|:246454002|Occurrence|=64572001|Disease|",
+        "concat_codes": "307294006:246454002=64572001",
+        "concat_names": "Personal history finding:Occurrence=Disease"
+    },
+    "307294006 |Personal history finding| : 246454002 |Occurrence| = 74732009 |Mental disorder|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "307294006|Personal history finding|:246454002|Occurrence|=74732009|Mental disorder|",
+        "concat_codes": "307294006:246454002=74732009",
+        "concat_names": "Personal history finding:Occurrence=Mental disorder"
+    },
+    "106167005 |Consciousness related finding|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "106167005|Consciousness related finding|",
+        "concat_codes": "106167005",
+        "concat_names": "Consciousness related finding"
+    },
+    "43173001 |Orientation, function|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "43173001|Orientation function|",
+        "concat_codes": "43173001",
+        "concat_names": "Orientation"
+    },
+    "247619007 |Thought finding|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "247619007|Thought finding|",
+        "concat_codes": "247619007",
+        "concat_names": "Thought finding"
+    },
+    "79015004 |Worried|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "79015004|Worried|",
+        "concat_codes": "79015004",
+        "concat_names": "Worried"
+    },
+    "2073000 |Delusion|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "2073000|Delusion|",
+        "concat_codes": "2073000",
+        "concat_names": "Delusions"
+    },
+    "81742003 |Perception function|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "81742003|Perception function|",
+        "concat_codes": "81742003",
+        "concat_names": "Perception"
+    },
+    "4065008 |Affect function|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "4065008|Affect function|",
+        "concat_codes": "4065008",
+        "concat_names": "Affect"
+    },
+    "365349005 |Finding related to ability to drive a car|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "365349005|Finding related to ability to drive a car|",
+        "concat_codes": "365349005",
+        "concat_names": "Finding related to ability to drive a car"
+    },
+    "225599005 |Social behavior|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "225599005|Social behavior|",
+        "concat_codes": "225599005",
+        "concat_names": "Social behavior"
+    },
+    "47805006 |Psychoanalysis of ego| : 129265001 |Evaluation| = 79565000 |Disturbance in appearance|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "47805006|Psychoanalysis of ego|:129265001|Evaluation|=79565000|Disturbance in appearance|",
+        "concat_codes": "47805006:129265001=79565000",
+        "concat_names": "Psychoanalysis of ego:Evaluation=Disturbance in appearance"
+    },
+    "286797007 |Level of aggressiveness|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "286797007|Level of aggressiveness|",
+        "concat_codes": "286797007",
+        "concat_names": "Character trait finding of level of hostility"
+    },
+    "258158006 |Sleep, function|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "258158006|Sleep function|",
+        "concat_codes": "258158006",
+        "concat_names": "Sleep"
+    },
+    "86110000 |Rumination - thoughts| : 47429007 |Associated with| = 247650009 |Planning suicide|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "86110000|Rumination - thoughts|:47429007|Associated with|=247650009|Planning suicide|",
+        "concat_codes": "86110000:47429007=247650009",
+        "concat_names": "Rumination - thoughts:Associated with=Planning suicide"
+    },
+    "365581002 |Finding of marital or partnership status|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "365581002|Finding of marital or partnership status|",
+        "concat_codes": "365581002",
+        "concat_names": "Finding of marital or partnership status"
+    },
+    "102898006 |Emotional relationship| : 408732007 |Subject relationship context| = 113163005 |Friend|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "102898006|Emotional relationship|:408732007|Subject relationship context|=113163005|Friend|",
+        "concat_codes": "102898006:408732007=113163005",
+        "concat_names": "Emotional relationship:Subject relationship context=Friend"
+    },
+    "GSSO_000818": {
+        "ontology": "http://purl.obolibrary.org/obo",
+        "code": "GSSO_000818",
+        "concat_codes": "gsso_000818",
+        "concat_names": "friendship"
+    },
+    "102898006 |Emotional relationship| : 408732007 |Subject relationship context| = 262043009 |Partner in relationship|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "102898006|Emotional relationship|:408732007|Subject relationship context|=262043009|Partner in relationship|",
+        "concat_codes": "102898006:408732007=262043009",
+        "concat_names": "Emotional relationship:Subject relationship context=Partner in relationship"
+    },
+    "GSSO_000836": {
+        "ontology": "http://purl.obolibrary.org/obo",
+        "code": "GSSO_000836",
+        "concat_codes": "gsso_000836",
+        "concat_names": "partnership"
+    },
+    "102898006 |Emotional relationship| : 408732007 |Subject relationship context| = 125677006 |Relative|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "102898006|Emotional relationship|:408732007|Subject relationship context|=125677006|Relative|",
+        "concat_codes": "102898006:408732007=125677006",
+        "concat_names": "Emotional relationship:Subject relationship context=Relative"
+    },
+    "307294006 |Personal history finding| : 310027007 |Mental health counseling service| = 271437004 |Problem situation relating to social and personal history|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "307294006|Personal history finding|:310027007|Mental health counseling service|=271437004|Problem situation relating to social and personal history|",
+        "concat_codes": "307294006:310027007=271437004",
+        "concat_names": "Personal history finding:Mental health counseling service=Problem situation relating to social and personal history"
+    },
+    "248062006 |Self-injurious behavior| : 246454002 |Occurrence|= 397669002 |Age|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "248062006|Self-injurious behavior|:246454002|Occurrence|=397669002|Age|",
+        "concat_codes": "248062006:246454002=397669002",
+        "concat_names": "Self-injurious behavior:Occurrence=Age"
+    },
+    "248062006 |Self-injurious behavior| : 307294006 |Personal history finding| = 410656007 |Type|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "248062006|Self-injurious behavior|:307294006|Personal history finding|=410656007|Type|",
+        "concat_codes": "248062006:307294006=410656007",
+        "concat_names": "Self-injurious behavior:Personal history finding=Type"
+    },
+    "248062006 |Self-injurious behavior| : 307294006 |Personal history finding| = 410324006 | Medical/dental care (regime/therapy) |": {
+        "ontology": "http://snomed.info/sct",
+        "code": "248062006|Self-injurious behavior|:307294006|Personal history finding|=410324006|Medical/dental care regime/therapy |",
+        "concat_codes": "248062006:307294006=410324006",
+        "concat_names": "Self-injurious behavior:Personal history finding=Medical/dental care"
+    },
+    "248062006 |Self-injurious behavior| : 365471004 |Finding of details of relatives|= 260411009 |Presence findings|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "248062006|Self-injurious behavior|:365471004|Finding of details of relatives|=260411009|Presence findings|",
+        "concat_codes": "248062006:365471004=260411009",
+        "concat_names": "Self-injurious behavior:Details of relatives=Presence findings"
+    },
+    "224093006 |Details of family (observable entity)| : 246093002 |Component| = 82996008 |Social status (social concept)|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "224093006|Details of family observable entity |:246093002|Component|=82996008|Social status social concept |",
+        "concat_codes": "224093006:246093002=82996008",
+        "concat_names": "Details of family:Component=Social status"
+    },
+    "1231444008 |Child Behavior Checklist| : 246262008 |Score| = 255619001 |Total|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "1231444008|Child Behavior Checklist|:246262008|Score|=255619001|Total|",
+        "concat_codes": "1231444008:246262008=255619001",
+        "concat_names": "Child Behavior Checklist:Score=Total"
+    },
+    "1231444008 |Child Behavior Checklist| : 246262008 |Score| = (255619001 |Total|, 246514001 |Units| = 118583003 |Percentile|)": {
+        "ontology": "http://snomed.info/sct",
+        "code": "1231444008|Child Behavior Checklist|:246262008|Score|=(255619001|Total|,246514001|Units|=118583003|Percentile|)",
+        "concat_codes": "1231444008:246262008=(255619001,246514001=118583003)",
+        "concat_names": "Child Behavior Checklist:Score=(Total,Units=Percentile)"
+    },
+    "1231444008 |Child Behavior Checklist| : 280434008 |Subscale score| = (734841007 |Name| = \"Internalizing problems\")": {
+        "ontology": "http://snomed.info/sct",
+        "code": "1231444008|Child Behavior Checklist|:280434008|Subscale score|=(734841007|Name|=\"Internalizing problems\")",
+        "concat_codes": "1231444008:280434008=(734841007=\"Internalizing problems\")",
+        "concat_names": "Child Behavior Checklist:Subscale score=(Name=\"Internalizing problems\")"
+    },
+    "1231444008 |Child Behavior Checklist| : 280434008 |Subscale score| = (734841007 |Name| = \"Internalizing problems\", 246514001 |Units| = 118583003 |Percentile|)": {
+        "ontology": "http://snomed.info/sct",
+        "code": "1231444008|Child Behavior Checklist|:280434008|Subscale score|=(734841007|Name|=\"Internalizing problems\",246514001|Units|=118583003|Percentile|)",
+        "concat_codes": "1231444008:280434008=(734841007=\"Internalizing problems\",246514001=118583003)",
+        "concat_names": "Child Behavior Checklist:Subscale score=(Name=\"Internalizing problems\",Units=Percentile)"
+    },
+    "1231444008 |Child Behavior Checklist| : 280434008 |Subscale score| = (734841007 |Name| = \"Externalizing problems\")": {
+        "ontology": "http://snomed.info/sct",
+        "code": "1231444008|Child Behavior Checklist|:280434008|Subscale score|=(734841007|Name|=\"Externalizing problems\")",
+        "concat_codes": "1231444008:280434008=(734841007=\"Externalizing problems\")",
+        "concat_names": "Child Behavior Checklist:Subscale score=(Name=\"Externalizing problems\")"
+    },
+    "1231444008 |Child Behavior Checklist| : 280434008 |Subscale score| = (734841007 |Name| = \"Externalizing problems\", 246514001 |Units| = 118583003 |Percentile|)": {
+        "ontology": "http://snomed.info/sct",
+        "code": "1231444008|Child Behavior Checklist|:280434008|Subscale score|=(734841007|Name|=\"Externalizing problems\",246514001|Units|=118583003|Percentile|)",
+        "concat_codes": "1231444008:280434008=(734841007=\"Externalizing problems\",246514001=118583003)",
+        "concat_names": "Child Behavior Checklist:Subscale score=(Name=\"Externalizing problems\",Units=Percentile)"
+    },
+    "273249006 |Assessment scales (assessment scale)| : { 734841007 |Name| = \"Youth Self Report\", 280434008 |Subscale score| = (734841007 |Name| = \"Internalising problems\")}": {
+        "ontology": "http://snomed.info/sct",
+        "code": "273249006|Assessment scales assessment scale |:{734841007|Name|=\"Youth Self Report\",280434008|Subscale score|=(734841007|Name|=\"Internalising problems\")}",
+        "concat_codes": "273249006:{734841007=\"Youth Self Report\",280434008=(734841007=\"Internalising problems\")}",
+        "concat_names": "Assessment scales:{Name=\"Youth Self Report\",Subscale score=(Name=\"Internalising problems\")}"
+    },
+    "273249006 |Assessment scales (assessment scale)| : { 734841007 |Name| = \"Youth Self Report\", 280434008 |Subscale score| = (734841007 |Name| = \"Internalising problems\", 246514001 |Units| = 118583003 |Percentile|)}": {
+        "ontology": "http://snomed.info/sct",
+        "code": "273249006|Assessment scales assessment scale |:{734841007|Name|=\"Youth Self Report\",280434008|Subscale score|=(734841007|Name|=\"Internalising problems\",246514001|Units|=118583003|Percentile|)}",
+        "concat_codes": "273249006:{734841007=\"Youth Self Report\",280434008=(734841007=\"Internalising problems\",246514001=118583003)}",
+        "concat_names": "Assessment scales:{Name=\"Youth Self Report\",Subscale score=(Name=\"Internalising problems\",Units=Percentile)}"
+    },
+    "273249006 |Assessment scales (assessment scale)| : { 734841007 |Name| = \"Youth Self Report\", 280434008 |Subscale score| = (734841007 |Name| = \"Externalizing problems\")}": {
+        "ontology": "http://snomed.info/sct",
+        "code": "273249006|Assessment scales assessment scale |:{734841007|Name|=\"Youth Self Report\",280434008|Subscale score|=(734841007|Name|=\"Externalizing problems\")}",
+        "concat_codes": "273249006:{734841007=\"Youth Self Report\",280434008=(734841007=\"Externalizing problems\")}",
+        "concat_names": "Assessment scales:{Name=\"Youth Self Report\",Subscale score=(Name=\"Externalizing problems\")}"
+    },
+    "273249006 |Assessment scales (assessment scale)| : { 734841007 |Name| = \"Youth Self Report\", 280434008 |Subscale score| = (734841007 |Name| = \"Externalizing problems\", 246514001 |Units| = 118583003 |Percentile|)}": {
+        "ontology": "http://snomed.info/sct",
+        "code": "273249006|Assessment scales assessment scale |:{734841007|Name|=\"Youth Self Report\",280434008|Subscale score|=(734841007|Name|=\"Externalizing problems\",246514001|Units|=118583003|Percentile|)}",
+        "concat_codes": "273249006:{734841007=\"Youth Self Report\",280434008=(734841007=\"Externalizing problems\",246514001=118583003)}",
+        "concat_names": "Assessment scales:{Name=\"Youth Self Report\",Subscale score=(Name=\"Externalizing problems\",Units=Percentile)}"
+    },
+    "273249006 |Assessment scales (assessment scale)| : { 734841007 |Name| = \"Youth Self Report\", 246262008 |Score| = 255619001 |Total| }": {
+        "ontology": "http://snomed.info/sct",
+        "code": "273249006|Assessment scales assessment scale |:{734841007|Name|=\"Youth Self Report\",246262008|Score|=255619001|Total|}",
+        "concat_codes": "273249006:{734841007=\"Youth Self Report\",246262008=255619001}",
+        "concat_names": "Assessment scales:{Name=\"Youth Self Report\",Score=Total}"
+    },
+    "273249006 |Assessment scales (assessment scale)| : { 734841007 |Name| = \"Youth Self Report\", 246262008 |Score| = 255619001 |Total|, 246514001 |Units| = 118583003 |Percentile| }": {
+        "ontology": "http://snomed.info/sct",
+        "code": "273249006|Assessment scales assessment scale |:{734841007|Name|=\"Youth Self Report\",246262008|Score|=255619001|Total|,246514001|Units|=118583003|Percentile|}",
+        "concat_codes": "273249006:{734841007=\"Youth Self Report\",246262008=255619001,246514001=118583003}",
+        "concat_names": "Assessment scales:{Name=\"Youth Self Report\",Score=Total,Units=Percentile}"
+    },
+    "446053003 |Beck depression inventory score| : 246514001 |Units| = 118583003 |Percentile|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "446053003|Beck depression inventory score|:246514001|Units|=118583003|Percentile|",
+        "concat_codes": "446053003:246514001=118583003",
+        "concat_names": "Beck depression inventory score:Units=Percentile"
+    },
+    "446053003 |Beck depression inventory score|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "446053003|Beck depression inventory score|",
+        "concat_codes": "446053003",
+        "concat_names": "Beck depression inventory score"
+    },
+    "1231513002 |Conners Comprehensive Behavior Rating Scales| : (280434008 |Subscale score| = 40683002 |Parent|, 363702006 |Has focus| = 406506008 |Attention deficit hyperactivity disorder|)": {
+        "ontology": "http://snomed.info/sct",
+        "code": "1231513002|Conners Comprehensive Behavior Rating Scales|:(280434008|Subscale score|=40683002|Parent|,363702006|Has focus|=406506008|Attention deficit hyperactivity disorder|)",
+        "concat_codes": "1231513002:(280434008=40683002,363702006=406506008)",
+        "concat_names": "Conners Comprehensive Behavior Rating Scales:(Subscale score=Parent,Has focus=Attention deficit hyperactivity disorder)"
+    },
+    "1231513002 |Conners Comprehensive Behavior Rating Scales| : (280434008 |Subscale score| = 40683002 |Parent|, 363702006 |Has focus| = 406506008 |Attention deficit hyperactivity disorder|, 246514001 |Units| = 118583003 |Percentile| )": {
+        "ontology": "http://snomed.info/sct",
+        "code": "1231513002|Conners Comprehensive Behavior Rating Scales|:(280434008|Subscale score|=40683002|Parent|,363702006|Has focus|=406506008|Attention deficit hyperactivity disorder|,246514001|Units|=118583003|Percentile|)",
+        "concat_codes": "1231513002:(280434008=40683002,363702006=406506008,246514001=118583003)",
+        "concat_names": "Conners Comprehensive Behavior Rating Scales:(Subscale score=Parent,Has focus=Attention deficit hyperactivity disorder,Units=Percentile)"
+    },
+    "1231513002 |Conners Comprehensive Behavior Rating Scales| : (280434008 |Subscale score| = 106304008 |Teacher|, 363702006 |Has focus| = 406506008 |Attention deficit hyperactivity disorder|)": {
+        "ontology": "http://snomed.info/sct",
+        "code": "1231513002|Conners Comprehensive Behavior Rating Scales|:(280434008|Subscale score|=106304008|Teacher|,363702006|Has focus|=406506008|Attention deficit hyperactivity disorder|)",
+        "concat_codes": "1231513002:(280434008=106304008,363702006=406506008)",
+        "concat_names": "Conners Comprehensive Behavior Rating Scales:(Subscale score=Teacher,Has focus=Attention deficit hyperactivity disorder)"
+    },
+    "1231513002 |Conners Comprehensive Behavior Rating Scales| : (280434008 |Subscale score| = 106304008 |Teacher|, 363702006 |Has focus| = 406506008 |Attention deficit hyperactivity disorder|, 246514001 |Units| = 118583003 |Percentile| )": {
+        "ontology": "http://snomed.info/sct",
+        "code": "1231513002|Conners Comprehensive Behavior Rating Scales|:(280434008|Subscale score|=106304008|Teacher|,363702006|Has focus|=406506008|Attention deficit hyperactivity disorder|,246514001|Units|=118583003|Percentile|)",
+        "concat_codes": "1231513002:(280434008=106304008,363702006=406506008,246514001=118583003)",
+        "concat_names": "Conners Comprehensive Behavior Rating Scales:(Subscale score=Teacher,Has focus=Attention deficit hyperactivity disorder,Units=Percentile)"
+    },
+    "273249006 |Assessment scales (assessment scale)| : 734841007 |Name| = \"Toronto Alexithymia Scale Questionnaire\"": {
+        "ontology": "http://snomed.info/sct",
+        "code": "273249006|Assessment scales assessment scale |:734841007|Name|=\"Toronto Alexithymia Scale Questionnaire\"",
+        "concat_codes": "273249006:734841007=\"Toronto Alexithymia Scale Questionnaire\"",
+        "concat_names": "Assessment scales:Name=\"Toronto Alexithymia Scale Questionnaire\""
+    },
+    "273249006 |Assessment scales (assessment scale)| : 734841007 |Name| = \"Suicide Behaviour Questionnaire\"": {
+        "ontology": "http://snomed.info/sct",
+        "code": "273249006|Assessment scales assessment scale |:734841007|Name|=\"Suicide Behaviour Questionnaire\"",
+        "concat_codes": "273249006:734841007=\"Suicide Behaviour Questionnaire\"",
+        "concat_names": "Assessment scales:Name=\"Suicide Behaviour Questionnaire\""
+    },
+    "273249006 |Assessment scales (assessment scale)| : 734841007 |Name| = \"Suicide Behaviour Questionnaire - Autistic Spectrum Conditions\"": {
+        "ontology": "http://snomed.info/sct",
+        "code": "273249006|Assessment scales assessment scale |:734841007|Name|=\"Suicide Behaviour Questionnaire - Autistic Spectrum Conditions\"",
+        "concat_codes": "273249006:734841007=\"Suicide Behaviour Questionnaire - Autistic Spectrum Conditions\"",
+        "concat_names": "Assessment scales:Name=\"Suicide Behaviour Questionnaire - Autistic Spectrum Conditions\""
+    },
+    "401319005 |Hospital Anxiety and Depression scale: anxiety score|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "401319005|Hospital Anxiety and Depression scale anxiety score|",
+        "concat_codes": "401319005",
+        "concat_names": "HAD scale anxiety score"
+    },
+    "401320004 |Hospital Anxiety and Depression scale: depression score|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "401320004|Hospital Anxiety and Depression scale depression score|",
+        "concat_codes": "401320004",
+        "concat_names": "HAD scale depression score"
+    },
+    "37941009 |Rumination disorder|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "37941009|Rumination disorder|",
+        "concat_codes": "37941009",
+        "concat_names": "Rumination disorder"
+    },
+    "273249006 |Assessment scales (assessment scale)| : { 734841007 |Name| = \"social communication questionnaire\", 246262008 |Score| = 255619001 |Total| }": {
+        "ontology": "http://snomed.info/sct",
+        "code": "273249006|Assessment scales assessment scale |:{734841007|Name|=\"social communication questionnaire\",246262008|Score|=255619001|Total|}",
+        "concat_codes": "273249006:{734841007=\"social communication questionnaire\",246262008=255619001}",
+        "concat_names": "Assessment scales:{Name=\"social communication questionnaire\",Score=Total}"
+    },
+    "840418002 |Yale-Brown Obsessive Compulsive Scale|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "840418002|Yale-Brown Obsessive Compulsive Scale|",
+        "concat_codes": "840418002",
+        "concat_names": "Yale-Brown Obsessive Compulsive Scale"
+    },
+    "840418002 |Yale-Brown Obsessive Compulsive Scale| : 246514001 |Units| = 118583003 |Percentile|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "840418002|Yale-Brown Obsessive Compulsive Scale|:246514001|Units|=118583003|Percentile|",
+        "concat_codes": "840418002:246514001=118583003",
+        "concat_names": "Yale-Brown Obsessive Compulsive Scale:Units=Percentile"
+    },
+    "840418002 |Yale-Brown Obsessive Compulsive Scale| : 246514001 |Units| = \"Clinical Percentile\"": {
+        "ontology": "http://snomed.info/sct",
+        "code": "840418002|Yale-Brown Obsessive Compulsive Scale|:246514001|Units|=\"Clinical Percentile\"",
+        "concat_codes": "840418002:246514001=\"Clinical Percentile\"",
+        "concat_names": "Yale-Brown Obsessive Compulsive Scale:Units=\"Clinical Percentile\""
+    },
+    "868188006 |Assessment using Children's Global Assessment Scale|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "868188006|Assessment using Children's Global Assessment Scale|",
+        "concat_codes": "868188006",
+        "concat_names": "Assessment using Children's Global Assessment Scale"
+    },
+    "273249006 |Assessment scales (assessment scale)| : 734841007 |Name| = \"Adolescent Drug Involvement Scale\"": {
+        "ontology": "http://snomed.info/sct",
+        "code": "273249006|Assessment scales assessment scale |:734841007|Name|=\"Adolescent Drug Involvement Scale\"",
+        "concat_codes": "273249006:734841007=\"Adolescent Drug Involvement Scale\"",
+        "concat_names": "Assessment scales:Name=\"Adolescent Drug Involvement Scale\""
+    },
+    "1231443002 |Bush-Francis Catatonia Rating Scale| : (280434008 |Subscale score| = 365856005 | Screening finding| )": {
+        "ontology": "http://snomed.info/sct",
+        "code": "1231443002|Bush-Francis Catatonia Rating Scale|:(280434008|Subscale score|=365856005|Screening finding|)",
+        "concat_codes": "1231443002:(280434008=365856005)",
+        "concat_names": "Bush-Francis Catatonia Rating Scale:(Subscale score=Screening finding)"
+    },
+    "1231443002 |Bush-Francis Catatonia Rating Scale| : (280434008 |Subscale score| = 162465004 |Symptom severity| )": {
+        "ontology": "http://snomed.info/sct",
+        "code": "1231443002|Bush-Francis Catatonia Rating Scale|:(280434008|Subscale score|=162465004|Symptom severity|)",
+        "concat_codes": "1231443002:(280434008=162465004)",
+        "concat_names": "Bush-Francis Catatonia Rating Scale:(Subscale score=Symptom severity)"
+    },
+    "273249006 |Assessment scales (assessment scale)| : 734841007 |Name| = \"Evaluation of anxiety and depression symptoms in children and adolescents\"": {
+        "ontology": "http://snomed.info/sct",
+        "code": "273249006|Assessment scales assessment scale |:734841007|Name|=\"Evaluation of anxiety and depression symptoms in children and adolescents\"",
+        "concat_codes": "273249006:734841007=\"Evaluation of anxiety and depression symptoms in children and adolescents\"",
+        "concat_names": "Assessment scales:Name=\"Evaluation of anxiety and depression symptoms in children and adolescents\""
+    },
+    "273249006 |Assessment scales (assessment scale)| : 734841007 |Name| = \"Wender Utah Rating Scale Short Version\"": {
+        "ontology": "http://snomed.info/sct",
+        "code": "273249006|Assessment scales assessment scale |:734841007|Name|=\"Wender Utah Rating Scale Short Version\"",
+        "concat_codes": "273249006:734841007=\"Wender Utah Rating Scale Short Version\"",
+        "concat_names": "Assessment scales:Name=\"Wender Utah Rating Scale Short Version\""
+    },
+    "273249006 |Assessment scales (assessment scale)| : (734841007 |Name| = \"Wender Utah Rating Scale Short Version\", 246514001 |Units| = 118583003 |Percentile|)": {
+        "ontology": "http://snomed.info/sct",
+        "code": "273249006|Assessment scales assessment scale |:(734841007|Name|=\"Wender Utah Rating Scale Short Version\",246514001|Units|=118583003|Percentile|)",
+        "concat_codes": "273249006:(734841007=\"Wender Utah Rating Scale Short Version\",246514001=118583003)",
+        "concat_names": "Assessment scales:(Name=\"Wender Utah Rating Scale Short Version\",Units=Percentile)"
+    },
+    "273249006 |Assessment scales (assessment scale)| : (734841007 |Name| = \"Wender Utah Rating Scale Short Version\", 246514001 |Units| = \"Clinical Percentile\")": {
+        "ontology": "http://snomed.info/sct",
+        "code": "273249006|Assessment scales assessment scale |:(734841007|Name|=\"Wender Utah Rating Scale Short Version\",246514001|Units|=\"Clinical Percentile\")",
+        "concat_codes": "273249006:(734841007=\"Wender Utah Rating Scale Short Version\",246514001=\"Clinical Percentile\")",
+        "concat_names": "Assessment scales:(Name=\"Wender Utah Rating Scale Short Version\",Units=\"Clinical Percentile\")"
+    },
+    "273249006 |Assessment scales (assessment scale)| : 734841007 |Name| = \"Drug Use Screening\"": {
+        "ontology": "http://snomed.info/sct",
+        "code": "273249006|Assessment scales assessment scale |:734841007|Name|=\"Drug Use Screening\"",
+        "concat_codes": "273249006:734841007=\"Drug Use Screening\"",
+        "concat_names": "Assessment scales:Name=\"Drug Use Screening\""
+    },
+    "273249006 |Assessment scales (assessment scale)| : 734841007 |Name| = \"Anxiety Scale for Autism - Adults\"": {
+        "ontology": "http://snomed.info/sct",
+        "code": "273249006|Assessment scales assessment scale |:734841007|Name|=\"Anxiety Scale for Autism - Adults\"",
+        "concat_codes": "273249006:734841007=\"Anxiety Scale for Autism - Adults\"",
+        "concat_names": "Assessment scales:Name=\"Anxiety Scale for Autism - Adults\""
+    },
+    "273249006 |Assessment scales (assessment scale)| : 734841007 |Name| = \"Autistic Depression Assessment Tool - Adults\"": {
+        "ontology": "http://snomed.info/sct",
+        "code": "273249006|Assessment scales assessment scale |:734841007|Name|=\"Autistic Depression Assessment Tool - Adults\"",
+        "concat_codes": "273249006:734841007=\"Autistic Depression Assessment Tool - Adults\"",
+        "concat_names": "Assessment scales:Name=\"Autistic Depression Assessment Tool - Adults\""
+    },
+    "422549004 |Patient-related Identification code| :  47429007 |Associated with| = 117040002 |Nucleic acid sequencing (procedure)|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "422549004|Patient-related Identification code|:47429007|Associated with|=117040002|Nucleic acid sequencing procedure |",
+        "concat_codes": "422549004:47429007=117040002",
+        "concat_names": "Patient-related Identification code:Associated with=Nucleic acid sequencing"
+    },
+    "363819003 |Drug therapy observable|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "363819003|Drug therapy observable|",
+        "concat_codes": "363819003",
+        "concat_names": "Drug therapy observable"
+    },
+    "363819003 |Drug therapy observable| : 260911001 |Dosage|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "363819003|Drug therapy observable|:260911001|Dosage|",
+        "concat_codes": "363819003:260911001",
+        "concat_names": "Drug therapy observable:Dosage"
+    },
+    "33633005 |Prescription of drug|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "33633005|Prescription of drug|",
+        "concat_codes": "33633005",
+        "concat_names": "Prescription of drug"
+    },
+    "32570681000036106": {
+        "ontology": "http://snomed.info/sct",
+        "code": "32570681000036106",
+        "concat_codes": "32570681000036106",
+        "concat_names": "Indeterminate sex"
+    },
+    "271591004 |Fully conscious|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "271591004|Fully conscious|",
+        "concat_codes": "271591004",
+        "concat_names": "Fully conscious"
+    },
+    "3006004 |Disturbance of consciousness| : 734841007 |Name| = \"Lowered Vigilance\"": {
+        "ontology": "http://snomed.info/sct",
+        "code": "3006004|Disturbance of consciousness|:734841007|Name|=\"Lowered Vigilance\"",
+        "concat_codes": "3006004:734841007=\"Lowered Vigilance\"",
+        "concat_names": "Disturbance of consciousness:Name=\"Lowered Vigilance\""
+    },
+    "40917007 |Clouded consciousness|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "40917007|Clouded consciousness|",
+        "concat_codes": "40917007",
+        "concat_names": "Clouded consciousness"
+    },
+    "3006004 |Disturbance of consciousness| : 734841007 |Name| = \"Narrowed Consciousness\"": {
+        "ontology": "http://snomed.info/sct",
+        "code": "3006004|Disturbance of consciousness|:734841007|Name|=\"Narrowed Consciousness\"",
+        "concat_codes": "3006004:734841007=\"Narrowed Consciousness\"",
+        "concat_names": "Disturbance of consciousness:Name=\"Narrowed Consciousness\""
+    },
+    "247663003 |Orientated|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "247663003|Orientated|",
+        "concat_codes": "247663003",
+        "concat_names": "Orientated"
+    },
+    "19657006 |Disorientated in time|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "19657006|Disorientated in time|",
+        "concat_codes": "19657006",
+        "concat_names": "Disorientated in time"
+    },
+    "72440003 |Disorientated in place|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "72440003|Disorientated in place|",
+        "concat_codes": "72440003",
+        "concat_names": "Disorientated in place"
+    },
+    "39538002 |Disorientation to person, time and place|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "39538002|Disorientation to person time and place|",
+        "concat_codes": "39538002",
+        "concat_names": "Disorientation to person time and place"
+    },
+    "62766000 |Disorientation for person|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "62766000|Disorientation for person|",
+        "concat_codes": "62766000",
+        "concat_names": "Disorientation for person"
+    },
+    "247602005 |Memory function normal|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "247602005|Memory function normal|",
+        "concat_codes": "247602005",
+        "concat_names": "Memory function normal"
+    },
+    "78633001 |Altered thought processes| : 47429007 |Associated with| = 45336008 |Apperception, function|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "78633001|Altered thought processes|:47429007|Associated with|=45336008|Apperception function|",
+        "concat_codes": "78633001:47429007=45336008",
+        "concat_names": "Altered thought processes:Associated with=Apperception"
+    },
+    "78633001 |Altered thought processes| : 47429007 |Associated with| = 1144748009 |Impaired concentration|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "78633001|Altered thought processes|:47429007|Associated with|=1144748009|Impaired concentration|",
+        "concat_codes": "78633001:47429007=1144748009",
+        "concat_names": "Altered thought processes:Associated with=Impaired concentration"
+    },
+    "78633001 |Altered thought processes| : 47429007 |Associated with| = 247589005 |Short-term memory performance|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "78633001|Altered thought processes|:47429007|Associated with|=247589005|Short-term memory performance|",
+        "concat_codes": "78633001:47429007=247589005",
+        "concat_names": "Altered thought processes:Associated with=Short-term memory performance"
+    },
+    "78633001 |Altered thought processes| : 47429007 |Associated with| = 247586003 |Long-term memory performance|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "78633001|Altered thought processes|:47429007|Associated with|=247586003|Long-term memory performance|",
+        "concat_codes": "78633001:47429007=247586003",
+        "concat_names": "Altered thought processes:Associated with=Long-term memory performance"
+    },
+    "32541007 |Paramnesia|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "32541007|Paramnesia|",
+        "concat_codes": "32541007",
+        "concat_names": "Paramnesia"
+    },
+    "225662002 |Able to think clearly|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "225662002|Able to think clearly|",
+        "concat_codes": "225662002",
+        "concat_names": "Able to think clearly"
+    },
+    "247627003 |Slow flow of thought|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "247627003|Slow flow of thought|",
+        "concat_codes": "247627003",
+        "concat_names": "Slow flow of thought"
+    },
+    "18343006 |Circumstantiality|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "18343006|Circumstantiality|",
+        "concat_codes": "18343006",
+        "concat_names": "Circumstantiality"
+    },
+    "56435009 |Poverty of thought|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "56435009|Poverty of thought|",
+        "concat_codes": "56435009",
+        "concat_names": "Poverty of thought"
+    },
+    "44515000 |Perseveration|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "44515000|Perseveration|",
+        "concat_codes": "44515000",
+        "concat_names": "Perseveration"
+    },
+    "86110000 |Rumination - thoughts|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "86110000|Rumination - thoughts|",
+        "concat_codes": "86110000",
+        "concat_names": "Rumination - thoughts"
+    },
+    "28810003 |Flight of ideas|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "28810003|Flight of ideas|",
+        "concat_codes": "28810003",
+        "concat_names": "Flight of ideas"
+    },
+    "74396008 |Tangential thinking|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "74396008|Tangential thinking|",
+        "concat_codes": "74396008",
+        "concat_names": "Tangential thinking"
+    },
+    "2899008 |Thought block|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "2899008|Thought block|",
+        "concat_codes": "2899008",
+        "concat_names": "Thought block"
+    },
+    "65135009 |Knight's move in thought|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "65135009|Knight's move in thought|",
+        "concat_codes": "65135009",
+        "concat_names": "Knight's move in thought"
+    },
+    "285286004 |Compulsion to act on thoughts| : 373572006 |Clinical finding absent|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "285286004|Compulsion to act on thoughts|:373572006|Clinical finding absent|",
+        "concat_codes": "285286004:373572006",
+        "concat_names": "Compulsion to act on thoughts:Clinical finding absent"
+    },
+    "706876006 |Suspicion|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "706876006|Suspicion|",
+        "concat_codes": "706876006",
+        "concat_names": "Suspicion"
+    },
+    "18193002 |Hypochondriasis|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "18193002|Hypochondriasis|",
+        "concat_codes": "18193002",
+        "concat_names": "Hypochondriasis"
+    },
+    "386808001 |Phobia|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "386808001|Phobia|",
+        "concat_codes": "386808001",
+        "concat_names": "Phobia"
+    },
+    "67698009 |Obsessional thoughts|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "67698009|Obsessional thoughts|",
+        "concat_codes": "67698009",
+        "concat_names": "Obsessional thoughts"
+    },
+    "12479006 |Compulsive behavior| : 47429007 |Associated with| = 263781002 |Impulse|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "12479006|Compulsive behavior|:47429007|Associated with|=263781002|Impulse|",
+        "concat_codes": "12479006:47429007=263781002",
+        "concat_names": "Compulsive behavior:Associated with=Impulse"
+    },
+    "12479006 |Compulsive behavior| : 47429007 |Associated with| = 129264002 |Action|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "12479006|Compulsive behavior|:47429007|Associated with|=129264002|Action|",
+        "concat_codes": "12479006:47429007=129264002",
+        "concat_names": "Compulsive behavior:Associated with=Action"
+    },
+    "2073000 |Delusion| : 373572006 |Clinical finding absent|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "2073000|Delusion|:373572006|Clinical finding absent|",
+        "concat_codes": "2073000:373572006",
+        "concat_names": "Delusions:Clinical finding absent"
+    },
+    "64514005 |Delusional perception|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "64514005|Delusional perception|",
+        "concat_codes": "64514005",
+        "concat_names": "Delusional perception"
+    },
+    "40277007 |Systematized delusion|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "40277007|Systematized delusion|",
+        "concat_codes": "40277007",
+        "concat_names": "Systematized delusion"
+    },
+    "41189006 |Ideas of reference|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "41189006|Ideas of reference|",
+        "concat_codes": "41189006",
+        "concat_names": "Ideas of reference"
+    },
+    "216004 |Delusion of persecution|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "216004|Delusion of persecution|",
+        "concat_codes": "216004",
+        "concat_names": "Delusion of persecution"
+    },
+    "8330006 |Delusion of infidelity|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "8330006|Delusion of infidelity|",
+        "concat_codes": "8330006",
+        "concat_names": "Delusion of infidelity"
+    },
+    "53108004 |Delusion of guilt|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "53108004|Delusion of guilt|",
+        "concat_codes": "53108004",
+        "concat_names": "Delusion of guilt"
+    },
+    "247667002 |Grandiose delusions|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "247667002|Grandiose delusions|",
+        "concat_codes": "247667002",
+        "concat_names": "Grandiose delusions"
+    },
+    "2073000 |Delusion| : 410656007 |Type| = 74964007 |Other|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "2073000|Delusion|:410656007|Type|=74964007|Other|",
+        "concat_codes": "2073000:410656007=74964007",
+        "concat_names": "Delusions:Type=Other"
+    },
+    "247700009 |Normal perception|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "247700009|Normal perception|",
+        "concat_codes": "247700009",
+        "concat_names": "Normal perception"
+    },
+    "5152006 |Illusion|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "5152006|Illusion|",
+        "concat_codes": "5152006",
+        "concat_names": "Illusion"
+    },
+    "247730001 |Verbal auditory hallucinations|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "247730001|Verbal auditory hallucinations|",
+        "concat_codes": "247730001",
+        "concat_names": "Verbal auditory hallucinations"
+    },
+    "45150006 |Auditory hallucinations|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "45150006|Auditory hallucinations|",
+        "concat_codes": "45150006",
+        "concat_names": "Auditory hallucinations"
+    },
+    "64269007 |Visual hallucinations|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "64269007|Visual hallucinations|",
+        "concat_codes": "64269007",
+        "concat_names": "Visual hallucinations"
+    },
+    "85550003 |Hallucinations of bodily sensation|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "85550003|Hallucinations of bodily sensation|",
+        "concat_codes": "85550003",
+        "concat_names": "Hallucinations of bodily sensation"
+    },
+    "39672001 |Olfactory hallucinations|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "39672001|Olfactory hallucinations|",
+        "concat_codes": "39672001",
+        "concat_names": "Olfactory hallucinations"
+    },
+    "40806005 |Derealization|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "40806005|Derealization|",
+        "concat_codes": "40806005",
+        "concat_names": "Derealization"
+    },
+    "79499004 |Depersonalization|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "79499004|Depersonalization|",
+        "concat_codes": "79499004",
+        "concat_names": "Depersonalization"
+    },
+    "86917003 |Thought broadcast|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "86917003|Thought broadcast|",
+        "concat_codes": "86917003",
+        "concat_names": "Thought broadcast"
+    },
+    "87076008 |Thought withdrawal|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "87076008|Thought withdrawal|",
+        "concat_codes": "87076008",
+        "concat_names": "Thought withdrawal"
+    },
+    "50543005 |Thought insertion|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "50543005|Thought insertion|",
+        "concat_codes": "50543005",
+        "concat_names": "Thought insertion"
+    },
+    "416383008 |Abnormal affect| : 373572006 |Clinical finding absent|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "416383008|Abnormal affect|:373572006|Clinical finding absent|",
+        "concat_codes": "416383008:373572006",
+        "concat_names": "Abnormal affect:Clinical finding absent"
+    },
+    "276302000 |Feeling of loss of feeling|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "276302000|Feeling of loss of feeling|",
+        "concat_codes": "276302000",
+        "concat_names": "Feeling of loss of feeling"
+    },
+    "6140007 |Blunted affect|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "6140007|Blunted affect|",
+        "concat_codes": "6140007",
+        "concat_names": "Blunted affect"
+    },
+    "366979004 |Depressed mood|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "366979004|Depressed mood|",
+        "concat_codes": "366979004",
+        "concat_names": "Depressed mood"
+    },
+    "307077003 |Feeling hopeless|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "307077003|Feeling hopeless|",
+        "concat_codes": "307077003",
+        "concat_names": "Feeling hopeless"
+    },
+    "48694002 |Anxiety|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "48694002|Anxiety|",
+        "concat_codes": "48694002",
+        "concat_names": "Anxiety"
+    },
+    "85949006 |Euphoria|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "85949006|Euphoria|",
+        "concat_codes": "85949006",
+        "concat_names": "Euphoria"
+    },
+    "55929007 |Feeling irritable|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "55929007|Feeling irritable|",
+        "concat_codes": "55929007",
+        "concat_names": "Feeling irritable"
+    },
+    "162221009 |Restlessness|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "162221009|Restlessness|",
+        "concat_codes": "162221009",
+        "concat_names": "Restlessness"
+    },
+    "53138005 |Mood-incongruent delusion|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "53138005|Mood-incongruent delusion|",
+        "concat_codes": "53138005",
+        "concat_names": "Mood-incongruent delusion"
+    },
+    "386798001 |Affective personality trait| : 47429007 |Associated with| = 18963009 |Mood swings|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "386798001|Affective personality trait|:47429007|Associated with|=18963009|Mood swings|",
+        "concat_codes": "386798001:47429007=18963009",
+        "concat_names": "Affective personality trait:Associated with=Mood swings"
+    },
+    "386798001 |Affective personality trait| : 47429007 |Associated with| = 312953009 |Attacks of rigidity|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "386798001|Affective personality trait|:47429007|Associated with|=312953009|Attacks of rigidity|",
+        "concat_codes": "386798001:47429007=312953009",
+        "concat_names": "Affective personality trait:Associated with=Attacks of rigidity"
+    },
+    "9908006 |Normal psychomotor development|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "9908006|Normal psychomotor development|",
+        "concat_codes": "9908006",
+        "concat_names": "Normal psychomotor development"
+    },
+    "247750002 |Drive| : 1250004 |Decreased|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "247750002|Drive|:1250004|Decreased|",
+        "concat_codes": "247750002:1250004",
+        "concat_names": "Drive:Decreased"
+    },
+    "247750002 |Drive| : 286660008 |Inhibited behavior|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "247750002|Drive|:286660008|Inhibited behavior|",
+        "concat_codes": "247750002:286660008",
+        "concat_names": "Drive:Inhibited behavior"
+    },
+    "247750002 |Drive| : 35105006 |Increased|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "247750002|Drive|:35105006|Increased|",
+        "concat_codes": "247750002:35105006",
+        "concat_names": "Drive:Increased"
+    },
+    "5090003 |Mannerism|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "5090003|Mannerism|",
+        "concat_codes": "5090003",
+        "concat_names": "Mannerism"
+    },
+    "88052002 |Mutism|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "88052002|Mutism|",
+        "concat_codes": "88052002",
+        "concat_names": "Mutism"
+    },
+    "449191001 |Logorrhea|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "449191001|Logorrhea|",
+        "concat_codes": "449191001",
+        "concat_names": "Logorrhea"
+    },
+    "1144527009 |Interacts with others normally|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "1144527009|Interacts with others normally|",
+        "concat_codes": "1144527009",
+        "concat_names": "Interacts with others normally"
+    },
+    "105411000 |Social withdrawal|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "105411000|Social withdrawal|",
+        "concat_codes": "105411000",
+        "concat_names": "Social withdrawal"
+    },
+    "129875009 |Alteration in social interaction| : 260378005 |Excessive|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "129875009|Alteration in social interaction|:260378005|Excessive|",
+        "concat_codes": "129875009:260378005",
+        "concat_names": "Alteration in social interaction:Excessive"
+    },
+    "61372001 |Aggressive behavior| : 373572006 |Clinical finding absent|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "61372001|Aggressive behavior|:373572006|Clinical finding absent|",
+        "concat_codes": "61372001:373572006",
+        "concat_names": "Aggressive behavior:Clinical finding absent"
+    },
+    "248003003 |Verbal aggression|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "248003003|Verbal aggression|",
+        "concat_codes": "248003003",
+        "concat_names": "Verbal aggression"
+    },
+    "248004009 |Physical aggression|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "248004009|Physical aggression|",
+        "concat_codes": "248004009",
+        "concat_names": "Physical aggression"
+    },
+    "6471006 |Suicidal thoughts| : 373572006 |Clinical finding absent|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "6471006|Suicidal thoughts|:373572006|Clinical finding absent|",
+        "concat_codes": "6471006:373572006",
+        "concat_names": "Suicidal thoughts:Clinical finding absent"
+    },
+    "247795009 |Tedium vitae|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "247795009|Tedium vitae|",
+        "concat_codes": "247795009",
+        "concat_names": "Tedium vitae"
+    },
+    "6471006 |Suicidal thoughts|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "6471006|Suicidal thoughts|",
+        "concat_codes": "6471006",
+        "concat_names": "Suicidal thoughts"
+    },
+    "711561004 |Has access to planned means of suicide|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "711561004|Has access to planned means of suicide|",
+        "concat_codes": "711561004",
+        "concat_names": "Has access to planned means of suicide"
+    },
+    "125681006": {
+        "ontology": "http://snomed.info/sct",
+        "code": "125681006",
+        "concat_codes": "125681006",
+        "concat_names": "Single person"
+    },
+    "87915002": {
+        "ontology": "http://snomed.info/sct",
+        "code": "87915002",
+        "concat_codes": "87915002",
+        "concat_names": "Married"
+    },
+    "20295000 ": {
+        "ontology": "http://snomed.info/sct",
+        "code": "20295000",
+        "concat_codes": "20295000",
+        "concat_names": "Divorced"
+    },
+    "33553000": {
+        "ontology": "http://snomed.info/sct",
+        "code": "33553000",
+        "concat_codes": "33553000",
+        "concat_names": "Widowed"
+    },
+    "248073004 |Cutting self|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "248073004|Cutting self|",
+        "concat_codes": "248073004",
+        "concat_names": "Cutting self"
+    },
+    "427346002 |Risk prone health behavior|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "427346002|Risk prone health behavior|",
+        "concat_codes": "427346002",
+        "concat_names": "Risk prone health behavior"
+    },
+    "248074005 |Swallowing objects|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "248074005|Swallowing objects|",
+        "concat_codes": "248074005",
+        "concat_names": "Swallowing objects"
+    },
+    "284756003 |Hitting self|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "284756003|Hitting self|",
+        "concat_codes": "284756003",
+        "concat_names": "Hitting self"
+    },
+    "248062006 |Self-injurious behavior| : 410656007 |Type| = 74964007 |Other|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "248062006|Self-injurious behavior|:410656007|Type|=74964007|Other|",
+        "concat_codes": "248062006:410656007=74964007",
+        "concat_names": "Self-injurious behavior:Type=Other"
+    },
+    "224172006 |High household income|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "224172006|High household income|",
+        "concat_codes": "224172006",
+        "concat_names": "High household income"
+    },
+    "224171004 |Moderate household income|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "224171004|Moderate household income|",
+        "concat_codes": "224171004",
+        "concat_names": "Moderate household income"
+    },
+    "224170003 |Low household income|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "224170003|Low household income|",
+        "concat_codes": "224170003",
+        "concat_names": "Low household income"
+    },
+    "372720008 |Antidepressant|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "372720008|Antidepressant|",
+        "concat_codes": "372720008",
+        "concat_names": "Antidepressant"
+    },
+    "372482001 |Anti-psychotic agent|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "372482001|Anti-psychotic agent|",
+        "concat_codes": "372482001",
+        "concat_names": "Anti-psychotic agent"
+    },
+    "373282008 |Anxiolytic agent|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "373282008|Anxiolytic agent|",
+        "concat_codes": "373282008",
+        "concat_names": "Anxiolytic agent"
+    },
+    "373333006 |Stimulant|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "373333006|Stimulant|",
+        "concat_codes": "373333006",
+        "concat_names": "Stimulant"
+    },
+    "170686001 |Psychiatric treatment started| : 410656007 |Type| = 7147002 |New|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "170686001|Psychiatric treatment started|:410656007|Type|=7147002|New|",
+        "concat_codes": "170686001:410656007=7147002",
+        "concat_names": "Psychiatric treatment started:Type=New"
+    },
+    "170686001 |Psychiatric treatment started| : 410656007 |Type| = 422106007 |Add - dosing instruction fragment|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "170686001|Psychiatric treatment started|:410656007|Type|=422106007|Add - dosing instruction fragment|",
+        "concat_codes": "170686001:410656007=422106007",
+        "concat_names": "Psychiatric treatment started:Type=Add"
+    },
+    "170685002 |Psychiatric treatment changed|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "170685002|Psychiatric treatment changed|",
+        "concat_codes": "170685002",
+        "concat_names": "Psychiatric treatment changed"
+    },
+    "8116006 |Phenotype finding| : 278201002 |Classification| = \"Online Mendelian Inheritance in Man\"": {
+        "ontology": "http://snomed.info/sct",
+        "code": "8116006|Phenotype finding|:278201002|Classification|=\"Online Mendelian Inheritance in Man\"",
+        "concat_codes": "8116006:278201002=\"Online Mendelian Inheritance in Man\"",
+        "concat_names": "Phenotype:Classification=\"Online Mendelian Inheritance in Man\""
+    },
+    "405824009 |Genetic test| : 278201002 |Classification| = \"Online Mendelian Inheritance in Man\"": {
+        "ontology": "http://snomed.info/sct",
+        "code": "405824009|Genetic test|:278201002|Classification|=\"Online Mendelian Inheritance in Man\"",
+        "concat_codes": "405824009:278201002=\"Online Mendelian Inheritance in Man\"",
+        "concat_names": "Genetic test:Classification=\"Online Mendelian Inheritance in Man\""
+    },
+    "308469005 |Referral to geneticist| : 278201002 |Classification|= 447634004 |ICD-10 map category value|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "308469005|Referral to geneticist|:278201002|Classification|=447634004|ICD-10 map category value|",
+        "concat_codes": "308469005:278201002=447634004",
+        "concat_names": "Referral to geneticist:Classification=ICD-10 map category value"
+    },
+    "447634004 |ICD-10 map category value|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "447634004|ICD-10 map category value|",
+        "concat_codes": "447634004",
+        "concat_names": "ICD-10 map category value"
+    },
+    "315354004 |Country of birth|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "315354004|Country of birth|",
+        "concat_codes": "315354004",
+        "concat_names": "Country of birth"
+    },
+    "308469005 |Referral to geneticist| : 246454002 |Occurrence|= 397669002 |Age|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "308469005|Referral to geneticist|:246454002|Occurrence|=397669002|Age|",
+        "concat_codes": "308469005:246454002=397669002",
+        "concat_names": "Referral to geneticist:Occurrence=Age"
+    },
+    "365471004 |Finding of details of relatives| : 842009 |Consanguinity|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "365471004|Finding of details of relatives|:842009|Consanguinity|",
+        "concat_codes": "365471004:842009",
+        "concat_names": "Details of relatives:Consanguinity"
+    },
+    "365471004 |Finding of details of relatives| : { 247591002 |Affected| = 782964007 |Genetic disease|}": {
+        "ontology": "http://snomed.info/sct",
+        "code": "365471004|Finding of details of relatives|:{247591002|Affected|=782964007|Genetic disease|}",
+        "concat_codes": "365471004:{247591002=782964007}",
+        "concat_names": "Details of relatives:{Affecting=Genetic disease}"
+    },
+    "156073000 |Complete miscarriage| : 392521001 |History of| = 5054005 |Spontaneous|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "156073000|Complete miscarriage|:392521001|History of|=5054005|Spontaneous|",
+        "concat_codes": "156073000:392521001=5054005",
+        "concat_names": "Complete miscarriage:History of=Spontaneous"
+    },
+    "156073000 |Complete miscarriage| : 246432004 |Number of occurrences| = 5054005 |Spontaneous|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "156073000|Complete miscarriage|:246432004|Number of occurrences|=5054005|Spontaneous|",
+        "concat_codes": "156073000:246432004=5054005",
+        "concat_names": "Complete miscarriage:Number of occurrences=Spontaneous"
+    },
+    "52637005 |Test tube ovum fertilization|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "52637005|Test tube ovum fertilization|",
+        "concat_codes": "52637005",
+        "concat_names": "In vitro fertilization"
+    },
+    "8116006 |Phenotype finding| : 278201002 |Classification| = \"HPO\"": {
+        "ontology": "http://snomed.info/sct",
+        "code": "8116006|Phenotype finding|:278201002|Classification|=\"HPO\"",
+        "concat_codes": "8116006:278201002=\"HPO\"",
+        "concat_names": "Phenotype:Classification=\"HPO\""
+    },
+    "8116006 |Phenotype finding| : 278201002 |Classification| = (\"HPO\", 288467006 |Extended|)": {
+        "ontology": "http://snomed.info/sct",
+        "code": "8116006|Phenotype finding|:278201002|Classification|=(\"HPO\",288467006|Extended|)",
+        "concat_codes": "8116006:278201002=(\"HPO\",288467006)",
+        "concat_names": "Phenotype:Classification=(\"HPO\",Extended)"
+    },
+    "165178003 |Intelligence quotient|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "165178003|Intelligence quotient|",
+        "concat_codes": "165178003",
+        "concat_names": "Intelligence quotient"
+    },
+    "165178003 |Intelligence quotient| : 281296001 |Result comments|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "165178003|Intelligence quotient|:281296001|Result comments|",
+        "concat_codes": "165178003:281296001",
+        "concat_names": "Intelligence quotient:Result comments"
+    },
+    "110359009 |Intellectual disability| : 734841007 |Name (property)| = 370132008 |Scale type|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "110359009|Intellectual disability|:734841007|Name|=370132008|Scale type|",
+        "concat_codes": "110359009:734841007=370132008",
+        "concat_names": "Intellectual disability:Name=Scale type"
+    },
+    "110359009 |Intellectual disability| : 734841007 |Name (property)| = (370132008 |Scale type|, 281296001 |Result comments|)": {
+        "ontology": "http://snomed.info/sct",
+        "code": "110359009|Intellectual disability|:734841007|Name|=(370132008|Scale type|,281296001|Result comments|)",
+        "concat_codes": "110359009:734841007=(370132008,281296001)",
+        "concat_names": "Intellectual disability:Name=(Scale type,Result comments)"
+    },
+    "75934005 |Metabolic disease|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "75934005|Metabolic disease|",
+        "concat_codes": "75934005",
+        "concat_names": "Metabolic disease"
+    },
+    "15220000 |Laboratory test|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "15220000|Laboratory test|",
+        "concat_codes": "15220000",
+        "concat_names": "Laboratory test"
+    },
+    "77477000 |Computed tomography|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "77477000|Computed tomography|",
+        "concat_codes": "77477000",
+        "concat_names": "Computed tomography"
+    },
+    "113091000 |Magnetic resonance imaging|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "113091000|Magnetic resonance imaging|",
+        "concat_codes": "113091000",
+        "concat_names": "Magnetic resonance imaging"
+    },
+    "54550000 |Electroencephalogram|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "54550000|Electroencephalogram|",
+        "concat_codes": "54550000",
+        "concat_names": "Electroencephalogram"
+    },
+    "307835004 |Referral by service|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "307835004|Referral by service|",
+        "concat_codes": "307835004",
+        "concat_names": "Referral by service"
+    },
+    "307294006 |Personal history finding| : 363589002 |Associated procedure| = 312948004 |Karyotype determination|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "307294006|Personal history finding|:363589002|Associated procedure|=312948004|Karyotype determination|",
+        "concat_codes": "307294006:363589002=312948004",
+        "concat_names": "Personal history finding:Associated procedure=Karyotype determination"
+    },
+    "307294006 |Personal history finding| : 363589002 |Associated procedure| = (312948004 |Karyotype determination|, 281296001 |Result comments|)": {
+        "ontology": "http://snomed.info/sct",
+        "code": "307294006|Personal history finding|:363589002|Associated procedure|=(312948004|Karyotype determination|,281296001|Result comments|)",
+        "concat_codes": "307294006:363589002=(312948004,281296001)",
+        "concat_names": "Personal history finding:Associated procedure=(Karyotype determination,Result comments)"
+    },
+    "307294006 |Personal history finding| : 363589002 |Associated procedure| = 434708008 |Tissue cassette for microarray|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "307294006|Personal history finding|:363589002|Associated procedure|=434708008|Tissue cassette for microarray|",
+        "concat_codes": "307294006:363589002=434708008",
+        "concat_names": "Personal history finding:Associated procedure=Tissue cassette for microarray"
+    },
+    "307294006 |Personal history finding| : 363589002 |Associated procedure| = (434708008 |Tissue cassette for microarray|, 115597007 |Description of specimen character|)": {
+        "ontology": "http://snomed.info/sct",
+        "code": "307294006|Personal history finding|:363589002|Associated procedure|=(434708008|Tissue cassette for microarray|,115597007|Description of specimen character|)",
+        "concat_codes": "307294006:363589002=(434708008,115597007)",
+        "concat_names": "Personal history finding:Associated procedure=(Tissue cassette for microarray,Description of specimen character)"
+    },
+    "307294006 |Personal history finding| : 363589002 |Associated procedure| = (434708008 |Tissue cassette for microarray|, 394652007 |Significance values|)": {
+        "ontology": "http://snomed.info/sct",
+        "code": "307294006|Personal history finding|:363589002|Associated procedure|=(434708008|Tissue cassette for microarray|,394652007|Significance values|)",
+        "concat_codes": "307294006:363589002=(434708008,394652007)",
+        "concat_names": "Personal history finding:Associated procedure=(Tissue cassette for microarray,Significance values)"
+    },
+    "307294006 |Personal history finding| : 363589002 |Associated procedure| = (434708008 |Tissue cassette for microarray|, 410656007 |Type|)": {
+        "ontology": "http://snomed.info/sct",
+        "code": "307294006|Personal history finding|:363589002|Associated procedure|=(434708008|Tissue cassette for microarray|,410656007|Type|)",
+        "concat_codes": "307294006:363589002=(434708008,410656007)",
+        "concat_names": "Personal history finding:Associated procedure=(Tissue cassette for microarray,Type)"
+    },
+    "307294006 |Personal history finding| : 363589002 |Associated procedure| = (434708008 |Tissue cassette for microarray|, 410673009 |Region|)": {
+        "ontology": "http://snomed.info/sct",
+        "code": "307294006|Personal history finding|:363589002|Associated procedure|=(434708008|Tissue cassette for microarray|,410673009|Region|)",
+        "concat_codes": "307294006:363589002=(434708008,410673009)",
+        "concat_names": "Personal history finding:Associated procedure=(Tissue cassette for microarray,Region)"
+    },
+    "307294006 |Personal history finding| : 363589002 |Associated procedure| = (434708008 |Tissue cassette for microarray|, 272101001 |Lengths|)": {
+        "ontology": "http://snomed.info/sct",
+        "code": "307294006|Personal history finding|:363589002|Associated procedure|=(434708008|Tissue cassette for microarray|,272101001|Lengths|)",
+        "concat_codes": "307294006:363589002=(434708008,272101001)",
+        "concat_names": "Personal history finding:Associated procedure=(Tissue cassette for microarray,Lengths)"
+    },
+    "307294006 |Personal history finding| : 363589002 |Associated procedure| = (434708008 |Tissue cassette for microarray|, 281296001 |Result comments|)": {
+        "ontology": "http://snomed.info/sct",
+        "code": "307294006|Personal history finding|:363589002|Associated procedure|=(434708008|Tissue cassette for microarray|,281296001|Result comments|)",
+        "concat_codes": "307294006:363589002=(434708008,281296001)",
+        "concat_names": "Personal history finding:Associated procedure=(Tissue cassette for microarray,Result comments)"
+    },
+    "307294006 |Personal history finding| : 363589002 |Associated procedure| = 405824009 |Genetic test|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "307294006|Personal history finding|:363589002|Associated procedure|=405824009|Genetic test|",
+        "concat_codes": "307294006:363589002=405824009",
+        "concat_names": "Personal history finding:Associated procedure=Genetic test"
+    },
+    "307294006 |Personal history finding| : 363589002 |Associated procedure| = ( 405824009 |Genetic test| = 734841007 |Name (property)|)": {
+        "ontology": "http://snomed.info/sct",
+        "code": "307294006|Personal history finding|:363589002|Associated procedure|=(405824009|Genetic test|=734841007|Name|)",
+        "concat_codes": "307294006:363589002=(405824009=734841007)",
+        "concat_names": "Personal history finding:Associated procedure=(Genetic test=Name)"
+    },
+    "307294006 |Personal history finding| : 363589002 |Associated procedure| = ( 405824009 |Genetic test| : 734841007 |Name (property)|, 281296001 |Result comments| )": {
+        "ontology": "http://snomed.info/sct",
+        "code": "307294006|Personal history finding|:363589002|Associated procedure|=(405824009|Genetic test|:734841007|Name|,281296001|Result comments|)",
+        "concat_codes": "307294006:363589002=(405824009:734841007,281296001)",
+        "concat_names": "Personal history finding:Associated procedure=(Genetic test:Name,Result comments)"
+    },
+    "405824009 |Genetic test|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "405824009|Genetic test|",
+        "concat_codes": "405824009",
+        "concat_names": "Genetic test"
+    },
+    "405825005 |Molecular genetic test|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "405825005|Molecular genetic test|",
+        "concat_codes": "405825005",
+        "concat_names": "Molecular genetic test"
+    },
+    "117040002 |Nucleic acid sequencing| : 734841007 |Name (property)|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "117040002|Nucleic acid sequencing|:734841007|Name|",
+        "concat_codes": "117040002:734841007",
+        "concat_names": "Nucleic acid sequencing:Name"
+    },
+    "117040002 |Nucleic acid sequencing| : 734841007 |Name (property)| = 288467006 |Extended|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "117040002|Nucleic acid sequencing|:734841007|Name|=288467006|Extended|",
+        "concat_codes": "117040002:734841007=288467006",
+        "concat_names": "Nucleic acid sequencing:Name=Extended"
+    },
+    "82256003 |Human gene| : 246300000 |Site of lesion| = ( 55446002 |Genetic mutation| : 258734002 |counts| = 255216001 |First| )": {
+        "ontology": "http://snomed.info/sct",
+        "code": "82256003|Human gene|:246300000|Site of lesion|=(55446002|Genetic mutation|:258734002|counts|=255216001|First|)",
+        "concat_codes": "82256003:246300000=(55446002:258734002=255216001)",
+        "concat_names": "Human gene:Site of lesion=(Genetic mutation:counts=First)"
+    },
+    "91272006 |Chromosome| : 246300000 |Site of lesion| = ( 55446002 |Genetic mutation| : 258734002 |counts| = 255216001 |First| )": {
+        "ontology": "http://snomed.info/sct",
+        "code": "91272006|Chromosome|:246300000|Site of lesion|=(55446002|Genetic mutation|:258734002|counts|=255216001|First|)",
+        "concat_codes": "91272006:246300000=(55446002:258734002=255216001)",
+        "concat_names": "Chromosome:Site of lesion=(Genetic mutation:counts=First)"
+    },
+    "246432004 |Number of occurrences| : 246300000 |Site of lesion| = ( 55446002 |Genetic mutation| : 258734002 |counts| = 255216001 |First| )": {
+        "ontology": "http://snomed.info/sct",
+        "code": "246432004|Number of occurrences|:246300000|Site of lesion|=(55446002|Genetic mutation|:258734002|counts|=255216001|First|)",
+        "concat_codes": "246432004:246300000=(55446002:258734002=255216001)",
+        "concat_names": "Number of occurrences:Site of lesion=(Genetic mutation:counts=First)"
+    },
+    "272398008 |Inheritance types| : 246300000 |Site of lesion| = ( 55446002 |Genetic mutation| : 258734002 |counts| = 255216001 |First| )": {
+        "ontology": "http://snomed.info/sct",
+        "code": "272398008|Inheritance types|:246300000|Site of lesion|=(55446002|Genetic mutation|:258734002|counts|=255216001|First|)",
+        "concat_codes": "272398008:246300000=(55446002:258734002=255216001)",
+        "concat_names": "Inheritance types:Site of lesion=(Genetic mutation:counts=First)"
+    },
+    "71239000 |Zygosity determination| : 246300000 |Site of lesion| = ( 55446002 |Genetic mutation| : 258734002 |counts| = 255216001 |First| )": {
+        "ontology": "http://snomed.info/sct",
+        "code": "71239000|Zygosity determination|:246300000|Site of lesion|=(55446002|Genetic mutation|:258734002|counts|=255216001|First|)",
+        "concat_codes": "71239000:246300000=(55446002:258734002=255216001)",
+        "concat_names": "Zygosity determination:Site of lesion=(Genetic mutation:counts=First)"
+    },
+    "10589004 |Genetic transcription| : 246300000 |Site of lesion| = ( 55446002 |Genetic mutation| : 258734002 |counts| = 255216001 |First| )": {
+        "ontology": "http://snomed.info/sct",
+        "code": "10589004|Genetic transcription|:246300000|Site of lesion|=(55446002|Genetic mutation|:258734002|counts|=255216001|First|)",
+        "concat_codes": "10589004:246300000=(55446002:258734002=255216001)",
+        "concat_names": "Genetic transcription:Site of lesion=(Genetic mutation:counts=First)"
+    },
+    "82256003 |Human gene| : 246300000 |Site of lesion| = 2603003 |Secondary|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "82256003|Human gene|:246300000|Site of lesion|=2603003|Secondary|",
+        "concat_codes": "82256003:246300000=2603003",
+        "concat_names": "Human gene:Site of lesion=Secondary"
+    },
+    "82256003 |Human gene| : 246300000 |Site of lesion| = ( 55446002 |Genetic mutation| : 258734002 |counts| = 81170007 |Second| )": {
+        "ontology": "http://snomed.info/sct",
+        "code": "82256003|Human gene|:246300000|Site of lesion|=(55446002|Genetic mutation|:258734002|counts|=81170007|Second|)",
+        "concat_codes": "82256003:246300000=(55446002:258734002=81170007)",
+        "concat_names": "Human gene:Site of lesion=(Genetic mutation:counts=Second)"
+    },
+    "91272006 |Chromosome| : 246300000 |Site of lesion| = ( 55446002 |Genetic mutation| : 258734002 |counts| = 81170007 |Second| )": {
+        "ontology": "http://snomed.info/sct",
+        "code": "91272006|Chromosome|:246300000|Site of lesion|=(55446002|Genetic mutation|:258734002|counts|=81170007|Second|)",
+        "concat_codes": "91272006:246300000=(55446002:258734002=81170007)",
+        "concat_names": "Chromosome:Site of lesion=(Genetic mutation:counts=Second)"
+    },
+    "246432004 |Number of occurrences| : 246300000 |Site of lesion| = ( 55446002 |Genetic mutation| : 258734002 |counts| = 81170007 |Second| )": {
+        "ontology": "http://snomed.info/sct",
+        "code": "246432004|Number of occurrences|:246300000|Site of lesion|=(55446002|Genetic mutation|:258734002|counts|=81170007|Second|)",
+        "concat_codes": "246432004:246300000=(55446002:258734002=81170007)",
+        "concat_names": "Number of occurrences:Site of lesion=(Genetic mutation:counts=Second)"
+    },
+    "272398008 |Inheritance types| : 246300000 |Site of lesion| = ( 55446002 |Genetic mutation| : 258734002 |counts| = 81170007 |Second| )": {
+        "ontology": "http://snomed.info/sct",
+        "code": "272398008|Inheritance types|:246300000|Site of lesion|=(55446002|Genetic mutation|:258734002|counts|=81170007|Second|)",
+        "concat_codes": "272398008:246300000=(55446002:258734002=81170007)",
+        "concat_names": "Inheritance types:Site of lesion=(Genetic mutation:counts=Second)"
+    },
+    "71239000 |Zygosity determination| : 246300000 |Site of lesion| = ( 55446002 |Genetic mutation| : 258734002 |counts| = 81170007 |Second| )": {
+        "ontology": "http://snomed.info/sct",
+        "code": "71239000|Zygosity determination|:246300000|Site of lesion|=(55446002|Genetic mutation|:258734002|counts|=81170007|Second|)",
+        "concat_codes": "71239000:246300000=(55446002:258734002=81170007)",
+        "concat_names": "Zygosity determination:Site of lesion=(Genetic mutation:counts=Second)"
+    },
+    "10589004 |Genetic transcription| : 246300000 |Site of lesion| = ( 55446002 |Genetic mutation| : 258734002 |counts| = 81170007 |Second| )": {
+        "ontology": "http://snomed.info/sct",
+        "code": "10589004|Genetic transcription|:246300000|Site of lesion|=(55446002|Genetic mutation|:258734002|counts|=81170007|Second|)",
+        "concat_codes": "10589004:246300000=(55446002:258734002=81170007)",
+        "concat_names": "Genetic transcription:Site of lesion=(Genetic mutation:counts=Second)"
+    },
+    "276238005 |Comments on own writing|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "276238005|Comments on own writing|",
+        "concat_codes": "276238005",
+        "concat_names": "Comments on own writing"
+    },
+    "385432009": {
+        "ontology": "http://snomed.info/sct",
+        "code": "385432009",
+        "concat_codes": "385432009",
+        "concat_names": "Not applicable"
+    },
+    "103328004:308539001": {
+        "ontology": "http://snomed.info/sct",
+        "code": "103328004:308539001",
+        "concat_codes": "103328004:308539001",
+        "concat_names": "Availability of:Request procedure"
+    },
+    "412731001": {
+        "ontology": "http://snomed.info/sct",
+        "code": "412731001",
+        "concat_codes": "412731001",
+        "concat_names": "Genetic finding detected"
+    },
+    "412730000": {
+        "ontology": "http://snomed.info/sct",
+        "code": "412730000",
+        "concat_codes": "412730000",
+        "concat_names": "Genetic finding not detected"
+    },
+    "106221001:442754001": {
+        "ontology": "http://snomed.info/sct",
+        "code": "106221001:442754001",
+        "concat_codes": "106221001:442754001",
+        "concat_names": "Genetic finding:Inconclusive evaluation finding"
+    },
+    "246114006 |Gene deletion|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "246114006|Gene deletion|",
+        "concat_codes": "246114006",
+        "concat_names": "Gene deletion"
+    },
+    "471282000 |Chromosome microdeletion|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "471282000|Chromosome microdeletion|",
+        "concat_codes": "471282000",
+        "concat_names": "Chromosome microdeletion"
+    },
+    "205728002 |Duplication of chromosome|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "205728002|Duplication of chromosome|",
+        "concat_codes": "205728002",
+        "concat_names": "Duplication of chromosome"
+    },
+    "444124004": {
+        "ontology": "http://snomed.info/sct",
+        "code": "444124004",
+        "concat_codes": "444124004",
+        "concat_names": "Sequencing of exon of gene"
+    },
+    "443968007": {
+        "ontology": "http://snomed.info/sct",
+        "code": "443968007",
+        "concat_codes": "443968007",
+        "concat_names": "Sequencing of entire coding region of gene"
+    },
+    "461571000124105": {
+        "ontology": "http://snomed.info/sct",
+        "code": "461571000124105",
+        "concat_codes": "461571000124105",
+        "concat_names": "Whole genome sequencing"
+    },
+    "263934009 |X-linked inheritance| : 272398008 |Inheritance types| = 272399000 |Dominant types|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "263934009|X-linked inheritance|:272398008|Inheritance types|=272399000|Dominant types|",
+        "concat_codes": "263934009:272398008=272399000",
+        "concat_names": "X-linked inheritance:Inheritance types=Dominant types"
+    },
+    "263934009 |X-linked inheritance| : 272398008 |Inheritance types| = 272400007 |Recessive types|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "263934009|X-linked inheritance|:272398008|Inheritance types|=272400007|Recessive types|",
+        "concat_codes": "263934009:272398008=272400007",
+        "concat_names": "X-linked inheritance:Inheritance types=Recessive types"
+    },
+    "430934002": {
+        "ontology": "http://snomed.info/sct",
+        "code": "430934002",
+        "concat_codes": "430934002",
+        "concat_names": "Mitochondrial mutation"
+    },
+    "56879003 |Genetic independent segregation| : 272398008 |Inheritance types| = 7147002 |New|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "56879003|Genetic independent segregation|:272398008|Inheritance types|=7147002|New|",
+        "concat_codes": "56879003:272398008=7147002",
+        "concat_names": "Genetic independent segregation:Inheritance types=New"
+    },
+    "56879003 |Genetic independent segregation| : 272398008 |Inheritance types| = 1269485005 |Maternal|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "56879003|Genetic independent segregation|:272398008|Inheritance types|=1269485005|Maternal|",
+        "concat_codes": "56879003:272398008=1269485005",
+        "concat_names": "Genetic independent segregation:Inheritance types=Maternal"
+    },
+    "56879003 |Genetic independent segregation| : 272398008 |Inheritance types| = 224944003 |Paternal|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "56879003|Genetic independent segregation|:272398008|Inheritance types|=224944003|Paternal|",
+        "concat_codes": "56879003:272398008=224944003",
+        "concat_names": "Genetic independent segregation:Inheritance types=Paternal"
+    },
+    "53062-6": {
+        "ontology": "http://loinc.org",
+        "code": "53062-6",
+        "concat_codes": "53062-6",
+        "concat_names": "Argininosuccinate"
+    },
+    "53150-9": {
+        "ontology": "http://loinc.org",
+        "code": "53150-9",
+        "concat_codes": "53150-9",
+        "concat_names": "Alanine+Beta Alanine+Sarcosine"
+    },
+    "9109004 |Genetic alleles| : 734841007 |Name (property)| = 255216001 |First|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "9109004|Genetic alleles|:734841007|Name|=255216001|First|",
+        "concat_codes": "9109004:734841007=255216001",
+        "concat_names": "Genetic alleles:Name=First"
+    },
+    "9109004 |Genetic alleles| : 734841007 |Name (property)| = 81170007 |Second|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "9109004|Genetic alleles|:734841007|Name|=81170007|Second|",
+        "concat_codes": "9109004:734841007=81170007",
+        "concat_names": "Genetic alleles:Name=Second"
+    },
+    "47562-4": {
+        "ontology": "http://loinc.org",
+        "code": "47562-4",
+        "concat_codes": "47562-4",
+        "concat_names": "Arginine"
+    },
+    "42892-0": {
+        "ontology": "http://loinc.org",
+        "code": "42892-0",
+        "concat_codes": "42892-0",
+        "concat_names": "Citrulline"
+    },
+    "47623-4": {
+        "ontology": "http://loinc.org",
+        "code": "47623-4",
+        "concat_codes": "47623-4",
+        "concat_names": "Glutamate"
+    },
+    "47633-3": {
+        "ontology": "http://loinc.org",
+        "code": "47633-3",
+        "concat_codes": "47633-3",
+        "concat_names": "Glycine"
+    },
+    "53152-5": {
+        "ontology": "http://loinc.org",
+        "code": "53152-5",
+        "concat_codes": "53152-5",
+        "concat_names": "Alloisoleucine+Isoleucine+Leucine+Hydroxyproline"
+    },
+    "47700-0": {
+        "ontology": "http://loinc.org",
+        "code": "47700-0",
+        "concat_codes": "47700-0",
+        "concat_names": "Methionine"
+    },
+    "53155-8": {
+        "ontology": "http://loinc.org",
+        "code": "53155-8",
+        "concat_codes": "53155-8",
+        "concat_names": "Asparagine+Ornithine"
+    },
+    "29573-3": {
+        "ontology": "http://loinc.org",
+        "code": "29573-3",
+        "concat_codes": "29573-3",
+        "concat_names": "Phenylalanine"
+    },
+    "47732-3": {
+        "ontology": "http://loinc.org",
+        "code": "47732-3",
+        "concat_codes": "47732-3",
+        "concat_names": "Proline"
+    },
+    "35571-9": {
+        "ontology": "http://loinc.org",
+        "code": "35571-9",
+        "concat_codes": "35571-9",
+        "concat_names": "Tyrosine"
+    },
+    "47799-2": {
+        "ontology": "http://loinc.org",
+        "code": "47799-2",
+        "concat_codes": "47799-2",
+        "concat_names": "Valine"
+    },
+    "1982-8": {
+        "ontology": "http://loinc.org",
+        "code": "1982-8",
+        "concat_codes": "1982-8",
+        "concat_names": "Biotinidase"
+    },
+    "38481-8": {
+        "ontology": "http://loinc.org",
+        "code": "38481-8",
+        "concat_codes": "38481-8",
+        "concat_names": "Carnitine.free C0"
+    },
+    "50157-7": {
+        "ontology": "http://loinc.org",
+        "code": "50157-7",
+        "concat_codes": "50157-7",
+        "concat_names": "Acetylcarnitine C2"
+    },
+    "53160-8": {
+        "ontology": "http://loinc.org",
+        "code": "53160-8",
+        "concat_codes": "53160-8",
+        "concat_names": "Propionylcarnitine C3"
+    },
+    "67708-8": {
+        "ontology": "http://loinc.org",
+        "code": "67708-8",
+        "concat_codes": "67708-8",
+        "concat_names": "Malonylcarnitine C3-DC+3-Hydroxybutyrylcarnitine C4-OH"
+    },
+    "53166-5": {
+        "ontology": "http://loinc.org",
+        "code": "53166-5",
+        "concat_codes": "53166-5",
+        "concat_names": "Butyrylcarnitine+Isobutyrylcarnitine C4"
+    },
+    "67709-6": {
+        "ontology": "http://loinc.org",
+        "code": "67709-6",
+        "concat_codes": "67709-6",
+        "concat_names": "Methylmalonylcarnitine C4-DC+3-Hydroxyisovalerylcarnitine C5-OH"
+    },
+    "45216-9": {
+        "ontology": "http://loinc.org",
+        "code": "45216-9",
+        "concat_codes": "45216-9",
+        "concat_names": "Isovalerylcarnitine+Methylbutyrylcarnitine C5"
+    },
+    "53170-7": {
+        "ontology": "http://loinc.org",
+        "code": "53170-7",
+        "concat_codes": "53170-7",
+        "concat_names": "Tiglylcarnitine C51"
+    },
+    "67710-4": {
+        "ontology": "http://loinc.org",
+        "code": "67710-4",
+        "concat_codes": "67710-4",
+        "concat_names": "Glutarylcarnitine C5-DC+3-Hydroxyhexanoylcarnitine C6-OH"
+    },
+    "45211-0": {
+        "ontology": "http://loinc.org",
+        "code": "45211-0",
+        "concat_codes": "45211-0",
+        "concat_names": "Hexanoylcarnitine C6"
+    },
+    "53187-1": {
+        "ontology": "http://loinc.org",
+        "code": "53187-1",
+        "concat_codes": "53187-1",
+        "concat_names": "Methylglutarylcarnitine C6-DC"
+    },
+    "53175-6": {
+        "ontology": "http://loinc.org",
+        "code": "53175-6",
+        "concat_codes": "53175-6",
+        "concat_names": "Octanoylcarnitine C8"
+    },
+    "53174-9": {
+        "ontology": "http://loinc.org",
+        "code": "53174-9",
+        "concat_codes": "53174-9",
+        "concat_names": "Octenoylcarnitine C81"
+    },
+    "45197-1": {
+        "ontology": "http://loinc.org",
+        "code": "45197-1",
+        "concat_codes": "45197-1",
+        "concat_names": "Decanoylcarnitine C10"
+    },
+    "45198-9": {
+        "ontology": "http://loinc.org",
+        "code": "45198-9",
+        "concat_codes": "45198-9",
+        "concat_names": "Decenoylcarnitine C101"
+    },
+    "53180-6": {
+        "ontology": "http://loinc.org",
+        "code": "53180-6",
+        "concat_codes": "53180-6",
+        "concat_names": "Decadienoylcarnitine C102"
+    },
+    "45199-7": {
+        "ontology": "http://loinc.org",
+        "code": "45199-7",
+        "concat_codes": "45199-7",
+        "concat_names": "Dodecanoylcarnitine C12"
+    },
+    "45200-3": {
+        "ontology": "http://loinc.org",
+        "code": "45200-3",
+        "concat_codes": "45200-3",
+        "concat_names": "Dodecenoylcarnitine C121"
+    },
+    "53192-1": {
+        "ontology": "http://loinc.org",
+        "code": "53192-1",
+        "concat_codes": "53192-1",
+        "concat_names": "Tetradecanoylcarnitine C14"
+    },
+    "53191-3": {
+        "ontology": "http://loinc.org",
+        "code": "53191-3",
+        "concat_codes": "53191-3",
+        "concat_names": "Tetradecenoylcarnitine C141"
+    },
+    "53190-5": {
+        "ontology": "http://loinc.org",
+        "code": "53190-5",
+        "concat_codes": "53190-5",
+        "concat_names": "Tetradecadienoylcarnitine C142"
+    },
+    "50281-5": {
+        "ontology": "http://loinc.org",
+        "code": "50281-5",
+        "concat_codes": "50281-5",
+        "concat_names": "3-Hydroxytetradecanoylcarnitine C14-OH"
+    },
+    "53199-6": {
+        "ontology": "http://loinc.org",
+        "code": "53199-6",
+        "concat_codes": "53199-6",
+        "concat_names": "Palmitoylcarnitine C16"
+    },
+    "53198-8": {
+        "ontology": "http://loinc.org",
+        "code": "53198-8",
+        "concat_codes": "53198-8",
+        "concat_names": "Palmitoleylcarnitine C161"
+    },
+    "50121-3": {
+        "ontology": "http://loinc.org",
+        "code": "50121-3",
+        "concat_codes": "50121-3",
+        "concat_names": "3-Hydroxypalmitoleylcarnitine C161-OH"
+    },
+    "50125-4": {
+        "ontology": "http://loinc.org",
+        "code": "50125-4",
+        "concat_codes": "50125-4",
+        "concat_names": "3-Hydroxypalmitoylcarnitine C16-OH"
+    },
+    "53241-6": {
+        "ontology": "http://loinc.org",
+        "code": "53241-6",
+        "concat_codes": "53241-6",
+        "concat_names": "Stearoylcarnitine C18"
+    },
+    "53202-8": {
+        "ontology": "http://loinc.org",
+        "code": "53202-8",
+        "concat_codes": "53202-8",
+        "concat_names": "Oleoylcarnitine C181"
+    },
+    "45217-7": {
+        "ontology": "http://loinc.org",
+        "code": "45217-7",
+        "concat_codes": "45217-7",
+        "concat_names": "Linoleoylcarnitine C182"
+    },
+    "50132-0": {
+        "ontology": "http://loinc.org",
+        "code": "50132-0",
+        "concat_codes": "50132-0",
+        "concat_names": "3-Hydroxystearoylcarnitine C18-OH"
+    },
+    "50113-0": {
+        "ontology": "http://loinc.org",
+        "code": "50113-0",
+        "concat_codes": "50113-0",
+        "concat_names": "3-Hydroxyoleoylcarnitine C181-OH"
+    },
+    "50109-8": {
+        "ontology": "http://loinc.org",
+        "code": "50109-8",
+        "concat_codes": "50109-8",
+        "concat_names": "3-Hydroxylinoleoylcarnitine C182-OH"
+    },
+    "53462-8": {
+        "ontology": "http://loinc.org",
+        "code": "53462-8",
+        "concat_codes": "53462-8",
+        "concat_names": "Eicosanoylcarnitine C20"
+    },
+    "53543-5": {
+        "ontology": "http://loinc.org",
+        "code": "53543-5",
+        "concat_codes": "53543-5",
+        "concat_names": "Dodeicosanoylcarnitine C22"
+    },
+    "56879003 |Genetic independent segregation| : 410657003 |Type| = {10589004 |Genetic transcription| : 258214002 |Stage| = 70016006 |Complementary deoxyribonucleic acid|, 277734003 |Level 2| : |counts| = 255216001 |First|, 55446002 |Genetic mutation| : 258734002 |counts| = 81170007 |Second|}": {
+        "ontology": "http://snomed.info/sct",
+        "code": "56879003|Genetic independent segregation|:410657003|Type|={10589004|Genetic transcription|:258214002|Stage|=70016006|Complementary deoxyribonucleic acid|,277734003|Level 2|:|counts|=255216001|First|,55446002|Genetic mutation|:258734002|counts|=81170007|Second|}",
+        "concat_codes": "56879003:410657003={10589004:258214002=70016006,277734003:=255216001,55446002:258734002=81170007}",
+        "concat_names": "Genetic independent segregation:Type={Genetic transcription:Stage=Complementary DNA,Level 2:=First,Genetic mutation:counts=Second}"
+    },
+    "56879003 |Genetic independent segregation| : 410657003 |Type| = {10589004 |Genetic transcription| : 258214002 |Stage| = 70016006 |Complementary deoxyribonucleic acid|, 277734003 |Level 2| : |counts| = 81170007 |Second|, 55446002 |Genetic mutation| : 258734002 |counts| = 81170007 |Second|}": {
+        "ontology": "http://snomed.info/sct",
+        "code": "56879003|Genetic independent segregation|:410657003|Type|={10589004|Genetic transcription|:258214002|Stage|=70016006|Complementary deoxyribonucleic acid|,277734003|Level 2|:|counts|=81170007|Second|,55446002|Genetic mutation|:258734002|counts|=81170007|Second|}",
+        "concat_codes": "56879003:410657003={10589004:258214002=70016006,277734003:=81170007,55446002:258734002=81170007}",
+        "concat_names": "Genetic independent segregation:Type={Genetic transcription:Stage=Complementary DNA,Level 2:=Second,Genetic mutation:counts=Second}"
+    },
+    "79321-6": {
+        "ontology": "http://loinc.org",
+        "code": "79321-6",
+        "concat_codes": "79321-6",
+        "concat_names": "Lysophosphatidylcholine260"
+    },
+    "53231-7": {
+        "ontology": "http://loinc.org",
+        "code": "53231-7",
+        "concat_codes": "53231-7",
+        "concat_names": "Succinylacetone"
+    },
+    "29575-8": {
+        "ontology": "http://loinc.org",
+        "code": "29575-8",
+        "concat_codes": "29575-8",
+        "concat_names": "Thyrotropin"
+    },
+    "48633-2": {
+        "ontology": "http://loinc.org",
+        "code": "48633-2",
+        "concat_codes": "48633-2",
+        "concat_names": "Trypsinogen I.free"
+    },
+    "54084-9": {
+        "ontology": "http://loinc.org",
+        "code": "54084-9",
+        "concat_codes": "54084-9",
+        "concat_names": "Galactose"
+    },
+    "82385-6": {
+        "ontology": "http://loinc.org",
+        "code": "82385-6",
+        "concat_codes": "82385-6",
+        "concat_names": "Methylmalonate"
+    },
+    "2265-7": {
+        "ontology": "http://loinc.org",
+        "code": "2265-7",
+        "concat_codes": "2265-7",
+        "concat_names": "Ethylmalonate"
+    },
+    "25104-1": {
+        "ontology": "http://loinc.org",
+        "code": "25104-1",
+        "concat_codes": "25104-1",
+        "concat_names": "Glutarate/Creatinine"
+    },
+    "75037-2": {
+        "ontology": "http://loinc.org",
+        "code": "75037-2",
+        "concat_codes": "75037-2",
+        "concat_names": "2-Hydroxyglutarate"
+    },
+    "54301-7": {
+        "ontology": "http://loinc.org",
+        "code": "54301-7",
+        "concat_codes": "54301-7",
+        "concat_names": "Homocysteine"
+    },
+    "47536-8": {
+        "ontology": "http://loinc.org",
+        "code": "47536-8",
+        "concat_codes": "47536-8",
+        "concat_names": "3-Hydroxypropionate"
+    },
+    "26904-3": {
+        "ontology": "http://loinc.org",
+        "code": "26904-3",
+        "concat_codes": "26904-3",
+        "concat_names": "2-Methylcitrate"
+    },
+    "13963-4": {
+        "ontology": "http://loinc.org",
+        "code": "13963-4",
+        "concat_codes": "13963-4",
+        "concat_names": "Orotate"
+    },
+    "126894": {
+        "ontology": "https://pubchem.ncbi.nlm.nih.gov",
+        "code": "126894",
+        "concat_codes": "126894",
+        "concat_names": "Pivaloylcarnitine"
+    },
+    "30531-8": {
+        "ontology": "http://loinc.org",
+        "code": "30531-8",
+        "concat_codes": "30531-8",
+        "concat_names": "Isovalerylcarnitine+Methylbutyrylcarnitine C5"
+    },
+    "53065-9": {
+        "ontology": "http://loinc.org",
+        "code": "53065-9",
+        "concat_codes": "53065-9",
+        "concat_names": "Butyrylcarnitine C4"
+    },
+    "45213-6": {
+        "ontology": "http://loinc.org",
+        "code": "45213-6",
+        "concat_codes": "45213-6",
+        "concat_names": "Isobutyrylcarnitine C4"
+    },
+    "21112-8": {
+        "ontology": "http://loinc.org",
+        "code": "21112-8",
+        "concat_codes": "21112-8",
+        "concat_names": "Birth date"
+    },
+    "46098-0": {
+        "ontology": "http://loinc.org",
+        "code": "46098-0",
+        "concat_codes": "46098-0",
+        "concat_names": "Sex"
+    },
+    "68997-6": {
+        "ontology": "http://loinc.org",
+        "code": "68997-6",
+        "concat_codes": "68997-6",
+        "concat_names": "City"
+    },
+    "79566-6": {
+        "ontology": "http://loinc.org",
+        "code": "79566-6",
+        "concat_codes": "79566-6",
+        "concat_names": "Collection method"
+    },
+    "49051-6": {
+        "ontology": "http://loinc.org",
+        "code": "49051-6",
+        "concat_codes": "49051-6",
+        "concat_names": "Gestational age in W"
+    },
+    "46463-6": {
+        "ontology": "http://loinc.org",
+        "code": "46463-6",
+        "concat_codes": "46463-6",
+        "concat_names": "Race or ethnicity"
+    },
+    "57723-9": {
+        "ontology": "http://loinc.org",
+        "code": "57723-9",
+        "concat_codes": "57723-9",
+        "concat_names": "Unique bar code number"
+    },
+    "57718-9": {
+        "ontology": "http://loinc.org",
+        "code": "57718-9",
+        "concat_codes": "57718-9",
+        "concat_names": "Sample condition"
+    },
+    "51953-8": {
+        "ontology": "http://loinc.org",
+        "code": "51953-8",
+        "concat_codes": "51953-8",
+        "concat_names": "Collection date"
+    },
+    "63572-2": {
+        "ontology": "http://loinc.org",
+        "code": "63572-2",
+        "concat_codes": "63572-2",
+        "concat_names": "Time received in laboratory"
+    },
+    "56056-5": {
+        "ontology": "http://loinc.org",
+        "code": "56056-5",
+        "concat_codes": "56056-5",
+        "concat_names": "Body weight^at birth"
+    },
+    "371070000 |Empirical antibiotic therapy|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "371070000|Empirical antibiotic therapy|",
+        "concat_codes": "371070000",
+        "concat_names": "Empirical antibiotic therapy"
+    },
+    "68322007 |Administration of antibiotic|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "68322007|Administration of antibiotic|",
+        "concat_codes": "68322007",
+        "concat_names": "Administration of antibiotic"
+    },
+    "206523001 |Meconium ileus|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "206523001|Meconium ileus|",
+        "concat_codes": "206523001",
+        "concat_names": "Meconium ileus"
+    },
+    "18629005 |Administration of drug or medicament| : {127489000 |has active ingredient| = 778872007 |Product containing only cortisone in parenteral dose form|, 116154003 |Patient| : 67822003 |Child|}": {
+        "ontology": "http://snomed.info/sct",
+        "code": "18629005|Administration of drug or medicament|:{127489000|has active ingredient|=778872007|Product containing only cortisone in parenteral dose form|,116154003|Patient|:67822003|Child|}",
+        "concat_codes": "18629005:{127489000=778872007,116154003:67822003}",
+        "concat_names": "Administration of medication:{Has active ingredient=Cortisone only product in parenteral dose form,Patient:Child}"
+    },
+    "18629005 |Administration of drug or medicament| : {127489000 |has active ingredient| = 778872007 |Product containing only cortisone in parenteral dose form|, 116154003 |Patient| :72705000 |Mother|}": {
+        "ontology": "http://snomed.info/sct",
+        "code": "18629005|Administration of drug or medicament|:{127489000|has active ingredient|=778872007|Product containing only cortisone in parenteral dose form|,116154003|Patient|:72705000|Mother|}",
+        "concat_codes": "18629005:{127489000=778872007,116154003:72705000}",
+        "concat_names": "Administration of medication:{Has active ingredient=Cortisone only product in parenteral dose form,Patient:Mother}"
+    },
+    "14304000 |Disorder of thyroid gland| : 116154003 |Patient| = 72705000 |Mother|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "14304000|Disorder of thyroid gland|:116154003|Patient|=72705000|Mother|",
+        "concat_codes": "14304000:116154003=72705000",
+        "concat_names": "Disorder of thyroid gland:Patient=Mother"
+    },
+    "367494004 |Premature birth of newborn|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "367494004|Premature birth of newborn|",
+        "concat_codes": "367494004",
+        "concat_names": "Premature birth of newborn"
+    },
+    "230126006 |Finding relating to infant feeding|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "230126006|Finding relating to infant feeding|",
+        "concat_codes": "230126006",
+        "concat_names": "Finding relating to infant feeding"
+    },
+    "289136006 |Finding of eating pattern| : 116154003 |Patient| = 72705000 |Mother|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "289136006|Finding of eating pattern|:116154003|Patient|=72705000|Mother|",
+        "concat_codes": "289136006:116154003=72705000",
+        "concat_names": "Finding of eating pattern:Patient=Mother"
+    },
+    "225525008 |Eating finding| : 116154003 |Patient| = 72705000 |Mother|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "225525008|Eating finding|:116154003|Patient|=72705000|Mother|",
+        "concat_codes": "225525008:116154003=72705000",
+        "concat_names": "Eating finding:Patient=Mother"
+    },
+    "61420007 |Tube feeding of patient|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "61420007|Tube feeding of patient|",
+        "concat_codes": "61420007",
+        "concat_names": "Tube feeding of patient"
+    },
+    "1217194002 |Prescription of parenteral nutrition feeding|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "1217194002|Prescription of parenteral nutrition feeding|",
+        "concat_codes": "1217194002",
+        "concat_names": "Prescription of parenteral nutrition feeding"
+    },
+    "1217195001 |Prescription of enteral nutrition feeding|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "1217195001|Prescription of enteral nutrition feeding|",
+        "concat_codes": "1217195001",
+        "concat_names": "Prescription of enteral nutrition feeding"
+    },
+    "1217194002 |Prescription of parenteral nutrition feeding| : 127489000 |has active ingredient|= 59888006 |Carnitine|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "1217194002|Prescription of parenteral nutrition feeding|:127489000|has active ingredient|=59888006|Carnitine|",
+        "concat_codes": "1217194002:127489000=59888006",
+        "concat_names": "Prescription of parenteral nutrition feeding:Has active ingredient=Carnitine"
+    },
+    "1217194002 |Prescription of parenteral nutrition feeding| : 127489000 |has active ingredient|= 7631003 |Infant formula with medium chain triglycerides|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "1217194002|Prescription of parenteral nutrition feeding|:127489000|has active ingredient|=7631003|Infant formula with medium chain triglycerides|",
+        "concat_codes": "1217194002:127489000=7631003",
+        "concat_names": "Prescription of parenteral nutrition feeding:Has active ingredient=Infant formula with medium chain triglycerides"
+    },
+    "62330-6": {
+        "ontology": "http://loinc.org",
+        "code": "62330-6",
+        "concat_codes": "62330-6",
+        "concat_names": "Birth hospital facility name"
+    },
+    "236973005 |Delivery procedure|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "236973005|Delivery procedure|",
+        "concat_codes": "236973005",
+        "concat_names": "Delivery procedure"
+    },
+    "28030000 |Twin birth|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "28030000|Twin birth|",
+        "concat_codes": "28030000",
+        "concat_names": "Twin birth"
+    },
+    "71978007": {
+        "ontology": "http://snomed.info/sct",
+        "code": "71978007",
+        "concat_codes": "71978007",
+        "concat_names": "Inadequate"
+    },
+    "423437008": {
+        "ontology": "http://snomed.info/sct",
+        "code": "423437008",
+        "concat_codes": "423437008",
+        "concat_names": "Insufficient"
+    },
+    "88323005": {
+        "ontology": "http://snomed.info/sct",
+        "code": "88323005",
+        "concat_codes": "88323005",
+        "concat_names": "Adequate"
+    },
+    "386637004": {
+        "ontology": "http://snomed.info/sct",
+        "code": "386637004",
+        "concat_codes": "386637004",
+        "concat_names": "Obstetric procedure"
+    },
+    "11466000": {
+        "ontology": "http://snomed.info/sct",
+        "code": "11466000",
+        "concat_codes": "11466000",
+        "concat_names": "Cesarean section"
+    },
+    "236991000": {
+        "ontology": "http://snomed.info/sct",
+        "code": "236991000",
+        "concat_codes": "236991000",
+        "concat_names": "Operation to facilitate delivery"
+    },
+    "6769007 |Attention function| + 106136008 |Memory finding|": {
+        "ontology": "http://snomed.info/sct",
+        "code": "6769007|Attention function|+106136008|Memory finding|",
+        "concat_codes": "6769007+106136008",
+        "concat_names": "Attention+Memory finding"
+    },
+    "56879003 |Genetic independent segregation| : 410657003 |Type| = {10589004 |Genetic transcription| : 258214002 |Stage| = 70016006 |Complementary deoxyribonucleic acid|, 277733009 |Level 1| : |counts| = 255216001 |First|, 55446002 |Genetic mutation| : 258734002 |counts| = 255216001 |First|}": {
+        "ontology": "http://snomed.info/sct",
+        "code": "56879003|Genetic independent segregation|:410657003|Type|={10589004|Genetic transcription|:258214002|Stage|=70016006|Complementary deoxyribonucleic acid|,277733009|Level 1|:|counts|=255216001|First|,55446002|Genetic mutation|:258734002|counts|=255216001|First|}",
+        "concat_codes": "56879003:410657003={10589004:258214002=70016006,277733009:=255216001,55446002:258734002=255216001}",
+        "concat_names": "Genetic independent segregation:Type={Genetic transcription:Stage=Complementary DNA,Level 1:=First,Genetic mutation:counts=First}"
+    }
+}

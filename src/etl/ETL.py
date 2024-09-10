@@ -7,7 +7,7 @@ from etl.Extract import Extract
 from etl.Load import Load
 from etl.Reporting import Reporting
 from etl.Transform import Transform
-from utils.constants import DATASET_LOCALES
+from constants.locales import DATASET_LOCALES
 from utils.setup_logger import log
 
 

@@ -2,10 +2,10 @@ from datetime import datetime
 
 import jsonpickle
 
+from constants.idColumns import NO_ID
 from datatypes.PatientAnonymizedIdentifier import PatientAnonymizedIdentifier
 from datatypes.ResourceIdentifier import ResourceIdentifier
 from enums.TableNames import TableNames
-from utils import constants
 from utils.Counter import Counter
 from utils.utils import get_mongodb_date_from_datetime, is_not_nan
 
@@ -18,7 +18,7 @@ class Resource:
         :param resource_type:
         """
         self.identifier = None
-        if id_value == constants.NO_ID:
+        if id_value == NO_ID:
             # we are creating a new instance, we assign it a new ID
             # for Sample data only, we expect to have an ID assigned by the hospital, thus it cannot be NO_ID
             if resource_type == TableNames.SAMPLE:
@@ -33,7 +33,7 @@ class Resource:
         # create the right Identifier based on the resource type:
         if resource_type == TableNames.PATIENT:
             # we use anonymized patient id
-            if id_value == constants.NO_ID:
+            if id_value == NO_ID:
                 # we are creating a new Patient anonymized ID
                 self.identifier = PatientAnonymizedIdentifier(id_value=id_to_use, hospital_name=hospital_name)
             else:

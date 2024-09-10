@@ -10,13 +10,12 @@ from database.Execution import Execution
 from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Coding import Coding
 from datatypes.Identifier import Identifier
-from datatypes.OntologyCode import OntologyCode
+from datatypes.OntologyResource import OntologyResource
 from enums.DataTypes import DataTypes
 from enums.FileTypes import FileTypes
 from enums.LabFeatureCategories import LabFeatureCategories
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
-from enums.PhenotypicColumns import PhenotypicColumns
 from enums.SampleColumns import SampleColumns
 from enums.TableNames import TableNames
 from enums.TrueFalse import TrueFalse
@@ -29,7 +28,8 @@ from profiles.LaboratoryRecord import LaboratoryRecord
 from profiles.Patient import Patient
 from profiles.Sample import Sample
 from utils.Counter import Counter
-from utils.constants import NO_ID, BATCH_SIZE, ID_COLUMNS, PATTERN_VALUE_DIMENSION
+from constants.defaults import BATCH_SIZE, PATTERN_VALUE_DIMENSION
+from constants.idColumns import NO_ID, ID_COLUMNS
 from utils.setup_logger import log
 from utils.utils import is_not_nan, write_in_file, normalize_column_value, cast_str_to_datetime, \
     cast_str_to_float, cast_str_to_int, cast_str_to_boolean
@@ -129,7 +129,7 @@ class Transform(Task):
                         # we still add the codeable_concept as a LabFeature
                         # but, it will have only the text (such as "BIS", or "TooYoung") and no associated codings
                         if table_name == TableNames.LABORATORY_FEATURE:
-                            category = Transform.get_lab_feature_category(column_name=column_name)
+                            category = self.get_lab_feature_category(column_name=column_name)
                             data_type = row[MetadataColumns.ETL_TYPE]  # this has been normalized while loading + we take ETL_type, not var_type, to get the narrowest type (in which we cast values)
                             dimension = self.mapping_column_to_dimension[column_name]
                             # for categorical values, we first need to take the list of (normalized) values that are available for the current column, and then take their CC
@@ -432,13 +432,11 @@ class Transform(Task):
         if len(rows) == 1:
             row = rows.iloc[0]
             if is_not_nan(row[MetadataColumns.FIRST_ONTOLOGY_NAME]):
-                coding = Coding(ontology=Ontologies.get_enum_from_name(row[MetadataColumns.FIRST_ONTOLOGY_NAME]),
-                                code=OntologyCode(full_code=row[MetadataColumns.FIRST_ONTOLOGY_CODE]),
+                coding = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(row[MetadataColumns.FIRST_ONTOLOGY_NAME]), full_code=row[MetadataColumns.FIRST_ONTOLOGY_CODE]),
                                 display=None)
                 cc.add_coding(one_coding=coding)
             if is_not_nan(row[MetadataColumns.SEC_ONTOLOGY_NAME]):
-                coding = Coding(ontology=Ontologies.get_enum_from_name(row[MetadataColumns.SEC_ONTOLOGY_NAME]),
-                                code=OntologyCode(full_code=row[MetadataColumns.SEC_ONTOLOGY_CODE]),
+                coding = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(row[MetadataColumns.SEC_ONTOLOGY_NAME]), full_code=row[MetadataColumns.SEC_ONTOLOGY_CODE]),
                                 display=None)
                 cc.add_coding(one_coding=coding)
             return cc
@@ -449,9 +447,11 @@ class Transform(Task):
             # log.warn("Found several times the column '%s' in the metadata", column_name)
             return None
 
-    @classmethod
-    def get_lab_feature_category(cls, column_name: str) -> CodeableConcept:
-        if PhenotypicColumns.is_column_phenotypic(column_name=column_name):
+    def is_column_phenotypic(self, column_name: str) -> bool:
+        return cast_str_to_boolean(self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name][MetadataColumns.PHENOTYPIC].iloc[0])
+
+    def get_lab_feature_category(self, column_name: str) -> CodeableConcept:
+        if self.is_column_phenotypic(column_name=column_name):
             return LabFeatureCategories.get_phenotypic()
         else:
             return LabFeatureCategories.get_clinical()

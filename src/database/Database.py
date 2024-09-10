@@ -12,7 +12,7 @@ from pymongo.cursor import Cursor
 from database.Execution import Execution
 from enums.TableNames import TableNames
 from enums.UpsertPolicy import UpsertPolicy
-from utils.constants import DELIMITER_PATIENT_ID
+from constants.idColumns import DELIMITER_PATIENT_ID
 from utils.setup_logger import log
 from utils.utils import mongodb_match, mongodb_project_one, mongodb_group_by, \
     mongodb_sort, mongodb_limit, mongodb_unwind

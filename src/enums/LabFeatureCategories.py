@@ -1,14 +1,14 @@
 from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Coding import Coding
-from datatypes.OntologyCode import OntologyCode
+from datatypes.OntologyResource import OntologyResource
 from enums.EnumAsClass import EnumAsClass
 from enums.Ontologies import Ontologies
 from utils.utils import normalize_column_name
 
 
 class LabFeatureCategories(EnumAsClass):
-    CATEGORY_PHENOTYPIC = Coding(ontology=Ontologies.LOINC, code=OntologyCode(full_code="81259-4"), display=None)
-    CATEGORY_CLINICAL = Coding(ontology=Ontologies.LOINC, code=OntologyCode(full_code="75321-0"), display=None)
+    CATEGORY_PHENOTYPIC = Coding(code=OntologyResource(ontology=Ontologies.LOINC, full_code="81259-4"), display=None)
+    CATEGORY_CLINICAL = Coding(code=OntologyResource(ontology=Ontologies.LOINC, full_code="75321-0"), display=None)
 
     @classmethod
     def get_phenotypic(cls) -> CodeableConcept:

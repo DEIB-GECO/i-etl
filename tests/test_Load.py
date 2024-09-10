@@ -10,7 +10,7 @@ from etl.Load import Load
 from enums.HospitalNames import HospitalNames
 from enums.Ontologies import Ontologies
 from enums.TableNames import TableNames
-from utils.constants import DB_CONNECTION, TEST_DB_NAME
+from constants.structure import TEST_DB_NAME
 from utils.setup_logger import log
 from utils.utils import get_mongodb_date_from_datetime, set_env_variables_from_dict
 

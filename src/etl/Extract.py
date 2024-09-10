@@ -11,9 +11,7 @@ from database.Database import Database
 from database.Execution import Execution
 from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Coding import Coding
-from enums.DiagnosisClassificationColumns import DiagnosisClassificationColumns
-from enums.DiagnosisRegexColumns import DiagnosisRegexColumns
-from datatypes.OntologyCode import OntologyCode
+from datatypes.OntologyResource import OntologyResource
 from enums.DiagnosisClassificationColumns import DiagnosisClassificationColumns
 from enums.DiagnosisRegexColumns import DiagnosisRegexColumns
 from enums.FileTypes import FileTypes
@@ -22,7 +20,8 @@ from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from enums.TableNames import TableNames
 from etl.Task import Task
-from utils.constants import ID_COLUMNS, PATTERN_VALUE_DIMENSION
+from constants.idColumns import ID_COLUMNS
+from constants.defaults import PATTERN_VALUE_DIMENSION
 from utils.setup_logger import log
 from utils.utils import is_not_nan, get_values_from_json_values, normalize_column_name, \
     normalize_ontology_name, normalize_column_value, normalize_hospital_name, \
@@ -137,7 +136,7 @@ class Extract(Task):
         else:
             self.metadata = self.metadata[self.metadata[MetadataColumns.DATASET_NAME] == filename]
 
-        # normalize ontology names (but not codes because they will be normalized within OntologyCode)
+        # normalize ontology names (but not codes because they will be normalized within OntologyResource)
         self.metadata[MetadataColumns.FIRST_ONTOLOGY_NAME] = self.metadata[MetadataColumns.FIRST_ONTOLOGY_NAME].apply(lambda value: normalize_ontology_name(ontology_system=value))
         self.metadata[MetadataColumns.SEC_ONTOLOGY_NAME] = self.metadata[MetadataColumns.SEC_ONTOLOGY_NAME].apply(lambda value: normalize_ontology_name(ontology_system=value))
 
@@ -281,9 +280,9 @@ class Extract(Task):
                                 # for any key value pair that is not about the value or the explanation
                                 # (i.e., loinc and snomed_ct columns), we create a Coding, which we add to the CodeableConcept
                                 # we need to do a loop because there may be several ontology terms for a single mapping
-                                if key != "value":
+                                if key != "value" and key != "explanation":
                                     ontology = Ontologies.get_enum_from_name(ontology_name=normalize_ontology_name(key))
-                                    cc.add_coding(one_coding=Coding(ontology=ontology, code=OntologyCode(full_code=val), display=None))
+                                    cc.add_coding(one_coding=Coding(code=OntologyResource(ontology=ontology, full_code=val), display=None))
                             # {
                             #   'm': {"coding": [{"system": "snomed", "code": "248153007", "display": "m (Male)"}], "text": ""},
                             #   'f': {"coding": [{"system": "snomed", "code": "248152002", "display": "f (Female)"}], "text": ""},
@@ -403,7 +402,7 @@ class Extract(Task):
             for index, line in diagnosis_csv.iterrows():
                 diagnosis_standard_name = line[DiagnosisRegexColumns.DIAGNOSIS_NAME]
                 cc = CodeableConcept(original_name=diagnosis_standard_name)
-                cc.add_coding(one_coding=Coding(ontology=Ontologies.ORPHANET, code=OntologyCode(full_code=line[DiagnosisRegexColumns.ORPHANET_CODE]), display=None))
+                cc.add_coding(one_coding=Coding(code=OntologyResource(ontology=Ontologies.ORPHANET, full_code=line[DiagnosisRegexColumns.ORPHANET_CODE]), display=None))
                 self.mapping_disease_to_cc[diagnosis_standard_name] = cc.to_json()  # do not forget to add the JSONified CC, not the CC itlelf
         # log.debug(self.mapping_disease_to_cc)
 

@@ -2,7 +2,7 @@ from datatypes.ResourceIdentifier import ResourceIdentifier
 from enums.HospitalNames import HospitalNames
 from profiles.Hospital import Hospital
 from enums.TableNames import TableNames
-from utils.constants import NO_ID
+from constants.idColumns import NO_ID
 from utils.Counter import Counter
 
 

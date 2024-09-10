@@ -1,6 +1,6 @@
 from datatypes.Identifier import Identifier
 from enums.HospitalNames import HospitalNames
-from utils.constants import DELIMITER_PATIENT_ID
+from constants.idColumns import DELIMITER_PATIENT_ID
 
 
 class PatientAnonymizedIdentifier(Identifier):

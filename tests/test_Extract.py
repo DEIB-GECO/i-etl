@@ -12,7 +12,7 @@ from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from enums.TheTestFiles import TheTestFiles
 from etl.Extract import Extract
-from utils.constants import TEST_DB_NAME, DOCKER_FOLDER_TEST
+from constants.structure import TEST_DB_NAME, DOCKER_FOLDER_TEST
 from utils.setup_logger import log
 from utils.utils import is_not_nan, set_env_variables_from_dict
 
@@ -68,7 +68,7 @@ class TestExtract(unittest.TestCase):
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 11, "The expected number of columns is 11."
+        assert len(extract.metadata.columns) == 12, "The expected number of columns is 12."
         assert len(extract.metadata) == 8, "The expected number of lines is 8."
 
         # b. checking the first line completely
@@ -102,7 +102,7 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][1] == "1234"
         assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][2])
         assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][3] == "421416008"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][4] == "123: 789"  # this will be normalized later while building OntologyCode objects
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][4] == "123: 789"  # this will be normalized later while building OntologyResource objects
         assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][5] == " 46463-6 "  # same as above
         assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][6] == "456:7z9"
         assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][7] == "124678"
@@ -146,12 +146,12 @@ class TestExtract(unittest.TestCase):
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 11, "The expected number of columns is 11."
+        assert len(extract.metadata.columns) == 12, "The expected number of columns is 12."
         assert len(extract.metadata) == 3, "The expected number of lines is 3."
 
         # b. checking the first line completely
         assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_NAME][2] == "omim"
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][2] == "1245/   983 "  # this will be normalized later when building OntologyCode objects
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][2] == "1245/   983 "  # this will be normalized later when building OntologyResource objects
         assert not is_not_nan(extract.metadata[MetadataColumns.SEC_ONTOLOGY_NAME][2])  # this should be nan as the cell is empty
         assert not is_not_nan(extract.metadata[MetadataColumns.SEC_ONTOLOGY_CODE][2])  # this should be empty too
         assert extract.metadata[MetadataColumns.COLUMN_NAME][2] == "disease_form"  # all lower case, with an underscore
@@ -172,7 +172,7 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_NAME][2] == "omim"
         assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_NAME][0])
 
-        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][1] == "1569 - 456"  # this will be normalized later with OntologyCode
+        assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][1] == "1569 - 456"  # this will be normalized later with OntologyResource
         assert extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][2] == "1245/   983 "
         assert not is_not_nan(extract.metadata[MetadataColumns.FIRST_ONTOLOGY_CODE][0])
 
@@ -192,7 +192,7 @@ class TestExtract(unittest.TestCase):
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 11, "The expected number of columns is 11."
+        assert len(extract.metadata.columns) == 12, "The expected number of columns is 12."
         assert len(extract.metadata) == 3, "The expected number of lines is 3."
 
         # b. checking the first line completely
@@ -235,7 +235,7 @@ class TestExtract(unittest.TestCase):
 
         # a. general size checks
         assert extract.data is not None, "Data is None, while it should not."
-        assert len(extract.data.columns) == 8, "The expected number of columns is 17."
+        assert len(extract.data.columns) == 8, "The expected number of columns is 8."
         assert len(extract.data) == 10, "The expected number of lines is 10."
 
         # b. checking the first line completely

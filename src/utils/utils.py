@@ -4,6 +4,7 @@ import locale
 import math
 import os
 import xml.dom.minidom
+from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -16,6 +17,7 @@ from requests import Response
 
 from enums.AccessTypes import AccessTypes
 from enums.DataTypes import DataTypes
+from constants.defaults import SNOMED_OPERATORS_LIST
 from utils.setup_logger import log
 
 # moving it to constants.py creates a circular dependency; also it is only used in this file
@@ -87,21 +89,18 @@ def cast_str_to_float(str_value: str):
 def cast_str_to_boolean(str_value: str):
     # try to convert as boolean
     normalized_value = normalize_column_value(column_value=str_value)
-    if normalized_value == "true" or normalized_value == "1" or normalized_value == "1.0":
+    if normalized_value == "true" or normalized_value == "1" or normalized_value == "1.0" or normalized_value == "yes":
         return True
-    elif normalized_value == "false" or normalized_value == "0" or normalized_value == "0.0":
+    elif normalized_value == "false" or normalized_value == "0" or normalized_value == "0.0" or normalized_value == "no":
         return False
     else:
-        return None # this was not a boolean value
+        return None  # this was not a boolean value
 
 
 def cast_str_to_datetime(str_value: str) -> datetime:
     try:
         datetime_value = parse(str_value)
         # %Y-%m-%d %H:%M:%S is the format used by default by parse (the output is always of this form)
-        log.info(datetime_value.year)
-        log.info(datetime_value.month)
-        log.info(datetime_value.day)
         return datetime_value
     except:  # this may raise ValueError if this is not a date, or OverflowError in case of weird int (BUZZI data)
         # this was not a datetime value, and we signal it with None
@@ -132,6 +131,47 @@ def normalize_ontology_code(ontology_code: str) -> str:
         return ontology_code.lower().replace(" ", "")
     else:
         return ontology_code
+
+
+def remove_ontology_prefix(code: str) -> str:
+    if is_not_nan(code):
+        return code.replace("ORPHA:", "").replace("orpha:", "").replace("GO:", "").replace("go:", "")
+    else:
+        return code  # return NaN or None
+
+
+def remove_specific_tokens(input_string: str, tokens: list) -> str:
+    for token in tokens:
+        input_string = input_string.replace(token, "")
+    return input_string
+
+
+def remove_operators_in_strings(input_string: str) -> str:
+    # log.info(input_string)
+    pipe_double_quote_indices = [i if char in ["|", "\""] else -1 for i, char in enumerate(input_string)]
+    pipe_double_quote_indices = [i for i in pipe_double_quote_indices if i != -1]
+
+    # log.info(pipe_double_quote_indices)
+
+    i = 0
+    if len(pipe_double_quote_indices) % 2 != 0 or len(pipe_double_quote_indices) == 0:
+        # there is an operator (|, ', or ") which does not have its sibling
+        # or there are no operators in that code, so we can return immediately
+        return input_string
+    else:
+        final_text = input_string
+        while i < len(pipe_double_quote_indices):
+            first_op_index = pipe_double_quote_indices[i]
+            second_op_index = pipe_double_quote_indices[i+1]
+            text_between_op = input_string[(first_op_index+1): second_op_index]
+            new_text_between_op = remove_specific_tokens(input_string=text_between_op, tokens=["(property)", "- finding", "-finding"])
+            for operator in SNOMED_OPERATORS_LIST:
+                new_text_between_op = new_text_between_op.replace(operator, " ")
+            final_text = final_text.replace(text_between_op, new_text_between_op)
+            # log.info(f"{first_op_index}, {second_op_index}: {text_between_op}  ;; {new_text_between_op}")
+            i = i+2
+        # log.info(final_text)
+        return final_text
 
 
 def normalize_column_name(column_name: str) -> str:
@@ -506,6 +546,10 @@ def parse_json_response(response):
 
 def parse_xml_response(response):
     return xml.dom.minidom.parseString(response.content)
+
+
+def parse_html_response(response):
+    return BeautifulSoup(response.text, "html.parser")
 
 
 def load_xml_file(filepath: str):

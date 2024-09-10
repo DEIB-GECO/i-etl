@@ -12,7 +12,7 @@ from enums.HospitalNames import HospitalNames
 from enums.ParameterKeys import ParameterKeys
 from enums.UpsertPolicy import UpsertPolicy
 from utils import setup_logger
-from utils.constants import WORKING_DIR, DB_CONNECTION, DOCKER_FOLDER_METADATA, DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS, \
+from constants.structure import WORKING_DIR, DB_CONNECTION, DOCKER_FOLDER_METADATA, DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS, \
     DOCKER_FOLDER_TEST
 from utils.setup_logger import log
 from utils.utils import split_list_of_files

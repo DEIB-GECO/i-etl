@@ -16,8 +16,8 @@ from profiles.ResourceTest import ResourceTest
 from utils.Counter import Counter
 from enums.TableNames import TableNames
 from enums.UpsertPolicy import UpsertPolicy
-from utils.constants import TEST_DB_NAME, NO_ID
-from utils.constants import DB_CONNECTION
+from constants.structure import TEST_DB_NAME
+from constants.idColumns import NO_ID
 from utils.setup_logger import log
 from utils.utils import compare_tuples, wrong_number_of_docs, write_in_file, set_env_variables_from_dict
 
