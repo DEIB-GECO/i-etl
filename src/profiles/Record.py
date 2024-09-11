@@ -8,7 +8,8 @@ from utils.Counter import Counter
 
 class Record(Resource):
     def __init__(self, id_value: str, feature_id: Identifier, patient_id: Identifier,
-                 hospital_id: Identifier, value: Any, resource_type: str, counter: Counter, hospital_name: str):
+                 hospital_id: Identifier, value: Any, anonymized_value: Any, resource_type: str, counter: Counter,
+                 hospital_name: str):
         """
 
         """
@@ -17,6 +18,8 @@ class Record(Resource):
 
         # set up the resource attributes
         self.value = value
+        if anonymized_value is not None:
+            self.anonymized_value = anonymized_value
         self.subject = Reference(resource_identifier=patient_id)
         self.recorded_by = Reference(resource_identifier=hospital_id)
         self.instantiate = Reference(resource_identifier=feature_id)

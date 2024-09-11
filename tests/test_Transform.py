@@ -200,7 +200,7 @@ class TestTransform(unittest.TestCase):
         # (which contains at least the column name, and maybe a description)
         # LabFeature about molecule_a
         lab_feature_a = get_lab_feature_by_text(transform.laboratory_features, "molecule_a")
-        assert len(lab_feature_a) == 7  # inherited fields (identifier, resource_type, timestamp), proper fields (code, permitted_datatype, dimension, category)
+        assert len(lab_feature_a) == 8  # inherited fields (identifier, resource_type, timestamp), proper fields (code, permitted_datatype, dimension, category, visibility)
         assert "identifier" in lab_feature_a
         assert lab_feature_a["resource_type"] == TableNames.LABORATORY_FEATURE
         assert lab_feature_a["code"] == {
@@ -219,7 +219,7 @@ class TestTransform(unittest.TestCase):
 
         # LabFeature about molecule_b
         lab_feature_b = get_lab_feature_by_text(transform.laboratory_features, "molecule_b")
-        assert len(lab_feature_b) == 7
+        assert len(lab_feature_b) == 8
         assert "identifier" in lab_feature_b
         assert lab_feature_b["resource_type"] == TableNames.LABORATORY_FEATURE
         assert lab_feature_b["code"] == {
@@ -233,7 +233,7 @@ class TestTransform(unittest.TestCase):
         # LabFeature about ethnicity
         # "loinc/46463-6" and "snomedct/397731000"
         lab_feature_ethnicity = get_lab_feature_by_text(transform.laboratory_features, "ethnicity")
-        assert len(lab_feature_ethnicity) == 6  # only 6 (not 7) because dimension is None, thus not added
+        assert len(lab_feature_ethnicity) == 7  # only 6 (not 8) because dimension is None, thus not added
         assert "identifier" in lab_feature_ethnicity
         assert lab_feature_ethnicity["resource_type"] == TableNames.LABORATORY_FEATURE
         assert lab_feature_ethnicity["code"] == {
@@ -380,7 +380,7 @@ class TestTransform(unittest.TestCase):
         log.debug(json.dumps(lab_records_patient))
         assert len(lab_records_patient) == 5
         assert lab_records_patient[0]["resource_type"] == TableNames.LABORATORY_RECORD
-        assert lab_records_patient[0]["value"] == -0.003  # the value as been converted to an integer
+        assert lab_records_patient[0]["value"] == -0.003  # the value as been converted to a float
         log.debug(lab_records_patient[0]["subject"]["reference"])
         log.debug(type(lab_records_patient[0]["subject"]["reference"]))
         log.debug(str(patient_id))
@@ -396,6 +396,7 @@ class TestTransform(unittest.TestCase):
         assert lab_records_patient[1]["value"] is False  # the value as been converted to a boolean
         assert lab_records_patient[3]["value"] == "black"
         assert lab_records_patient[4]["value"] == {"$date": "2021-12-22T11:58:38Z"}  # the value as been converted to a MongoDB-style datetime
+        assert lab_records_patient[4]["anonymized_value"] == {"$date": "2021-12-01T00:00:00Z"}  # the value as been both fairified and anonymized
         cc_female = CodeableConcept(original_name="f")
         cc_female.add_coding(one_coding=Coding(code=OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="248152002"), display=None))
         assert lab_records_patient[2]["value"] == cc_female.to_json()  # the value as been replaced by its ontology code (sex is a categorical value)r
@@ -618,12 +619,12 @@ class TestTransform(unittest.TestCase):
                              extracted_diagnosis_classification_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_CLASSIFICATION_PATH,
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
 
-        assert transform.fairify_value(column_name="id", value=transform.data.iloc[0][0]) == "999999999"  # TODO NELLY: do not convert IDs to int, keep it as strings!
+        assert transform.fairify_value(column_name="id", value=transform.data.iloc[0][0]) == "999999999"
         assert transform.fairify_value(column_name="molecule_a", value=transform.data.iloc[0][1]) == 0.001
         assert transform.fairify_value(column_name="molecule_b", value=transform.data.iloc[0][2]) == 100
         assert transform.fairify_value(column_name="molecule_g", value=transform.data.iloc[0][3]) is True
         assert transform.fairify_value(column_name="molecule_g", value=transform.data.iloc[4][3]) is False
-        # not a == np.nan (https://stackoverflow.com/questions/44367557/why-does-assert-np-nan-np-nan-cause-an-error)
+        # not variable == np.nan (https://stackoverflow.com/questions/44367557/why-does-assert-np-nan-np-nan-cause-an-error)
         assert np.isnan(transform.fairify_value(column_name="molecule_g", value=transform.data.iloc[6][3]))
         assert np.isnan(transform.fairify_value(column_name="molecule_g", value=transform.data.iloc[7][3]))
         cc_female = CodeableConcept(original_name="f")

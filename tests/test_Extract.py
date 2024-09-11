@@ -11,6 +11,7 @@ from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from enums.TheTestFiles import TheTestFiles
+from enums.Visibility import Visibility
 from etl.Extract import Extract
 from constants.structure import TEST_DB_NAME, DOCKER_FOLDER_TEST
 from utils.setup_logger import log
@@ -68,7 +69,7 @@ class TestExtract(unittest.TestCase):
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 12, "The expected number of columns is 12."
+        assert len(extract.metadata.columns) == 13, "The expected number of columns is 13."
         assert len(extract.metadata) == 8, "The expected number of lines is 8."
 
         # b. checking the first line completely
@@ -80,6 +81,8 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][1] == "The molecule Alpha"  # kept as it is in the metadata for more clarity
         assert extract.metadata[MetadataColumns.VAR_TYPE][1] == "float"
         assert not is_not_nan(extract.metadata[MetadataColumns.JSON_VALUES][1])  # empty cell thus nan
+        assert extract.metadata[MetadataColumns.PHENOTYPIC][1] == "no"  # not yet converted to boolean, this will be done in is_column_phenotypic()
+        assert extract.metadata[MetadataColumns.VISIBILITY][1] == "PUBLIC_WITHOUT_ANONYMIZATION"
         # test JSON values in the fourth line (sex)
         # pandas dataframe does not allow json objects, so we have to store them as JSON-like string
         # expected_json_values = [{"value": "m", "snomedct": "248152002"}, {"value": "f", "snomedct": "248152002"}]
@@ -129,6 +132,7 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.ETL_TYPE][4] == DataTypes.CATEGORY  # sex
         assert extract.metadata[MetadataColumns.ETL_TYPE][5] == DataTypes.STRING  # ethnicity
         assert extract.metadata[MetadataColumns.ETL_TYPE][6] == DataTypes.DATETIME  # date of birth
+        assert extract.metadata[MetadataColumns.VISIBILITY][6] == Visibility.PUBLIC_WITH_ANONYMIZATION
 
         # g. more general checks
         # DATASET: this should be the dataset name, and there should be no other datasets in that column
@@ -146,7 +150,7 @@ class TestExtract(unittest.TestCase):
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 12, "The expected number of columns is 12."
+        assert len(extract.metadata.columns) == 13, "The expected number of columns is 13."
         assert len(extract.metadata) == 3, "The expected number of lines is 3."
 
         # b. checking the first line completely
@@ -192,7 +196,7 @@ class TestExtract(unittest.TestCase):
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 12, "The expected number of columns is 12."
+        assert len(extract.metadata.columns) == 13, "The expected number of columns is 13."
         assert len(extract.metadata) == 3, "The expected number of lines is 3."
 
         # b. checking the first line completely

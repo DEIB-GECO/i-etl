@@ -1,9 +1,9 @@
-"ontology","ontology_code","ontology_comment","secondary_ontology","secondary_ontology_code","secondary_ontology_comment","snomed_vartype","test h1","TEST H2","test_H3","dataset","name","Significato_it","description","phenotypic","vartype","etl_type","dimension","details","JSON_values","Multiplicity","Doubts"
-,,,,,,,1,0,0,"extr-data-lab.csv","id","The Patient ID","The Patient ID","integer","int",,,,,
-"loinc",1234,"bla",,,,"float",1,0,0,"extr-data-lab.csv","molecule_a","The molecule Alpha","The molecule Alpha","no","float","float","mg/L","How much moleculeA is in the blood",,,
-,,"Bla 2",,,,"float",1,0,0,"extr-data-lab.csv","molecule_b","The molecule Beta","The molecule Beta","no","str","int",,,,,
-"snomedct","421416008","Bla 3",,,,"float",1,0,0,"extr-data-lab.csv","molecule_g","The molecule Gamma","The molecule Gamma","no","boolean","bool",,"Whether moleculeG is present",,,
-"snomedct","123:789","Bla 4",,,,,1,0,0,"extr-data-lab.csv","sex","The sex at birth","The sex at birth","yes","category","category",,"The sex of patient at birth","[{""value"": ""m"", ""snomedct"": ""248152002""}, {""value"": ""f"", ""snomedct"": ""248152002""}]",,
-"loinc","46463-6","Bla 5","snomedct","397731000","Bla 5-2",,1,0,0,"extr-data-lab.csv","ethnicity","The ethnicity","The ethnicity","yes","str","str",,,,,
-"snomedct","456:7z9","Bla 6",,,,,1,0,0,"extr-data-lab.csv","date_of_birth","The date of birth","The date of birth","yes","datetime","datetime",,,,,
-"snomedct","124678","Bla 7","snomedct","123:456","Bla 7-2",,1,0,0,"extr-data-lab.csv","molecule_y","The molecule Yota","The molecule Yota","no","str","str",,,,,
+"ontology","ontology_code","ontology_comment","secondary_ontology","secondary_ontology_code","secondary_ontology_comment","snomed_vartype","test h1","TEST H2","test_H3","dataset","name","Significato_it","description","phenotypic","visibility","vartype","etl_type","dimension","details","JSON_values","Multiplicity","Doubts"
+,,,,,,,1,0,0,"extr-data-lab.csv","id","The Patient ID","The Patient ID","no","PUBLIC_WITHOUT_ANONYMIZATION","integer","int",,,,,
+"loinc",1234,"bla",,,,"float",1,0,0,"extr-data-lab.csv","molecule_a","The molecule Alpha","The molecule Alpha","no","PUBLIC_WITHOUT_ANONYMIZATION","float","float","mg/L","How much moleculeA is in the blood",,,
+,,"Bla 2",,,,"float",1,0,0,"extr-data-lab.csv","molecule_b","The molecule Beta","The molecule Beta","no","PUBLIC_WITHOUT_ANONYMIZATION","str","int",,,,,
+"snomedct","421416008","Bla 3",,,,"float",1,0,0,"extr-data-lab.csv","molecule_g","The molecule Gamma","The molecule Gamma","no","PUBLIC_WITHOUT_ANONYMIZATION","boolean","bool",,"Whether moleculeG is present",,,
+"snomedct","123:789","Bla 4",,,,,1,0,0,"extr-data-lab.csv","sex","The sex at birth","The sex at birth","yes","PUBLIC_WITHOUT_ANONYMIZATION","category","category",,"The sex of patient at birth","[{""value"": ""m"", ""snomedct"": ""248152002""}, {""value"": ""f"", ""snomedct"": ""248152002""}]",,
+"loinc","46463-6","Bla 5","snomedct","397731000","Bla 5-2",,1,0,0,"extr-data-lab.csv","ethnicity","The ethnicity","The ethnicity","yes","PUBLIC_WITHOUT_ANONYMIZATION","str","str",,,,,
+"snomedct","456:7z9","Bla 6",,,,,1,0,0,"extr-data-lab.csv","date_of_birth","The date of birth","The date of birth","yes","PUBLIC_WITH_ANONYMIZATION","datetime","datetime",,,,,
+"snomedct","124678","Bla 7","snomedct","123:456","Bla 7-2",,1,0,0,"extr-data-lab.csv","molecule_y","The molecule Yota","The molecule Yota","no","PUBLIC_WITHOUT_ANONYMIZATION","str","str",,,,,

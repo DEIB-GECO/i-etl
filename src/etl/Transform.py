@@ -19,6 +19,7 @@ from enums.Ontologies import Ontologies
 from enums.SampleColumns import SampleColumns
 from enums.TableNames import TableNames
 from enums.TrueFalse import TrueFalse
+from enums.Visibility import Visibility
 from etl.Task import Task
 from profiles.DiagnosisFeature import DiagnosisFeature
 from profiles.DiagnosisRecord import DiagnosisRecord
@@ -87,7 +88,7 @@ class Transform(Task):
         log.info(f"Hospital count: {self.database.count_documents(table_name=TableNames.HOSPITAL, filter_dict={})}")
         self.create_patients()
         # load some data from the database to compute references
-        self.mapping_hospital_to_hospital_id = self.database.retrieve_identifiers(table_name=TableNames.HOSPITAL, projection="name")
+        self.mapping_hospital_to_hospital_id = self.database.retrieve_mapping(table_name=TableNames.HOSPITAL, key_fields="name", value_fields="identifier.value")
         log.debug(f"{self.mapping_hospital_to_hospital_id}")
 
         if self.execution.current_file_type == FileTypes.LABORATORY:
@@ -132,6 +133,7 @@ class Transform(Task):
                             category = self.get_lab_feature_category(column_name=column_name)
                             data_type = row[MetadataColumns.ETL_TYPE]  # this has been normalized while loading + we take ETL_type, not var_type, to get the narrowest type (in which we cast values)
                             dimension = self.mapping_column_to_dimension[column_name]
+                            visibility = row[MetadataColumns.VISIBILITY]  # this has been normalized while loading
                             # for categorical values, we first need to take the list of (normalized) values that are available for the current column, and then take their CC
                             categorical_values = None
                             if column_name in self.mapping_column_to_categorical_value:
@@ -142,7 +144,7 @@ class Transform(Task):
                             new_lab_feature = LaboratoryFeature(id_value=NO_ID, code=cc, category=category,
                                                                 permitted_datatype=data_type, dimension=dimension,
                                                                 counter=self.counter, hospital_name=self.execution.hospital_name,
-                                                                categorical_values=categorical_values)
+                                                                categorical_values=categorical_values, visibility=visibility)
                             log.info(f"adding a new LabFeature instance about {cc.text}: {new_lab_feature}")
                             self.laboratory_features.append(new_lab_feature)
                             if len(self.laboratory_features) >= BATCH_SIZE:
@@ -152,12 +154,13 @@ class Transform(Task):
                         elif table_name == TableNames.DIAGNOSIS_FEATURE:
                             data_type = row[MetadataColumns.ETL_TYPE]  # this has been normalized while loading + we take ETL_type, not var_type, to get the narrowest type (in which we cast values)
                             dimension = None  # no dimension for Diagnosis data because we only associate patient to their diagnosis (a disease name)
+                            visibility = row[MetadataColumns.VISIBILITY]
                             log.debug(f"for column {column_name}, dimension is {dimension}")
                             new_diag_feature = DiagnosisFeature(id_value=NO_ID, code=cc,
                                                                 permitted_datatype=data_type,
                                                                 dimension=dimension, counter=self.counter,
                                                                 hospital_name=self.execution.hospital_name,
-                                                                categorical_values=None)
+                                                                categorical_values=None, visibility=visibility)
                             log.info(f"adding a new DiagFeature instance about {cc.text}: {new_diag_feature}")
                             self.diagnosis_features.append(new_diag_feature)
                             if len(self.diagnosis_features) >= BATCH_SIZE:
@@ -227,15 +230,14 @@ class Transform(Task):
         log.info(f"create Lab. Rec. instances in memory")
 
         # a. load some data from the database to compute references
-        self.mapping_hospital_to_hospital_id = self.database.retrieve_identifiers(table_name=TableNames.HOSPITAL, projection="name")
+        self.mapping_hospital_to_hospital_id = self.database.retrieve_mapping(table_name=TableNames.HOSPITAL, key_fields="name", value_fields="identifier.value")
         log.debug(f"{self.mapping_hospital_to_hospital_id}")
 
-        self.mapping_column_to_labfeat_id = self.database.retrieve_identifiers(table_name=TableNames.LABORATORY_FEATURE, projection="code.text")
+        self.mapping_column_to_labfeat_id = self.database.retrieve_mapping(table_name=TableNames.LABORATORY_FEATURE, key_fields="code.text", value_fields="identifier.value")
         log.debug(f"{self.mapping_column_to_labfeat_id}")
 
         # b. Create LabRecord instance, and write them in temporary (JSON) files
         count = 1
-        log.info(self.mapping_column_to_labfeat_id)
         for index, row in self.data.iterrows():
             # create LabRecord instances by associating observations to patients (and possibly the sample)
             for column_name, value in row.items():
@@ -258,11 +260,16 @@ class Transform(Task):
                         sample_id = None
                         if id_column_for_samples != "":
                             sample_id = Identifier(value=row[id_column_for_samples])
+
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
+                        anonymized_value, is_anonymized = self.anonymize_value(column_name=column_name, fairified_value=fairified_value)
                         new_laboratory_record = LaboratoryRecord(id_value=NO_ID, feature_id=lab_feature_id,
                                                                  patient_id=patient_id, hospital_id=hospital_id,
-                                                                 sample_id=sample_id, value=fairified_value,
+                                                                 sample_id=sample_id,
+                                                                 value=fairified_value,
+                                                                 anonymized_value=anonymized_value if is_anonymized else None,
                                                                  counter=self.counter, hospital_name=self.execution.hospital_name)
+                        # log.info(f"adding a new LabRecord instance: {new_laboratory_record}")
                         self.laboratory_records.append(new_laboratory_record)
                         if len(self.laboratory_records) >= BATCH_SIZE:
                             write_in_file(resource_list=self.laboratory_records, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_RECORD, count=count)
@@ -271,8 +278,8 @@ class Transform(Task):
                             count = count + 1
                     else:
                         # this represents the case when a column has not been converted to a LabFeature resource
-                        # this may happen for ID column for instance
-                        log.error(f"Skipping column {column_name} for row {index}")
+                        # this may happen for ID column for instance, or in BUZZI many clinical columns are not described in the metadata, thus skipped here
+                        # log.error(f"Skipping column {column_name} for row {index}")
                         pass
 
         write_in_file(resource_list=self.laboratory_records, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_RECORD, count=count)
@@ -280,7 +287,7 @@ class Transform(Task):
     def create_diagnosis_records(self):
         log.info(f"create Diag. Rec. instances in memory")
 
-        self.mapping_column_to_diagfeat_id = self.database.retrieve_identifiers(table_name=TableNames.DIAGNOSIS_FEATURE, projection="code.text")
+        self.mapping_column_to_diagfeat_id = self.database.retrieve_mapping(table_name=TableNames.DIAGNOSIS_FEATURE, key_fields="code.text", value_fields="identifier.value")
         log.debug(f"{self.mapping_column_to_diagfeat_id}")
 
         # b. Create DiagRecord instance, and write them in temporary (JSON) files
@@ -312,9 +319,12 @@ class Transform(Task):
                             # thus, we do not record it in database
                             pass
                         else:
+                            anonymized_value, is_anonymized = self.anonymize_value(column_name=column_name, fairified_value=fairified_value)
                             new_diag_record = DiagnosisRecord(id_value=NO_ID, feature_id=diag_feature_id,
                                                               patient_id=patient_id, hospital_id=hospital_id,
-                                                              value=fairified_value, counter=self.counter,
+                                                              value=fairified_value,
+                                                              anonymized_value=anonymized_value if is_anonymized else None,
+                                                              counter=self.counter,
                                                               hospital_name=self.execution.hospital_name)
                             self.diagnosis_records.append(new_diag_record)
                             if len(self.diagnosis_records) >= BATCH_SIZE:
@@ -475,14 +485,7 @@ class Transform(Task):
                 # log.info("return the cast value")
                 return_value = the_normalized_value  # no categorical value for that value, trying at least to normalize it a bit
         elif etl_type == DataTypes.DATETIME or etl_type == DataTypes.DATE:
-            # we first process the date and then maybe hide the day if asked
-            cast_date = cast_str_to_datetime(str_value=value)
-            if self.execution.expose_complete_dates:
-                # hide the date
-                cast_date_without_day = cast_date  # TODO Nelly: finish this
-                return_value = cast_date_without_day
-            else:
-                return_value = cast_date
+            return_value = cast_str_to_datetime(str_value=value)
         elif etl_type == DataTypes.BOOLEAN:
             # boolean values may appear as (a) CC (si/no or 0/1), or (b) 0/1 or 0.0/1.0 (1.0/0.0 has to be converted to 1/0)
             value = "1" if value == "1.0" else "0" if value == "0.0" else value
@@ -503,33 +506,37 @@ class Transform(Task):
                 # log.info("return the cast value")
                 return_value = cast_str_to_boolean(str_value=value)  # no coded value for that value, trying to cast it as boolean
         elif etl_type == DataTypes.INTEGER or etl_type == DataTypes.FLOAT:
-            # if the dimension is not the one of the feature, we simply leave the cell value as a string
-            # otherwise, convert the numeric value
-            m = re.search(PATTERN_VALUE_DIMENSION, value)
-            if m is not None:
-                # m.group(0) is the text itself, m.group(1) is the int/float value, m.group(2) is the dimension
-                the_value = m.group(1)
-                unit = m.group(2)
-                if unit == expected_unit:
+            if column_name == ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]:
+                return_value = str(value)
+            else:
+                # this is really a numerica value that we want to cast
+                # if the dimension is not the one of the feature, we simply leave the cell value as a string
+                # otherwise, convert the numeric value
+                m = re.search(PATTERN_VALUE_DIMENSION, value)
+                if m is not None:
+                    # m.group(0) is the text itself, m.group(1) is the int/float value, m.group(2) is the dimension
+                    the_value = m.group(1)
+                    unit = m.group(2)
+                    if unit == expected_unit:
+                        if etl_type == DataTypes.INTEGER:
+                            # log.info("return int")
+                            return_value = cast_str_to_int(str_value=the_value)
+                        elif etl_type == DataTypes.FLOAT:
+                            # log.info("return float")
+                            return_value = cast_str_to_float(str_value=the_value)
+                    else:
+                        # the feature dimension does not correspond, we return the normalized value
+                        # log.info("return the value")
+                        return_value = the_normalized_value
+                else:
+                    # this value does not contain a dimension or is not of the form "value dimension"
+                    # thus, we cast it depending on the ETL type
                     if etl_type == DataTypes.INTEGER:
                         # log.info("return int")
-                        return_value = cast_str_to_int(str_value=the_value)
+                        return_value = cast_str_to_int(str_value=value)
                     elif etl_type == DataTypes.FLOAT:
                         # log.info("return float")
-                        return_value = cast_str_to_float(str_value=the_value)
-                else:
-                    # the feature dimension does not correspond, we return the normalized value
-                    # log.info("return the value")
-                    return_value = the_normalized_value
-            else:
-                # this value does not contain a dimension or is not of the form "value dimension"
-                # thus, we cast it depending on the ETL type
-                if etl_type == DataTypes.INTEGER:
-                    # log.info("return int")
-                    return_value = cast_str_to_int(str_value=value)
-                elif etl_type == DataTypes.FLOAT:
-                    # log.info("return float")
-                    return_value = cast_str_to_float(str_value=value)
+                        return_value = cast_str_to_float(str_value=value)
         elif etl_type == DataTypes.REGEX:
             # this corresponds to a diagnosis name, for which we need to find the corresponding ORPHANET code
             if value in self.diagnosis_classification:
@@ -573,3 +580,38 @@ class Transform(Task):
         # we use type(..).__name__ to get the class name, e.g., "str" or "bool", instead of "<class 'float'>"
         log.info(f"Column '{column_name}': fairify {type(value).__name__} value '{value}' (unit: {expected_unit}) into {type(return_value).__name__}: {return_value}")
         return return_value
+
+    def anonymize_value(self, column_name: str, fairified_value: Any) -> tuple:
+        """
+
+        :param column_name:
+        :type column_name:
+        :param fairified_value:
+        :type fairified_value:
+        :return: two vlaues: either (the anonymized value, True), or (the fairified value, False). This is to know whether we should create another Record with the anonymized value
+        :rtype:
+        """
+        current_column_info = DataFrame(self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name])
+        etl_type = current_column_info[MetadataColumns.ETL_TYPE].iloc[0]  # we need to take the value itself, otherwise we end up with a series of 1 element (the ETL type)
+        visibility = current_column_info[MetadataColumns.VISIBILITY].iloc[0]
+        if etl_type == DataTypes.DATETIME:
+            if visibility == Visibility.PUBLIC_WITH_ANONYMIZATION:
+                # anonymize the date and the time
+                # since a datetime object always contains day+month+year (in any order), we cannot get rid of the day
+                # however, we can set it to 01
+                # similarly for hour:minute:second, we set it to 0
+                anonymized_value = fairified_value.replace(day=1)
+                anonymized_value = anonymized_value.replace(hour=0)
+                anonymized_value = anonymized_value.replace(minute=0)
+                anonymized_value = anonymized_value.replace(second=0)
+                return anonymized_value, True
+        elif etl_type == DataTypes.DATE:
+            if visibility == Visibility.PUBLIC_WITH_ANONYMIZATION:
+                # anonymize the date
+                anonymized_value = fairified_value.replace(day=1)
+                return anonymized_value, True
+            else:
+                # no need to anonymize the date
+                return fairified_value, False
+        else:
+            return fairified_value, False

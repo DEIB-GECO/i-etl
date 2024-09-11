@@ -18,6 +18,7 @@ from requests import Response
 from enums.AccessTypes import AccessTypes
 from enums.DataTypes import DataTypes
 from constants.defaults import SNOMED_OPERATORS_LIST
+from enums.Visibility import Visibility
 from utils.setup_logger import log
 
 # moving it to constants.py creates a circular dependency; also it is only used in this file
@@ -228,6 +229,10 @@ def normalize_type(data_type: str) -> str:
             return DataTypes.STRING
     else:
         return data_type
+
+
+def normalize_visibility(visibility: str) -> Visibility:
+    return Visibility.get_enum_from_name(visibility)
 
 
 def get_display(name: str, description: str) -> str:

@@ -151,20 +151,20 @@ class Database:
         self.db[table_name].bulk_write(copy.deepcopy(operations))
         return filter_dict
 
-    def retrieve_identifiers(self, table_name: str, projection: str) -> dict:
-        # projection contains the field name to which we want to associate identifiers,
-        # e.g., if we have { "identifier": "1", "name": "Alice" } and {"identifier": "2", "name": "Bob" }
-        # we would obtain the following mapping: { "Alice": "1", "Bob": "2" }
-        # this is used for now to associate each column name to its LabFeature id, and each hospital to its Hospital id
-        projection_as_dict = {projection: 1, "identifier": 1}
-        cursor = self.find_operation(table_name=table_name, filter_dict={}, projection=projection_as_dict)
+    def retrieve_mapping(self, table_name: str, key_fields: str, value_fields: str):
+        cursor = self.find_operation(table_name=table_name, filter_dict={}, projection={key_fields: 1, value_fields: 1})
         mapping = {}
         for result in cursor:
+            projected_key = result
+            for one_key in key_fields.split("."):
+                # this covers the case when the key of the mapping is a nested field, e.g., identifier.value
+                projected_key = projected_key[one_key]
             projected_value = result
-            for key in projection.split("."):
-                # this covers the case when the project is a nested key, e.g., code.text
-                projected_value = projected_value[key]
-            mapping[projected_value] = result["identifier"]["value"]
+            for one_value in value_fields.split("."):
+                # this covers the case when the value of the mapping is a nested field, e.g., code.text
+                projected_value = projected_value[one_value]
+            mapping[projected_key] = projected_value
+        log.info(mapping)
         return mapping
 
     def load_json_in_table(self, table_name: str, unique_variables) -> None:

@@ -419,7 +419,7 @@ class TestDatabase(unittest.TestCase):
         my_id = ResourceIdentifier(id_value="123")
         my_tuple = {"identifier": my_id.to_json(), "name": "Nelly"}
         database.db[TableNames.TEST].insert_one(my_tuple)
-        the_doc = database.retrieve_identifiers(table_name=TableNames.TEST, projection="name")
+        the_doc = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="name", value_fields="identifier.value")
         expected_doc = {"Nelly": "123"}
         assert the_doc == expected_doc
 
@@ -428,7 +428,7 @@ class TestDatabase(unittest.TestCase):
         my_tuples = [{"identifier": ResourceIdentifier(id_value=str(i)).to_json(), "value": i+random.randint(0, 100)} for i in range(0, 10)]
         my_original_tuples = copy.deepcopy(my_tuples)
         database.db[TableNames.TEST].insert_many(my_tuples)
-        docs = database.retrieve_identifiers(table_name=TableNames.TEST, projection="value")
+        docs = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="value", value_fields="identifier.value")
         expected_docs = {}
         for doc in my_original_tuples:
             expected_docs[doc["value"]] = doc["identifier"]["value"]
@@ -442,14 +442,14 @@ class TestDatabase(unittest.TestCase):
         my_tuple = {"identifier": my_id.to_json(), "name": "Nelly"}
         database.db[TableNames.TEST].insert_one(my_tuple)
         with pytest.raises(KeyError):
-            _ = database.retrieve_identifiers(table_name=TableNames.TEST, projection="name2")
+            _ = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="name2", value_fields="identifier.value")
 
     def test_retrieve_patient_identifiers_1(self):
         database = Database(TestDatabase.execution)
         my_id = PatientAnonymizedIdentifier(id_value="123", hospital_name=HospitalNames.TEST_H1)
         my_tuple = {"identifier": my_id.to_json(), "name": "Nelly"}
         database.db[TableNames.TEST].insert_one(my_tuple)
-        the_doc = database.retrieve_identifiers(table_name=TableNames.TEST, projection="name")
+        the_doc = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="name", value_fields="identifier.value")
         expected_doc = {"Nelly": my_id.value}
         assert the_doc == expected_doc
 
@@ -458,7 +458,7 @@ class TestDatabase(unittest.TestCase):
         my_tuples = [{"identifier": PatientAnonymizedIdentifier(id_value=str(i), hospital_name=HospitalNames.TEST_H1).to_json(), "value": i+random.randint(0, 100)} for i in range(0, 10)]
         my_original_tuples = copy.deepcopy(my_tuples)
         database.db[TableNames.TEST].insert_many(my_tuples)
-        docs = database.retrieve_identifiers(table_name=TableNames.TEST, projection="value")
+        docs = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="value", value_fields="identifier.value")
         expected_docs = {}
         for doc in my_original_tuples:
             expected_docs[doc["value"]] = doc["identifier"]["value"]
@@ -472,7 +472,7 @@ class TestDatabase(unittest.TestCase):
         my_tuple = {"identifier": my_id.to_json(), "name": "Nelly"}
         database.db[TableNames.TEST].insert_one(my_tuple)
         with pytest.raises(KeyError):
-            _ = database.retrieve_identifiers(table_name=TableNames.TEST, projection="name2")
+            _ = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="name2", value_fields="identifier.value")
 
     def test_write_in_file(self):
         counter = Counter()

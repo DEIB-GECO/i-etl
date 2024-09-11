@@ -11,6 +11,7 @@ class MetadataColumns(EnumAsClass):
     COLUMN_NAME = normalize_column_name(column_name="name")
     SIGNIFICATION_EN = normalize_column_name(column_name="description")
     PHENOTYPIC = normalize_column_name(column_name="phenotypic")
+    VISIBILITY = normalize_column_name(column_name="visibility")
     VAR_TYPE = normalize_column_name(column_name="vartype")
     ETL_TYPE = normalize_column_name(column_name="ETL_type")
     VAR_DIMENSION = normalize_column_name(column_name="dimension")

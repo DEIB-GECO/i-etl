@@ -22,7 +22,7 @@ from profiles.LaboratoryRecord import LaboratoryRecord
 from utils.Counter import Counter
 from utils.setup_logger import log
 from utils.utils import get_mongodb_date_from_datetime, normalize_column_value, read_tabular_file_as_string, \
-    normalize_hospital_name, cast_str_to_float, remove_operators_in_strings
+    normalize_hospital_name, cast_str_to_float, remove_operators_in_strings, cast_str_to_datetime
 
 
 def to_snake_case(name):
@@ -239,7 +239,11 @@ def main_ontology_code_class():
     # o3 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="  365471004 |   finding of  details of   relatives  |    :247591002|  affected |=   (410515003|known present( qualifier value) |= 782964007|  genetic disease |)")
     # o3.compute_concat_codes()
     # o3.compute_concat_names()
+    o = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="1306850007")
+    o.compute_concat_names()
+    log.info(o.concat_names)
 
+    return 0
     resources = json.load(open("datasets/local/all_codes_gen.json"))
     for metadata_file in os.listdir("/Users/nelly/Documents/google-drive-data/metadata/"):
         print(metadata_file)
@@ -348,6 +352,21 @@ def main_remove_operators_in_strings():
     remove_operators_in_strings(input_string="248062006 |Self-injurious behavior| : 307294006 |Personal history finding| = 410324006 | Medical/dental care (regime/therapy) |")
 
 
+def main_replace_day_datetime():
+    my_date = cast_str_to_datetime("05/09/2024")
+    log.info(my_date)
+    my_date = my_date.replace(day=1)
+    log.info(my_date)
+
+    my_date2 = cast_str_to_datetime("2021-12-22T11:58:38Z")
+    log.info(my_date2)
+    anonymized_value = my_date2.replace(day=1)
+    anonymized_value = anonymized_value.replace(hour=0)
+    anonymized_value = anonymized_value.replace(minute=0)
+    anonymized_value = anonymized_value.replace(second=0)
+    log.info(anonymized_value)
+
+
 if __name__ == '__main__':
     # main_load_json_from_file_as_bson()
     # main_python_parameters()
@@ -370,7 +389,7 @@ if __name__ == '__main__':
 
     # main_compare_dicts()
 
-    main_ontology_code_class()
+    # main_ontology_code_class()
 
     # main_test_ontology_regex()
 
@@ -378,5 +397,7 @@ if __name__ == '__main__':
     # main_cast_value_float_double_commas()
 
     # main_remove_operators_in_strings()
+
+    main_replace_day_datetime()
 
     print("Done.")

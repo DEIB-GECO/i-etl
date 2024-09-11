@@ -2,7 +2,6 @@ import json
 import os
 import re
 
-import numpy as np
 import pandas as pd
 
 from analysis.ValueAnalysis import ValueAnalysis
@@ -25,7 +24,7 @@ from constants.defaults import PATTERN_VALUE_DIMENSION
 from utils.setup_logger import log
 from utils.utils import is_not_nan, get_values_from_json_values, normalize_column_name, \
     normalize_ontology_name, normalize_column_value, normalize_hospital_name, \
-    normalize_type, read_tabular_file_as_string
+    normalize_type, read_tabular_file_as_string, normalize_visibility
 
 
 class Extract(Task):
@@ -146,6 +145,9 @@ class Extract(Task):
         # normalize the var_type and the ETL type
         self.metadata[MetadataColumns.VAR_TYPE] = self.metadata[MetadataColumns.VAR_TYPE].apply(lambda x: normalize_type(data_type=x))
         self.metadata[MetadataColumns.ETL_TYPE] = self.metadata[MetadataColumns.ETL_TYPE].apply(lambda x: normalize_type(data_type=x))
+
+        # normalize the visibility
+        self.metadata[MetadataColumns.VISIBILITY] = self.metadata[MetadataColumns.VISIBILITY].apply(lambda x: normalize_visibility(visibility=x))
 
         # reindex the remaining metadata rows, starting from 0
         # because when dropping rows, rows keep their original indexes

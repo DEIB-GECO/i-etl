@@ -9,7 +9,8 @@ from utils.Counter import Counter
 
 class LaboratoryRecord(Record):
     def __init__(self, id_value: str, feature_id: Identifier, patient_id: Identifier,
-                 hospital_id: Identifier, sample_id: Identifier, value: Any, counter: Counter, hospital_name: str):
+                 hospital_id: Identifier, sample_id: Identifier, value: Any, anonymized_value: Any,
+                 counter: Counter, hospital_name: str):
         """
         A new LabRecord instance.
         :param id_value: A string being the BETTER ID of the LabRecord instance.
@@ -21,7 +22,8 @@ class LaboratoryRecord(Record):
         """
         # set up the resource ID
         super().__init__(id_value=id_value, feature_id=feature_id, patient_id=patient_id, hospital_id=hospital_id,
-                         value=value, resource_type=TableNames.LABORATORY_RECORD, counter=counter, hospital_name=hospital_name)
+                         value=value, anonymized_value=anonymized_value, resource_type=TableNames.LABORATORY_RECORD,
+                         counter=counter, hospital_name=hospital_name)
         # set up specific attributes for lab records
         if sample_id is not None:
             self.based_on = Reference(resource_identifier=sample_id)
