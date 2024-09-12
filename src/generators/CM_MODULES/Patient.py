@@ -12,9 +12,15 @@ df_genes_to_phenotype = pd.read_csv('DATA/genes_to_phenotype.txt', sep="\t")
 df_countries = pd.read_csv('DATA/countries.csv', sep=",")
 df_diseases = pd.read_csv('DATA/IMGGE_Diseases.csv', sep=",")
 
-ETHNICITIES = {"African":0.1, "East asian":0.1, "Middle eastern":0.2, "European":0.3, "Latin American":0.2, "Jewish":0.1}
+
 
 class Patient:
+    __patientID = None
+    __clinicalCenterv = None
+    __sex = None
+    __ageWhenTested = None
+    __ageOnset = None
+    
     def __init__(self):
         pass
     
@@ -47,13 +53,24 @@ class Patient:
         sex = headfake.field.derived.GenderField(name=field_name, male_value=male_value, female_value=female_value)
         return sex
    
+    @staticmethod
+    def generate_patient_id(field_name, min_value, length, prefix):
+        idGenerator = headfake.field.IncrementIdGenerator(min_value=1, length=8)
+        id = headfake.field.IdField(name="id", generator=idGenerator, prefix="BUZZI_")
+        return id
+    
+    
+    
 class Age:
+    __years = None
+    __months = None
+    
     def __init__(self):
         pass
     
     # Returns the difference between the current month and the month of birth
     @staticmethod
-    def get_age_months(date_of_birth=str, current_date=datetime):
+    def get_months_difference(date_of_birth=str, current_date=datetime):
         first_month = datetime.datetime.strptime(date_of_birth, "%d.%m.%Y").month
         second_month = current_date.month
         if second_month >= first_month:
@@ -61,7 +78,7 @@ class Age:
         else:
             return 0
     
-    # Returns age in years
+    # Returns age and months in years
     @staticmethod
     def get_age_summary(years=int, months=int):
         return round((years + months)/12, 2)
@@ -77,17 +94,42 @@ class Age:
             return f"{years}y, {months}m"
  
 class BirthData:
+    __weigthAtBirth: None
+    __lengthAtBirth: None
+    __OFCAtBirth: None
+    __dateOfBirth: None
+    __gestationalAge: None
+    __antibioticsBaby: None
+    __antibioticsMother: None
+    __meconium: None
+    __cortisoneBaby: None
+    __cortisoneMother: None
+    __tyroidMother: None
+    __answerIX: None
+    __bithMethod: None
+    __twins: None
+    __hasSpontaneousAbortions: None
+    __numberOfAbortions: None
+    __inVitroFertilization: None
+    
     def __init__(self):
         pass
+    
+    @staticmethod
+    def __gestational_age_to_string(gestational_age, *arguments):
+        return f'{gestational_age} setm.'
     
     @staticmethod
     def get_gestational_age(min_value, max_value):
         return random.randint(a=min_value, b=max_value)
     
     @staticmethod
-    def generate_gestational_age(field_name, min_value, max_value):
-        ga = headfake.field.OperationField(name=field_name, operator=None, first_value=min_value, second_value=max_value, operator_fn=BirthData.get_gestational_age)
-        return ga
+    def generate_gestational_age(min_value, max_value):
+        return BirthData.get_gestational_age(min_value, max_value)
+    
+    @staticmethod
+    def gestational_age_to_string(field_name, ga):
+        return headfake.field.OperationField(name=field_name, operator=None, first_value=ga, second_value=None, operator_fn=BirthData.__gestational_age_to_string)
     
     @staticmethod
     def get_weight_at_birth(is_premature=bool, *arguments):
@@ -97,9 +139,33 @@ class BirthData:
             premature = bool(is_premature)
         
         if premature:
-            return random.randint(a=1500, b=2500)
+            return f'{round(random.randint(a=1500, b=2500)/1000, 1)} kg'
         else:
-            return random.randint(a=2500, b=4000)
+            return f'{round(random.randint(a=2500, b=4000)/1000, 1)} kg'
+        
+    @staticmethod
+    def get_length_at_birth(is_premature=bool, *arguments):
+        premature = None
+        
+        if isinstance(is_premature, str):
+            premature = bool(is_premature)
+        
+        if premature:
+            return f'{round(random.uniform(a=25.5, b=45.4),2)} cm'
+        else:
+            return f'{round(random.uniform(a=45.5, b=53.4), 2)} cm'
+        
+    @staticmethod
+    def get_ofc_at_birth(is_premature=bool, *arguments):
+        premature = None
+        
+        if isinstance(is_premature, str):
+            premature = bool(is_premature)
+        
+        if premature:
+            return f'{round(random.uniform(a=24, b=33.5), 2)} cm'
+        else:
+            return f'{round(random.uniform(a=34, b=36), 2)} cm'
     
     @staticmethod
     def generate_date_of_birth(field_name, distribution, min_year, max_year, date_format):
@@ -115,6 +181,16 @@ class BirthData:
     @staticmethod
     def generate_weight(field_name, gestational_age):
         return headfake.field.OperationField(name=field_name, operator=None, first_value=gestational_age, second_value=None, operator_fn=BirthData.get_weight_at_birth)
+
+    @staticmethod
+    # TODO: Truncate to 2 decimals
+    def generate_length(field_name, gestational_age):
+        return headfake.field.OperationField(name=field_name, operator=None, first_value=gestational_age, second_value=None, operator_fn=BirthData.get_length_at_birth)
+
+    @staticmethod
+    # TODO: Truncate to 2 decimals
+    def generate_ofc(field_name, gestational_age):
+        return headfake.field.OperationField(name=field_name, operator=None, first_value=gestational_age, second_value=None, operator_fn=BirthData.get_ofc_at_birth)
 
     @staticmethod
     def generate_antibiotics_baby(field_name, options):
@@ -159,21 +235,42 @@ class BirthData:
         return headfake.field.IfElseField(name=field_name, condition=condition, true_value=true_value, false_value=false_value)
     
 
+# TODO: Initiate random GeographicData with coherent values
+#           1 - Select a random country from the list
+#           2 - Create a city name or select one from a list (add to file based on country?)
+#           3 - Create the ethnicity or select one from the a list (add to file based on country?)
+
 class GeographicData:
+    __city = None
+    __ethnicity = None
+    __country_of_birth = None
+    
+    
+    # Initiates a GeographicData object with realistic and coherent data
     def __init__(self):
         pass
     
     @staticmethod
+    # Generates a city name based on locale configuration (e.g. es_ES)
     def generate_city(field_name, locale):
-        city = headfake.field.OperationField(name=field_name, operator=None, first_value=locale, second_value=None, operator_fn=GeographicData.generate_city_name)
-        return city
+        def generate_city_name(locale):
+            fake = Faker(locale)
+            return fake.city()
         
-    @staticmethod
-    def generate_city_name(locale, *arguments):
-        fake = Faker(locale)
-        return fake.city()
+        return headfake.field.OperationField(name=field_name, operator=None, first_value=locale, second_value=None, operator_fn=generate_city_name)
+    
     
     @staticmethod
-    def generate_ethnicity(field_name):
-        eth = headfake.field.OptionValueField(name=field_name, probabilities=ETHNICITIES)
-        return eth
+    # Selects a random ethnicity from a list of ethnicites with defined probabilities. If no ethnicities list is provided, the function uses
+    # an internal set of ethnicities.
+    def generate_ethnicity(field_name, ethnicities):
+        if ethnicities is None:
+            ETHNICITIES = {"African":0.1, "East asian":0.1, "Middle eastern":0.2, "European":0.3, "Latin American":0.2, "Jewish":0.1}
+            return headfake.field.OptionValueField(name=field_name, probabilities=ETHNICITIES)
+        else:
+            return headfake.field.OptionValueField(name=field_name, probabilities=ethnicities)
+    
+    @staticmethod
+    # Selects a random country from an internal list of european countries
+    def generate_country_of_birth(field_name,):
+        return headfake.field.MapFileField(name = field_name, mapping_file="DATA/countries.csv", key_field="Name")

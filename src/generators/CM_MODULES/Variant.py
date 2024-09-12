@@ -1,4 +1,6 @@
 import pandas as pd
+import headfake.field
+
 
 class Variant:
     def __init__(self):
@@ -17,3 +19,18 @@ class Variant:
             protein_name = row["protein_name"]
         
         return protein_name     
+    
+    @staticmethod
+    def generate_zygosity(field_name, options):
+        return headfake.field.OptionValueField(name=field_name, probabilities=options)
+
+
+
+
+class VariantInheritance:
+    def __init__(self):
+        pass
+    
+    @staticmethod
+    def generate_inheritance(field_name, options):
+        return headfake.field.OptionValueField(name=field_name, probabilities=options)
