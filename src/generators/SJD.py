@@ -5,6 +5,8 @@ import headfake.transformer
 import scipy
 import pandas as pd
 import random
+import datetime
+import re
 
 from CM_MODULES.Patient import Patient, BirthData
 from CM_MODULES.Variant import Variant, VariantInheritance
@@ -49,7 +51,7 @@ def generate_baseline_clinical_dataset():
     dx = Diagnosis.generate_diagnosis_name(field_name="Dx", disease_file_name="DATA/SJD_Diseases.csv", key_field="Disease")
     orpha_id = headfake.field.LookupMapFileField(lookup_value_field="Orphanet", map_file_field="Dx", hidden=True)
     hpo = Diagnosis.get_symptoms(field_name="HPO", omim_id=None, orpha_id=orpha_id, symptoms_max_number=5)
-    dob = BirthData.generate_date_of_birth(field_name="DOB", distribution=scipy.stats.uniform, min_year=0, max_year=0, date_format="%d/%m/%Y")
+    dob = BirthData.generate_date_of_birth(field_name="DOB", distribution=scipy.stats.uniform, min_year=0, max_year=16, date_format="%d/%m/%Y")
     sex = Patient.generate_sex(field_name="Sex", male_value="male", female_value="female")
     consanguinity = MedicalHistory.generate_consanguinity(field_name="Consanguinity", options=CONSANGUINITY)
     relatives = MedicalHistory.generate_affected_relatives(field_name="Relatives", options=AFFECTED_RELATIVES)
@@ -125,21 +127,58 @@ def generate_biological_dataset(baseline_df):
     
     return df
     
-def generate_dynamic_clinical_dataset():
-    # Patient ID
-    patient_id = None
-    # Weightdate1
-    weight_date = None
-    # Weight1
-    weigth = None
-    #Heightdate1
-    height_date = None
-    #Height1
-    height = None
-    #OFCdate1
-    ofc_date = None
-    #OFC1
-    ofc = None
+def generate_dynamic_clinical_dataset(baseline_df, num_evolution_records):
+    patient_id = []
+    weight_date = []
+    weigth = []
+    height_date = []
+    height = []
+    ofc_date = []
+    ofc = []
+    
+    for id in baseline_df["Patient ID"]:
+        date = datetime.datetime.strptime(baseline_df.loc[baseline_df['Patient ID'] == id]['DOB'].values[0], "%d/%m/%Y")
+        regexpre = "[0-9]+[.]*[0-9]+"
+        
+        new_weight = baseline_df.loc[baseline_df['Patient ID'] == id]['Weightbirth'].values[0]
+        weight_value = None
+        m = re.search(regexpre, new_weight)
+        if m:
+            weight_value = float(m.group(0))
+        
+        new_length = baseline_df.loc[baseline_df['Patient ID'] == id]['Lengthbirth'].values[0]
+        length_value = None
+        m = re.search(regexpre, new_length)
+        if m:
+            length_value = float(m.group(0))
+        
+        new_ofc = baseline_df.loc[baseline_df['Patient ID'] == id]['OFCbirth'].values[0]
+        ofc_value = None
+        m = re.search(regexpre, new_ofc)
+        if m:
+            ofc_value = float(m.group(0))
+        
+        for i in range(num_evolution_records):
+            date = date + datetime.timedelta(days=15)
+            weight_value = round(weight_value + 0.4, 2) # Add 400 gr each 15 days
+            length_value = round(length_value + 1.5, 2) # Add 1.5 cm each 15 days
+            ofc_value = round(ofc_value + 1, 2) # Add 1 cm each 15 days
+            
+            if date < datetime.datetime.now():
+                patient_id.append(id)
+                weight_date.append(date.strftime("%d/%m/%Y"))
+                weigth.append(f'{weight_value} kg')
+                height_date.append(date.strftime("%d/%m/%Y"))
+                height.append(f'{length_value} cm')
+                ofc_date.append(date.strftime("%d/%m/%Y"))
+                ofc.append(f'{ofc_value} cm')
+    
+    data = {"Patient ID": patient_id, "Weightdate1": weight_date, "Weight1": weigth,
+            "Heightdate1": height_date, "Height1": height, "OFCdate1": ofc_date, "OFC1": ofc}
+    
+    df = pd.DataFrame(data=data)
+    
+    return df
 
 def generate_genomic_dataset(baseline_df):
     patient_id = baseline_df["Patient ID"]
@@ -209,10 +248,10 @@ def main():
         print(f"Biological results written to {output_file_2}")
         
         # Create the dynamic clinical dataset
-        #data_3 = generate_dynamic_clinical_dataset()
-        #data_3.to_csv(output_file_2, index=False)
+        data_3 = generate_dynamic_clinical_dataset(data_1, 4)
+        data_3.to_csv(output_file_3, index=False)
         
-        #print(f"Dynamic results written to {output_file_3}")
+        print(f"Dynamic results written to {output_file_3}")
         
         # Create the genomic dataset
         data_4 = generate_genomic_dataset(data_1)
