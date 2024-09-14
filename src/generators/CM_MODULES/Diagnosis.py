@@ -4,7 +4,7 @@ import headfake.field
 
 df_genes_to_phenotype = pd.read_csv('DATA/genes_to_phenotype.txt', sep="\t")
 df_countries = pd.read_csv('DATA/countries.csv', sep=",")
-SJD_df_diseases = pd.read_csv('DATA/SJD_Diseases.csv', sep="\t")
+SJD_df_diseases = pd.read_csv('DATA/SJD_Diseases.csv', sep=",")
 # df_diseases = pd.read_csv('DATA/IMGGE_Diseases.csv', sep=",")
 
 class Diagnosis:

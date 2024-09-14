@@ -3,11 +3,13 @@ import headfake
 import headfake.field
 import headfake.transformer
 import scipy
+import pandas as pd
 
 from CM_MODULES.Patient import Patient, BirthData
 from CM_MODULES.Variant import Variant, VariantInheritance
 from CM_MODULES.Diagnosis import Diagnosis
 from CM_MODULES.MedicalHistory import MedicalHistory, IDTest
+from CM_MODULES.BiologicalAnalysis import BiologicalAnalysis
 
 ZIGOSITY2VAR = {"Heterozygous":0.5, "Homozygous":0.4, "Hemizygous":0.1}
 INHERITANCE = {"Dominant":0.5,"Recessive":0.5}
@@ -21,6 +23,17 @@ AUTISM_SPECTRUM_DISORDER = {"No":0.3, "Yes":0.6, "No information":0.1}
 ATENTION_DEFICIT_HIPERACTIVITY = {"No":0.3, "Yes":0.6, "No information":0.1}
 LANGUAGE_ABSENCE = {"No":0.3, "Yes":0.6, "No information":0.1}
 PHOTO_AVAILABLE = {"No":0.3, "Yes":0.6, "No information":0.1}
+WESTERN_BLOT = {"Increase":0.3, "Decrease":0.3, "No significant":0.3, "No information":0.3}
+QPCR = {"Increase":0.3, "Decrease":0.3, "No significant":0.3, "No information":0.3}
+FLUORESCENCE_INTENSITY = {"Increase":0.3, "Decrease":0.3, "No significant":0.3, "No information":0.3}
+PROTEIN_INTERACTION = {"Increase":0.3, "Decrease":0.3, "No significant":0.3, "No information":0.3}
+SUBCELLULAR_LOCATION = {"No":0.4, "Yes":0.4, "No information":0.2}
+CELLULAR_MORPHOLOGY = {"No":0.4, "Yes":0.4, "No information":0.2}
+SPLICING = {"No":0.4, "Yes":0.4, "No information":0.2}
+METADOME = {"Tolerant":0.2, "Slightly tolerant":0.2, "Neutral":0.2, "Slightly intolerant":0.2, "Intolerant":0.2}
+MISSENSE_3D = {"Damage":0.4, "No damage":0.4, "-":0.2}
+DYNAMUT = {"Stablishing":0.5, "Destablishing":0.5}
+ACMG = {"Benign":0.2, "Likely benign":0.2, "VUS":0.2, "Likely pathogenic":0.2, "Pathogenic":0.2}
 
 def generate_baseline_clinical_dataset():
     patient_id = Patient.generate_patient_id(field_name="Patient ID", min_value=1, length=8, prefix="SJD_")
@@ -63,37 +76,47 @@ def generate_baseline_clinical_dataset():
     
     return fs
 
-def generate_biological_dataset():
-    #Patient ID
-    patient_id = None
-    #WB
-    wb = None
-    #qPCR
-    qpcr = None
-    #Fluo
-    fluo = None
-    #Protinter
-    protinter = None
-    #Subcel
-    subcel = None
-    #Morcel
-    morcel = None
-    #Pathways
-    pathways = None
-    #Splicing
-    splicing = None
-    #CADD
-    cadd = None
-    #Metadome
-    metadome = None
-    #Missense3D
-    missense_3d = None
-    #Dynamut2
-    dynamut = None
-    #ACMG
-    acmg = None
-    #Alphamiss
-    alphamiss = None
+def generate_biological_dataset(baseline_df):
+    patient_id = baseline_df["Patient ID"]
+    wb = []
+    qpcr = []
+    fluo = []
+    protinter = []
+    subcel = []
+    morcel = []
+    pathways = []
+    splicing = []
+    cadd = []
+    metadome = []
+    missense_3d = []
+    dynamut = []
+    acmg = []
+    alphamiss = []
+    
+    for id in patient_id:
+        wb.append(BiologicalAnalysis.generate_western_blot(options=WESTERN_BLOT))
+        qpcr.append(BiologicalAnalysis.generate_qpcr(options=QPCR))
+        fluo.append(BiologicalAnalysis.generate_fluorescence_intensity(options=FLUORESCENCE_INTENSITY))
+        protinter.append(BiologicalAnalysis.generate_protein_interaction(options=PROTEIN_INTERACTION))
+        subcel.append(BiologicalAnalysis.generate_subcellular_location(options=SUBCELLULAR_LOCATION))
+        morcel.append(BiologicalAnalysis.generate_cellular_morphology(options=CELLULAR_MORPHOLOGY))
+        disease = baseline_df.loc[baseline_df['Patient ID'] == id]['Dx'].values[0]
+        pathways.append(BiologicalAnalysis.generate_pathways(disease))
+        splicing.append(BiologicalAnalysis.generate_splicing(options=SPLICING))
+        cadd.append(BiologicalAnalysis.generate_cadd())
+        metadome.append(BiologicalAnalysis.generate_metadome(options=METADOME))
+        missense_3d.append(BiologicalAnalysis.generate_missense_3d(options=MISSENSE_3D))
+        dynamut.append(BiologicalAnalysis.generate_dynamut2(options=DYNAMUT))
+        acmg.append(BiologicalAnalysis.generate_acmg(options=ACMG))
+        alphamiss.append(BiologicalAnalysis.generate_alphamiss())
+    
+    data = {'Patient ID': patient_id, 'WB': wb, 'qPCR': qpcr, 'Fluo': fluo, 'Protinter': protinter, 'Subcel': subcel,
+            'Subcel': subcel, 'Morcel': morcel, 'Pathways': pathways, 'Splicing': splicing, 'CADD': cadd, 'Metadome': metadome,
+            'Missense3D': missense_3d, 'Dynamut2': dynamut, 'ACMG': acmg, 'Alphamiss': alphamiss}
+    
+    df = pd.DataFrame(data=data)
+    
+    return df
     
 
 def generate_dynamic_clinical_dataset():
@@ -161,22 +184,22 @@ def main():
         print(f"Screening results written to {output_file_1}")
         
         # Create the biological dataset
-        #data_2 = generate_biological_dataset()
-        #data_2.to_csv(output_file_2, index=False)
+        data_2 = generate_biological_dataset(data_1)
+        data_2.to_csv(output_file_2, index=False)
         
-        #print(f"Diagnosis results written to {output_file_2}")
+        print(f"Biological results written to {output_file_2}")
         
         # Create the dynamic clinical dataset
         #data_3 = generate_dynamic_clinical_dataset()
         #data_3.to_csv(output_file_2, index=False)
         
-        #print(f"Diagnosis results written to {output_file_3}")
+        #print(f"Dynamic results written to {output_file_3}")
         
         # Create the genomic dataset
         #data_4 = generate_genomic_dataset()
         #data_4.to_csv(output_file_2, index=False)
         
-        #print(f"Diagnosis results written to {output_file_4}")
+        #print(f"Genomic results written to {output_file_4}")
         
         
 

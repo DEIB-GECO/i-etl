@@ -52,7 +52,7 @@ def generate_fields():
     testedYears = headfake.field.OperationField(name="age_number_y", operator=operator.floordiv, first_value=currentAge, second_value=2)
 
     # NUMBER OF MONTHS WHEN TESTED
-    testedMonths = headfake.field.OperationField(name="age_number_m", operator=None, first_value=dobFieldValue, second_value=datetime.datetime.now(), operator_fn=Age.get_age_months)
+    testedMonths = headfake.field.OperationField(name="age_number_m", operator=None, first_value=dobFieldValue, second_value=datetime.datetime.now(), operator_fn=Age.get_months_difference)
 
     # AGE WHEN TESTED IN YEARS
     testedsummary = headfake.field.OperationField(name="age_summary", operator=None, first_value=testedYears, second_value=testedMonths, operator_fn=Age.get_age_summary)
@@ -96,7 +96,7 @@ def generate_fields():
       
     # LIST OF SYMPTOMS WITH HPO IDENTIFIER
     omimID = headfake.field.OperationField(operator=None, first_value=diagnosis_omimID, second_value=None, operator_fn=Diagnosis.transform_omimID, hidden=True)
-    hpo_descriptive = headfake.field.OperationField(name="hpo_descriptive", operator=None, first_value=omimID, second_value=5, operator_fn=Diagnosis.get_symptoms)
+    hpo_descriptive = headfake.field.OperationField(name="hpo_descriptive", operator=None, first_value=omimID, second_value=5, operator_fn=Diagnosis.get_symptoms_by_omim_id)
 
     # LIST OF SYMPTOMS HPO IDENTIFIERS
     hpo_data = headfake.field.OperationField(name="hpo_data", operator=None, first_value=hpo_descriptive, second_value=None, operator_fn=Diagnosis.get_hpo_identifiers)
@@ -107,7 +107,7 @@ def generate_fields():
 
     # MONTHS AT ONSET
     # TODO: Create different than testing
-    onsetMonths = headfake.field.OperationField(name="age_onset_number_m", operator=None, first_value=dobFieldValue, second_value=datetime.datetime.now(), operator_fn=Age.get_age_months)
+    onsetMonths = headfake.field.OperationField(name="age_onset_number_m", operator=None, first_value=dobFieldValue, second_value=datetime.datetime.now(), operator_fn=Age.get_months_difference)
 
     # AGE AT ONSET IN YEARS
     onsetSummary = headfake.field.OperationField(name="age_onset_summary", operator=None, first_value=testedYears, second_value=testedMonths, operator_fn=Age.get_age_summary)

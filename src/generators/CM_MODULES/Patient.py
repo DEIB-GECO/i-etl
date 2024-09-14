@@ -55,18 +55,37 @@ class Patient:
    
     @staticmethod
     def generate_patient_id(field_name, min_value, length, prefix):
-        idGenerator = headfake.field.IncrementIdGenerator(min_value=1, length=8)
-        id = headfake.field.IdField(name="id", generator=idGenerator, prefix="BUZZI_")
+        idGenerator = headfake.field.IncrementIdGenerator(min_value=min_value, length=length)
+        id = headfake.field.IdField(name=field_name, generator=idGenerator, prefix=prefix)
         return id
     
     
     
 class Age:
-    __years = None
-    __months = None
+    years = None
+    months = None
     
-    def __init__(self):
-        pass
+    # Creates an Age object with the values provided by the years and months parameters or creates an Age object with 
+    # random values between 0 and 100 years, and 0 and 11 months
+    def __init__(self, years, months):
+        if years != None:
+            self.years = years
+        else:
+            self.years = random.randint(a=0, b=100)
+        
+        if months != None:
+            self.months = months
+        else:
+            self.months = random.randint(a=0, b=11)
+        
+    
+    def __str__(self):
+        if self.years == 0:
+            return f"{self.months}m"
+        elif self.months == 0:
+            return f"{self.years}y"
+        else:
+            return f"{self.years}y, {self.months}m"
     
     # Returns the difference between the current month and the month of birth
     @staticmethod
@@ -235,21 +254,31 @@ class BirthData:
         return headfake.field.IfElseField(name=field_name, condition=condition, true_value=true_value, false_value=false_value)
     
 
-# TODO: Initiate random GeographicData with coherent values
-#           1 - Select a random country from the list
-#           2 - Create a city name or select one from a list (add to file based on country?)
-#           3 - Create the ethnicity or select one from the a list (add to file based on country?)
-
 class GeographicData:
-    __city = None
-    __ethnicity = None
-    __country_of_birth = None
-    
+    city = None
+    ethnicity = None
+    country = None
     
     # Initiates a GeographicData object with realistic and coherent data
-    def __init__(self):
-        pass
-    
+    def __init__(self, city, ethnicity, country):
+        if country != None:
+            self.country = country
+        else:
+            # TODO: Get country from a list
+            pass
+
+        if city != None:
+            self.city = city
+        else:
+            # TODO: Get country locale and fake a city with faker
+            pass
+        
+        if ethnicity != None:
+            self.ethnicity = ethnicity
+        else:
+            # TODO: Select ethnicity from a list based on country
+            pass
+        
     @staticmethod
     # Generates a city name based on locale configuration (e.g. es_ES)
     def generate_city(field_name, locale):
