@@ -4,12 +4,16 @@ import headfake.field
 import headfake.transformer
 import scipy
 import pandas as pd
+import random
 
 from CM_MODULES.Patient import Patient, BirthData
 from CM_MODULES.Variant import Variant, VariantInheritance
 from CM_MODULES.Diagnosis import Diagnosis
 from CM_MODULES.MedicalHistory import MedicalHistory, IDTest
 from CM_MODULES.BiologicalAnalysis import BiologicalAnalysis
+from CM_MODULES.GeneticTest import NGSTest
+from CM_MODULES.Variant import Variant
+from CM_MODULES.Gene import Gene
 
 ZIGOSITY2VAR = {"Heterozygous":0.5, "Homozygous":0.4, "Hemizygous":0.1}
 INHERITANCE = {"Dominant":0.5,"Recessive":0.5}
@@ -34,6 +38,9 @@ METADOME = {"Tolerant":0.2, "Slightly tolerant":0.2, "Neutral":0.2, "Slightly in
 MISSENSE_3D = {"Damage":0.4, "No damage":0.4, "-":0.2}
 DYNAMUT = {"Stablishing":0.5, "Destablishing":0.5}
 ACMG = {"Benign":0.2, "Likely benign":0.2, "VUS":0.2, "Likely pathogenic":0.2, "Pathogenic":0.2}
+ZYGOSITY = {"heterozygosis":0.2, "homozygosis":0.2, "compound heterozygote":0.2, "hemizygote":0.2, "mosaic":0.2}
+
+variants_df = pd.read_csv('DATA/variants.csv', sep=",")
 
 def generate_baseline_clinical_dataset():
     patient_id = Patient.generate_patient_id(field_name="Patient ID", min_value=1, length=8, prefix="SJD_")
@@ -118,7 +125,6 @@ def generate_biological_dataset(baseline_df):
     
     return df
     
-
 def generate_dynamic_clinical_dataset():
     # Patient ID
     patient_id = None
@@ -135,35 +141,48 @@ def generate_dynamic_clinical_dataset():
     #OFC1
     ofc = None
 
-
-def generate_genomic_dataset():
-    #Patient ID
-    patient_id = None
-    #GenomicRefSeq
-    ref_seq = None
-    #Startnt
-    start = None
-    #Endnt
-    end = None
-    #Ref
-    ref = None
-    #Alt
-    alt = None
-    #NM_transcript
-    transcript = None
-    #Variant
-    variant = None
-    #Type
-    variant_type = None
-    #Zygosity
-    zygosity = None
-    #ProteinRefSeq
-    protein_name = None
-    #Gene
-    gene = None
-    #ChromosomeNumber
-    chromosome = None
-
+def generate_genomic_dataset(baseline_df):
+    patient_id = baseline_df["Patient ID"]
+    ref_seq = []
+    start = []
+    end = []
+    ref = []
+    alt = []
+    transcript = []
+    variant = []
+    variant_type = []
+    zygosity = []
+    protein_name = []
+    gene = []
+    chromosome = []
+    
+    for id in patient_id:
+        index = random.randint(0, len(variants_df)-1)
+        ref_seq.append(NGSTest.generate_reference_genome())
+        start.append(variants_df["start"][index])
+        end.append(variants_df["end"][index])
+        ref.append(variants_df["ref"][index])
+        alt.append(variants_df["alt"][index])
+        transcript.append(Gene.generate_transcript())
+        variant.append(variants_df["coding_name"][index])
+        variant_type.append(variants_df["variant_type"][index])
+        zygosity.append(Variant.generate_zygosity_2(ZYGOSITY))
+        protein_name.append(variants_df["protein_name"][index])
+        disease = baseline_df.loc[baseline_df['Patient ID'] == id]['Dx'].values[0]
+        gene.append(Gene.get_gene_from_disease(disease))
+        chromosome.append(Gene.generate_chromosome())
+    
+    data = {'Patient ID': patient_id, 
+            "GenomicRefSeq": ref_seq, "Startnt": start, "Endnt": end, 
+            "Ref": ref, "Alt": alt, "NM_transcript": transcript, "Variant": variant, "Type": variant_type, 
+            "Zygosity": zygosity, 
+            "ProteinRefSeq": protein_name, 
+            "Gene": gene, 
+            "ChromosomeNumber": chromosome}
+    
+    df = pd.DataFrame(data=data)
+    
+    return df
 
 def main():
     if len(sys.argv) < 5:
@@ -196,10 +215,10 @@ def main():
         #print(f"Dynamic results written to {output_file_3}")
         
         # Create the genomic dataset
-        #data_4 = generate_genomic_dataset()
-        #data_4.to_csv(output_file_2, index=False)
+        data_4 = generate_genomic_dataset(data_1)
+        data_4.to_csv(output_file_4, index=False)
         
-        #print(f"Genomic results written to {output_file_4}")
+        print(f"Genomic results written to {output_file_4}")
         
         
 

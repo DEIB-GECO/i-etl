@@ -41,3 +41,9 @@ class Microarray:
     def generate_microarray_length(*arguments):
         return f"{random.randint(a=100, b=999)} kb"      
 
+class NGSTest:
+    def __init__(self):
+        pass
+    
+    def generate_reference_genome():
+        return random.choice(["hg19", "hg38"])

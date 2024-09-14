@@ -1,0 +1,11 @@
+Patient ID,GenomicRefSeq,Startnt,Endnt,Ref,Alt,NM_transcript,Variant,Type,Zygosity,ProteinRefSeq,Gene,ChromosomeNumber
+SJD_00000001,hg19,3922,3926,TTA,,NM_0004531,c.3922dup,duplication,hemizygote,p.Val7dup,SMARCAL1,17
+SJD_00000002,hg38,9002,9009,TGG,TTT,NM_0004434,c.9002_9009delinsTTT,indel,hemizygote,p.(Val559_Glu561del),SMARCE1,18
+SJD_00000003,hg38,3921,3921,T,,NM_0006937,c.3921del,deletion,mosaic,p.Trp4del,KDM5C,19
+SJD_00000004,hg19,222,226,,G,NM_0008838,c.(222_226)insG,insertion,compound heterozygote,,SMARCA2,20
+SJD_00000005,hg19,849,895,,TGA,NM_0002909,c.849_850ins858_895,insertion,homozygosis,,ARID1A,5
+SJD_00000006,hg38,4661,4662,AG,TC,NM_0003742,c.4661delinsTC,indel,hemizygote,p.Cys28delinsTrpVal,DPF2,Y
+SJD_00000007,hg19,4072,5155,GGA,,NM_0009825,c.4072-1234_5155-246del,deletion,heterozygosis,p.Lys23_Val25del,KDM5C,16
+SJD_00000008,hg38,850,901,TACCACGATGAATG,TTCCTCGATGCCTG,NM_0001848,c.850_901delinsTTCCTCGATGCCTG,delin,hemizygote,p.[Ser44Arg;Trp46Arg],NSD1,16
+SJD_00000009,hg19,235,237,CCG,TAT,NM_0006162,c.235_237delinsTAT,substitution,homozygosis,p.Lys79Tyr,SOX11,12
+SJD_00000010,hg38,145,147,CCG,TGG,NM_0001190,c.145_147delinsTGG,indel,compound heterozygote,,SMARCA2,X
