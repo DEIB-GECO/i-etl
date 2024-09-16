@@ -249,12 +249,12 @@ def generate_screening_dataset():
     # Patient data
     sex = Patient.generate_sex(field_name="Sex", male_value="M", female_value="F")
     city = GeographicData.generate_city(field_name="City", locale=LOCALE)
-    ethnicity = GeographicData.generate_ethnicity(field_name="Ethnicity")
+    ethnicity = GeographicData.generate_ethnicity(field_name="Ethnicity", ethnicities=None)
     
     # Birth data
     dob = BirthData.generate_date_of_birth(field_name="DateOfBirth", distribution=scipy.stats.uniform, min_year=0, max_year=0, date_format="%d/%m/%Y")
     dob_value = headfake.field.LookupField(field="DateOfBirth", hidden=True) # Used in following functions
-    gestational_age = BirthData.generate_gestational_age(field_name="GestationalAge", min_value=25, max_value=42)
+    gestational_age = BirthData.generate_gestational_age_old(field_name="GestationalAge", min_value=25, max_value=42)
     is_premature = BirthData.is_premature(field_name="Premature", gestational_age_field_name="GestationalAge")
     weight = BirthData.generate_weight(field_name="Weight", gestational_age=gestational_age)
     antibiotics_baby = BirthData.generate_antibiotics_baby("AntibioticsBaby", options=THREE_VALUE_OPTIONS)

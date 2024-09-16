@@ -147,6 +147,10 @@ class BirthData:
         return BirthData.get_gestational_age(min_value, max_value)
     
     @staticmethod
+    def generate_gestational_age_old(field_name, min_value, max_value):
+        return headfake.field.OperationField(name=field_name, operator=None, first_value=min_value, second_value=max_value, operator_fn=BirthData.get_gestational_age)
+    
+    @staticmethod
     def gestational_age_to_string(field_name, ga):
         return headfake.field.OperationField(name=field_name, operator=None, first_value=ga, second_value=None, operator_fn=BirthData.__gestational_age_to_string)
     
@@ -282,7 +286,7 @@ class GeographicData:
     @staticmethod
     # Generates a city name based on locale configuration (e.g. es_ES)
     def generate_city(field_name, locale):
-        def generate_city_name(locale):
+        def generate_city_name(locale, *arguments):
             fake = Faker(locale)
             return fake.city()
         

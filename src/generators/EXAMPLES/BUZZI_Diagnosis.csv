@@ -1,101 +1,101 @@
 id,diagnosis
-BUZZI_00000001,Beta-ketothiola deficiency
-BUZZI_00000002,Argininemia
-BUZZI_00000003,Glutaric acidemia type I
+BUZZI_00000001,Homocystinuria (CBS defect)
+BUZZI_00000002,Medium-chain acyl-CoA dehydrogenase deficiency
+BUZZI_00000003,Deficiency of the biosynthesis of the biopterin cofactor
 BUZZI_00000004,Mitochondrial trifunctional protein deficiency
-BUZZI_00000005,Carnitine palmitoyltransferase deficiency
-BUZZI_00000006,Glutaric acidemia type I
-BUZZI_00000007,Methylmaionic acidemia with homocystinuria (Cbl D deficiency)
-BUZZI_00000008,Deficit in the regeneration of the biopterin cofactor
-BUZZI_00000009,Isovaleric acidemia
-BUZZI_00000010,Very long chain a?yl-CoA dehydrogenase deficiency
-BUZZI_00000011,Homocystinuria (CBS defect)
+BUZZI_00000005,Mitochondrial trifunctional protein deficiency
+BUZZI_00000006,Homocystinuria (severe MTHFR defect)
+BUZZI_00000007,Maple syrup urine disease
+BUZZI_00000008,Argininosuccinic acidemia
+BUZZI_00000009,Homocystinuria (CBS defect)
+BUZZI_00000010,Multiple carboxylase deficiency
+BUZZI_00000011,Tyrosinemia type I
 BUZZI_00000012,Medium-chain acyl-CoA dehydrogenase deficiency
-BUZZI_00000013,Glutaric acidemia type II
-BUZZI_00000014,Medium-chain acyl-CoA dehydrogenase deficiency
-BUZZI_00000015,Isovaleric acidemia
-BUZZI_00000016,Tyrosinemia type II
-BUZZI_00000017,Isovaleric acidemia
-BUZZI_00000018,Deficiency of the biosynthesis of the biopterin cofactor
-BUZZI_00000019,Maple syrup urine disease
-BUZZI_00000020,Methylmaionic acidemia (Cbl-B)
-BUZZI_00000021,Medium-chain acyl-CoA dehydrogenase deficiency
-BUZZI_00000022,Isovaleric acidemia
-BUZZI_00000023,Medium-chain acyl-CoA dehydrogenase deficiency
-BUZZI_00000024,Benign hyperphenylalaninemia
-BUZZI_00000025,Cytrullinemia type II (Citrine deficiency)
-BUZZI_00000026,Methylmaionic acidemia (Mut)
-BUZZI_00000027,Deficit in the regeneration of the biopterin cofactor
-BUZZI_00000028,Tyrosinemia type II
-BUZZI_00000029,3-hydroxy 3-methylglutaric acidemia
-BUZZI_00000030,Methylmaionic acidemia with homocystinuria (Cbl C deficiency)
-BUZZI_00000031,Carnitine-acylcarnitine translocase deficiency
-BUZZI_00000032,Carnitine transport deficiency
-BUZZI_00000033,Carnitine-acylcarnitine translocase deficiency
-BUZZI_00000034,Methylmaionic acidemia (Cbl-A)
-BUZZI_00000035,Medium/short chain 3-hydroxy-acyl-CoA dehydrogenase deficiency
-BUZZI_00000036,Isovaleric acidemia
-BUZZI_00000037,2-methylbutyryl-CoA dehydrogenase deficiency
-BUZZI_00000038,Medium/short chain 3-hydroxy-acyl-CoA dehydrogenase deficiency
-BUZZI_00000039,Cytrullinemia type II (Citrine deficiency)
-BUZZI_00000040,Phenylketonuria
-BUZZI_00000041,Multiple carboxylase deficiency
-BUZZI_00000042,Medium/short chain 3-hydroxy-acyl-CoA dehydrogenase deficiency
-BUZZI_00000043,Deficit in the regeneration of the biopterin cofactor
-BUZZI_00000044,Carnitine transport deficiency
-BUZZI_00000045,Methylmaionic acidemia (Cbl-A)
-BUZZI_00000046,3-hydroxy 3-methylglutaric acidemia
-BUZZI_00000047,Very long chain a?yl-CoA dehydrogenase deficiency
-BUZZI_00000048,Carnitine transport deficiency
-BUZZI_00000049,Argininosuccinic acidemia
-BUZZI_00000050,Mitochondrial trifunctional protein deficiency
-BUZZI_00000051,Beta-ketothiola deficiency
-BUZZI_00000052,Mitochondrial trifunctional protein deficiency
-BUZZI_00000053,Beta-ketothiola deficiency
-BUZZI_00000054,Methylmaionic acidemia with homocystinuria (Cbl C deficiency)
-BUZZI_00000055,Argininemia
-BUZZI_00000056,Carnitine palmitoyltransferase deficiency
-BUZZI_00000057,Argininosuccinic acidemia
-BUZZI_00000058,Argininemia
-BUZZI_00000059,Glutaric acidemia type II
-BUZZI_00000060,Glutaric acidemia type II
-BUZZI_00000061,Propionic acidemia
-BUZZI_00000062,Very long chain a?yl-CoA dehydrogenase deficiency
+BUZZI_00000013,3-hydroxy 3-methylglutaric acidemia
+BUZZI_00000014,Carnitine palmitoyltransferase deficiency
+BUZZI_00000015,Deficit in the regeneration of the biopterin cofactor
+BUZZI_00000016,Tyrosinemia type I
+BUZZI_00000017,Argininemia
+BUZZI_00000018,Isovaleric acidemia
+BUZZI_00000019,Multiple carboxylase deficiency
+BUZZI_00000020,Long-chain 3-hydroxy-acyl-CoA dehydrogenase deficiency
+BUZZI_00000021,Homocystinuria (CBS defect)
+BUZZI_00000022,Multiple carboxylase deficiency
+BUZZI_00000023,2-methylbutyryl-CoA dehydrogenase deficiency
+BUZZI_00000024,Very long chain acetiyl-CoA dehydrogenase deficiency
+BUZZI_00000025,Propionic acidemia
+BUZZI_00000026,Methylmaionic acidemia with homocystinuria (Cbl D deficiency)
+BUZZI_00000027,Maple syrup urine disease
+BUZZI_00000028,Carnitine transport deficiency
+BUZZI_00000029,Beta-ketothiola deficiency
+BUZZI_00000030,Benign hyperphenylalaninemia
+BUZZI_00000031,Benign hyperphenylalaninemia
+BUZZI_00000032,Methylmaionic acidemia (Cbl-A)
+BUZZI_00000033,3-hydroxy 3-methylglutaric acidemia
+BUZZI_00000034,2-methylbutyryl-CoA dehydrogenase deficiency
+BUZZI_00000035,Methylmaionic acidemia with homocystinuria (Cbl D deficiency)
+BUZZI_00000036,Propionic acidemia
+BUZZI_00000037,Methylmaionic acidemia with homocystinuria (Cbl D deficiency)
+BUZZI_00000038,Long-chain 3-hydroxy-acyl-CoA dehydrogenase deficiency
+BUZZI_00000039,Carnitine transport deficiency
+BUZZI_00000040,Homocystinuria (severe MTHFR defect)
+BUZZI_00000041,Carnitine-acylcarnitine translocase deficiency
+BUZZI_00000042,3-hydroxy 3-methylglutaric acidemia
+BUZZI_00000043,Tyrosinemia type II
+BUZZI_00000044,Cytrullinemia type II (Citrine deficiency)
+BUZZI_00000045,Cytrullinemia type II (Citrine deficiency)
+BUZZI_00000046,Very long chain acetiyl-CoA dehydrogenase deficiency
+BUZZI_00000047,Methylmaionic acidemia (Cbl-B)
+BUZZI_00000048,Deficit in the regeneration of the biopterin cofactor
+BUZZI_00000049,Propionic acidemia
+BUZZI_00000050,Deficiency of the biosynthesis of the biopterin cofactor
+BUZZI_00000051,Deficit in the regeneration of the biopterin cofactor
+BUZZI_00000052,Malonic aciduria
+BUZZI_00000053,Argininemia
+BUZZI_00000054,Medium-chain acyl-CoA dehydrogenase deficiency
+BUZZI_00000055,Multiple carboxylase deficiency
+BUZZI_00000056,Benign hyperphenylalaninemia
+BUZZI_00000057,Cytrullinemia type II (Citrine deficiency)
+BUZZI_00000058,3-hydroxy 3-methylglutaric acidemia
+BUZZI_00000059,Benign hyperphenylalaninemia
+BUZZI_00000060,Glutaric acidemia type I
+BUZZI_00000061,Argininosuccinic acidemia
+BUZZI_00000062,Methylmaionic acidemia (Cbl-A)
 BUZZI_00000063,Medium/short chain 3-hydroxy-acyl-CoA dehydrogenase deficiency
-BUZZI_00000064,Long-chain 3-hydroxy-acyl-CoA dehydrogenase deficiency
+BUZZI_00000064,Homocystinuria (CBS defect)
 BUZZI_00000065,Homocystinuria (CBS defect)
-BUZZI_00000066,Glutaric acidemia type I
-BUZZI_00000067,Tyrosinemia type II
-BUZZI_00000068,Carnitine palmitoyltransferase deficiency
-BUZZI_00000069,Homocystinuria (CBS defect)
-BUZZI_00000070,Beta-ketothiola deficiency
-BUZZI_00000071,Long-chain 3-hydroxy-acyl-CoA dehydrogenase deficiency
-BUZZI_00000072,Medium/short chain 3-hydroxy-acyl-CoA dehydrogenase deficiency
-BUZZI_00000073,Maple syrup urine disease
-BUZZI_00000074,Benign hyperphenylalaninemia
-BUZZI_00000075,Carnitine transport deficiency
-BUZZI_00000076,Methylmaionic acidemia with homocystinuria (Cbl C deficiency)
-BUZZI_00000077,Deficiency of the biosynthesis of the biopterin cofactor
-BUZZI_00000078,Argininemia
-BUZZI_00000079,Phenylketonuria
-BUZZI_00000080,Deficiency of the biosynthesis of the biopterin cofactor
-BUZZI_00000081,Deficiency of the biosynthesis of the biopterin cofactor
-BUZZI_00000082,Phenylketonuria
-BUZZI_00000083,Malonic aciduria
-BUZZI_00000084,Mitochondrial trifunctional protein deficiency
+BUZZI_00000066,Tyrosinemia type II
+BUZZI_00000067,Methylmaionic acidemia (Mut)
+BUZZI_00000068,Methylmaionic acidemia (Cbl-A)
+BUZZI_00000069,Glutaric acidemia type II
+BUZZI_00000070,Cytrullinemia type II (Citrine deficiency)
+BUZZI_00000071,Carnitine palmitoyltransferase deficiency
+BUZZI_00000072,Methylmaionic acidemia (Cbl-B)
+BUZZI_00000073,3-hydroxy 3-methylglutaric acidemia
+BUZZI_00000074,Tyrosinemia type I
+BUZZI_00000075,Methylmaionic acidemia (Mut)
+BUZZI_00000076,Benign hyperphenylalaninemia
+BUZZI_00000077,Maple syrup urine disease
+BUZZI_00000078,Methylmaionic acidemia with homocystinuria (Cbl C deficiency)
+BUZZI_00000079,Isovaleric acidemia
+BUZZI_00000080,Glutaric acidemia type I
+BUZZI_00000081,Long-chain 3-hydroxy-acyl-CoA dehydrogenase deficiency
+BUZZI_00000082,3-hydroxy 3-methylglutaric acidemia
+BUZZI_00000083,Carnitine transport deficiency
+BUZZI_00000084,Isovaleric acidemia
 BUZZI_00000085,Isovaleric acidemia
-BUZZI_00000086,Beta-ketothiola deficiency
-BUZZI_00000087,Argininemia
-BUZZI_00000088,Beta-ketothiola deficiency
-BUZZI_00000089,Carnitine transport deficiency
-BUZZI_00000090,Methylmaionic acidemia (Cbl-B)
-BUZZI_00000091,Deficit in the regeneration of the biopterin cofactor
-BUZZI_00000092,Cytrullinemia type II (Citrine deficiency)
-BUZZI_00000093,Methylmaionic acidemia (Cbl-B)
-BUZZI_00000094,Tyrosinemia type II
-BUZZI_00000095,Deficiency of the biosynthesis of the biopterin cofactor
-BUZZI_00000096,Tyrosinemia type I
-BUZZI_00000097,Methylmaionic acidemia with homocystinuria (Cbl C deficiency)
-BUZZI_00000098,Glutaric acidemia type II
-BUZZI_00000099,Methylmaionic acidemia with homocystinuria (Cbl D deficiency)
-BUZZI_00000100,2-methylbutyryl-CoA dehydrogenase deficiency
+BUZZI_00000086,Glutaric acidemia type II
+BUZZI_00000087,Tyrosinemia type II
+BUZZI_00000088,Propionic acidemia
+BUZZI_00000089,3-hydroxy 3-methylglutaric acidemia
+BUZZI_00000090,Malonic aciduria
+BUZZI_00000091,Malonic aciduria
+BUZZI_00000092,Carnitine-acylcarnitine translocase deficiency
+BUZZI_00000093,Very long chain acetiyl-CoA dehydrogenase deficiency
+BUZZI_00000094,Maple syrup urine disease
+BUZZI_00000095,Phenylketonuria
+BUZZI_00000096,Methylmaionic acidemia (Cbl-A)
+BUZZI_00000097,Argininosuccinic acidemia
+BUZZI_00000098,Beta-ketothiola deficiency
+BUZZI_00000099,Carnitine palmitoyltransferase deficiency
+BUZZI_00000100,3-hydroxy 3-methylglutaric acidemia
