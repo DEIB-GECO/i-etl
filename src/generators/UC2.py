@@ -74,10 +74,21 @@ def generate_genetic_dataset(baseline_df):
         gene.append(get_gene(disease))
         
         index = random.randint(0, len(variants_df)-1)
-        mutation1.append(variants_df["coding_name"][index])
+        conding_name = variants_df["coding_name"][index]
+        protein_name = variants_df["protein_name"][index]
+        if isinstance(protein_name, float):
+            mutation1.append(f'{conding_name}')
+        else:
+            mutation1.append(f'{conding_name};{protein_name.replace("p.","p(")})')
         
+    
         index = random.randint(0, len(variants_df)-1)
-        mutation2.append(variants_df["coding_name"][index])
+        conding_name = variants_df["coding_name"][index]
+        protein_name = variants_df["protein_name"][index]
+        if isinstance(protein_name, float):
+            mutation2.append(f'{conding_name}')
+        else:
+            mutation2.append(f'{conding_name};{protein_name.replace("p.","p(")})')
         
     data = {'Patient ID': patient_id, 
             "Inheritance pattern": inheritance,
@@ -90,8 +101,97 @@ def generate_genetic_dataset(baseline_df):
     return df
         
 
-def generate_dynamic_dataset():
-    pass
+def generate_dynamic_dataset(baseline_df, num_evolution_records):
+    id_list = []
+    age = []
+    reva = []
+    leva = []
+    reref = []
+    leref = []
+    rodre = []
+    rodle = []
+    mixrea = []
+    mixlea = []
+    mixreb = []
+    mixleb = []
+    conereamp = []
+    coneleamp = []
+    conereimp = []
+    coneleimp = []
+    pvfre = []
+    pvfle = []
+    cvfre = []
+    cvfle = []
+    rcfr_iii = []
+    rcfl_iii = []
+    rcfr_v = []
+    rcfl_v = []
+    
+    for id in baseline_df["Patient ID"]:
+        age_onset = baseline_df.loc[baseline_df['Patient ID'] == id]['Onset'].values[0]
+        for i in range(num_evolution_records):
+            id_list.append(id)
+            
+            age_onset = age_onset + 1
+            age.append(age_onset)
+            
+            visual_acuity = random.randint(a=0, b=100)
+            reva.append(visual_acuity/100)
+            
+            visual_acuity = random.randint(a=0, b=100)
+            leva.append(visual_acuity/100)
+            
+            myop_hiper =random.choice(["-", "+"])
+            diop = random.randint(1, 8)
+            med = random.choice([1,0])
+            if med:
+                reref.append(f'{myop_hiper}{diop}.{5}')
+            else:
+                reref.append(f'{myop_hiper}{diop}')
+                             
+            myop_hiper =random.choice(["-", "+"])
+            diop = random.randint(1, 8)
+            med = random.choice([1,0])
+            
+            if med:
+                leref.append(f'{myop_hiper}{diop}.{5}')
+            else:
+                leref.append(f'{myop_hiper}{diop}')
+            
+            rodre.append(random.choice([0, "NA", random.randint(a=100, b=300)]))
+            rodle.append(random.choice([0, "NA", random.randint(a=100, b=300)]))
+            
+            mixrea.append(random.choice([0, "NA", random.randint(a=150, b=250)]))
+            mixlea.append(random.choice([0, "NA", random.randint(a=150, b=250)]))
+            
+            mixreb.append(random.choice([0, "NA", random.randint(a=300, b=600)]))
+            mixleb.append(random.choice([0, "NA", random.randint(a=300, b=600)]))
+            
+            conereamp.append(random.choice([0, "NA", random.randint(a=20, b=60)]))
+            coneleamp.append(random.choice([0, "NA", random.randint(a=20, b=60)]))
+            
+            conereimp.append(random.choice([0, "NA", random.randint(a=25, b=35)]))
+            coneleimp.append(random.choice([0, "NA", random.randint(a=25, b=35)]))
+            
+            pvfre.append(random.choice(["yes", "no"]))
+            pvfle.append(random.choice(["yes", "no"]))
+            cvfre.append(random.choice(["yes", "no"]))
+            cvfle.append(random.choice(["yes", "no"]))
+            
+            rcfr_iii.append(random.randint(a=25, b=35))
+            rcfl_iii.append(random.randint(a=25, b=35))
+            rcfr_v.append(random.randint(a=20, b=30))
+            rcfl_v.append(random.randint(a=20, b=30))
+                
+    data = {"Patient ID": id_list, "Age": age, "REVA": reva, "LEVA": leva, "REref": reref, "LEref": leref,
+            "RodRE": rodre, "RodLE": rodle, "MixREA": mixrea, "MixLEA": mixlea, "MixREB": mixreb, "MixLEB": mixleb,
+            "ConeREamp": conereamp, "ConeLEamp": coneleamp, "ConeREimp": conereimp, "ConeLEimp": coneleimp,
+            "PVFRE": pvfre, "PVFLE": pvfle, "CVFRE": cvfre, "CVFLE": cvfle, "RCFR_III": rcfr_iii, "RCFL_III": rcfl_iii,
+            "RCFR_V": rcfr_v, "RCFL_V": rcfl_v}
+    
+    df = pd.DataFrame(data=data)
+
+    return df
 
 def generate_imaging_dataset():
     pass
@@ -123,11 +223,11 @@ def main():
         print(f"Diagnosis results written to {output_file_2}")
         
         # Create the dynamic table
-        #data_3 = generate_dynamic_dataset()
+        data_3 = generate_dynamic_dataset(data_1, 4)
         
         # Create the CSV output
-        #data_3.to_csv(output_file_3, index=False)
-        #print(f"Diagnosis results written to {output_file_3}")
+        data_3.to_csv(output_file_3, index=False)
+        print(f"Diagnosis results written to {output_file_3}")
         
         # Create the imaging data table
         #data_4 = generate_imaging_dataset()
