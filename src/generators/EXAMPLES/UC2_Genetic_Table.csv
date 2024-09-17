@@ -1,0 +1,11 @@
+Patient ID,Inheritance pattern,Gene,Mutation 1,Mutation 2
+UC2_0000001,AR,GUCA1A,c.3921dup;p(Lys23dup),c.145_147delinsTGG
+UC2_0000002,AD,CYP4V2,c.1704+1dup;p((Pro458_Gly460dup)),c.171_239GCA[34];p(Ala2[10])
+UC2_0000003,AR,CFI,c.93+1G>T;p(Trp24Cys),c.6775_6777delinsC;p(Cys28_Lys29delinsTrp)
+UC2_0000004,AR,EFEMP1,c.1704+1del;p((His321_Glu383del)),c.3922dup;p(Val7dup)
+UC2_0000005,AR,GRK1,c.1813dup;Val25dup),c.93+1G>T;p(Trp24Cys)
+UC2_0000006,XL,GRK1,c.9002_9009delinsTTT;p((Val559_Glu561del)),c.1704+1dup;p((Pro458_Gly460dup))
+UC2_0000007,AD,MTTP,c.3922dup;p(Val7dup),c.(4071+1_4072-1)_(5154+1_5155-1)del
+UC2_0000008,XL,SAG,c.6955_6993CAG[26];p(Ala2[10];[11]),c.145_147delinsTGG
+UC2_0000009,XL,MKS1,c.419_420ins[T;401_419];p(Arg78_Gly79ins),c.4145_4160inv
+UC2_0000010,AR,PAK2,c.850_901delinsTTCCTCGATGCCTG;p([Ser44Arg;Trp46Arg]),c.3922dup;p(Val7dup)
