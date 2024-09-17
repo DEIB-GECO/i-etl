@@ -1,34 +1,34 @@
-Acronym,DiseaseName,ORPHANET
-ABL,Abetalipoproteinemia,ORPHA:14
-ACHM,Achromatopsia,ORPHA:49382
-ALMS,Alstrom syndrome,ORPHA:64
-BBS,Bardet-Biedl syndrome,ORPHA:110
-BVMD,Best vitelliform macular dystrophy / bestrophinopathy,ORPHA:1243
-BCD,Bietti crystalline retinal dystrophy,ORPHA:41751
-BCM,Blue-cone monochromacy,ORPHA:16
-CACD,Central areolar choroidal dystrophy,ORPHA:75377
-CHM,Choroideremia,ORPHA:180
-CD,Cone dystrophy,ORPHA:1871
-CDSRR,Cone dystrophy with supernormal rod response,ORPHA:209932
-CRD,Cone-rod dystrophy,ORPHA:1872
-CRDHL,Cone-rod dystrophy and hearing loss,
-CSNB,Congenital stationary night blindness,ORPHA:75382
-DHRD,Doyne honeycomb retinal degeneration,ORPHA:75376
-ESCS,Enhanced S-cone syndrome,ORPHA:53540
-FEVR,Familial exudative vitreoretinopathy,ORPHA:891
-FA,Fundus albipunctatus,ORPHA:227796
-GFS,Goldmann-Favre syndrome,ORPHA:53540
-HARP,"Hypoprebetalipoproteinemia, acanthocytosis, retinitis pigmentosa, and pallidal degeneration",ORPHA:157855
-JBTS,Joubert syndrome,ORPHA:475
-KSS,Kearns-Sayre syndrome,ORPHA:480
-KNO,Knobloch syndrome,ORPHA:1571
-LCA,Leber congenital amaurosis,ORPHA:65
-MD,Maculopathy,ORPHA:519302
-ND,Norrie disease,ORPHA:649
-RP,Retinitis pigmentosa,ORPHA:791
-RPA,Retinitis punctata albescens,ORPHA:52427
-RS,Retinoschisis,ORPHA:792
-SLSN,Senior-Loken syndrome,ORPHA:3156
-SFD,Sorsby fundus dystrophy,ORPHA:59181
-STGD,Stargardt disease,ORPHA:827
-USH,Usher syndrome,ORPHA:886
+Acronym,DiseaseName,ORPHANET,AffectedGenes
+ABL,Abetalipoproteinemia,ORPHA:14,MTTP
+ACHM,Achromatopsia,ORPHA:49382,"ATF6,CNGA3,CNGB3,GNAT2,PDE6C,PDE6HRPGR"
+ALMS,Alstrom syndrome,ORPHA:64,ALMS1
+BBS,Bardet-Biedl syndrome,ORPHA:110,"ARL6,BBS1,BBS10,BBS12,BBS2,BBS4,BBS5,BBS7,BBS9,BBIP1,CEP19,CEP290,CFAP418,IFT172,IFT27,IFT74,LZTFL1,MKKS,MKS1,NPHP1,SCAPER,SDCCAG8,SCLT1,TTC8,TRIM32,WDPCP"
+BVMD,Best vitelliform macular dystrophy / bestrophinopathy,ORPHA:1243,BEST1
+BCD,Bietti crystalline retinal dystrophy,ORPHA:41751,CYP4V2
+BCM,Blue-cone monochromacy,ORPHA:16,"OPN1LW,OPN1MW"
+CACD,Central areolar choroidal dystrophy,ORPHA:75377,"GUCY2D,GUCA1A,PRPH2"
+CHM,Choroideremia,ORPHA:180,CHM
+CD,Cone dystrophy,ORPHA:1871,"CNGB3,GNAT2,GUCA1A,PDE6C"
+CDSRR,Cone dystrophy with supernormal rod response,ORPHA:209932,KCNV2
+CRD,Cone-rod dystrophy,ORPHA:1872,"ATF6,ADAM9,AIPL1,ABCA4,CDHR1,CACNA2D4,CACNA1F,CFAP410,CFAP418,CRX,CNGA3,DRAM2,GUCY2D,GUCA1A,NMNAT1,OPN1LW,OPN1MW,PRPH2,PITPNM3,POC1B,PROM1,RAB28,RIMS1,RAX2,RPGR,RPGRIP1,SEMA4A,TLCD3B,TTLL5,UNC119"
+CRDHL,Cone-rod dystrophy and hearing loss,,"CRDHL1,CRDHL2"
+CSNB,Congenital stationary night blindness,ORPHA:75382,"GRK1,SAG"
+DHRD,Doyne honeycomb retinal degeneration,ORPHA:75376,"CFH,CFI,EFEMP1"
+ESCS,Enhanced S-cone syndrome,ORPHA:53540,NR2E3
+FEVR,Familial exudative vitreoretinopathy,ORPHA:891,"CTNNB1,FZD4,LRP5,NDP,TSPAN12,ZNF408"
+FA,Fundus albipunctatus,ORPHA:227796,"PRPH2,RLBP1,RDH5"
+GFS,Goldmann-Favre syndrome,ORPHA:53540,NR2E3
+HARP,"Hypoprebetalipoproteinemia, acanthocytosis, retinitis pigmentosa, and pallidal degeneration",ORPHA:157855,NBIA1
+JBTS,Joubert syndrome,ORPHA:475,"AHI1,ARL13B,ARL3,ARMC9,B9D1,B9D2,CEP104,CEP120,CEP41,CSPP1,CBY1,CPLANE1,HYLS1,INPP5E,IFT74,KATNIP,KIAA0586,KIAA0753,MKS1,OFD1,PDE6D,PIBF1,SUFU,TCTN1,TCTN2,TCTN3,TOGARAM1,TMEM218,TMEM237,TMEM67"
+KSS,Kearns-Sayre syndrome,ORPHA:480,"MT-ATP8,MT-TL1,RRM2B"
+KNO,Knobloch syndrome,ORPHA:1571,"COL18A1,PAK2"
+LCA,Leber congenital amaurosis,ORPHA:65,"AIPL1,CEP290,CRX,CRB1,GDF6,GUCY2D,IMPDH1,IFT140,IQCB1,LCA5,LRAT,NMNAT1,PCYT1A,KCNJ13,RD3,RPE65,RDH12,RPGRIP1,SPATA7,TULP1,TUBB4B,USP45"
+MD,Maculopathy,ORPHA:519302,"ARMD1,ARMD2,RP7,RP91,COD3,CORD22,IMPG2,MTTL1,MAHCC,MCDR2,CORD21,COXPD57,PROM1,PLEKHA1,PRPH2,ARMS2,SCA7,VMD5,CCMD,LCA15"
+ND,Norrie disease,ORPHA:649,NDP
+RP,Retinitis pigmentosa,ORPHA:791,"AHI1,ARL2BP,ARL3,ARL6,AGBL5,AHR,ABCA4,BBS1,BBS2,BEST1,CDHR1,CA4,CERKL,CFAP418,CLRN1,CC2D2A,CRX,CRB1,CNGA1,CNGB1,DHX38,DHDDS,EYS,FAM161A,FSCN2,GUCA1B,HGSNAT,IMPDH1,IMPG1,IMPG2,IFT140,IFT172,IFT88,IFH3A,IDH3B,KLHL7,KIAA1549,KIZ,LRAT,MAK,MERTK,MRL,NEK2,NR2E3"
+RPA,Retinitis punctata albescens,ORPHA:52427,"PRPH2,RLBP1,RDH5,RHO"
+RS,Retinoschisis,ORPHA:792,RS1
+SLSN,Senior-Loken syndrome,ORPHA:3156,"CEP164,CEP290,INVS,IQCB1,NPHP1,NPHP3,NPHP4,SDCCAG8,TRAF3IP1,WDR19"
+SFD,Sorsby fundus dystrophy,ORPHA:59181,TIMP3
+STGD,Stargardt disease,ORPHA:827,"ABCA4,CNGB3,ELOVL4,PRPH2,PROM1"
+USH,Usher syndrome,ORPHA:886,"ADGRV1,ARSG,CDH23,CIB2,CEP78,CLRN1,ESPN,HARS1,MT-TS2,MYO7A,PDZD7,PCDH15,USH1C,USH1G,USH1E,USH1H,USH1K,USH2A,WHRN"
