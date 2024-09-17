@@ -4,7 +4,7 @@ from datatypes.Identifier import Identifier
 from datatypes.Reference import Reference
 from enums.TableNames import TableNames
 from profiles.Record import Record
-from utils.Counter import Counter
+from database.Counter import Counter
 
 
 class LaboratoryRecord(Record):

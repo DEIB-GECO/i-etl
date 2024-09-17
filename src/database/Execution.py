@@ -2,6 +2,7 @@ import getpass
 import logging
 import os.path
 import platform
+import subprocess
 from datetime import datetime
 
 import pymongo
@@ -14,8 +15,8 @@ from enums.UpsertPolicy import UpsertPolicy
 from utils import setup_logger
 from constants.structure import WORKING_DIR, DB_CONNECTION, DOCKER_FOLDER_METADATA, DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS, \
     DOCKER_FOLDER_TEST
+from utils.file_utils import split_list_of_files
 from utils.setup_logger import log
-from utils.utils import split_list_of_files
 
 
 class Execution:

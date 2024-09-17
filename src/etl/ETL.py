@@ -8,6 +8,9 @@ from etl.Load import Load
 from etl.Reporting import Reporting
 from etl.Transform import Transform
 from constants.locales import DATASET_LOCALES
+from statistics.DatabaseStatistics import DatabaseStatistics
+from statistics.QualityStatistics import QualityStatistics
+from statistics.TimeStatistics import TimeStatistics
 from utils.setup_logger import log
 
 
@@ -61,6 +64,8 @@ class ETL:
                 all_filepaths[imaging_filepath] = FileTypes.IMAGING
 
         # 2. iterate over all the files
+        quality_stats = QualityStatistics(record_stats=True)
+        time_stats = TimeStatistics(record_stats=True)
         for one_file in all_filepaths.keys():
             log.debug(f"{one_file}")
             file_counter = file_counter + 1
@@ -74,7 +79,7 @@ class ETL:
 
             if self.execution.is_extract:
                 log.info(f"--- Starting to ingest file '{self.execution.current_filepath}' of type {self.execution.current_file_type}")
-                self.extract = Extract(database=self.database, execution=self.execution)
+                self.extract = Extract(database=self.database, execution=self.execution, quality_stats=quality_stats, time_stats=time_stats)
                 self.extract.run()
                 if self.execution.is_transform:
                     self.transform = Transform(database=self.database, execution=self.execution, data=self.extract.data,
@@ -83,13 +88,16 @@ class ETL:
                                                mapping_column_to_categorical_value=self.extract.mapping_column_to_categorical_value,
                                                mapping_column_to_dimension=self.extract.mapping_column_to_dimension,
                                                patient_ids_mapping=self.extract.patient_ids_mapping,
-                                               diagnosis_classification=self.extract.mapping_disease_to_classification,
-                                               mapping_diagnosis_to_cc=self.extract.mapping_disease_to_cc)
+                                               diagnosis_classification=self.extract.mapping_diagnosis_to_classification,
+                                               mapping_diagnosis_to_cc=self.extract.mapping_diagnosis_to_cc,
+                                               quality_stats=quality_stats, time_stats=time_stats)
                     self.transform.run()
                     if self.execution.is_load:
                         # create indexes only if this is the last file (otherwise, we would create useless intermediate indexes)
-                        self.load = Load(database=self.database, execution=self.execution, create_indexes=is_last_file)
+                        self.load = Load(database=self.database, execution=self.execution, create_indexes=is_last_file, quality_stats=quality_stats, time_stats=time_stats)
                         self.load.run()
-        # finally, compute a report on the ETL
-        self.reporting = Reporting(database=self.database, execution=self.execution)
+        # finally, compute DB stats and give all (time, quality and db) stats to the report
+        db_stats = DatabaseStatistics(database=self.database, record_stats=True)
+        db_stats.compute_stats()
+        self.reporting = Reporting(database=self.database, execution=self.execution, quality_stats=quality_stats, time_stats=time_stats, db_stats=db_stats)
         self.reporting.run()

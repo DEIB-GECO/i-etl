@@ -1,7 +1,7 @@
 from datatypes.CodeableConcept import CodeableConcept
 from enums.Visibility import Visibility
 from profiles.Resource import Resource
-from utils.Counter import Counter
+from database.Counter import Counter
 
 
 class Feature(Resource):

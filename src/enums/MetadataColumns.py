@@ -1,18 +1,42 @@
+from typing import Any
+
+import inflection
+
 from enums.EnumAsClass import EnumAsClass
-from utils.utils import normalize_column_name
+from utils.assertion_utils import is_not_nan
+from utils.str_utils import process_spaces
 
 
 class MetadataColumns(EnumAsClass):
-    FIRST_ONTOLOGY_NAME = normalize_column_name(column_name="ontology")
-    FIRST_ONTOLOGY_CODE = normalize_column_name(column_name="ontology_code")
-    SEC_ONTOLOGY_NAME = normalize_column_name(column_name="secondary_ontology")
-    SEC_ONTOLOGY_CODE = normalize_column_name(column_name="secondary_ontology_code")
-    DATASET_NAME = normalize_column_name(column_name="dataset")
-    COLUMN_NAME = normalize_column_name(column_name="name")
-    SIGNIFICATION_EN = normalize_column_name(column_name="description")
-    PHENOTYPIC = normalize_column_name(column_name="phenotypic")
-    VISIBILITY = normalize_column_name(column_name="visibility")
-    VAR_TYPE = normalize_column_name(column_name="vartype")
-    ETL_TYPE = normalize_column_name(column_name="ETL_type")
-    VAR_DIMENSION = normalize_column_name(column_name="dimension")
-    JSON_VALUES = normalize_column_name(column_name="JSON_values")
+    # ontology names HAVE TO be normalized by hand here because we can't refer to static methods
+    # because they do not exist yet in the execution context
+    ONTO_NAME_1 = "ontology"
+    ONTO_CODE_1 = "ontology_code"
+    ONTO_NAME_2 = "secondary_ontology"
+    ONTO_CODE_2 = "secondary_ontology_code"
+    DATASET_NAME = "dataset"
+    COLUMN_NAME = "name"
+    SIGNIFICATION_EN = "description"
+    PHENOTYPIC = "phenotypic"
+    VISIBILITY = "visibility"
+    VAR_TYPE = "vartype"
+    ETL_TYPE = "etl_type"
+    VAR_DIMENSION = "dimension"
+    JSON_VALUES = "json_values"
+
+    @classmethod
+    def normalize_name(cls, column_name: str) -> str:
+        if is_not_nan(column_name):
+            column_name = process_spaces(input_string=column_name)
+            return inflection.underscore(column_name).replace(" ", "_").lower()
+        else:
+            return column_name
+
+    @classmethod
+    def normalize_value(cls, column_value: Any) -> str:
+        if is_not_nan(column_value):
+            column_value = str(column_value)
+            column_value = process_spaces(input_string=column_value)
+            return column_value.lower()
+        else:
+            return column_value

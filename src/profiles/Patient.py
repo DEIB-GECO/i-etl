@@ -1,6 +1,6 @@
 from enums.TableNames import TableNames
 from profiles.Resource import Resource
-from utils.Counter import Counter
+from database.Counter import Counter
 
 
 class Patient(Resource):

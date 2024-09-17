@@ -4,10 +4,11 @@ from urllib.parse import quote
 from enums.AccessTypes import AccessTypes
 from enums.Ontologies import Ontologies
 from constants.defaults import DEFAULT_CODING_DISPLAY, SNOMED_OPERATORS_LIST, SNOMED_OPERATORS_STR
-from utils.setup_logger import log
-from utils.utils import normalize_ontology_code, process_spaces, send_query_to_api, parse_json_response, \
-    parse_xml_response, parse_html_response, remove_ontology_prefix, remove_specific_tokens, \
-    remove_operators_in_strings, is_not_nan
+from utils.api_utils import send_query_to_api, parse_json_response, parse_xml_response, parse_html_response
+from utils.assertion_utils import is_not_nan
+from utils.str_utils import process_spaces, remove_operators_in_strings, remove_specific_tokens
+
+REPORTING_NOT_WORKING_QUERIES = []
 
 
 class OntologyResource:
@@ -17,11 +18,11 @@ class OntologyResource:
         # or 406506008|Attention deficit hyperactivity disorder|
         # or 726527001|Weight|:410671006|Date|
         # or 3332001|Occipitofrontal diameter of head|:246454002|Occurrence|=3950001|Birth|
-        if is_not_nan(full_code):
+        if is_not_nan(ontology) and is_not_nan(full_code):
             self.ontology = ontology
             self.full_code = full_code
             # log.info(self.full_code)
-            self.full_code = remove_ontology_prefix(code=full_code)
+            self.full_code = Ontologies.remove_prefix(code=full_code)
             self.full_code = process_spaces(input_string=self.full_code)
             self.full_code = re.sub(r" *(["+SNOMED_OPERATORS_STR+"]+) *", r"\1", self.full_code)  # remove spaces around operators; r"\1" means: replace with first captured group
             self.full_code = remove_operators_in_strings(input_string=self.full_code)  # for every label inside |, '' or "", we remove possible operators
@@ -31,7 +32,8 @@ class OntologyResource:
             self.concat_names = ""  # this joins the name of each code with operators (based on self.elements)
             self.compute_elements()
         else:
-            # this happens when there is not ontology resource associated to a g iven column (or categorical value)
+            # this happens when there is no ontology resource associated to a given column (or categorical value)
+            # or when the ontology could not be found in the list of ontologies
             self.full_code = None
             self.ontology = None
             self.elements = None
@@ -67,7 +69,7 @@ class OntologyResource:
                     self.concat_codes += process_spaces(input_string=element)
                 else:
                     # this is a code
-                    self.concat_codes += normalize_ontology_code(ontology_code=element)
+                    self.concat_codes += Ontologies.normalize_code(ontology_code=element)
             else:
                 # this is an operator, we add it only if this in not the pipe
                 if element != "|":
@@ -113,7 +115,8 @@ class OntologyResource:
                     data = parse_json_response(response)
                     try:
                         return data["prefLabel"]
-                    except:
+                    except Exception as e:
+                        REPORTING_NOT_WORKING_QUERIES.append({"ontology": self.ontology["name"], "code": single_ontology_code, "reason": e})
                         return DEFAULT_CODING_DISPLAY
                 elif self.ontology == Ontologies.LOINC:
                     url = f"https://loinc.regenstrief.org/searchapi/loincs?query={single_ontology_code}"
@@ -122,7 +125,8 @@ class OntologyResource:
                     data = parse_json_response(response)
                     try:
                         return data["Results"][0]["COMPONENT"]
-                    except:
+                    except Exception as e:
+                        REPORTING_NOT_WORKING_QUERIES.append({"ontology": self.ontology["name"], "code": single_ontology_code, "reason": e})
                         return DEFAULT_CODING_DISPLAY
                 elif self.ontology == Ontologies.PUBCHEM:
                     url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{single_ontology_code}/description/JSON"
@@ -130,10 +134,12 @@ class OntologyResource:
                     data = parse_json_response(response)
                     try:
                         return data["InformationList"]["Information"][0]["Title"]
-                    except:
+                    except Exception as e:
+                        REPORTING_NOT_WORKING_QUERIES.append({"ontology": self.ontology["name"], "code": single_ontology_code, "reason": e})
                         return DEFAULT_CODING_DISPLAY
                 elif self.ontology == Ontologies.CLIR:
                     # TODO Nelly: code this
+                    REPORTING_NOT_WORKING_QUERIES.append({"ontology": self.ontology["name"], "code": single_ontology_code, "reason": "CLIR ontology has no API access."})
                     return DEFAULT_CODING_DISPLAY
                 elif self.ontology == Ontologies.GSSO:
                     iri = f"http://purl.obolibrary.org/obo/{single_ontology_code.upper()}"  # we need to upper case the GSSO_, otherwise the API returns None
@@ -147,7 +153,8 @@ class OntologyResource:
                             if one_class.getAttribute("rdf:about") == iri:
                                 if len(one_class.getElementsByTagName("rdfs:label")) > 0:
                                     return one_class.getElementsByTagName("rdfs:label")[0].childNodes[0].data
-                    except:
+                    except Exception as e:
+                        REPORTING_NOT_WORKING_QUERIES.append({"ontology": self.ontology["name"], "code": single_ontology_code, "reason": e})
                         return DEFAULT_CODING_DISPLAY
                 elif self.ontology == Ontologies.ORPHANET:
                     url = f"https://api.orphacode.org/EN/ClinicalEntity/orphacode/{single_ontology_code}/Name"
@@ -155,7 +162,8 @@ class OntologyResource:
                     data = parse_json_response(response)
                     try:
                         return data["Preferred term"]
-                    except:
+                    except Exception as e:
+                        REPORTING_NOT_WORKING_QUERIES.append({"ontology": self.ontology["name"], "code": single_ontology_code, "reason": e})
                         return DEFAULT_CODING_DISPLAY
                 elif self.ontology == Ontologies.GENE_ONTOLOGY:
                     # as of 03/09/2024, this ontology is queried by accessnig the sebpage describing the resource
@@ -166,12 +174,15 @@ class OntologyResource:
                     data = parse_html_response(response)
                     try:
                         return data.select_one("div.page-header > h1").text
-                    except:
+                    except Exception as e:
+                        REPORTING_NOT_WORKING_QUERIES.append({"ontology": self.ontology["name"], "code": single_ontology_code, "reason": e})
                         return DEFAULT_CODING_DISPLAY
                 else:
+                    REPORTING_NOT_WORKING_QUERIES.append({"ontology": self.ontology["name"], "code": single_ontology_code, "reason": "Unknown ontology"})
                     return DEFAULT_CODING_DISPLAY
-            except Exception:
+            except Exception as e:
                 # the API could not be queried, returning empty string
+                REPORTING_NOT_WORKING_QUERIES.append({"ontology": self.ontology["name"], "code": single_ontology_code, "reason": e})
                 return DEFAULT_CODING_DISPLAY
         else:
             return DEFAULT_CODING_DISPLAY

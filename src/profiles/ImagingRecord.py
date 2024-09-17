@@ -3,7 +3,7 @@ from typing import Any
 from datatypes.Identifier import Identifier
 from enums.TableNames import TableNames
 from profiles.Record import Record
-from utils.Counter import Counter
+from database.Counter import Counter
 
 
 class ImagingRecord(Record):

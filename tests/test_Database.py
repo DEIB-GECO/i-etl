@@ -13,13 +13,14 @@ from datatypes.ResourceIdentifier import ResourceIdentifier
 from enums.ParameterKeys import ParameterKeys
 from enums.HospitalNames import HospitalNames
 from profiles.ResourceTest import ResourceTest
-from utils.Counter import Counter
+from database.Counter import Counter
 from enums.TableNames import TableNames
 from enums.UpsertPolicy import UpsertPolicy
 from constants.structure import TEST_DB_NAME
 from constants.idColumns import NO_ID
+from utils.file_utils import write_in_file
 from utils.setup_logger import log
-from utils.utils import compare_tuples, wrong_number_of_docs, write_in_file, set_env_variables_from_dict
+from utils.test_utils import wrong_number_of_docs, compare_tuples, set_env_variables_from_dict
 
 
 class TestDatabase(unittest.TestCase):

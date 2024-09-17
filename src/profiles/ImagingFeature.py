@@ -2,7 +2,7 @@ from datatypes.CodeableConcept import CodeableConcept
 from enums.TableNames import TableNames
 from enums.Visibility import Visibility
 from profiles.Feature import Feature
-from utils.Counter import Counter
+from database.Counter import Counter
 
 
 class ImagingFeature(Feature):

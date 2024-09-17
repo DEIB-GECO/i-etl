@@ -3,7 +3,7 @@ from enums.HospitalNames import HospitalNames
 from profiles.Hospital import Hospital
 from enums.TableNames import TableNames
 from constants.idColumns import NO_ID
-from utils.Counter import Counter
+from database.Counter import Counter
 
 
 class TestHospital:

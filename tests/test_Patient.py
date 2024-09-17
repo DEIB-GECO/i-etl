@@ -2,9 +2,8 @@ from datatypes.PatientAnonymizedIdentifier import PatientAnonymizedIdentifier
 from enums.HospitalNames import HospitalNames
 from profiles.Patient import Patient
 from enums.TableNames import TableNames
-from utils.Counter import Counter
-from constants.idColumns import DELIMITER_PATIENT_ID, NO_ID
-from utils.setup_logger import log
+from database.Counter import Counter
+from constants.idColumns import NO_ID
 
 
 class TestPatient:

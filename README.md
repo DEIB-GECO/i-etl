@@ -66,10 +66,6 @@ Parameters with a * (star) are required, others can be left empty.
 
 ## For developers
 
-To build the Docker image: `sudo docker build . --tag fairificator` (at the project root). 
-If there are errors about credentials, remove the line `credsStore` in your Docker config file (probably at `~/.docker/config.json`). 
-You also need to have Docker Desktop installed and running to be able to build Docker instances. 
-
 ### Building the Docker image
 
 1. Install Docker Desktop and open it

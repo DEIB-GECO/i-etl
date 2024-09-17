@@ -28,12 +28,15 @@ from profiles.LaboratoryFeature import LaboratoryFeature
 from profiles.LaboratoryRecord import LaboratoryRecord
 from profiles.Patient import Patient
 from profiles.Sample import Sample
-from utils.Counter import Counter
+from database.Counter import Counter
 from constants.defaults import BATCH_SIZE, PATTERN_VALUE_DIMENSION
 from constants.idColumns import NO_ID, ID_COLUMNS
+from statistics.QualityStatistics import QualityStatistics
+from statistics.TimeStatistics import TimeStatistics
+from utils.assertion_utils import is_not_nan
+from utils.cast_utils import cast_str_to_boolean, cast_str_to_datetime, cast_str_to_float, cast_str_to_int
+from utils.file_utils import write_in_file
 from utils.setup_logger import log
-from utils.utils import is_not_nan, write_in_file, normalize_column_value, cast_str_to_datetime, \
-    cast_str_to_float, cast_str_to_int, cast_str_to_boolean
 
 
 class Transform(Task):
@@ -41,8 +44,9 @@ class Transform(Task):
     def __init__(self, database: Database, execution: Execution, data: DataFrame, metadata: DataFrame,
                  mapping_categorical_value_to_cc: dict, mapping_column_to_categorical_value: dict,
                  mapping_column_to_dimension: dict, patient_ids_mapping: dict,
-                 diagnosis_classification: dict, mapping_diagnosis_to_cc: dict):
-        super().__init__(database, execution)
+                 diagnosis_classification: dict, mapping_diagnosis_to_cc: dict,
+                 quality_stats: QualityStatistics, time_stats: TimeStatistics):
+        super().__init__(database=database, execution=execution, quality_stats=quality_stats, time_stats=time_stats)
         self.counter = Counter()
 
         # get data, metadata and the mapped values computed in the Extract step
@@ -441,12 +445,14 @@ class Transform(Task):
         rows = self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name]
         if len(rows) == 1:
             row = rows.iloc[0]
-            if is_not_nan(row[MetadataColumns.FIRST_ONTOLOGY_NAME]):
-                coding = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(row[MetadataColumns.FIRST_ONTOLOGY_NAME]), full_code=row[MetadataColumns.FIRST_ONTOLOGY_CODE]),
+            if is_not_nan(row[MetadataColumns.ONTO_NAME_1]):
+                coding = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(row[MetadataColumns.ONTO_NAME_1]),
+                                                      full_code=row[MetadataColumns.ONTO_CODE_1]),
                                 display=None)
                 cc.add_coding(one_coding=coding)
-            if is_not_nan(row[MetadataColumns.SEC_ONTOLOGY_NAME]):
-                coding = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(row[MetadataColumns.SEC_ONTOLOGY_NAME]), full_code=row[MetadataColumns.SEC_ONTOLOGY_CODE]),
+            if is_not_nan(row[MetadataColumns.ONTO_NAME_2]):
+                coding = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(row[MetadataColumns.ONTO_NAME_2]),
+                                                      full_code=row[MetadataColumns.ONTO_CODE_2]),
                                 display=None)
                 cc.add_coding(one_coding=coding)
             return cc
@@ -469,7 +475,7 @@ class Transform(Task):
     def fairify_value(self, column_name: str, value: Any) -> str | float | datetime | CodeableConcept:
         current_column_info = DataFrame(self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name])
         etl_type = current_column_info[MetadataColumns.ETL_TYPE].iloc[0]  # we need to take the value itself, otherwise we end up with a series of 1 element (the ETL type)
-        the_normalized_value = normalize_column_value(column_value=value)  # we compute only once the cast value and return it whenever we cannot FAIRify deeply the value
+        the_normalized_value = MetadataColumns.normalize_value(column_value=value)  # we compute only once the cast value and return it whenever we cannot FAIRify deeply the value
         return_value = None  # to ease logging, we also save the return value in a variable and return it at the very end
         expected_unit = self.mapping_column_to_dimension[column_name] if column_name in self.mapping_column_to_dimension else None  # there was some unit specified in the metadata or extracted from the data
 
@@ -482,8 +488,9 @@ class Transform(Task):
             if column_name in self.mapping_column_to_categorical_value and value in self.mapping_column_to_categorical_value[column_name] and value in self.mapping_categorical_value_to_cc:
                 return_value = self.mapping_categorical_value_to_cc[value]
             else:
-                # log.info("return the cast value")
-                return_value = the_normalized_value  # no categorical value for that value, trying at least to normalize it a bit
+                # no categorical value for that value, we return the normalized value
+                self.quality_stats.add_unknown_categorical_value(column_name=column_name, categorical_value=value)
+                return_value = the_normalized_value
         elif etl_type == DataTypes.DATETIME or etl_type == DataTypes.DATE:
             return_value = cast_str_to_datetime(str_value=value)
         elif etl_type == DataTypes.BOOLEAN:
@@ -494,22 +501,21 @@ class Transform(Task):
                 cc = self.mapping_categorical_value_to_cc[value]
                 # this should rather be a boolean, let's cast it as boolean, instead of using Yes/No SNOMED_CT codes
                 if cc == TrueFalse.get_true():
-                    # log.info("return True")
                     return_value = True
                 elif cc == TrueFalse.get_false():
-                    # log.info("return False")
                     return_value = False
                 else:
-                    # log.info("return the cast value")
+                    self.quality_stats.add_unknown_boolean_value(column_name=column_name, boolean_value=value)
                     return_value = the_normalized_value
             else:
-                # log.info("return the cast value")
-                return_value = cast_str_to_boolean(str_value=value)  # no coded value for that value, trying to cast it as boolean
+                # no coded value for that value, trying to cast it as boolean
+                return_value = cast_str_to_boolean(str_value=value)
         elif etl_type == DataTypes.INTEGER or etl_type == DataTypes.FLOAT:
             if column_name == ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]:
+                # do not cast int-like string identifiers as integers because this may add too much normalization
                 return_value = str(value)
             else:
-                # this is really a numerica value that we want to cast
+                # this is really a numeric value that we want to cast
                 # if the dimension is not the one of the feature, we simply leave the cell value as a string
                 # otherwise, convert the numeric value
                 m = re.search(PATTERN_VALUE_DIMENSION, value)
@@ -519,63 +525,66 @@ class Transform(Task):
                     unit = m.group(2)
                     if unit == expected_unit:
                         if etl_type == DataTypes.INTEGER:
-                            # log.info("return int")
                             return_value = cast_str_to_int(str_value=the_value)
                         elif etl_type == DataTypes.FLOAT:
-                            # log.info("return float")
                             return_value = cast_str_to_float(str_value=the_value)
                     else:
                         # the feature dimension does not correspond, we return the normalized value
-                        # log.info("return the value")
+                        self.quality_stats.add_numerical_value_with_unmatched_dimension(column_name=column_name, expected_dimension=expected_unit, current_dimension=unit, value=value)
                         return_value = the_normalized_value
                 else:
                     # this value does not contain a dimension or is not of the form "value dimension"
                     # thus, we cast it depending on the ETL type
                     if etl_type == DataTypes.INTEGER:
-                        # log.info("return int")
                         return_value = cast_str_to_int(str_value=value)
                     elif etl_type == DataTypes.FLOAT:
-                        # log.info("return float")
                         return_value = cast_str_to_float(str_value=value)
+                    else:
+                        return_value = the_normalized_value
         elif etl_type == DataTypes.REGEX:
             # this corresponds to a diagnosis name, for which we need to find the corresponding ORPHANET code
             if value in self.diagnosis_classification:
                 # the "free text" diagnosis value has a corresponding standard (textual) diagnosis name
                 if "classification" in self.diagnosis_classification[value]:
-                    if self.diagnosis_classification[value]["classification"] == normalize_column_value("Disease"):
+                    if self.diagnosis_classification[value]["classification"] == MetadataColumns.normalize_value("Disease"):
                         if "standard_name" in self.diagnosis_classification[value]:
                             diagnosis_name = self.diagnosis_classification[value]["standard_name"]
                             if diagnosis_name in self.mapping_diagnosis_to_cc:
                                 # the standard diagnosis name has corresponding codes (ORPHANET and OMIM)
                                 the_cc = self.mapping_diagnosis_to_cc[diagnosis_name]
-                                log.info("return cc")
                                 return_value = the_cc
                             else:
                                 log.error(f"For '{diagnosis_name}', no existing CC has been found. Will return '{the_normalized_value}'")
-                                log.info("return the cast value")
                                 return_value = the_normalized_value
                         else:
                             log.error(f"'{value}' has no associated standard name. Will return '{the_normalized_value}'")
-                            log.info("return the cast value")
                             return_value = the_normalized_value
                     else:
-                        log.error("This disease is not a real disease (because such patient do not show abnormal conditions). Will return None")
-                        log.info("return None")
+                        log.error("This disease is not a real disease (because this patient does not have abnormal condition). Will return None")
                         return_value = None
                 else:
                     log.error(f"No classification for '{value}'. Will return '{the_normalized_value}'")
-                    log.info("return the cast value")
                     return_value = the_normalized_value
             else:
                 log.error(f"For '{value}', no diagnosis name has been found. Will return '{the_normalized_value}'")
-                log.info("return the cast value")
                 return_value = the_normalized_value
         else:
-            log.error(f"Unhandled ETL type '{etl_type}'")
+            # Unhandled ETL type: this cannot happen because all ETL types have been checked during the Extract step
+            return_value = the_normalized_value
 
         # in case, casting the value returned None, we set the original value back
         # otherwise, we keep the cast value
         return_value = value if return_value is None else return_value
+
+        # count how many fairified values do not (still) match the expected ETL type
+        if ((etl_type == DataTypes.BOOLEAN and not isinstance(value, bool))
+                or (etl_type == DataTypes.FLOAT and not isinstance(value, float))
+                or (etl_type == DataTypes.INTEGER and not isinstance(value, int))
+                or (etl_type == DataTypes.DATE and not isinstance(value, datetime))
+                or (etl_type == DataTypes.DATETIME and not isinstance(value, datetime))
+                or (etl_type == DataTypes.STRING and not isinstance(value, str))
+                or (etl_type == DataTypes.CATEGORY and not isinstance(value, dict))):
+            self.quality_stats.add_column_with_unmatched_typeof_etl_types(column_name=column_name, typeof_type=type(value).__name__, etl_type=etl_type)
 
         # we use type(..).__name__ to get the class name, e.g., "str" or "bool", instead of "<class 'float'>"
         log.info(f"Column '{column_name}': fairify {type(value).__name__} value '{value}' (unit: {expected_unit}) into {type(return_value).__name__}: {return_value}")
@@ -588,7 +597,7 @@ class Transform(Task):
         :type column_name:
         :param fairified_value:
         :type fairified_value:
-        :return: two vlaues: either (the anonymized value, True), or (the fairified value, False). This is to know whether we should create another Record with the anonymized value
+        :return: two values: either (the anonymized value, True), or (the fairified value, False). This is to know whether we should create another Record with the anonymized value
         :rtype:
         """
         current_column_info = DataFrame(self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name])

@@ -1,4 +1,4 @@
-from utils.Counter import Counter
+from database.Counter import Counter
 
 
 class TestCounter:

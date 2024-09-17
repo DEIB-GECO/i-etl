@@ -1,12 +1,12 @@
 from enums.EnumAsClass import EnumAsClass
-from utils.utils import normalize_column_name
+from enums.MetadataColumns import MetadataColumns
 
 
 class SampleColumns(EnumAsClass):
-    SAMPLE_BAR_CODE = normalize_column_name(column_name="SampleBarcode")
-    SAMPLING = normalize_column_name(column_name="Sampling")
-    SAMPLE_QUALITY = normalize_column_name(column_name="SampleQuality")
-    SAMPLE_COLLECTED = normalize_column_name(column_name="SamTimeCollected")
-    SAMPLE_RECEIVED = normalize_column_name(column_name="SamTimeReceived")
-    SAMPLE_TOO_YOUNG = normalize_column_name(column_name="TooYoung")
-    SAMPLE_BIS = normalize_column_name(column_name="BIS")
+    SAMPLE_BAR_CODE = MetadataColumns.normalize_name(column_name="SampleBarcode")
+    SAMPLING = MetadataColumns.normalize_name(column_name="Sampling")
+    SAMPLE_QUALITY = MetadataColumns.normalize_name(column_name="SampleQuality")
+    SAMPLE_COLLECTED = MetadataColumns.normalize_name(column_name="SamTimeCollected")
+    SAMPLE_RECEIVED = MetadataColumns.normalize_name(column_name="SamTimeReceived")
+    SAMPLE_TOO_YOUNG = MetadataColumns.normalize_name(column_name="TooYoung")
+    SAMPLE_BIS = MetadataColumns.normalize_name(column_name="BIS")

@@ -13,9 +13,8 @@ from database.Execution import Execution
 from enums.TableNames import TableNames
 from enums.UpsertPolicy import UpsertPolicy
 from constants.idColumns import DELIMITER_PATIENT_ID
+from query.Operators import Operators
 from utils.setup_logger import log
-from utils.utils import mongodb_match, mongodb_project_one, mongodb_group_by, \
-    mongodb_sort, mongodb_limit, mongodb_unwind
 
 
 class Database:
@@ -236,12 +235,12 @@ class Database:
 
         if from_string:
             # we need to parse the string to long
-            operations.append(mongodb_project_one(field=field, projected_value={"split_var": {"$split": [f"${field}", DELIMITER_PATIENT_ID]}}))
-            operations.append(mongodb_unwind(field="split_var"))
-            operations.append(mongodb_match(field="split_var", value="^[0-9]+$", is_regex=True))  # only numbers
-            operations.append(mongodb_group_by(group_key={"var": "$split_var"}, group_by_name="min_max", operator="$max", field={"$toLong": "$split_var"}))
-            operations.append(mongodb_sort(field="min_max", sort_order=sort_order))
-            operations.append(mongodb_limit(1))
+            operations.append(Operators.project(field=field, projected_value={"split_var": {"$split": [f"${field}", DELIMITER_PATIENT_ID]}}))
+            operations.append(Operators.unwind(field="split_var"))
+            operations.append(Operators.match(field="split_var", value="^[0-9]+$", is_regex=True))  # only numbers
+            operations.append(Operators.group_by(group_key={"var": "$split_var"}, group_by_name="min_max", operator="$max", field={"$toLong": "$split_var"}))
+            operations.append(Operators.sort(field="min_max", sort_order=sort_order))
+            operations.append(Operators.limit(1))
 
             # better_default > db["ExaminationRecord"].aggregate([
             #     {"$project": {"identifier.value": {"$split": ["$identifier.value", "/"]}}},
@@ -253,13 +252,13 @@ class Database:
             if "." in field:
                 # this field is a nested one, we only keep the deepest one,
                 # e.g. for { "identifier": {"value": 1}} we keep { "value": 1}
-                operations.append(mongodb_project_one(field=field, projected_value=last_field))
-                operations.append(mongodb_sort(field=last_field, sort_order=sort_order))
-                operations.append(mongodb_limit(1))
+                operations.append(Operators.project(field=field, projected_value=last_field))
+                operations.append(Operators.sort(field=last_field, sort_order=sort_order))
+                operations.append(Operators.limit(1))
             else:
-                operations.append(mongodb_project_one(field=field, projected_value=None))
-                operations.append(mongodb_sort(field=field, sort_order=sort_order))
-                operations.append(mongodb_limit(1))
+                operations.append(Operators.project(field=field, projected_value=None))
+                operations.append(Operators.sort(field=field, sort_order=sort_order))
+                operations.append(Operators.limit(1))
 
         cursor = self.db[table_name].aggregate(operations)
         for result in cursor:
@@ -288,9 +287,9 @@ class Database:
         :return: A float value being the average value for the given LabFeature instance (url).
         """
         cursor = self.db[TableNames.LABORATORY_RECORD].aggregate([
-            mongodb_match(field="instantiate.reference", value=lab_feature_url, is_regex=False),
-            mongodb_project_one(field="value", projected_value=None),
-            mongodb_group_by(group_key=None, group_by_name="avg_val", operator="$avg", field="$value")
+            Operators.match(field="instantiate.reference", value=lab_feature_url, is_regex=False),
+            Operators.project(field="value", projected_value=None),
+            Operators.group_by(group_key=None, group_by_name="avg_val", operator="$avg", field="$value")
         ])
 
         for result in cursor:
@@ -306,11 +305,11 @@ class Database:
         :return: A CommandCursor to iterate over the value distribution of the form { "value": frequency, ... }
         """
         pipeline = [
-            mongodb_match(field="instantiate.reference", value=lab_feature_url, is_regex=False),
-            mongodb_project_one(field="value", projected_value=None),
-            mongodb_group_by(group_key="$value", group_by_name="total", operator="$sum", field=1),
-            mongodb_match(field="total", value={"$gt": min_value}, is_regex=False),
-            mongodb_sort(field="_id", sort_order=1)
+            Operators.match(field="instantiate.reference", value=lab_feature_url, is_regex=False),
+            Operators.project(field="value", projected_value=None),
+            Operators.group_by(group_key="$value", group_by_name="total", operator="$sum", field=1),
+            Operators.match(field="total", value={"$gt": min_value}, is_regex=False),
+            Operators.sort(field="_id", sort_order=1)
         ]
         # .collation({"locale": "en_US", "numericOrdering": "true"})
         return self.db[TableNames.LABORATORY_RECORD].aggregate(pipeline)

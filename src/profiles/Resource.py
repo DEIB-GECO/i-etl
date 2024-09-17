@@ -6,8 +6,9 @@ from constants.idColumns import NO_ID
 from datatypes.PatientAnonymizedIdentifier import PatientAnonymizedIdentifier
 from datatypes.ResourceIdentifier import ResourceIdentifier
 from enums.TableNames import TableNames
-from utils.Counter import Counter
-from utils.utils import get_mongodb_date_from_datetime, is_not_nan
+from database.Counter import Counter
+from query.Operators import Operators
+from utils.assertion_utils import is_not_nan
 
 
 class Resource:
@@ -44,7 +45,7 @@ class Resource:
             self.identifier = ResourceIdentifier(id_value=id_to_use)
 
         self.resource_type = resource_type
-        self.timestamp = get_mongodb_date_from_datetime(current_datetime=datetime.now())
+        self.timestamp = Operators.from_datetime_to_isodate(current_datetime=datetime.now())
 
     def get_identifier_as_int(self):
         # Resource identifiers (except Patient ones, which override this method) are a stringified int, e.g., "1", "2", etc
@@ -62,11 +63,11 @@ class Resource:
             else:
                 # we may also need to convert datetime within MongoDB-style dates
                 if isinstance(state[key], datetime):
-                    state[key] = get_mongodb_date_from_datetime(state[key])
+                    state[key] = Operators.from_datetime_to_isodate(state[key])
         return state
 
     def to_json(self):
-        # encode create a stringified JSON object of the class
+        # encode creates a stringified JSON object of the class
         # and decode transforms the stringified JSON to a "real" JSON object
         return jsonpickle.decode(jsonpickle.encode(self, unpicklable=False))
 

@@ -3,7 +3,7 @@ from typing import Any
 from datatypes.Identifier import Identifier
 from datatypes.Reference import Reference
 from profiles.Resource import Resource
-from utils.Counter import Counter
+from database.Counter import Counter
 
 
 class Record(Resource):

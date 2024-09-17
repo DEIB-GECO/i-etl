@@ -24,10 +24,14 @@ from etl.Transform import Transform
 from profiles.Hospital import Hospital
 from constants.structure import TEST_DB_NAME, DOCKER_FOLDER_TEST
 from constants.defaults import DEFAULT_CODING_DISPLAY
+from statistics.QualityStatistics import QualityStatistics
+from statistics.TimeStatistics import TimeStatistics
+from utils.assertion_utils import is_not_nan
+from utils.cast_utils import cast_str_to_datetime
+from utils.file_utils import read_tabular_file_as_string, get_json_resource_file
 from utils.setup_logger import log
-from utils.utils import (compare_tuples, get_json_resource_file, get_lab_feature_by_text, is_not_nan,
-                         read_tabular_file_as_string, get_field_value_for_patient, get_lab_records_for_patient,
-                         set_env_variables_from_dict, cast_str_to_datetime)
+from utils.test_utils import set_env_variables_from_dict, compare_tuples, get_lab_feature_by_text, \
+    get_field_value_for_patient, get_lab_records_for_patient
 
 
 # personalized setup called at the beginning of each test
@@ -71,7 +75,8 @@ def my_setup(hospital_name: str, extracted_metadata_path: str, extracted_data_pa
                           mapping_column_to_dimension=column_to_dimension,
                           patient_ids_mapping=patient_ids_mapping,
                           diagnosis_classification=diagnosis_classification,
-                          mapping_diagnosis_to_cc=mapping_diagnosis_to_cc)
+                          mapping_diagnosis_to_cc=mapping_diagnosis_to_cc,
+                          quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False))
     return transform
 
 
@@ -526,13 +531,13 @@ class TestTransform(unittest.TestCase):
         # no associated ontology code (patient id line)
         first_row = transform.metadata.iloc[0]
         log.info(first_row)
-        coding = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(first_row[MetadataColumns.FIRST_ONTOLOGY_NAME]), full_code=first_row[MetadataColumns.FIRST_ONTOLOGY_CODE]),
+        coding = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(first_row[MetadataColumns.ONTO_NAME_1]), full_code=first_row[MetadataColumns.ONTO_CODE_1]),
                         display=None)
         assert coding.system is None
 
         # one associated ontology code (molecule_g line)
         third_row = transform.metadata.iloc[3]
-        coding = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(third_row[MetadataColumns.FIRST_ONTOLOGY_NAME]), full_code=third_row[MetadataColumns.FIRST_ONTOLOGY_CODE]),
+        coding = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(third_row[MetadataColumns.ONTO_NAME_1]), full_code=third_row[MetadataColumns.ONTO_CODE_1]),
                         display=None)
         assert coding is not None
         assert coding.system == Ontologies.SNOMEDCT["url"]
@@ -543,13 +548,13 @@ class TestTransform(unittest.TestCase):
         # but this method creates one coding at a time
         # so, we need to create them in two times
         fifth_row = transform.metadata.iloc[5]
-        coding1 = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(fifth_row[MetadataColumns.FIRST_ONTOLOGY_NAME]), full_code=fifth_row[MetadataColumns.FIRST_ONTOLOGY_CODE]),
+        coding1 = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(fifth_row[MetadataColumns.ONTO_NAME_1]), full_code=fifth_row[MetadataColumns.ONTO_CODE_1]),
                          display=None)
         assert coding1 is not None
         assert coding1.system == Ontologies.LOINC["url"]
         assert coding1.code == "46463-6"
         assert coding1.display == "Race or ethnicity"
-        coding2 = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(fifth_row[MetadataColumns.SEC_ONTOLOGY_NAME]), full_code=fifth_row[MetadataColumns.SEC_ONTOLOGY_CODE]),
+        coding2 = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(fifth_row[MetadataColumns.ONTO_NAME_2]), full_code=fifth_row[MetadataColumns.ONTO_CODE_2]),
                          display=None)
         assert coding2.system == Ontologies.SNOMEDCT["url"]
         assert coding2.code == "397731000"

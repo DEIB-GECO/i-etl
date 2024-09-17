@@ -11,8 +11,11 @@ from enums.HospitalNames import HospitalNames
 from enums.Ontologies import Ontologies
 from enums.TableNames import TableNames
 from constants.structure import TEST_DB_NAME
+from query.Operators import Operators
+from statistics.QualityStatistics import QualityStatistics
+from statistics.TimeStatistics import TimeStatistics
 from utils.setup_logger import log
-from utils.utils import get_mongodb_date_from_datetime, set_env_variables_from_dict
+from utils.test_utils import set_env_variables_from_dict
 
 
 # personalized setup called at the beginning of each test
@@ -27,22 +30,23 @@ def my_setup(create_indexes: bool) -> Load:
 
     TestLoad.execution.set_up(setup_data_files=False)  # no need to setup the files, we get data and metadata as input
     database = Database(TestLoad.execution)
-    load = Load(database=database, execution=TestLoad.execution, create_indexes=create_indexes)
+    load = Load(database=database, execution=TestLoad.execution, create_indexes=create_indexes,
+                quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False))
 
-    # 2. create few "fake" files in the current working directory in order to tests insertion and index creation
+    # 2. create few "fake" files in the current working directory in order to test insertion and index creation
     lab_features = [
         {
             "identifier": {"value": "1"},
             "code": {
                 "text": "age (Age in weeks)",
                 "coding": [{"system": Ontologies.LOINC["url"], "code": "123-456", "display": "age (Age in weeks)"}]},
-            "timestamp": get_mongodb_date_from_datetime(current_datetime=datetime.now())
+            "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())
         }, {
             "identifier": {"value": "2"},
             "code": {
                 "text": "twin (Whether the baby has a twin)",
                 "coding": [{"system": Ontologies.LOINC["url"], "code": "123-457", "display": "twin (Whether the baby has a twin)"}]},
-            "timestamp": get_mongodb_date_from_datetime(current_datetime=datetime.now())
+            "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())
         }
     ]
 
@@ -53,14 +57,14 @@ def my_setup(create_indexes: bool) -> Load:
             "subject": {"reference": "1", "type": TableNames.PATIENT},
             "recorded_by": {"reference": "1", "type": TableNames.HOSPITAL},
             "instantiate": {"reference": "1", "type": TableNames.LABORATORY_FEATURE},
-            "timestamp": get_mongodb_date_from_datetime(current_datetime=datetime.now())
+            "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())
         }
     ]
 
     patients = [
-        {"identifier": {"value": "1"}, "timestamp": get_mongodb_date_from_datetime(current_datetime=datetime.now())},
-        {"identifier": {"value": "2"}, "timestamp": get_mongodb_date_from_datetime(current_datetime=datetime.now())},
-        {"identifier": {"value": "3"}, "timestamp": get_mongodb_date_from_datetime(current_datetime=datetime.now())}
+        {"identifier": {"value": "1"}, "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())},
+        {"identifier": {"value": "2"}, "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())},
+        {"identifier": {"value": "3"}, "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())}
     ]
 
     hospital = {"identifier": {"value": "1"}, "name": HospitalNames.TEST_H1}

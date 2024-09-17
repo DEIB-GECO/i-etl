@@ -1,20 +1,34 @@
+import inflection
+
 from enums.EnumAsClass import EnumAsClass
-from utils.utils import normalize_hospital_name
+from utils.assertion_utils import is_not_nan
+from utils.str_utils import process_spaces
 
 
 class HospitalNames(EnumAsClass):
-    IT_BUZZI_UC1 = normalize_hospital_name("IT_BUZZI_UC1")
-    RS_IMGGE = normalize_hospital_name("RS_IMGGE")
-    ES_HSJD = normalize_hospital_name("ES_HSJD")
-    IT_BUZZI_UC3 = normalize_hospital_name("IT_BUZZI_UC3")
-    ES_TERRASSA = normalize_hospital_name("ES_TERRASSA")
-    DE_UKK = normalize_hospital_name("DE_UKK")
-    ES_LAFE = normalize_hospital_name("ES_LAFE")
-    IL_HMC = normalize_hospital_name("IL_HMC")
-    TEST_H1 = normalize_hospital_name("TEST_H1")
-    TEST_H2 = normalize_hospital_name("TEST_H2")
-    TEST_H3 = normalize_hospital_name("TEST_H3")
+    # hospital names HAVE TO be normalized by hand here because we can't refer to static methods
+    # because they do not exist yet in the execution context
+    IT_BUZZI_UC1 = "it_buzzi_uc1"
+    RS_IMGGE = "rs_imgge"
+    ES_HSJD = "es_hsjd"
+    IT_BUZZI_UC3 = "it_buzzi_uc3"
+    ES_TERRASSA = "es_terrassa"
+    DE_UKK = "de_ukk"
+    ES_LAFE = "es_lafe"
+    IL_HMC = "il_hmc"
+    TEST_H1 = "test_h1"
+    TEST_H2 = "test_h2"
+    TEST_H3 = "test_h3"
 
     @classmethod
     def short(cls, hospital_name) -> str:
         return hospital_name.split("_")[1]  # the second part corresponds to the hospital name (only)
+
+    @classmethod
+    def normalize(cls, hospital_name: str) -> str:
+        if is_not_nan(hospital_name):
+            hospital_name = process_spaces(hospital_name)
+            hospital_name = hospital_name.replace(" ", "_")  # add missing _ in hospital name if needed
+            return inflection.underscore(hospital_name).lower()
+        else:
+            return hospital_name

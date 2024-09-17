@@ -2,7 +2,7 @@ from analysis.DistributionPlot import DistributionPlot
 from database.Database import Database
 
 
-class BasicStatistics:
+class BasicPlot:
     def __init__(self, database: Database):
         self.database = database
 

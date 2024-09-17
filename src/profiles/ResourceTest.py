@@ -1,5 +1,5 @@
 from profiles.Resource import Resource
-from utils.Counter import Counter
+from database.Counter import Counter
 
 
 class ResourceTest(Resource):

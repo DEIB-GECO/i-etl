@@ -1,15 +1,15 @@
 import jsonpickle
 
 from datatypes.OntologyResource import OntologyResource
+from utils.assertion_utils import is_not_nan
 from utils.setup_logger import log
-from utils.utils import is_not_nan
 
 
 class Coding:
     def __init__(self, code: OntologyResource, display: str|None):
-        if not is_not_nan(value=code.full_code):
+        if not is_not_nan(value=code.full_code) or not is_not_nan(value=code.ontology):
             # no ontology code has been provided for that variable name, let's skip it
-            log.error("Could not create a Coding with no ontology code.")
+            log.error("Could not create a Coding with no ontology system and/or code.")
             self.system = None
             self.code = None
             self.display = None

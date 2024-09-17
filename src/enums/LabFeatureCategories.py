@@ -2,8 +2,8 @@ from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Coding import Coding
 from datatypes.OntologyResource import OntologyResource
 from enums.EnumAsClass import EnumAsClass
+from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
-from utils.utils import normalize_column_name
 
 
 class LabFeatureCategories(EnumAsClass):
@@ -12,12 +12,12 @@ class LabFeatureCategories(EnumAsClass):
 
     @classmethod
     def get_phenotypic(cls) -> CodeableConcept:
-        cc = CodeableConcept(original_name=normalize_column_name("Phenotypic column"))
+        cc = CodeableConcept(original_name=MetadataColumns.normalize_name("Phenotypic column"))
         cc.add_coding(one_coding=LabFeatureCategories.CATEGORY_PHENOTYPIC)
         return cc
 
     @classmethod
     def get_clinical(cls) -> CodeableConcept:
-        cc = CodeableConcept(original_name=normalize_column_name("Clinical column"))
+        cc = CodeableConcept(original_name=MetadataColumns.normalize_name("Clinical column"))
         cc.add_coding(one_coding=LabFeatureCategories.CATEGORY_CLINICAL)
         return cc
