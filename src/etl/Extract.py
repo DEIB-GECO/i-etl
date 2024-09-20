@@ -246,17 +246,16 @@ class Extract(Task):
         # this will avoid to send again API queries to re-build already-built CodeableConcept
         # we get all the categorical values across all tables to not miss any of them
         existing_categorical_codeable_concepts = {}
-        for table_name in TableNames.values():
+        for feature_table_name in TableNames.features(db=self.database, check_exists=True):
             # the set of categorical values are defined in Features only, thus we can restrict the find to only those:
-            if table_name.endswith("Feature"):
-                # categorical_values_for_table_name = {'_id': ObjectId('66b9b890583ee775ef4edcb9'), 'categorical_values': [{...}, {...}, ...]}
-                categorical_values_for_table_name = self.database.find_operation(table_name=table_name, filter_dict={"categorical_values": {"$exists": 1}}, projection={"categorical_values": 1})
-                for one_tuple in categorical_values_for_table_name:
-                    # existing_categorical_value_for_table_name = [{...}, {...}, ...]}
-                    existing_categorical_values_for_table_name = one_tuple["categorical_values"]
-                    for encoded_categorical_value in existing_categorical_values_for_table_name:
-                        existing_cc = CodeableConcept.from_json(encoded_categorical_value, quality_stats=self.quality_stats)
-                        existing_categorical_codeable_concepts[existing_cc.text] = existing_cc
+            # categorical_values_for_table_name = {'_id': ObjectId('66b9b890583ee775ef4edcb9'), 'categorical_values': [{...}, {...}, ...]}
+            categorical_values_for_table_name = self.database.find_operation(table_name=feature_table_name, filter_dict={"categorical_values": {"$exists": 1}}, projection={"categorical_values": 1})
+            for one_tuple in categorical_values_for_table_name:
+                # existing_categorical_value_for_table_name = [{...}, {...}, ...]}
+                existing_categorical_values_for_table_name = one_tuple["categorical_values"]
+                for encoded_categorical_value in existing_categorical_values_for_table_name:
+                    existing_cc = CodeableConcept.from_json(encoded_categorical_value, quality_stats=self.quality_stats)
+                    existing_categorical_codeable_concepts[existing_cc.text] = existing_cc
         log.debug(existing_categorical_codeable_concepts)
 
         # 2. then, we associate each column to its set of categorical values

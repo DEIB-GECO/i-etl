@@ -33,7 +33,7 @@ class DatabaseStatistics(Statistics):
 
     def compute_counts_instances(self, database: Database) -> None:
         self.counts_instances = {}
-        for table_name in TableNames.data_tables():
+        for table_name in TableNames.data_tables(db=database, check_exists=True):
             if table_name not in self.counts_instances:
                 self.counts_instances[table_name] = {}
             self.counts_instances[table_name] = database.count_documents(table_name=table_name, filter_dict={})
@@ -41,7 +41,7 @@ class DatabaseStatistics(Statistics):
     def compute_nb_of_rec_with_no_value(self, database: Database) -> None:
         # for each RecordX, count the number of instances with no field "value"
         self.nb_of_rec_with_no_value = {}
-        for table_name in TableNames.records():
+        for table_name in TableNames.records(db=database, check_exists=True):
             if table_name not in self.nb_of_rec_with_no_value:
                 self.nb_of_rec_with_no_value[table_name] = {}
             no_val_records = [jsonify_tuple(res) for res in database.find_operation(table_name=table_name, filter_dict={"value": {"$exists": 0}}, projection={})]
@@ -53,7 +53,7 @@ class DatabaseStatistics(Statistics):
         # this query returns something like [ { reference: '83' }, { reference: '87' } ]
         # then we process it to return a dict <ref. id, count>, e.g. { "83": {"elements": [...], "size": 5}, "87": {...} }
         self.nb_of_rec_with_no_value_per_instantiate = {}
-        for table_name in TableNames.records():
+        for table_name in TableNames.records(db=database, check_exists=True):
             log.info(table_name)
             instantiates_no_value = [jsonify_tuple(res) for res in database.find_distinct_operation(table_name=table_name, key="instantiate", filter={"value": {"$exists": 0}})]
             log.info(instantiates_no_value)
@@ -69,7 +69,7 @@ class DatabaseStatistics(Statistics):
     def compute_nb_of_cc_with_no_text_per_table(self, database: Database) -> None:
         # db["LaboratoryFeature"].find({ "code.text": "" })
         self.nb_of_cc_with_no_text_per_table = {}
-        for table_name in TableNames.features_and_records():
+        for table_name in TableNames.features_and_records(db=database, check_exists=True):
             if table_name not in self.nb_of_cc_with_no_text_per_table:
                 self.nb_of_cc_with_no_text_per_table[table_name] = {}
             no_text_cc = [jsonify_tuple(res) for res in database.find_operation(table_name=table_name, filter_dict={"code.text": ""}, projection={})]
@@ -79,7 +79,7 @@ class DatabaseStatistics(Statistics):
     def compute_nb_of_cc_with_no_coding_per_table(self, database: Database) -> None:
         # db["LaboratoryFeature"].find({ "code.coding": [] })
         self.nb_of_cc_with_no_coding_per_table = {}
-        for table_name in TableNames.features_and_records():
+        for table_name in TableNames.features_and_records(db=database, check_exists=True):
             if table_name not in self.nb_of_cc_with_no_coding_per_table:
                 self.nb_of_cc_with_no_coding_per_table[table_name] = {}
             no_coding_cc = [jsonify_tuple(res) for res in database.find_operation(table_name=table_name, filter_dict={"code.coding": []}, projection={})]

@@ -1,7 +1,6 @@
 from database.Database import Database
 from database.Execution import Execution
 from enums.TableNames import TableNames
-from etl.Reporting import Reporting
 from etl.Task import Task
 from statistics.QualityStatistics import QualityStatistics
 from statistics.TimeStatistics import TimeStatistics
@@ -44,7 +43,7 @@ class Load(Task):
         count = 0
 
         # 1. for each resource type, we create an index on its "identifier" and its creation date "timestamp"
-        for table_name in TableNames.values():
+        for table_name in TableNames.values(db=self.database, check_exists=True):
             self.database.create_unique_index(table_name=table_name, columns={"identifier": 1})
             self.database.create_non_unique_index(table_name=table_name, columns={"timestamp": 1})
             count += 2
@@ -53,19 +52,17 @@ class Load(Task):
 
         # for Feature instances, we create an index both on the ontology (system) and a code
         # this is because we usually ask for a code for a given ontology (what is a coe without its ontology? nothing)
-        for table_name in TableNames.values():
-            if "Feature" in table_name and len(table_name) > len("Feature"):
-                # a table name of the form XFeature
-                self.database.create_non_unique_index(table_name=table_name, columns={"code.coding.system": 1, "code.coding.code": 1})
-                count += 1
+        for table_name in TableNames.features(db=self.database, check_exists=True):
+            # a table name of the form XFeature
+            self.database.create_non_unique_index(table_name=table_name, columns={"code.coding.system": 1, "code.coding.code": 1})
+            count += 1
 
         # for Record instances, we create an index per reference because we usually join each reference to a table
-        for table_name in TableNames.values():
-            if "Record" in table_name and len(table_name) > len("Record"):
-                # a table name of the form XRecord
-                self.database.create_non_unique_index(table_name=table_name, columns={"instantiate.reference": 1})
-                self.database.create_non_unique_index(table_name=table_name, columns={"subject.reference": 1})
-                self.database.create_non_unique_index(table_name=table_name, columns={"based_on.reference": 1})
-                count += 3
+        for table_name in TableNames.records(db=self.database, check_exists=True):
+            # a table name of the form XRecord
+            self.database.create_non_unique_index(table_name=table_name, columns={"instantiate.reference": 1})
+            self.database.create_non_unique_index(table_name=table_name, columns={"subject.reference": 1})
+            self.database.create_non_unique_index(table_name=table_name, columns={"based_on.reference": 1})
+            count += 3
 
         log.info(f"Finished to create {count} indexes.")

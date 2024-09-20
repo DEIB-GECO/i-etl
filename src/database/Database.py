@@ -72,6 +72,14 @@ class Database:
         except Exception:
             raise ConnectionError(f"The MongoDB client located at {self.execution.db_connection} could not be accessed properly.")
 
+    def check_table_exists(self, table_name: str) -> bool:
+        log.info(f"check if {table_name} exists")
+        # return True
+        # log.info(self.client.list_collection_names())
+        # log.info(self.client[self.execution.db_name].list_collection_names())
+        log.info(self.db.list_collection_names())
+        return table_name in self.db.list_collection_names()
+
     def drop_db(self) -> None:
         """
         Drop the current database.
@@ -316,7 +324,7 @@ class Database:
 
     def get_max_resource_counter_id(self) -> int:
         max_value = -1
-        for table_name in TableNames.values():
+        for table_name in TableNames.values(db=self, check_exists=True):
             if table_name == TableNames.SAMPLE:
                 # pass because Sample resources have their ID assigned by hospitals, not the FAIRificator
                 pass
