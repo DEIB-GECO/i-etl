@@ -426,18 +426,6 @@ class TestExtract(unittest.TestCase):
             expected_dict = json.load(f)
         assert expected_dict == extract.patient_ids_mapping
 
-    def test_compute_mapping_disease_to_classification(self):
-        extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.ORIG_DIAGNOSIS_CLASSIFICATION_PATH,
-                           data_type=FileTypes.DIAGNOSIS_CLASSIFICATION,
-                           pids_path=TheTestFiles.ORIG_FILLED_PIDS_PATH,
-                           hospital_name=HospitalNames.TEST_H1)
-        extract.compute_mapping_diagnosis_to_classification()
-
-        with open(os.path.join(DOCKER_FOLDER_TEST, TheTestFiles.EXTR_JSON_DIAGNOSIS_CLASSIFICATION_PATH), "r") as f:
-            expected_dict = json.load(f)
-        assert expected_dict == extract.mapping_diagnosis_to_classification  # == performs a deep equality
-
     def test_compute_mapping_disease_to_cc(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_DIAGNOSIS_TO_CC_PATH,

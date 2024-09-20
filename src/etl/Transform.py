@@ -44,7 +44,7 @@ class Transform(Task):
     def __init__(self, database: Database, execution: Execution, data: DataFrame, metadata: DataFrame,
                  mapping_categorical_value_to_cc: dict, mapping_column_to_categorical_value: dict,
                  mapping_column_to_dimension: dict, patient_ids_mapping: dict,
-                 diagnosis_classification: dict, mapping_diagnosis_to_cc: dict,
+                 mapping_diagnosis_to_cc: dict, mapping_sample_id_to_patient_id: dict,
                  quality_stats: QualityStatistics, time_stats: TimeStatistics):
         super().__init__(database=database, execution=execution, quality_stats=quality_stats, time_stats=time_stats)
         self.counter = Counter()
@@ -58,9 +58,8 @@ class Transform(Task):
         # to keep track of anonymized vs. hospital patient ids
         # this is empty if no file as been provided by the user, otherwise it contains some mappings <patient ID, anonymized ID>
         self.patient_ids_mapping = patient_ids_mapping
-        # to know how to map "free text" diagnosis values and their classification (healthy/disease)
-        self.diagnosis_classification = diagnosis_classification  # it may be None if this is not BUZZI
         self.mapping_diagnosis_to_cc = mapping_diagnosis_to_cc  # it may be None if this is not BUZZI
+        self.mapping_sample_id_to_patient_id = mapping_sample_id_to_patient_id  # it may be None if this is not BUZZI
 
         # to record objects that will be further inserted in the database
         # features
@@ -90,16 +89,18 @@ class Transform(Task):
         self.set_resource_counter_id()
         self.create_hospital()
         log.info(f"Hospital count: {self.database.count_documents(table_name=TableNames.HOSPITAL, filter_dict={})}")
-        self.create_patients()
         # load some data from the database to compute references
-        self.mapping_hospital_to_hospital_id = self.database.retrieve_mapping(table_name=TableNames.HOSPITAL, key_fields="name", value_fields="identifier.value")
+        self.mapping_hospital_to_hospital_id = self.database.retrieve_mapping(table_name=TableNames.HOSPITAL, key_fields="name", value_fields="identifier")
         log.debug(f"{self.mapping_hospital_to_hospital_id}")
 
         if self.execution.current_file_type == FileTypes.LABORATORY:
+            self.create_patients()
             self.create_laboratory_features()
             self.create_samples()
             self.create_laboratory_records()
         elif self.execution.current_file_type == FileTypes.DIAGNOSIS:
+            log.info(self.mapping_diagnosis_to_cc)
+            log.info(self.mapping_column_to_diagfeat_id)
             self.create_diagnosis_features()
             self.create_diagnosis_records()
         elif self.execution.current_file_type == FileTypes.MEDICINE:
@@ -234,10 +235,10 @@ class Transform(Task):
         log.info(f"create Lab. Rec. instances in memory")
 
         # a. load some data from the database to compute references
-        self.mapping_hospital_to_hospital_id = self.database.retrieve_mapping(table_name=TableNames.HOSPITAL, key_fields="name", value_fields="identifier.value")
+        self.mapping_hospital_to_hospital_id = self.database.retrieve_mapping(table_name=TableNames.HOSPITAL, key_fields="name", value_fields="identifier")
         log.debug(f"{self.mapping_hospital_to_hospital_id}")
 
-        self.mapping_column_to_labfeat_id = self.database.retrieve_mapping(table_name=TableNames.LABORATORY_FEATURE, key_fields="code.text", value_fields="identifier.value")
+        self.mapping_column_to_labfeat_id = self.database.retrieve_mapping(table_name=TableNames.LABORATORY_FEATURE, key_fields="code.text", value_fields="identifier")
         log.debug(f"{self.mapping_column_to_labfeat_id}")
 
         # b. Create LabRecord instance, and write them in temporary (JSON) files
@@ -291,7 +292,7 @@ class Transform(Task):
     def create_diagnosis_records(self):
         log.info(f"create Diag. Rec. instances in memory")
 
-        self.mapping_column_to_diagfeat_id = self.database.retrieve_mapping(table_name=TableNames.DIAGNOSIS_FEATURE, key_fields="code.text", value_fields="identifier.value")
+        self.mapping_column_to_diagfeat_id = self.database.retrieve_mapping(table_name=TableNames.DIAGNOSIS_FEATURE, key_fields="code.text", value_fields="identifier")
         log.debug(f"{self.mapping_column_to_diagfeat_id}")
 
         # b. Create DiagRecord instance, and write them in temporary (JSON) files
@@ -309,13 +310,22 @@ class Transform(Task):
                         # we know a code for this column, so we can register the value of that LabFeature
                         diag_feature_id = Identifier(value=self.mapping_column_to_diagfeat_id[column_name])
                         hospital_id = Identifier(self.mapping_hospital_to_hospital_id[self.execution.hospital_name])
-                        # for patient instances, no need to go through a mapping because they have an ID assigned by the hospital
-                        # TODO NELLY: if Buzzi decides to remove patient ids, we will have to number them with a Counter
-                        #  and to create mappings (as for Hospital and Feature resources)
                         id_column_for_patients = ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]
-                        # we cannot use PatientAnonymizedIdentifier otherwise we would concat a set hospital name to the anonymized patient id
-                        # patient_id = PatientAnonymizedIdentifier(id_value=row[id_column_for_patients], hospital_name=self.execution.hospital_name)
-                        patient_id = Identifier(value=self.patient_ids_mapping[row[id_column_for_patients]])
+                        if TableNames.SAMPLE in ID_COLUMNS[self.execution.hospital_name]:
+                            # https://github.com/Nelly-Barret/BETTER-fairificator/issues/146
+                            # in this case, the ID in the diagnosis data is the SAMPLE id, not the patient one
+                            # thus, we need to get it by hand (to effectively record a patient ID)
+                            # in any case, clinical data MUST be ingested before the diagnosis data, otherwise the mapping wil be empty
+                            sample_id = row[ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE]]
+                            if sample_id in self.mapping_sample_id_to_patient_id:
+                                patient_id = Identifier(value=self.mapping_sample_id_to_patient_id[sample_id])
+                            else:
+                                # in case this sample has no associated sample barcode
+                                # we take the sample bar code (which is, at least, a bit better than None)
+                                patient_id = Identifier(value=sample_id)
+                        else:
+                            # this is the normal case, we can get the patient ID directly from the data
+                            patient_id = Identifier(value=self.patient_ids_mapping[row[id_column_for_patients]])
                         # log.debug(f"patient_id = {patient_id.to_json()} of type {type(patient_id)}")
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
                         if fairified_value is None:
@@ -397,6 +407,7 @@ class Transform(Task):
         log.info(f"create patient instances in memory")
         count = 1
         for index, row in self.data.iterrows():
+            log.info(row)
             row_patient_id = row[ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]]
             if row_patient_id not in self.patient_ids_mapping:
                 # the (anonymized) patient does not exist yet, we will create it
@@ -447,12 +458,12 @@ class Transform(Task):
             row = rows.iloc[0]
             if is_not_nan(row[MetadataColumns.ONTO_NAME_1]):
                 coding = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(row[MetadataColumns.ONTO_NAME_1]),
-                                                      full_code=row[MetadataColumns.ONTO_CODE_1]),
+                                                      full_code=row[MetadataColumns.ONTO_CODE_1], quality_stats=self.quality_stats),
                                 display=None)
                 cc.add_coding(one_coding=coding)
             if is_not_nan(row[MetadataColumns.ONTO_NAME_2]):
                 coding = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(row[MetadataColumns.ONTO_NAME_2]),
-                                                      full_code=row[MetadataColumns.ONTO_CODE_2]),
+                                                      full_code=row[MetadataColumns.ONTO_CODE_2], quality_stats=self.quality_stats),
                                 display=None)
                 cc.add_coding(one_coding=coding)
             return cc
@@ -543,30 +554,12 @@ class Transform(Task):
                         return_value = the_normalized_value
         elif etl_type == DataTypes.REGEX:
             # this corresponds to a diagnosis name, for which we need to find the corresponding ORPHANET code
-            if value in self.diagnosis_classification:
-                # the "free text" diagnosis value has a corresponding standard (textual) diagnosis name
-                if "classification" in self.diagnosis_classification[value]:
-                    if self.diagnosis_classification[value]["classification"] == MetadataColumns.normalize_value("Disease"):
-                        if "standard_name" in self.diagnosis_classification[value]:
-                            diagnosis_name = self.diagnosis_classification[value]["standard_name"]
-                            if diagnosis_name in self.mapping_diagnosis_to_cc:
-                                # the standard diagnosis name has corresponding codes (ORPHANET and OMIM)
-                                the_cc = self.mapping_diagnosis_to_cc[diagnosis_name]
-                                return_value = the_cc
-                            else:
-                                log.error(f"For '{diagnosis_name}', no existing CC has been found. Will return '{the_normalized_value}'")
-                                return_value = the_normalized_value
-                        else:
-                            log.error(f"'{value}' has no associated standard name. Will return '{the_normalized_value}'")
-                            return_value = the_normalized_value
-                    else:
-                        log.error("This disease is not a real disease (because this patient does not have abnormal condition). Will return None")
-                        return_value = None
-                else:
-                    log.error(f"No classification for '{value}'. Will return '{the_normalized_value}'")
-                    return_value = the_normalized_value
+            if value in self.mapping_diagnosis_to_cc:
+                # the standard diagnosis name has corresponding codes (ORPHANET and OMIM)
+                the_cc = self.mapping_diagnosis_to_cc[value]["cc"]
+                return_value = the_cc
             else:
-                log.error(f"For '{value}', no diagnosis name has been found. Will return '{the_normalized_value}'")
+                log.error(f"'{value}' is not described in the companion diagnosis file. Will return '{the_normalized_value}'")
                 return_value = the_normalized_value
         else:
             # Unhandled ETL type: this cannot happen because all ETL types have been checked during the Extract step

@@ -4,6 +4,7 @@ from urllib.parse import quote
 from enums.AccessTypes import AccessTypes
 from enums.Ontologies import Ontologies
 from constants.defaults import DEFAULT_CODING_DISPLAY, SNOMED_OPERATORS_LIST, SNOMED_OPERATORS_STR
+from statistics.QualityStatistics import QualityStatistics
 from utils.api_utils import send_query_to_api, parse_json_response, parse_xml_response, parse_html_response
 from utils.assertion_utils import is_not_nan
 from utils.str_utils import process_spaces, remove_operators_in_strings, remove_specific_tokens
@@ -12,7 +13,8 @@ REPORTING_NOT_WORKING_QUERIES = []
 
 
 class OntologyResource:
-    def __init__(self, ontology: Ontologies, full_code: str):
+    def __init__(self, ontology: Ontologies, full_code: str, quality_stats: QualityStatistics | None):
+        self.quality_stats = quality_stats if quality_stats is not None else QualityStatistics(record_stats=False)
         # full code corresponds to a (simple or complex) ontology code with or without names
         # e.g., 406506008
         # or 406506008|Attention deficit hyperactivity disorder|
@@ -116,7 +118,7 @@ class OntologyResource:
                     try:
                         return data["prefLabel"]
                     except Exception as e:
-                        REPORTING_NOT_WORKING_QUERIES.append({"ontology": self.ontology["name"], "code": single_ontology_code, "reason": e})
+                        self.quality_stats.add_failed_api_call(ontology_name=self.ontology["name"], id_code=single_ontology_code, api_error=e.args[0])
                         return DEFAULT_CODING_DISPLAY
                 elif self.ontology == Ontologies.LOINC:
                     url = f"https://loinc.regenstrief.org/searchapi/loincs?query={single_ontology_code}"
@@ -126,7 +128,7 @@ class OntologyResource:
                     try:
                         return data["Results"][0]["COMPONENT"]
                     except Exception as e:
-                        REPORTING_NOT_WORKING_QUERIES.append({"ontology": self.ontology["name"], "code": single_ontology_code, "reason": e})
+                        self.quality_stats.add_failed_api_call(ontology_name=self.ontology["name"], id_code=single_ontology_code, api_error=e.args[0])
                         return DEFAULT_CODING_DISPLAY
                 elif self.ontology == Ontologies.PUBCHEM:
                     url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{single_ontology_code}/description/JSON"
@@ -135,11 +137,11 @@ class OntologyResource:
                     try:
                         return data["InformationList"]["Information"][0]["Title"]
                     except Exception as e:
-                        REPORTING_NOT_WORKING_QUERIES.append({"ontology": self.ontology["name"], "code": single_ontology_code, "reason": e})
+                        self.quality_stats.add_failed_api_call(ontology_name=self.ontology["name"], id_code=single_ontology_code, api_error=e.args[0])
                         return DEFAULT_CODING_DISPLAY
                 elif self.ontology == Ontologies.CLIR:
                     # TODO Nelly: code this
-                    REPORTING_NOT_WORKING_QUERIES.append({"ontology": self.ontology["name"], "code": single_ontology_code, "reason": "CLIR ontology has no API access."})
+                    self.quality_stats.add_failed_api_call(ontology_name=self.ontology["name"], id_code=single_ontology_code, api_error="No API access for the CLIR ontology.")
                     return DEFAULT_CODING_DISPLAY
                 elif self.ontology == Ontologies.GSSO:
                     iri = f"http://purl.obolibrary.org/obo/{single_ontology_code.upper()}"  # we need to upper case the GSSO_, otherwise the API returns None
@@ -154,7 +156,7 @@ class OntologyResource:
                                 if len(one_class.getElementsByTagName("rdfs:label")) > 0:
                                     return one_class.getElementsByTagName("rdfs:label")[0].childNodes[0].data
                     except Exception as e:
-                        REPORTING_NOT_WORKING_QUERIES.append({"ontology": self.ontology["name"], "code": single_ontology_code, "reason": e})
+                        self.quality_stats.add_failed_api_call(ontology_name=self.ontology["name"], id_code=single_ontology_code, api_error=e.args[0])
                         return DEFAULT_CODING_DISPLAY
                 elif self.ontology == Ontologies.ORPHANET:
                     url = f"https://api.orphacode.org/EN/ClinicalEntity/orphacode/{single_ontology_code}/Name"
@@ -163,7 +165,7 @@ class OntologyResource:
                     try:
                         return data["Preferred term"]
                     except Exception as e:
-                        REPORTING_NOT_WORKING_QUERIES.append({"ontology": self.ontology["name"], "code": single_ontology_code, "reason": e})
+                        self.quality_stats.add_failed_api_call(ontology_name=self.ontology["name"], id_code=single_ontology_code, api_error=e.args[0])
                         return DEFAULT_CODING_DISPLAY
                 elif self.ontology == Ontologies.GENE_ONTOLOGY:
                     # as of 03/09/2024, this ontology is queried by accessnig the sebpage describing the resource
@@ -175,14 +177,14 @@ class OntologyResource:
                     try:
                         return data.select_one("div.page-header > h1").text
                     except Exception as e:
-                        REPORTING_NOT_WORKING_QUERIES.append({"ontology": self.ontology["name"], "code": single_ontology_code, "reason": e})
+                        self.quality_stats.add_failed_api_call(ontology_name=self.ontology["name"], id_code=single_ontology_code, api_error=e.args[0])
                         return DEFAULT_CODING_DISPLAY
                 else:
-                    REPORTING_NOT_WORKING_QUERIES.append({"ontology": self.ontology["name"], "code": single_ontology_code, "reason": "Unknown ontology"})
+                    self.quality_stats.add_failed_api_call(ontology_name=self.ontology["name"], id_code=single_ontology_code, api_error=f"Unknown ontology {self.ontology}")
                     return DEFAULT_CODING_DISPLAY
             except Exception as e:
                 # the API could not be queried, returning empty string
-                REPORTING_NOT_WORKING_QUERIES.append({"ontology": self.ontology["name"], "code": single_ontology_code, "reason": e})
+                self.quality_stats.add_failed_api_call(ontology_name=self.ontology["name"], id_code=single_ontology_code, api_error=e.args[0])
                 return DEFAULT_CODING_DISPLAY
         else:
             return DEFAULT_CODING_DISPLAY

@@ -9,6 +9,7 @@ import jsonpickle
 import pandas as pd
 from bson.json_util import loads
 from dateutil.parser import parse
+from pandas import DataFrame
 from pymongo.mongo_client import MongoClient
 
 from datatypes.OntologyResource import OntologyResource
@@ -63,9 +64,9 @@ def main_ontology_api():
     # print(Coding.compute_display_from_api(ontology=Ontologies.GSSO, ontology_code="GSSO_000818"))
     # print()
     # print(Coding.compute_display_from_api(ontology=Ontologies.ORPHANET, ontology_code="ORPHA:159"))
-    o1 = OntologyResource(ontology=Ontologies.LOINC, full_code="LA6675-8")
+    o1 = OntologyResource(ontology=Ontologies.LOINC, full_code="LA6675-8", quality_stats=None)
     print(f"label: {o1.get_resource_label_from_api(single_ontology_code=o1.full_code)}")
-    o2 = OntologyResource(ontology=Ontologies.LOINC, full_code="60478-5")
+    o2 = OntologyResource(ontology=Ontologies.LOINC, full_code="60478-5", quality_stats=None)
     print(f"label: {o2.get_resource_label_from_api(single_ontology_code=o2.full_code)}")
 
 
@@ -95,7 +96,7 @@ def main_ontology_code_class():
         for i in range(len(df)):
             for onto, code in zip(["ontology", "secondary_ontology"], ["ontology_code", "secondary_ontology_code"]):
                 if not pd.isna(df.iloc[i][onto]) and df.iloc[i][code] not in resources:
-                    o = OntologyResource(ontology=Ontologies.get_enum_from_name(ontology_name=df.iloc[i][onto]), full_code=df.iloc[i][code])
+                    o = OntologyResource(ontology=Ontologies.get_enum_from_name(ontology_name=df.iloc[i][onto]), full_code=df.iloc[i][code], quality_stats=None)
                     log.info(f"----- iteration {it} -----")
                     log.info(o.full_code)
                     o.compute_concat_codes()
@@ -152,24 +153,6 @@ def main_ontology_code_class():
         file.write(json.dumps(resources, indent=4))
 
 
-def main_stats():
-    db_stats = DatabaseStatistics(database=None, record_stats=True)
-    quality_stats = QualityStatistics(record_stats=True)
-    time_stats = TimeStatistics(record_stats=True)
-    log.info(f"DB stats: {db_stats}")
-    log.info(f"DB stats as JSON: {db_stats.to_json()}")
-    log.info(f"Quality stats: {quality_stats}")
-    log.info(f"Quality stats as JSON: {quality_stats.to_json()}")
-    log.info(f"Time stats: {time_stats}")
-    log.info(f"Time stats as JSON: {time_stats.to_json()}")
-    report = {} | db_stats.to_json()
-    log.info(report)
-    report = report | quality_stats.to_json()
-    log.info(report)
-    report = report | time_stats.to_json()
-    log.info(report)
-    
-
 if __name__ == '__main__':
     # main_load_json_from_file_as_bson()
     
@@ -179,7 +162,5 @@ if __name__ == '__main__':
     # main_ontology_api()
 
     # main_ontology_code_class()
-
-    main_stats()
 
     print("Done.")

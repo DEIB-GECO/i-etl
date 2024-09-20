@@ -39,8 +39,8 @@ class Extract(Task):
         self.mapping_column_to_categorical_value = {}  # each column name with its normalized accepted values (str, not cc)
         self.mapping_column_to_vartype = {}  # each column is associated to its var type (column "vartype" in metadata)
         self.mapping_column_to_dimension = {}  # each column is associated to its dimension, the union set of the dimension given in the metadata and the units found in the string values themselves
-        self.mapping_diagnosis_to_classification = {}  # each (data) diagnosis name is associated to a standard diagnosis name and a classification healthy/disease
-        self.mapping_diagnosis_to_cc = {}  # each standard diagnosis name is associated to an OrphaNet code (and possibly omim)
+        self.mapping_diagnosis_to_cc = {}  # each diagnosis acronym is associated to an OrphaNet code (and possibly omim)
+        self.mapping_sample_id_to_patient_id = {}  # each sample ID (unique) associated to the patient ID from it is comes (may not be unique has a Patient may have several samples)
 
     def run(self) -> None:
         # load and pre-process metadata
@@ -55,11 +55,16 @@ class Extract(Task):
             # laboratory, diagnosis, medicine data
             self.load_tabular_data_file()
             self.remove_unused_csv_columns()
+            if self.execution.current_file_type == FileTypes.LABORATORY:
+                # this is mainly for BUZZI: they associate diagnosis to sampleBarcode, not to Patient id
+                # thus, we need to store the mapping { sample id: patient id } in order to further associate each patient to his/her diagnosis(es)
+                self.compute_mapping_sample_to_patient_id()
             log.debug(self.metadata.columns)
         elif self.execution.current_file_type == FileTypes.IMAGING:
             self.load_imaging_data_file()
         elif self.execution.current_file_type == FileTypes.GENOMIC:
             self.load_genomic_data_file()
+        # here we do not have a case for REGEX_DIAGNOSIS, because we will load it after, with a separate method
         else:
             raise TypeError(f"The type of the current file is unknown. It should be laboratory, diagnosis, medicine, imaging or genomic. It is of type: {self.execution.current_file_type}")
 
@@ -72,8 +77,7 @@ class Extract(Task):
         # if provided as input, load the mapping between patient IDs and anonymized IDs
         self.load_patient_id_mapping()
 
-        # if provided as input, load diagnosis classification and codes
-        self.compute_mapping_diagnosis_to_classification()
+        # if provided as input, load diagnosis codes
         self.compute_mapping_diagnosis_to_cc()
 
     def load_metadata_file(self) -> None:
@@ -166,6 +170,7 @@ class Extract(Task):
 
         # normalize column names ("sex", "dateOfBirth", "Ethnicity", etc) to match column names described in the metadata
         self.data.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x), inplace=True)
+
         # we also normalize the data values
         # they will be cast to the right type (int, float, datetime) in the Transform step
         # issue 113: we do not normalize identifiers assigned by hospitals to avoid discrepancies
@@ -250,7 +255,7 @@ class Extract(Task):
                     # existing_categorical_value_for_table_name = [{...}, {...}, ...]}
                     existing_categorical_values_for_table_name = one_tuple["categorical_values"]
                     for encoded_categorical_value in existing_categorical_values_for_table_name:
-                        existing_cc = CodeableConcept.from_json(encoded_categorical_value)
+                        existing_cc = CodeableConcept.from_json(encoded_categorical_value, quality_stats=self.quality_stats)
                         existing_categorical_codeable_concepts[existing_cc.text] = existing_cc
         log.debug(existing_categorical_codeable_concepts)
 
@@ -288,7 +293,7 @@ class Extract(Task):
                                 # we need to do a loop because there may be several ontology terms for a single mapping
                                 if key != "value" and key != "explanation":
                                     ontology = Ontologies.get_enum_from_name(ontology_name=key)
-                                    cc.add_coding(one_coding=Coding(code=OntologyResource(ontology=ontology, full_code=val), display=None))
+                                    cc.add_coding(one_coding=Coding(code=OntologyResource(ontology=ontology, full_code=val, quality_stats=self.quality_stats), display=None))
                             # {
                             #   'm': {"coding": [{"system": "snomed", "code": "248153007", "display": "m (Male)"}], "text": ""},
                             #   'f': {"coding": [{"system": "snomed", "code": "248152002", "display": "f (Female)"}], "text": ""},
@@ -375,46 +380,39 @@ class Extract(Task):
                     self.mapping_column_to_dimension[column_name] = None
         log.debug(self.mapping_column_to_dimension)
 
-    def compute_mapping_diagnosis_to_classification(self) -> None:
-        self.mapping_diagnosis_to_classification = {}
-
-        if self.execution.diagnosis_classification_filepath is not None:
-            diagnosis_csv = read_tabular_file_as_string(self.execution.diagnosis_classification_filepath)
-            # normalize the headers, e.g., "Classification" -> "classification"
-            diagnosis_csv.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x), inplace=True)
-            for index, line in diagnosis_csv.iterrows():
-                diagnosis_free_text = MetadataColumns.normalize_value(line[DiagnosisColumns.FREE_TEXT])
-                self.mapping_diagnosis_to_classification[diagnosis_free_text] = {}
-                standard_name = line[DiagnosisColumns.STANDARD_NAME]
-                if is_not_nan(standard_name):
-                    # a standard name exists in the classification
-                    self.mapping_diagnosis_to_classification[diagnosis_free_text]["standard_name"] = standard_name
-                else:
-                    # no standard name is associated to the free text
-                    # we need to explicitly specify None, otherwise we would have "nan" (which is not recognised in JSON documents)
-                    self.quality_stats.add_diagnosis_with_no_standard_name(diagnosis_free_text=diagnosis_free_text)
-                classification = MetadataColumns.normalize_value(line[DiagnosisColumns.CLASSIFICATION])
-                if is_not_nan(classification) and (classification == MetadataColumns.normalize_value("healthy") or classification == MetadataColumns.normalize_value("disease")):
-                    # this diagnosis is classified as Healthy/Disease
-                    self.mapping_diagnosis_to_classification[diagnosis_free_text]["classification"] = classification
-                else:
-                    # no classification (Healthy/Disease) is provided for this diagnosis.
-                    self.quality_stats.add_diagnosis_with_no_classification(diagnosis_free_text=diagnosis_free_text)
-        # log.debug(self.mapping_diagnosis_to_classification)
-
     def compute_mapping_diagnosis_to_cc(self) -> None:
         self.mapping_diagnosis_to_cc = {}
 
         if self.execution.diagnosis_regexes_filepath is not None:
-            diagnosis_csv = read_tabular_file_as_string(self.execution.diagnosis_regexes_filepath)
-            # normalize the headers, e.g., "Classification" -> "classification"
-            diagnosis_csv.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x), inplace=True)
-            for index, line in diagnosis_csv.iterrows():
-                diagnosis_standard_name = line[DiagnosisRegexColumns.DIAGNOSIS_NAME]
-                cc = CodeableConcept(original_name=diagnosis_standard_name)
-                if is_not_nan(line[DiagnosisRegexColumns.ORPHANET_CODE]):
-                    cc.add_coding(one_coding=Coding(code=OntologyResource(ontology=Ontologies.ORPHANET, full_code=line[DiagnosisRegexColumns.ORPHANET_CODE]), display=None))
+            diagnosis_info_csv = read_tabular_file_as_string(self.execution.diagnosis_regexes_filepath)
+            # normalize the headers, e.g., "SampleBarcode" -> "sample_barcode"
+            diagnosis_info_csv.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x), inplace=True)
+            for index, line in diagnosis_info_csv.iterrows():
+                diagnosis_name = MetadataColumns.normalize_value(line[DiagnosisColumns.NAME])
+                diagnosis_acronym = MetadataColumns.normalize_value(line[DiagnosisColumns.ACRONYM])
+                diagnosis_ORPHANET = MetadataColumns.normalize_value(line[DiagnosisColumns.ORPHANET_CODE])
+                cc = CodeableConcept(original_name=diagnosis_name)
+                if is_not_nan(diagnosis_ORPHANET):
+                    cc.add_coding(one_coding=Coding(code=OntologyResource(ontology=Ontologies.ORPHANET, full_code=line[DiagnosisRegexColumns.ORPHANET_CODE], quality_stats=self.quality_stats), display=None))
                 else:
-                    self.quality_stats.add_diagnosis_with_no_orphanet_code(diagnosis_standard_name=diagnosis_standard_name)
-                self.mapping_diagnosis_to_cc[diagnosis_standard_name] = cc.to_json()  # do not forget to add the JSONified CC, not the CC itlelf
-        # log.debug(self.mapping_disease_to_cc)
+                    self.quality_stats.add_diagnosis_with_no_orphanet_code(diagnosis_standard_name=diagnosis_name)
+                self.mapping_diagnosis_to_cc[diagnosis_acronym] = {}
+                self.mapping_diagnosis_to_cc[diagnosis_acronym]["diagnosis_name"] = diagnosis_name
+                self.mapping_diagnosis_to_cc[diagnosis_acronym]["cc"] = cc.to_json()  # do not forget to add the JSONified CC, not the CC itself
+        log.debug(self.mapping_diagnosis_to_cc)
+
+    def compute_mapping_sample_to_patient_id(self):
+        log.info("compute mapping sample/patient")
+        self.mapping_sample_id_to_patient_id = {}
+
+        if TableNames.SAMPLE not in ID_COLUMNS[self.execution.hospital_name]:
+            # Only hospitals with samples need this
+            # thus, stopping here
+            pass
+        else:
+            for index, row in self.data.iterrows():
+                sample_id = row[ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE]]
+                patient_id = row[ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]]
+                if sample_id not in self.mapping_sample_id_to_patient_id:
+                    self.mapping_sample_id_to_patient_id[sample_id] = patient_id
+        log.info(self.mapping_sample_id_to_patient_id)

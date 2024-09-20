@@ -6,8 +6,8 @@ from enums.Ontologies import Ontologies
 
 
 class TrueFalse(EnumAsClass):
-    FALSE = Coding(code=OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="373067005"), display=None)
-    TRUE = Coding(code=OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="373066001"), display=None)
+    FALSE = Coding(code=OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="373067005", quality_stats=None), display=None)
+    TRUE = Coding(code=OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="373066001", quality_stats=None), display=None)
 
     @classmethod
     def get_false(cls) -> CodeableConcept:

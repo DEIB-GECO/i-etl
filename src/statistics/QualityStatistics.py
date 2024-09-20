@@ -18,8 +18,6 @@ class QualityStatistics(Statistics):
         self.columns_unknown_etl_type = {}  # { column_name: unknown_etl_type, ... }
         self.categorical_columns_without_json_values = []  # list of column names for which the ETL type is "category" and for which the column JSON_values is empty
         self.categorical_columns_unparseable_json = {}  # { column_name: broken_json, ... }
-        self.diagnosis_no_standard_name = []  # list of free text diagnosis for which no standard name is provided
-        self.diagnosis_no_classification = []  # list of free text diagnosis for which no classification is provided
         self.diagnosis_no_orphanet_code = []  # list of diagnosis standard names for which no orphanet code is provided
         self.data_columns_not_in_metadata = []  # list of data columns that are "removed" because not part of the metadata
 
@@ -78,14 +76,6 @@ class QualityStatistics(Statistics):
     def add_categorical_colum_with_unparseable_json(self, column_name: str, broken_json: str):
         if self.record_stats and column_name not in self.categorical_columns_unparseable_json:
             self.categorical_columns_unparseable_json[column_name] = broken_json
-
-    def add_diagnosis_with_no_standard_name(self, diagnosis_free_text: str):
-        if self.record_stats and diagnosis_free_text not in self.diagnosis_no_standard_name:
-            self.diagnosis_no_standard_name.append(diagnosis_free_text)
-
-    def add_diagnosis_with_no_classification(self, diagnosis_free_text: str):
-        if self.record_stats and diagnosis_free_text not in self.diagnosis_no_classification:
-            self.diagnosis_no_classification.append(diagnosis_free_text)
 
     def add_diagnosis_with_no_orphanet_code(self, diagnosis_standard_name: str):
         if self.record_stats and diagnosis_standard_name not in self.diagnosis_no_orphanet_code:

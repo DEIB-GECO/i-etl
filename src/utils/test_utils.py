@@ -79,11 +79,11 @@ def get_lab_records_for_patient(lab_records: list, patient_id: str) -> list[dict
     log.debug(json_lab_records_list)
     log.debug(patient_id)
     for json_lab_record in json_lab_records_list:
-        if json_lab_record["subject"]["reference"] == patient_id:
+        if json_lab_record["subject"] == patient_id:
             matching_lab_records.append(json_lab_record)
     # also sort them by LabFeature reference id
     log.debug(matching_lab_records)
-    return sorted(matching_lab_records, key=lambda d: d["instantiate"]["reference"])
+    return sorted(matching_lab_records, key=lambda d: d["instantiate"])
 
 
 def get_field_value_for_patient(lab_records: list, lab_features: list, patient_id: str, column_name: str) -> Any:
@@ -106,8 +106,8 @@ def get_field_value_for_patient(lab_records: list, lab_features: list, patient_i
         log.debug(patient_id)
         for lab_record in lab_records:
             json_lab_record = lab_record.to_json()
-            log.info(f"checking {json_lab_record['subject']['reference']} vs. {patient_id} and {json_lab_record['instantiate']['reference']} vs. {lab_feature['identifier']['value']}")
-            if json_lab_record["subject"]["reference"] == patient_id:
-                if json_lab_record["instantiate"]["reference"] == lab_feature["identifier"]["value"]:
+            log.info(f"checking {json_lab_record['subject']} vs. {patient_id} and {json_lab_record['instantiate']} vs. {lab_feature['identifier']}")
+            if json_lab_record["subject"] == patient_id:
+                if json_lab_record["instantiate"] == lab_feature["identifier"]:
                     return json_lab_record["value"]
     return None

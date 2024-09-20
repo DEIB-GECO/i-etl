@@ -2,6 +2,7 @@ import json
 
 from database.Database import Database
 from database.Execution import Execution
+from enums.TableNames import TableNames
 from etl.Task import Task
 from statistics.DatabaseStatistics import DatabaseStatistics
 from statistics.QualityStatistics import QualityStatistics
@@ -51,6 +52,11 @@ class Reporting(Task):
 
         # 4. print the final report
         self.print_report()
+
+        # 5. save each stat report in the database
+        self.database.insert_one_tuple(table_name=TableNames.STATS_DB, one_tuple=self.db_stats.to_json())
+        self.database.insert_one_tuple(table_name=TableNames.STATS_TIME, one_tuple=self.time_stats.to_json())
+        self.database.insert_one_tuple(table_name=TableNames.STATS_QUALITY, one_tuple=self.quality_stats.to_json())
 
     def print_report(self) -> None:
         log.info("**** FINAL REPORT ****")

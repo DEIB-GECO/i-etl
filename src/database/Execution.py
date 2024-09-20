@@ -30,7 +30,6 @@ class Execution:
 
         # parameters related to the project structure and the input/output files
         self.metadata_filepath = None  # user input
-        self.diagnosis_classification_filepath = None  # user input
         self.diagnosis_regexes_filepath = None  # user input
         self.laboratory_filepaths = None  # user input
         self.diagnosis_filepaths = None  # user input
@@ -62,7 +61,6 @@ class Execution:
         self.is_extract = True
         self.is_transform = True
         self.is_load = True
-        self.is_analyze = False
         self.columns_to_remove = []
 
     def set_up(self, setup_data_files: bool) -> None:
@@ -81,7 +79,6 @@ class Execution:
         self.db_upsert_policy = self.check_parameter(key=ParameterKeys.DB_UPSERT_POLICY, accepted_values=UpsertPolicy.values(), default_value=self.db_upsert_policy)
         self.db_drop = self.check_parameter(key=ParameterKeys.DB_DROP, accepted_values=["True", "False", True, False], default_value=self.db_drop)
         self.is_extract = self.check_parameter(key=ParameterKeys.IS_EXTRACT, accepted_values=["True", "False", True, False], default_value=self.is_extract)
-        self.is_analyze = self.check_parameter(key=ParameterKeys.IS_ANALYZE, accepted_values=["True", "False", True, False], default_value=self.is_analyze)
         self.is_transform = self.check_parameter(key=ParameterKeys.IS_TRANSFORM, accepted_values=["True", "False", True, False], default_value=self.is_transform)
         self.is_load = self.check_parameter(key=ParameterKeys.IS_LOAD, accepted_values=["True", "False", True, False], default_value=self.is_load)
         self.columns_to_remove = self.check_parameter(key=ParameterKeys.COLUMNS_TO_REMOVE_KEY, accepted_values=None, default_value=self.columns_to_remove)
@@ -95,15 +92,13 @@ class Execution:
         # (this happens in tests: data is given by hand, i.e., without set_up, but the anonymized patient IDs file still has to exist
         self.anonymized_patient_ids_filepath = self.check_parameter(key=ParameterKeys.ANONYMIZED_PATIENT_IDS, accepted_values=None, default_value=self.anonymized_patient_ids_filepath)
         log.debug(self.anonymized_patient_ids_filepath)
-        self.setup_mapping_patient_ids()
+        self.setup_mapping_to_anonymized_patient_ids()
 
         # E. set up the data and metadata files
         if setup_data_files:
             log.debug("I will also set up data files")
             self.metadata_filepath = self.check_parameter(key=ParameterKeys.METADATA_PATH, accepted_values=None, default_value=self.metadata_filepath)
             log.debug(self.metadata_filepath)
-            self.diagnosis_classification_filepath = self.check_parameter(key=ParameterKeys.DIAGNOSIS_CLASSIFICATION, accepted_values=None, default_value=self.diagnosis_classification_filepath)
-            log.debug(self.diagnosis_classification_filepath)
             self.diagnosis_regexes_filepath = self.check_parameter(key=ParameterKeys.DIAGNOSIS_REGEXES, accepted_values=None, default_value=self.diagnosis_regexes_filepath)
             log.debug(self.diagnosis_regexes_filepath)
             self.laboratory_filepaths = self.check_parameter(key=ParameterKeys.LABORATORY_PATHS, accepted_values=None, default_value=self.laboratory_filepaths)
@@ -196,6 +191,8 @@ class Execution:
 
         # b. ...diagnosis filepaths...
         if self.diagnosis_filepaths is not None:
+            log.info(self.diagnosis_filepaths)
+            log.info(FileTypes.get_prefix_for_path(filetype=FileTypes.DIAGNOSIS))
             self.diagnosis_filepaths = split_list_of_files(self.diagnosis_filepaths, prefix_path=FileTypes.get_prefix_for_path(filetype=FileTypes.DIAGNOSIS))  # file 1,file 2, ...,file N
             log.debug(f"{self.diagnosis_filepaths}")
 
@@ -214,17 +211,12 @@ class Execution:
             self.genomic_filepaths = split_list_of_files(self.genomic_filepaths, prefix_path=FileTypes.get_prefix_for_path(filetype=FileTypes.GENOMIC))  # file 1,file 2, ...,file N
             log.debug(f"{self.genomic_filepaths}")
 
-        # f. ...diagnosis classification
-        if self.diagnosis_classification_filepath is not None:
-            self.diagnosis_classification_filepath = os.path.join(FileTypes.get_prefix_for_path(filetype=FileTypes.DIAGNOSIS_CLASSIFICATION), self.diagnosis_classification_filepath)
-            log.debug(f"{self.diagnosis_classification_filepath}")
-
-        # g. ... diagnosis regexes
+        # f. ... diagnosis regexes
         if self.diagnosis_regexes_filepath is not None:
             self.diagnosis_regexes_filepath = os.path.join(FileTypes.get_prefix_for_path(filetype=FileTypes.DIAGNOSIS_REGEX), self.diagnosis_regexes_filepath)
             log.debug(f"{self.diagnosis_regexes_filepath}")
 
-    def setup_mapping_patient_ids(self):
+    def setup_mapping_to_anonymized_patient_ids(self):
         if os.sep in self.anonymized_patient_ids_filepath:
             raise ValueError(f"The anonymized patient ids ({self.anonymized_patient_ids_filepath}) file should be a filename, but it looks like a filepath.")
         else:
@@ -266,6 +258,5 @@ class Execution:
                 "platform": self.platform,
                 "platform_version": self.platform_version,
                 "user": self.user
-            },
-            # "analysis": self.execution_analysis.to_json()  # TODO Nelly: uncomment this
+            }
         }

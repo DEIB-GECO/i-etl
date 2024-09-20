@@ -38,6 +38,8 @@ class ETL:
         self.reporting = None
 
     def run(self) -> None:
+        time_stats = TimeStatistics(record_stats=True)
+        time_stats.start_total_execution_timer()
         is_last_file = False
         file_counter = 0
         log.debug(f"{self.execution.laboratory_filepaths}")
@@ -65,7 +67,6 @@ class ETL:
 
         # 2. iterate over all the files
         quality_stats = QualityStatistics(record_stats=True)
-        time_stats = TimeStatistics(record_stats=True)
         for one_file in all_filepaths.keys():
             log.debug(f"{one_file}")
             file_counter = file_counter + 1
@@ -79,25 +80,32 @@ class ETL:
 
             if self.execution.is_extract:
                 log.info(f"--- Starting to ingest file '{self.execution.current_filepath}' of type {self.execution.current_file_type}")
+                time_stats.start_total_extract_timer()
                 self.extract = Extract(database=self.database, execution=self.execution, quality_stats=quality_stats, time_stats=time_stats)
                 self.extract.run()
+                time_stats.stop_total_extract_timer()
                 if self.execution.is_transform:
+                    time_stats.start_total_transform_timer()
                     self.transform = Transform(database=self.database, execution=self.execution, data=self.extract.data,
                                                metadata=self.extract.metadata,
                                                mapping_categorical_value_to_cc=self.extract.mapping_categorical_value_to_cc,
                                                mapping_column_to_categorical_value=self.extract.mapping_column_to_categorical_value,
                                                mapping_column_to_dimension=self.extract.mapping_column_to_dimension,
                                                patient_ids_mapping=self.extract.patient_ids_mapping,
-                                               diagnosis_classification=self.extract.mapping_diagnosis_to_classification,
                                                mapping_diagnosis_to_cc=self.extract.mapping_diagnosis_to_cc,
+                                               mapping_sample_id_to_patient_id=self.extract.mapping_sample_id_to_patient_id,
                                                quality_stats=quality_stats, time_stats=time_stats)
                     self.transform.run()
+                    time_stats.stop_total_transform_timer()
                     if self.execution.is_load:
                         # create indexes only if this is the last file (otherwise, we would create useless intermediate indexes)
+                        time_stats.start_total_load_timer()
                         self.load = Load(database=self.database, execution=self.execution, create_indexes=is_last_file, quality_stats=quality_stats, time_stats=time_stats)
                         self.load.run()
+                        time_stats.stop_total_load_timer()
         # finally, compute DB stats and give all (time, quality and db) stats to the report
-        db_stats = DatabaseStatistics(database=self.database, record_stats=True)
-        db_stats.compute_stats()
+        time_stats.stop_total_execution_timer()
+        db_stats = DatabaseStatistics(record_stats=True)
+        db_stats.compute_stats(database=self.database)
         self.reporting = Reporting(database=self.database, execution=self.execution, quality_stats=quality_stats, time_stats=time_stats, db_stats=db_stats)
         self.reporting.run()

@@ -45,7 +45,7 @@ class Load(Task):
 
         # 1. for each resource type, we create an index on its "identifier" and its creation date "timestamp"
         for table_name in TableNames.values():
-            self.database.create_unique_index(table_name=table_name, columns={"identifier.value": 1})
+            self.database.create_unique_index(table_name=table_name, columns={"identifier": 1})
             self.database.create_non_unique_index(table_name=table_name, columns={"timestamp": 1})
             count += 2
 

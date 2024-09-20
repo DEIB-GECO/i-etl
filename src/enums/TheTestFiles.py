@@ -13,7 +13,6 @@ class TheTestFiles(EnumAsClass):
     ORIG_GENOMICS_PATH = "orig-data-gen.csv"
     ORIG_EMPTY_PIDS_PATH = "orig-empty-pids.json"
     ORIG_FILLED_PIDS_PATH = "orig-filled-pids.json"
-    ORIG_DIAGNOSIS_CLASSIFICATION_PATH = "orig-diagnosis-classification.xlsx"
     ORIG_DIAGNOSIS_TO_CC_PATH = "orig-diagnosis-regexes.xlsx"
 
     # files obtained after the Extract step
@@ -30,7 +29,6 @@ class TheTestFiles(EnumAsClass):
     EXTR_LABORATORY_COL_CAT_PATH = "extr-data-lab-column-categorical.json"
     EXTR_GENOMICS_CATEGORICAL_PATH = "extr-data-gen-categorical.json"
     EXTR_LABORATORY_DIMENSIONS_PATH = "extr-data-lab-column-to-dimension.json"
-    EXTR_JSON_DIAGNOSIS_CLASSIFICATION_PATH = "extr-data-diag-classif.json"
     EXTR_JSON_DIAGNOSIS_TO_CC_PATH = "extr-data-diag-to-cc.json"
     EXTR_EMPTY_PIDS_PATH = "extr-empty-pids.json"
     EXTR_FILLED_PIDS_PATH = "extr-filled-pids.json"

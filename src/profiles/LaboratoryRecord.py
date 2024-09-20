@@ -26,6 +26,6 @@ class LaboratoryRecord(Record):
                          counter=counter, hospital_name=hospital_name)
         # set up specific attributes for lab records
         if sample_id is not None:
-            self.based_on = Reference(resource_identifier=sample_id)
+            self.based_on = sample_id.value  # Reference(resource_identifier=sample_id)
         else:
             self.based_on = None

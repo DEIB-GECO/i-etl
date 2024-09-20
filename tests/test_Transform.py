@@ -10,8 +10,10 @@ from database.Database import Database
 from database.Execution import Execution
 from datatypes.CodeableConcept import CodeableConcept
 from datatypes.Coding import Coding
+from datatypes.Identifier import Identifier
 from datatypes.OntologyResource import OntologyResource
 from datatypes.PatientAnonymizedIdentifier import PatientAnonymizedIdentifier
+from datatypes.ResourceIdentifier import ResourceIdentifier
 from enums.DataTypes import DataTypes
 from enums.HospitalNames import HospitalNames
 from enums.LabFeatureCategories import LabFeatureCategories
@@ -40,7 +42,6 @@ def my_setup(hospital_name: str, extracted_metadata_path: str, extracted_data_pa
              extracted_column_to_categorical_path: str,
              extracted_column_dimension_path: str,
              extracted_patient_ids_mapping_path: str,
-             extracted_diagnosis_classification_path: str,
              extracted_mapping_diagnosis_to_cc_path: str) -> Transform:
     args = {
         ParameterKeys.DB_NAME: TEST_DB_NAME,
@@ -65,8 +66,6 @@ def my_setup(hospital_name: str, extracted_metadata_path: str, extracted_data_pa
         column_to_dimension = json.load(f)
     with open(os.path.join(DOCKER_FOLDER_TEST, extracted_patient_ids_mapping_path), "r") as f:
         patient_ids_mapping = json.load(f)
-    with open(os.path.join(DOCKER_FOLDER_TEST, extracted_diagnosis_classification_path), "r") as f:
-        diagnosis_classification = json.load(f)
     with open(os.path.join(DOCKER_FOLDER_TEST, extracted_mapping_diagnosis_to_cc_path), "r") as f:
         mapping_diagnosis_to_cc = json.load(f)
     transform = Transform(database=database, execution=TestTransform.execution, data=data, metadata=metadata,
@@ -74,8 +73,8 @@ def my_setup(hospital_name: str, extracted_metadata_path: str, extracted_data_pa
                           mapping_column_to_categorical_value=mapping_column_to_categorical_value,
                           mapping_column_to_dimension=column_to_dimension,
                           patient_ids_mapping=patient_ids_mapping,
-                          diagnosis_classification=diagnosis_classification,
                           mapping_diagnosis_to_cc=mapping_diagnosis_to_cc,
+                          mapping_sample_id_to_patient_id={},  # TODO: not tested yet, but maybe this is too specific to BUZZI to be tested here
                           quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False))
     return transform
 
@@ -126,7 +125,6 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
                              extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH,
-                             extracted_diagnosis_classification_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_CLASSIFICATION_PATH,
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
         transform.set_resource_counter_id()
 
@@ -136,19 +134,20 @@ class TestTransform(unittest.TestCase):
         # I manually insert some resources in the database
         database = Database(TestTransform.execution)
         my_tuples = [
-            {"identifier": {"value": "h1_1"}},
-            {"identifier": {"value": "h1_2"}},
-            {"identifier": {"value": "h1_7"}},
-            {"identifier": {"value": "h1_3"}},
-            {"identifier": {"value": "h1_9"}},
-            {"identifier": {"value": "h1_123a"}},
-            {"identifier": {"value": "6"}},
-            {"identifier": {"value": "123"}},
+            {"identifier": ResourceIdentifier(id_value="1", resource_type=TableNames.PATIENT).to_json()},
+            {"identifier": ResourceIdentifier(id_value="2", resource_type=TableNames.PATIENT).to_json()},
+            {"identifier": ResourceIdentifier(id_value="7", resource_type=TableNames.PATIENT).to_json()},
+            {"identifier": ResourceIdentifier(id_value="3", resource_type=TableNames.PATIENT).to_json()},
+            {"identifier": ResourceIdentifier(id_value="124", resource_type=TableNames.LABORATORY_FEATURE).to_json()},
+            {"identifier": ResourceIdentifier(id_value="9", resource_type=TableNames.PATIENT).to_json()},
+            {"identifier": Identifier(value="123LD456").to_json()},
+            {"identifier": ResourceIdentifier(id_value="123", resource_type=TableNames.PATIENT).to_json()},
+            {"identifier": ResourceIdentifier(id_value="6", resource_type=TableNames.PATIENT).to_json()}
         ]
         database.insert_many_tuples(table_name=TableNames.TEST, tuples=my_tuples)
         transform.set_resource_counter_id()
 
-        assert transform.counter.resource_id == 124
+        assert transform.counter.resource_id == 125
 
     def test_create_hospital(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
@@ -158,7 +157,6 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
                              extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH,
-                             extracted_diagnosis_classification_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_CLASSIFICATION_PATH,
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
         # this creates a new Hospital resource and insert it in a (JSON) temporary file
         transform.create_hospital()
@@ -168,7 +166,7 @@ class TestTransform(unittest.TestCase):
         assert type(transform.hospitals[0]) is Hospital
         current_json_hospital = transform.hospitals[0].to_json()
         assert len(current_json_hospital.keys()) == 1 + 3  # name + inherited (identifier, resource_type, timestamp)
-        assert current_json_hospital["identifier"]["value"] == "1"
+        assert current_json_hospital["identifier"] == "Hospital:1"
         assert current_json_hospital["name"] == HospitalNames.TEST_H1
         assert current_json_hospital["timestamp"] is not None
         assert current_json_hospital["resource_type"] == TableNames.HOSPITAL
@@ -188,7 +186,6 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
                              extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH,
-                             extracted_diagnosis_classification_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_CLASSIFICATION_PATH,
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
         # this creates LabFeature instances (based on the metadata file) and insert them in a (JSON) temporary file
         log.debug(transform.data.to_string())
@@ -273,7 +270,6 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
                              extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH,
-                             extracted_diagnosis_classification_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_CLASSIFICATION_PATH,
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
         # this creates LabFeature resources (based on the metadata file) and insert them in a (JSON) temporary file
         log.debug(transform.data.to_string())
@@ -290,7 +286,6 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
                              extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH,
-                             extracted_diagnosis_classification_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_CLASSIFICATION_PATH,
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
         # this loads references (Hospital+LabFeature resources), creates LabRecord resources (based on the data file) and insert them in a (JSON) temporary file
         log.debug(transform.data.to_string())
@@ -320,9 +315,9 @@ class TestTransform(unittest.TestCase):
         assert len(lab_records_patient) == 5
         assert lab_records_patient[0]["resource_type"] == TableNames.LABORATORY_RECORD
         assert lab_records_patient[0]["value"] == -0.003  # the value as been converted to an integer
-        assert lab_records_patient[0]["subject"]["reference"] == str(patient_id)  # this has not been converted to an integer
-        assert lab_records_patient[0]["recorded_by"]["reference"] == "1"
-        assert lab_records_patient[0]["instantiate"]["reference"] == "2"  # LabRecord 2 is about molecule_a
+        assert lab_records_patient[0]["subject"] == str(patient_id)  # this has not been converted to an integer
+        assert lab_records_patient[0]["recorded_by"] == "Hospital:1"
+        assert lab_records_patient[0]["instantiate"] == "LaboratoryFeature:2"  # LabRecord 2 is about molecule_a
         pattern_date = re.compile("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2,3}Z")
         assert pattern_date.match(lab_records_patient[0]["timestamp"]["$date"])  # check the date is in datetime (CEST) form
 
@@ -332,7 +327,7 @@ class TestTransform(unittest.TestCase):
         assert lab_records_patient[3]["value"] == "black"
         assert lab_records_patient[4]["value"] == {"$date": "2021-12-22T11:58:38Z"}  # the value as been converted to a MongoDB-style datetime
         cc_female = CodeableConcept(original_name="f")
-        cc_female.add_coding(one_coding=Coding(code=OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="248152002"), display=None))
+        cc_female.add_coding(one_coding=Coding(code=OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="248152002", quality_stats=None), display=None))
         assert lab_records_patient[2]["value"] == cc_female.to_json()  # the value as been replaced by its ontology code (sex is a categorical value)r
 
         # we also check that conversions str->int/float and category->bool worked
@@ -356,7 +351,6 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
                              extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_FILLED_PIDS_PATH,
-                             extracted_diagnosis_classification_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_CLASSIFICATION_PATH,
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
         # this loads references (Hospital+LabFeature resources), creates LabRecord resources (based on the data file) and insert them in a (JSON) temporary file
         log.debug(transform.data.to_string())
@@ -386,13 +380,9 @@ class TestTransform(unittest.TestCase):
         assert len(lab_records_patient) == 5
         assert lab_records_patient[0]["resource_type"] == TableNames.LABORATORY_RECORD
         assert lab_records_patient[0]["value"] == -0.003  # the value as been converted to a float
-        log.debug(lab_records_patient[0]["subject"]["reference"])
-        log.debug(type(lab_records_patient[0]["subject"]["reference"]))
-        log.debug(str(patient_id))
-        log.debug(type(str(patient_id)))
-        assert lab_records_patient[0]["subject"]["reference"] == str(patient_id)  # this has not been converted to an integer
-        assert lab_records_patient[0]["recorded_by"]["reference"] == "1"
-        assert lab_records_patient[0]["instantiate"]["reference"] == "2"  # LabRecord 2 is about molecule_a
+        assert lab_records_patient[0]["subject"] == str(patient_id)  # this has not been converted to an integer
+        assert lab_records_patient[0]["recorded_by"] == "Hospital:1"
+        assert lab_records_patient[0]["instantiate"] == "LaboratoryFeature:2"  # LabRecord 2 is about molecule_a
         pattern_date = re.compile("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2,3}Z")
         assert pattern_date.match(lab_records_patient[0]["timestamp"]["$date"])  # check the date is in datetime (CEST) form
 
@@ -403,7 +393,7 @@ class TestTransform(unittest.TestCase):
         assert lab_records_patient[4]["value"] == {"$date": "2021-12-22T11:58:38Z"}  # the value as been converted to a MongoDB-style datetime
         assert lab_records_patient[4]["anonymized_value"] == {"$date": "2021-12-01T00:00:00Z"}  # the value as been both fairified and anonymized
         cc_female = CodeableConcept(original_name="f")
-        cc_female.add_coding(one_coding=Coding(code=OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="248152002"), display=None))
+        cc_female.add_coding(one_coding=Coding(code=OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="248152002", quality_stats=None), display=None))
         assert lab_records_patient[2]["value"] == cc_female.to_json()  # the value as been replaced by its ontology code (sex is a categorical value)r
 
         # we also check that conversions str->int/float and category->bool worked
@@ -431,7 +421,6 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
                              extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH,
-                             extracted_diagnosis_classification_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_CLASSIFICATION_PATH,
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
         # this creates Patient resources (based on the data file) and insert them in a (JSON) temporary file
         log.debug(transform.data.to_string())
@@ -449,7 +438,7 @@ class TestTransform(unittest.TestCase):
         log.debug(sorted_patients)
         for i in range(0, len(sorted_patients)):
             # patients have their own anonymized ids
-            assert sorted_patients[i].to_json()["identifier"]["value"] == PatientAnonymizedIdentifier(id_value=str(i+1), hospital_name=HospitalNames.TEST_H1).value
+            assert sorted_patients[i].to_json()["identifier"] == PatientAnonymizedIdentifier(id_value=str(i+1), hospital_name=HospitalNames.TEST_H1).value
 
         # get back to the original file
         with open(self.execution.anonymized_patient_ids_filepath, "w") as f:
@@ -463,7 +452,6 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
                              extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_FILLED_PIDS_PATH,
-                             extracted_diagnosis_classification_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_CLASSIFICATION_PATH,
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
         # this creates Patient resources (based on the data file) and insert them in a (JSON) temporary file
         log.debug(transform.data.to_string())
@@ -482,7 +470,7 @@ class TestTransform(unittest.TestCase):
         log.debug(transform.patient_ids_mapping)
         for i in range(0, len(sorted_patients)):
             # patients have their own anonymized ids
-            assert sorted_patients[i].to_json()["identifier"]["value"] == PatientAnonymizedIdentifier(id_value=str(990+i), hospital_name=HospitalNames.TEST_H1).value
+            assert sorted_patients[i].to_json()["identifier"] == PatientAnonymizedIdentifier(id_value=str(990+i), hospital_name=HospitalNames.TEST_H1).value
 
     def test_create_codeable_concept_from_row(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
@@ -492,7 +480,6 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
                              extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH,
-                             extracted_diagnosis_classification_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_CLASSIFICATION_PATH,
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
         # no associated ontology code
         cc = transform.create_codeable_concept_from_row(column_name="molecule_b")
@@ -507,7 +494,7 @@ class TestTransform(unittest.TestCase):
         assert cc.coding is not None
         assert len(cc.coding) == 1
         assert cc.text == "molecule_a"
-        assert cc.coding[0].to_json() == Coding(code=OntologyResource(ontology=Ontologies.LOINC, full_code="1234"), display=None).to_json()
+        assert cc.coding[0].to_json() == Coding(code=OntologyResource(ontology=Ontologies.LOINC, full_code="1234", quality_stats=None), display=None).to_json()
 
         # two associated ontology codes
         cc = transform.create_codeable_concept_from_row(column_name="ethnicity")
@@ -515,8 +502,8 @@ class TestTransform(unittest.TestCase):
         assert cc.coding is not None
         assert len(cc.coding) == 2
         assert cc.text == "ethnicity"
-        assert cc.coding[0].to_json() == Coding(code=OntologyResource(ontology=Ontologies.LOINC, full_code="46463-6"), display=None).to_json()
-        assert cc.coding[1].to_json() == Coding(code=OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="397731000"), display=None).to_json()
+        assert cc.coding[0].to_json() == Coding(code=OntologyResource(ontology=Ontologies.LOINC, full_code="46463-6", quality_stats=None), display=None).to_json()
+        assert cc.coding[1].to_json() == Coding(code=OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="397731000", quality_stats=None), display=None).to_json()
 
     def test_coding(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,
@@ -526,18 +513,17 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
                              extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH,
-                             extracted_diagnosis_classification_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_CLASSIFICATION_PATH,
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
         # no associated ontology code (patient id line)
         first_row = transform.metadata.iloc[0]
         log.info(first_row)
-        coding = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(first_row[MetadataColumns.ONTO_NAME_1]), full_code=first_row[MetadataColumns.ONTO_CODE_1]),
+        coding = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(first_row[MetadataColumns.ONTO_NAME_1]), full_code=first_row[MetadataColumns.ONTO_CODE_1], quality_stats=None),
                         display=None)
         assert coding.system is None
 
         # one associated ontology code (molecule_g line)
         third_row = transform.metadata.iloc[3]
-        coding = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(third_row[MetadataColumns.ONTO_NAME_1]), full_code=third_row[MetadataColumns.ONTO_CODE_1]),
+        coding = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(third_row[MetadataColumns.ONTO_NAME_1]), full_code=third_row[MetadataColumns.ONTO_CODE_1], quality_stats=None),
                         display=None)
         assert coding is not None
         assert coding.system == Ontologies.SNOMEDCT["url"]
@@ -548,13 +534,13 @@ class TestTransform(unittest.TestCase):
         # but this method creates one coding at a time
         # so, we need to create them in two times
         fifth_row = transform.metadata.iloc[5]
-        coding1 = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(fifth_row[MetadataColumns.ONTO_NAME_1]), full_code=fifth_row[MetadataColumns.ONTO_CODE_1]),
+        coding1 = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(fifth_row[MetadataColumns.ONTO_NAME_1]), full_code=fifth_row[MetadataColumns.ONTO_CODE_1], quality_stats=None),
                          display=None)
         assert coding1 is not None
         assert coding1.system == Ontologies.LOINC["url"]
         assert coding1.code == "46463-6"
         assert coding1.display == "Race or ethnicity"
-        coding2 = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(fifth_row[MetadataColumns.ONTO_NAME_2]), full_code=fifth_row[MetadataColumns.ONTO_CODE_2]),
+        coding2 = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(fifth_row[MetadataColumns.ONTO_NAME_2]), full_code=fifth_row[MetadataColumns.ONTO_CODE_2], quality_stats=None),
                          display=None)
         assert coding2.system == Ontologies.SNOMEDCT["url"]
         assert coding2.code == "397731000"
@@ -568,7 +554,6 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
                              extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH,
-                             extracted_diagnosis_classification_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_CLASSIFICATION_PATH,
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
 
         # clinical variables
@@ -601,7 +586,6 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
                              extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH,
-                             extracted_diagnosis_classification_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_CLASSIFICATION_PATH,
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
 
         # clinical variables
@@ -621,7 +605,6 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
                              extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH,
-                             extracted_diagnosis_classification_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_CLASSIFICATION_PATH,
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
 
         assert transform.fairify_value(column_name="id", value=transform.data.iloc[0][0]) == "999999999"
@@ -633,7 +616,7 @@ class TestTransform(unittest.TestCase):
         assert np.isnan(transform.fairify_value(column_name="molecule_g", value=transform.data.iloc[6][3]))
         assert np.isnan(transform.fairify_value(column_name="molecule_g", value=transform.data.iloc[7][3]))
         cc_female = CodeableConcept(original_name="f")
-        cc_female.add_coding(one_coding=Coding(code=OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="248152002"), display=None))
+        cc_female.add_coding(one_coding=Coding(code=OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="248152002", quality_stats=None), display=None))
         fairified_value = transform.fairify_value(column_name="sex", value=transform.data.iloc[0][4])
         assert fairified_value == cc_female.to_json()
         assert transform.fairify_value(column_name="ethnicity", value=transform.data.iloc[0][5]) == "white"

@@ -60,7 +60,6 @@ Parameters with a * (star) are required, others can be left empty.
 | `EXTRACT`                | Whether to perform the Extract step of the ETL.<br/>Values: `True`, `False`<br/>Default value: `True`                     |
 | `TRANSFORM`              | Whether to perform the Transform step of the ETL.<br/>Values: `True`, `False`<br/>Default value: `True`                   |
 | `LOAD`                   | Whether to perform the Load step of the ETL.<br/>Values: `True`, `False`<br/>Default value: `True`                        |
-| `ANALYZE`                | Whether to perform a data analysis on the provided files.<br/>Values: `True`, `False`<br/>Default value: `False`          |
 | `USE_EN_LOCALE`          | Whether to use the en_US locale instead of the one of the country.<br/>Values: `True`, `False`<br/>Default value: `False` |
 
 

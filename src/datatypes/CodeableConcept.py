@@ -4,6 +4,7 @@ from datatypes.Coding import Coding
 from datatypes.OntologyResource import OntologyResource
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
+from statistics.QualityStatistics import QualityStatistics
 
 
 class CodeableConcept:
@@ -34,7 +35,7 @@ class CodeableConcept:
         return jsonpickle.decode(jsonpickle.encode(self, unpicklable=False))
 
     @classmethod
-    def from_json(cls, json_cc: dict):  # returns a CodeableConcept
+    def from_json(cls, json_cc: dict, quality_stats: QualityStatistics):  # returns a CodeableConcept
         # fill a new CodeableConcept instance with a JSON-encoded CodeableConcept
         cc = CodeableConcept("")
         if "text" in json_cc:
@@ -42,20 +43,20 @@ class CodeableConcept:
         if "coding" in json_cc:
             cc.coding = []
             for json_coding in json_cc["coding"]:
-                cc.add_coding(one_coding=Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_url(json_coding["system"]), full_code=json_coding["code"]), display=json_coding["display"]))
+                cc.add_coding(one_coding=Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_url(json_coding["system"]), full_code=json_coding["code"], quality_stats=quality_stats), display=json_coding["display"]))
         return cc
 
     @classmethod
-    def create_without_row(cls, ontology1: str, code1: str, ontology2: str | None, code2: str | None, column_name: str):
+    def create_without_row(cls, ontology1: str, code1: str, ontology2: str | None, code2: str | None, column_name: str, quality_stats: QualityStatistics):
         column_name = MetadataColumns.normalize_name(column_name=column_name)
         cc = CodeableConcept(original_name=column_name)
 
         ontology1 = Ontologies.get_enum_from_name(ontology_name=ontology1)  # get the ontology enum instead of its string name
-        cc.add_coding(one_coding=Coding(code=OntologyResource(ontology=ontology1, full_code=code1), display=None))
+        cc.add_coding(one_coding=Coding(code=OntologyResource(ontology=ontology1, full_code=code1, quality_stats=quality_stats), display=None))
 
         if ontology2 is not None:
             ontology2 = Ontologies.get_enum_from_name(ontology_name=ontology2)
-            cc.add_coding(one_coding=Coding(code=OntologyResource(ontology=ontology2, full_code=code2), display=None))
+            cc.add_coding(one_coding=Coding(code=OntologyResource(ontology=ontology2, full_code=code2, quality_stats=quality_stats), display=None))
         return cc
 
     def __eq__(self, other):

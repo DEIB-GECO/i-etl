@@ -7,8 +7,8 @@ from enums.Ontologies import Ontologies
 
 
 class LabFeatureCategories(EnumAsClass):
-    CATEGORY_PHENOTYPIC = Coding(code=OntologyResource(ontology=Ontologies.LOINC, full_code="81259-4"), display=None)
-    CATEGORY_CLINICAL = Coding(code=OntologyResource(ontology=Ontologies.LOINC, full_code="75321-0"), display=None)
+    CATEGORY_PHENOTYPIC = Coding(code=OntologyResource(ontology=Ontologies.LOINC, full_code="81259-4", quality_stats=None), display=None)
+    CATEGORY_CLINICAL = Coding(code=OntologyResource(ontology=Ontologies.LOINC, full_code="75321-0", quality_stats=None), display=None)
 
     @classmethod
     def get_phenotypic(cls) -> CodeableConcept:

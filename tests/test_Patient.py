@@ -42,9 +42,7 @@ class TestPatient:
 
         assert patient1_json is not None
         assert patient1_json == {
-            "identifier": {
-                "value": PatientAnonymizedIdentifier(id_value="1", hospital_name=HospitalNames.TEST_H1).value
-            },
+            "identifier": PatientAnonymizedIdentifier(id_value="1", hospital_name=HospitalNames.TEST_H1).to_json(),
             "resource_type": TableNames.PATIENT,
             "timestamp": patient1.timestamp
         }

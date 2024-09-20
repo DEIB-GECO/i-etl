@@ -18,5 +18,6 @@ jobs:
       run: |
         cp .env.ci .env
         export CONTEXT_MODE=TEST
+        export MY_ENV_FILE=.env.ci
         sudo docker build . --tag fairificator 
-        docker compose up --abort-on-container-exit
+        docker compose --env-file ${MY_ENV_FILE} up --abort-on-container-exit 

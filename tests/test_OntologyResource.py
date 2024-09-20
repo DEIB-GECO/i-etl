@@ -12,10 +12,10 @@ class TestOntologyResource(unittest.TestCase):
     FULL_CODE_4 = "GO:0000380"
 
     def test_constructor(self):
-        o1 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_1)
-        o2 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_2)
-        o3 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_3)
-        o4 = OntologyResource(ontology=Ontologies.GENE_ONTOLOGY, full_code=TestOntologyResource.FULL_CODE_4)
+        o1 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_1, quality_stats=None)
+        o2 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_2, quality_stats=None)
+        o3 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_3, quality_stats=None)
+        o4 = OntologyResource(ontology=Ontologies.GENE_ONTOLOGY, full_code=TestOntologyResource.FULL_CODE_4, quality_stats=None)
 
         assert o1.full_code == "422549004|patient-related identification code|"
         assert o1.elements == ['422549004', '|', 'patient-related identification code', '|']
@@ -27,13 +27,13 @@ class TestOntologyResource(unittest.TestCase):
         assert o4.elements == ["0000380"]  # same as above
 
     def test_compute_concat_codes(self):
-        o1 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_1)
+        o1 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_1, quality_stats=None)
         o1.compute_concat_codes()
-        o2 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_2)
+        o2 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_2, quality_stats=None)
         o2.compute_concat_codes()
-        o3 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_3)
+        o3 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_3, quality_stats=None)
         o3.compute_concat_codes()
-        o4 = OntologyResource(ontology=Ontologies.GENE_ONTOLOGY, full_code=TestOntologyResource.FULL_CODE_4)
+        o4 = OntologyResource(ontology=Ontologies.GENE_ONTOLOGY, full_code=TestOntologyResource.FULL_CODE_4, quality_stats=None)
         o4.compute_concat_codes()
 
         assert o1.concat_codes == "422549004"
@@ -42,13 +42,13 @@ class TestOntologyResource(unittest.TestCase):
         assert o4.concat_codes == "0000380"
 
     def test_compute_concat_names(self):
-        o1 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_1)
+        o1 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_1, quality_stats=None)
         o1.compute_concat_names()
-        o2 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_2)
+        o2 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_2, quality_stats=None)
         o2.compute_concat_names()
-        o3 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_3)
+        o3 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_3, quality_stats=None)
         o3.compute_concat_names()
-        o4 = OntologyResource(ontology=Ontologies.GENE_ONTOLOGY, full_code=TestOntologyResource.FULL_CODE_4)
+        o4 = OntologyResource(ontology=Ontologies.GENE_ONTOLOGY, full_code=TestOntologyResource.FULL_CODE_4, quality_stats=None)
         o4.compute_concat_names()
 
         assert o1.concat_names == "Patient-related Identification code"

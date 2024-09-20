@@ -125,11 +125,11 @@ class TestLoad(unittest.TestCase):
             for index in index_cursor:
                 index_key = index["key"]
                 log.debug(index_key)
-                if "_id" in index_key or "identifier.value" in index_key or "timestamp" in index_key:
+                if "_id" in index_key or "identifier" in index_key or "timestamp" in index_key:
                     # to check whether we have exactly the three indexes we expect
                     count_indexes = count_indexes + 1
                     # assert that only identifier.value is unique, timestamp is not (there may be several instances created at the same time)
-                    if "identifier.value" in index_key:
+                    if "identifier" in index_key:
                         assert index["unique"] is True
                     else:
                         assert "unique" not in index

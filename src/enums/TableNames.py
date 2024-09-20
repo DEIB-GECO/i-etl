@@ -16,7 +16,9 @@ class TableNames(EnumAsClass):
     IMAGING_FEATURE = "ImagingFeature"
     IMAGING_RECORD = "ImagingRecord"
     EXECUTION = "Execution"
-    REPORTING = "Reporting"
+    STATS_DB = "DatabaseStatistics"
+    STATS_TIME = "TimeStatistics"
+    STATS_QUALITY = "QualityStatistics"
     TEST = "Test"
 
     @classmethod

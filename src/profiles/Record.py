@@ -20,6 +20,6 @@ class Record(Resource):
         self.value = value
         if anonymized_value is not None:
             self.anonymized_value = anonymized_value
-        self.subject = Reference(resource_identifier=patient_id)
-        self.recorded_by = Reference(resource_identifier=hospital_id)
-        self.instantiate = Reference(resource_identifier=feature_id)
+        self.subject = patient_id.value  # Reference(resource_identifier=patient_id)
+        self.recorded_by = hospital_id.value  # Reference(resource_identifier=hospital_id)
+        self.instantiate = feature_id.value  # Reference(resource_identifier=feature_id)

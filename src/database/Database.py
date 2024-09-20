@@ -144,7 +144,7 @@ class Database:
                     filter_dict[unique_variable] = one_tuple[unique_variable]
             update_stmt = self.create_update_stmt(the_tuple=one_tuple)
             operations.append(pymongo.UpdateOne(filter=filter_dict, update=update_stmt, upsert=True))
-        # July 18th, 2024: bulk_write modifies the hospital lists in Transform (avan if I use deep copies everywhere)
+        # July 18th, 2024: bulk_write modifies the hospital lists in Transform (even if I use deep copies everywhere)
         # It changes (only?) the timestamp value with +1/100, e.g., 2024-07-18T14:34:32Z becomes 2024-07-18T14:34:33Z
         # in the tests I use a delta to compare datetime
         self.db[table_name].bulk_write(copy.deepcopy(operations))
@@ -321,7 +321,7 @@ class Database:
                 # pass because Sample resources have their ID assigned by hospitals, not the FAIRificator
                 pass
             else:
-                current_max_identifier = self.get_max_value(table_name=table_name, field="identifier.value", from_string=True)
+                current_max_identifier = self.get_max_value(table_name=table_name, field="identifier", from_string=True)
                 if current_max_identifier is not None:
                     try:
                         current_max_identifier = int(current_max_identifier)
