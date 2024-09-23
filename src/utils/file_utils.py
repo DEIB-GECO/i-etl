@@ -30,16 +30,10 @@ def read_tabular_file_as_string(filepath: str) -> pd.DataFrame:
     elif filepath.endswith(".xls") or filepath.endswith(".xlsx"):
         # for Excel files, there may be several sheets, so we load all data in a single dataframe
         all_sheets = pd.read_excel(filepath, sheet_name=None, index_col=False, dtype=str, keep_default_na=True)
-        log.info(type(all_sheets))
         df = DataFrame()
         for key, value in all_sheets.items():
             if key != "Legend":  # skip the sheet describing the columns
-                log.info(type(value))
-                log.info(value.columns)
-                log.info(value)
                 df = pd.concat([df, value], ignore_index=True)
-                log.info(df)
-        log.info(df)
         return df
     else:
         raise ValueError(f"The extension of the tabular file {filepath} is not recognised. Accepted extensions are .csv, .xls, and .xlsx.")
