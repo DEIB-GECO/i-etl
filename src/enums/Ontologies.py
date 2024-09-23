@@ -3,9 +3,6 @@ from utils.assertion_utils import is_not_nan
 
 from utils.str_utils import process_spaces
 
-REPORTING_UNKNOWN_ONTOLOGY_NAMES = []
-REPORTING_UNKNOWN_ONTOLOGY_URLS = []
-
 
 class Ontologies(EnumAsClass):
     # ontology names HAVE TO be normalized by hand here because we can't refer to static methods
@@ -28,8 +25,6 @@ class Ontologies(EnumAsClass):
         for existing_ontology in Ontologies.values():
             if existing_ontology["name"] == ontology:
                 return existing_ontology  # return the ontology enum
-        # at the end of the loop, no enum value could match the given ontology name
-        REPORTING_UNKNOWN_ONTOLOGY_NAMES.append(ontology_name)
         return None
 
     @classmethod
@@ -37,8 +32,6 @@ class Ontologies(EnumAsClass):
         for existing_ontology in Ontologies.values():
             if existing_ontology["url"] == ontology_url:
                 return existing_ontology  # return the ontology enum
-        # at the end of the loop, no enum value could match the given ontology url
-        REPORTING_UNKNOWN_ONTOLOGY_URLS.append(ontology_url)
         return None
 
     @classmethod

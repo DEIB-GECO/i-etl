@@ -10,7 +10,15 @@ def cast_str_to_int(str_value: str):
     try:
         return int(str_value)
     except:
-        return None  # this was not an int value
+        if str_value.endswith(".0"):
+            # this is a float value, that we can safely convert to int
+            # this may happen when:
+            # (a) Pandas converted into cell to float (because of NaN probably)
+            # (b) or the data is really a float, that we can cast further
+            return int(str_value.replace(".0", ""))
+        else:
+            # this was not an int value
+            return None
 
 
 def cast_str_to_float(str_value: str):

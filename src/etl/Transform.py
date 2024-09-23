@@ -527,10 +527,17 @@ class Transform(Task):
                 return_value = str(value)
             else:
                 # this is really a numeric value that we want to cast
-                # if the dimension is not the one of the feature, we simply leave the cell value as a string
-                # otherwise, convert the numeric value
+                # several cases:
+                # - no dimension in metadata, no dimension in data: cast
+                # - no dimension in metadata, one dimension in data: extract the dimension + cast
+                # - no dimension in metadata, several dimensions in data: get most frequent one, data values with the frequent dim are cast, others are left as strings
+                # - one dimension in metadata, no dimension in data: cast
+                # - one dimension in metadata, one dimensions in data, they are equal: remove dimension from data + cast
+                # - one dimension in metadata, one dimensions in data, they are not equal: leave data as string
+                # - one dimension in metadata, several dimensions in data: data values with the metadata dim are cast, others are left as strings
                 m = re.search(PATTERN_VALUE_DIMENSION, value)
                 if m is not None:
+                    # there is a dimension in the data value
                     # m.group(0) is the text itself, m.group(1) is the int/float value, m.group(2) is the dimension
                     the_value = m.group(1)
                     unit = m.group(2)
@@ -540,7 +547,7 @@ class Transform(Task):
                         elif etl_type == DataTypes.FLOAT:
                             return_value = cast_str_to_float(str_value=the_value)
                     else:
-                        # the feature dimension does not correspond, we return the normalized value
+                        # the feature dimension does not correspond, we return the normalized (string) value
                         self.quality_stats.add_numerical_value_with_unmatched_dimension(column_name=column_name, expected_dimension=expected_unit, current_dimension=unit, value=value)
                         return_value = the_normalized_value
                 else:
@@ -565,19 +572,19 @@ class Transform(Task):
             # Unhandled ETL type: this cannot happen because all ETL types have been checked during the Extract step
             return_value = the_normalized_value
 
-        # in case, casting the value returned None, we set the original value back
+        # in case, casting the value returned None, we set the normalized value back
         # otherwise, we keep the cast value
-        return_value = value if return_value is None else return_value
+        return_value = the_normalized_value if return_value is None else return_value
 
         # count how many fairified values do not (still) match the expected ETL type
-        if ((etl_type == DataTypes.BOOLEAN and not isinstance(value, bool))
-                or (etl_type == DataTypes.FLOAT and not isinstance(value, float))
-                or (etl_type == DataTypes.INTEGER and not isinstance(value, int))
-                or (etl_type == DataTypes.DATE and not isinstance(value, datetime))
-                or (etl_type == DataTypes.DATETIME and not isinstance(value, datetime))
-                or (etl_type == DataTypes.STRING and not isinstance(value, str))
-                or (etl_type == DataTypes.CATEGORY and not isinstance(value, dict))):
-            self.quality_stats.add_column_with_unmatched_typeof_etl_types(column_name=column_name, typeof_type=type(value).__name__, etl_type=etl_type)
+        if ((etl_type == DataTypes.BOOLEAN and not isinstance(return_value, bool))
+                or (etl_type == DataTypes.FLOAT and not isinstance(return_value, float))
+                or (etl_type == DataTypes.INTEGER and not isinstance(return_value, int))
+                or (etl_type == DataTypes.DATE and not isinstance(return_value, datetime))
+                or (etl_type == DataTypes.DATETIME and not isinstance(return_value, datetime))
+                or (etl_type == DataTypes.STRING and not isinstance(return_value, str))
+                or (etl_type == DataTypes.CATEGORY and not isinstance(return_value, CodeableConcept))):
+            self.quality_stats.add_column_with_unmatched_typeof_etl_types(column_name=column_name, typeof_type=type(return_value).__name__, etl_type=etl_type)
 
         # we use type(..).__name__ to get the class name, e.g., "str" or "bool", instead of "<class 'float'>"
         log.info(f"Column '{column_name}': fairify {type(value).__name__} value '{value}' (unit: {expected_unit}) into {type(return_value).__name__}: {return_value}")

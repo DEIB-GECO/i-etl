@@ -48,11 +48,12 @@ class QualityStatistics(Statistics):
             self.columns_unmatched_var_etl_types[column_name]["etl_type"] = etl_type
 
     def add_column_with_unmatched_typeof_etl_types(self, column_name: str, typeof_type: str, etl_type: str):
+        # {column_name: { etl_type: [all encountered var types different from etl_type] }, ... }
         if self.record_stats:
             if column_name not in self.columns_unmatched_typeof_etl_types:
-                self.columns_unmatched_typeof_etl_types[column_name] = {}
-            self.columns_unmatched_typeof_etl_types[column_name]["typeof_type"] = typeof_type
-            self.columns_unmatched_typeof_etl_types[column_name]["etl_type"] = etl_type
+                self.columns_unmatched_typeof_etl_types[column_name] = {etl_type: []}
+            if typeof_type not in self.columns_unmatched_typeof_etl_types[column_name][etl_type]:
+                self.columns_unmatched_typeof_etl_types[column_name][etl_type].append(typeof_type)
 
     def add_column_unknown_ontology(self, column_name: str, ontology_name: str):
         if self.record_stats:

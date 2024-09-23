@@ -15,7 +15,7 @@ class Statistics:
         # trick: we need to work on the copy of the keys to not directly work on them
         # otherwise, Concurrent modification error
         for key in list(state.keys()):
-            if isinstance(state[key], Database) or isinstance(state[key], Execution) or state[key] == {} or state[key] == []:
+            if isinstance(state[key], Database) or isinstance(state[key], Execution):
                 # we get rid of the variables that should not be included in the JSONification of Statistics objects
                 # + mongodb does not allow to insert empty dicts or arrays
                 del state[key]

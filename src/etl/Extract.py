@@ -135,7 +135,7 @@ class Extract(Task):
         else:
             self.metadata = self.metadata[self.metadata[MetadataColumns.DATASET_NAME] == filename]
 
-        # normalize ontology names (but not codes because they will be normalized within OntologyResource)
+        # 4. normalize ontology names (but not codes because they will be normalized within OntologyResource)
         self.metadata[MetadataColumns.ONTO_NAME_1] = self.metadata[MetadataColumns.ONTO_NAME_1].apply(lambda value: Ontologies.normalize_name(
             ontology_name=value))
         self.metadata[MetadataColumns.ONTO_NAME_2] = self.metadata[MetadataColumns.ONTO_NAME_2].apply(lambda value: Ontologies.normalize_name(
@@ -151,12 +151,36 @@ class Extract(Task):
         # normalize the visibility
         self.metadata[MetadataColumns.VISIBILITY] = self.metadata[MetadataColumns.VISIBILITY].apply(lambda x: Visibility.normalize(visibility=x))
 
-        # reindex the remaining metadata rows, starting from 0
+        # 5. reindex the remaining metadata rows, starting from 0
         # because when dropping rows, rows keep their original indexes
         # to ease tests, we reindex starting from 0
         self.metadata.reset_index(drop=True, inplace=True)
 
         log.info(f"{len(self.metadata.columns)} columns and {len(self.metadata)} lines in the metadata file.")
+
+        # 6. compute some stats about the metadata
+        for index, row in self.metadata.iterrows():
+            column_name = row[MetadataColumns.COLUMN_NAME]
+            var_type = row[MetadataColumns.VAR_TYPE]
+            etl_type = row[MetadataColumns.ETL_TYPE]
+            onto_name1 = row[MetadataColumns.ONTO_NAME_1]
+            onto_name2 = row[MetadataColumns.ONTO_NAME_2]
+            if not is_not_nan(row[MetadataColumns.ONTO_CODE_1]) and not is_not_nan(row[MetadataColumns.ONTO_CODE_2]):
+                self.quality_stats.add_column_with_no_ontology(column_name=column_name)
+            if not is_not_nan(var_type):
+                self.quality_stats.add_column_with_no_var_type(column_name=column_name)
+            if is_not_nan(var_type) and var_type not in DataTypes.values():
+                self.quality_stats.add_column_unknown_var_type(column_name=column_name, var_type=var_type)
+            if not is_not_nan(etl_type):
+                self.quality_stats.add_column_with_no_etl_type(column_name=column_name)
+            if is_not_nan(etl_type) and etl_type not in DataTypes.values():
+                self.quality_stats.add_column_unknown_etl_type(column_name=column_name, etl_type=etl_type)
+            if is_not_nan(var_type) and is_not_nan(etl_type) and var_type != etl_type:
+                self.quality_stats.add_column_with_unmatched_var_etl_types(column_name=column_name, var_type=var_type, etl_type=etl_type)
+            if is_not_nan(onto_name1) and Ontologies.get_enum_from_name(onto_name1) is None:
+                self.quality_stats.add_column_unknown_ontology(column_name=column_name, ontology_name=onto_name1)
+            if is_not_nan(onto_name2) and Ontologies.get_enum_from_name(onto_name2) is None:
+                self.quality_stats.add_column_unknown_ontology(column_name=column_name, ontology_name=onto_name2)
 
     def load_tabular_data_file(self) -> None:
         log.info(f"{self.execution.current_filepath}")
@@ -350,7 +374,8 @@ class Extract(Task):
                             # this value does not contain a dimension or is not of the form "value dimension"
                             pass
 
-                # we only keep the most frequent unit; values that do not have this unit will not be cast to numeric
+                # we only keep the most frequent unit
+                # during value fairification: values that do not have this unit will not be left as strings
                 if len(units.keys()) > 0:
                     # if several units reach the highest frequency, we sorted them in alphabetical order and take the first
                     max_frequency = max(units.values())
