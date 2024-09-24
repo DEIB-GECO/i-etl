@@ -73,11 +73,6 @@ class Database:
             raise ConnectionError(f"The MongoDB client located at {self.execution.db_connection} could not be accessed properly.")
 
     def check_table_exists(self, table_name: str) -> bool:
-        log.info(f"check if {table_name} exists")
-        # return True
-        # log.info(self.client.list_collection_names())
-        # log.info(self.client[self.execution.db_name].list_collection_names())
-        log.info(self.db.list_collection_names())
         return table_name in self.db.list_collection_names()
 
     def drop_db(self) -> None:

@@ -55,7 +55,7 @@ class Extract(Task):
             # laboratory, diagnosis, medicine data
             self.load_tabular_data_file()
             self.remove_unused_csv_columns()
-            if self.execution.current_file_type == FileTypes.LABORATORY:
+            if self.execution.current_file_type == FileTypes.DIAGNOSIS:
                 # this is mainly for BUZZI: they associate diagnosis to sampleBarcode, not to Patient id
                 # thus, we need to store the mapping { sample id: patient id } in order to further associate each patient to his/her diagnosis(es)
                 self.compute_mapping_sample_to_patient_id()
@@ -426,7 +426,7 @@ class Extract(Task):
         log.debug(self.mapping_diagnosis_to_cc)
 
     def compute_mapping_sample_to_patient_id(self):
-        log.info("compute mapping sample/patient")
+        # this requires data, e.g., screening data for BUZZI) to be loaded first
         self.mapping_sample_id_to_patient_id = {}
 
         if TableNames.SAMPLE not in ID_COLUMNS[self.execution.hospital_name]:
@@ -434,9 +434,7 @@ class Extract(Task):
             # thus, stopping here
             pass
         else:
-            for index, row in self.data.iterrows():
-                sample_id = row[ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE]]
-                patient_id = row[ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]]
-                if sample_id not in self.mapping_sample_id_to_patient_id:
-                    self.mapping_sample_id_to_patient_id[sample_id] = patient_id
-        log.info(self.mapping_sample_id_to_patient_id)
+            # we cannot simply read data because when reading the diagnosis data, in-memory objects for screening data have been forgot
+            # however, all screening data has already been inserted in the db, thus we can retrieve the mapping from there
+            self.mapping_sample_id_to_patient_id = self.database.retrieve_mapping(table_name=TableNames.LABORATORY_RECORD, key_fields="based_on", value_fields="subject")
+            log.info(self.mapping_sample_id_to_patient_id)

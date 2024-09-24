@@ -7,7 +7,7 @@ if __name__ == '__main__':
     root = "/Users/nelly/Documents/boulot/postdoc-polimi/BETTER-fairificator/datasets/data/BUZZI"
     diagnoses = read_tabular_file_as_string(os.path.join(root, "diagnoses-cleaned.xlsx"))
     regexes = read_tabular_file_as_string(os.path.join(root, "diagnosis-regexes.xlsx"))
-    data = read_tabular_file_as_string(os.path.join(root, "screening_full.csv"))
+    data = read_tabular_file_as_string(os.path.join(root, "screening.csv"))
 
     # 0. preliminary loading and extraction
     distinct_diseases_carrier_patient = list(diagnoses["carrier"].unique())
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     common_sample_bar_codes.sort()
     ratio = round((len(common_sample_bar_codes) / total_distinct_nb_barcodes)*100, 4)
     log.info(f"{len(common_sample_bar_codes)} SampleBarcode are both present in screening and diagnoses, out of {total_distinct_nb_barcodes} unique sampleBarcode ({ratio}%)")
-
+    
     # 4. compute the list of data SampleBarcode which are not in the diagnosis file
     sample_barcodes_in_data_not_in_diagnoses = set(data_barcodes).difference(diagnosis_barcodes)
     sample_barcodes_in_data_not_in_diagnoses = [str(elem) for elem in sample_barcodes_in_data_not_in_diagnoses]

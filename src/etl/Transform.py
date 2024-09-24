@@ -99,8 +99,6 @@ class Transform(Task):
             self.create_samples()
             self.create_laboratory_records()
         elif self.execution.current_file_type == FileTypes.DIAGNOSIS:
-            log.info(self.mapping_diagnosis_to_cc)
-            log.info(self.mapping_column_to_diagfeat_id)
             self.create_diagnosis_features()
             self.create_diagnosis_records()
         elif self.execution.current_file_type == FileTypes.MEDICINE:
@@ -310,7 +308,6 @@ class Transform(Task):
                         # we know a code for this column, so we can register the value of that LabFeature
                         diag_feature_id = Identifier(value=self.mapping_column_to_diagfeat_id[column_name])
                         hospital_id = Identifier(self.mapping_hospital_to_hospital_id[self.execution.hospital_name])
-                        id_column_for_patients = ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]
                         if TableNames.SAMPLE in ID_COLUMNS[self.execution.hospital_name]:
                             # https://github.com/Nelly-Barret/BETTER-fairificator/issues/146
                             # in this case, the ID in the diagnosis data is the SAMPLE id, not the patient one
@@ -325,6 +322,7 @@ class Transform(Task):
                                 patient_id = Identifier(value=sample_id)
                         else:
                             # this is the normal case, we can get the patient ID directly from the data
+                            id_column_for_patients = ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]
                             patient_id = Identifier(value=self.patient_ids_mapping[row[id_column_for_patients]])
                         # log.debug(f"patient_id = {patient_id.to_json()} of type {type(patient_id)}")
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
@@ -407,7 +405,6 @@ class Transform(Task):
         log.info(f"create patient instances in memory")
         count = 1
         for index, row in self.data.iterrows():
-            log.info(row)
             row_patient_id = row[ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]]
             if row_patient_id not in self.patient_ids_mapping:
                 # the (anonymized) patient does not exist yet, we will create it
