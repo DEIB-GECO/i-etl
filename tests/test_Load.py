@@ -114,7 +114,7 @@ class TestLoad(unittest.TestCase):
         #    - one on _id (mandatory, made by MongoDB)
         #    - one on identifier.value
         #    - one on timestamp
-        for table_name in TableNames.values(db=load.database, check_exists=True):
+        for table_name in TableNames.values(db=load.database):
             index_cursor = load.database.db[table_name].list_indexes()
             log.debug(f"table {table_name}, index_cursor: {index_cursor}")
             count_indexes = 0
@@ -124,7 +124,6 @@ class TestLoad(unittest.TestCase):
             # SON([('v', 2), ('key', SON([('timestamp', 1)])), ('name', 'timestamp_1')])
             for index in index_cursor:
                 index_key = index["key"]
-                log.debug(index_key)
                 if "_id" in index_key or "identifier" in index_key or "timestamp" in index_key:
                     # to check whether we have exactly the three indexes we expect
                     count_indexes = count_indexes + 1
@@ -134,14 +133,14 @@ class TestLoad(unittest.TestCase):
                     else:
                         assert "unique" not in index
                 else:
-                    if table_name in TableNames.features(db=load.database, check_exists=True):
+                    if table_name in TableNames.features(db=load.database):
                         # there is also a double index (code.coding.system and code.coding.code)
                         if "code.coding.system" in index_key and "code.coding.code" in index_key:
                             count_indexes = count_indexes + 1
                             assert "unique" not in index
                         else:
                             assert False, f"{table_name} expects a compound index on two fields."
-                    elif table_name in TableNames.records(db=load.database, check_exists=True):
+                    elif table_name in TableNames.records(db=load.database):
                         # there are also two more indexes (instantiate.reference, subject.reference)
                         if "instantiate.reference" in index_key:
                             count_indexes = count_indexes + 1
@@ -158,9 +157,9 @@ class TestLoad(unittest.TestCase):
                             assert False, f"{table_name} has an unknown index named {index_key}."
                     else:
                         assert False, f"{table_name} should have no index."
-            if table_name in TableNames.features(db=load.database, check_exists=True):
+            if table_name in TableNames.features(db=load.database):
                 assert count_indexes == 4
-            elif table_name in TableNames.records(db=load.database, check_exists=True):
+            elif table_name in TableNames.records(db=load.database):
                 assert count_indexes == 5
             else:
                 assert count_indexes == 3

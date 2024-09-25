@@ -35,7 +35,6 @@ class TestDatabase(unittest.TestCase):
             ParameterKeys.HOSPITAL_NAME: HospitalNames.TEST_H1
         }
         set_env_variables_from_dict(env_vars=args)
-        log.debug("Set up before test")
         TestDatabase.execution.set_up(setup_data_files=False)
 
     def test_check_server_is_up(self):

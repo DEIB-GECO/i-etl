@@ -33,6 +33,7 @@ def read_tabular_file_as_string(filepath: str) -> pd.DataFrame:
         df = DataFrame()
         for key, value in all_sheets.items():
             if key != "Legend":  # skip the sheet describing the columns
+                log.info(value.columns)
                 df = pd.concat([df, value], ignore_index=True)
         return df
     else:

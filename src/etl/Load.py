@@ -35,7 +35,7 @@ class Load(Task):
 
         self.database.load_json_in_table(table_name=TableNames.IMAGING_RECORD, unique_variables=["recorded_by", "subject", "instantiate"])
 
-        self.database.load_json_in_table(table_name=TableNames.GENOMIC_FEATURE, unique_variables=["recorded_by", "subject", "instantiate"])
+        self.database.load_json_in_table(table_name=TableNames.GENOMIC_RECORD, unique_variables=["recorded_by", "subject", "instantiate"])
 
     def create_db_indexes(self) -> None:
         log.info(f"Creating indexes.")
@@ -43,7 +43,7 @@ class Load(Task):
         count = 0
 
         # 1. for each resource type, we create an index on its "identifier" and its creation date "timestamp"
-        for table_name in TableNames.values(db=self.database, check_exists=True):
+        for table_name in TableNames.values(db=self.database):
             self.database.create_unique_index(table_name=table_name, columns={"identifier": 1})
             self.database.create_non_unique_index(table_name=table_name, columns={"timestamp": 1})
             count += 2
@@ -52,13 +52,13 @@ class Load(Task):
 
         # for Feature instances, we create an index both on the ontology (system) and a code
         # this is because we usually ask for a code for a given ontology (what is a coe without its ontology? nothing)
-        for table_name in TableNames.features(db=self.database, check_exists=True):
+        for table_name in TableNames.features(db=self.database):
             # a table name of the form XFeature
             self.database.create_non_unique_index(table_name=table_name, columns={"code.coding.system": 1, "code.coding.code": 1})
             count += 1
 
         # for Record instances, we create an index per reference because we usually join each reference to a table
-        for table_name in TableNames.records(db=self.database, check_exists=True):
+        for table_name in TableNames.records(db=self.database):
             # a table name of the form XRecord
             self.database.create_non_unique_index(table_name=table_name, columns={"instantiate.reference": 1})
             self.database.create_non_unique_index(table_name=table_name, columns={"subject.reference": 1})

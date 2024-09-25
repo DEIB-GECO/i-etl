@@ -23,6 +23,8 @@ from enums.Visibility import Visibility
 from etl.Task import Task
 from profiles.DiagnosisFeature import DiagnosisFeature
 from profiles.DiagnosisRecord import DiagnosisRecord
+from profiles.GenomicFeature import GenomicFeature
+from profiles.GenomicRecord import GenomicRecord
 from profiles.Hospital import Hospital
 from profiles.LaboratoryFeature import LaboratoryFeature
 from profiles.LaboratoryRecord import LaboratoryRecord
@@ -62,40 +64,20 @@ class Transform(Task):
         self.mapping_sample_id_to_patient_id = mapping_sample_id_to_patient_id  # it may be None if this is not BUZZI
 
         # to record objects that will be further inserted in the database
-        # features
-        self.laboratory_features = []
-        self.diagnosis_features = []
-        self.medicine_features = []
-        self.imaging_features = []
-        self.genomic_features = []
-        # records
-        self.laboratory_records = []
-        self.diagnosis_records = []
-        self.medicine_records = []
-        self.imaging_records = []
-        self.genomic_records = []
-        # other entities
+        self.features = []
+        self.records = []
         self.hospitals = []
         self.patients = []
         self.samples = []
-
-        # to keep track off what is in the CSV and which objects (their identifiers) have been created out of it
-        # this will also allow us to get resource identifiers of the referred resources
-        self.mapping_hospital_to_hospital_id = {}  # map the hospital names to their IDs
-        self.mapping_column_to_labfeat_id = {}  # map the column names to their LaboratoryFeature IDs
-        self.mapping_column_to_diagfeat_id = {}  # map the disease names to their Diagnosis IDs
 
     def run(self) -> None:
         self.set_resource_counter_id()
         self.create_hospital()
         log.info(f"Hospital count: {self.database.count_documents(table_name=TableNames.HOSPITAL, filter_dict={})}")
-        # load some data from the database to compute references
-        self.mapping_hospital_to_hospital_id = self.database.retrieve_mapping(table_name=TableNames.HOSPITAL, key_fields="name", value_fields="identifier")
-        log.debug(f"{self.mapping_hospital_to_hospital_id}")
 
         if self.execution.current_file_type == FileTypes.LABORATORY:
-            self.create_patients()
             self.create_laboratory_features()
+            self.create_patients()
             self.create_samples()
             self.create_laboratory_records()
         elif self.execution.current_file_type == FileTypes.DIAGNOSIS:
@@ -108,6 +90,9 @@ class Transform(Task):
             self.create_imaging_features()
             self.create_imaging_records()
         elif self.execution.current_file_type == FileTypes.GENOMIC:
+            log.info("process genomic data!")
+            log.info(self.metadata)
+            log.info(self.data)
             self.create_genomic_features()
             self.create_genomic_records()
         else:
@@ -117,7 +102,12 @@ class Transform(Task):
     # FEATURES
     ##############################################################
 
-    def create_features(self, table_name: str, db_existing_features: list[str]) -> None:
+    def create_features(self, table_name: str) -> None:
+        # 1. get existing features in memory
+        result = self.database.find_operation(table_name=table_name, filter_dict={}, projection={"code.text": 1})
+        db_existing_features = [res["code"]["text"] for res in result]
+
+        # 2. create non-existing features in-memory, then insert them
         log.info(f"create Feature instances of type {table_name} in memory")
         count = 1
         for row_index, row in self.metadata.iterrows():
@@ -128,52 +118,47 @@ class Transform(Task):
                 if column_name not in db_existing_features:
                     # we create a new Laboratory Feature from scratch
                     cc = self.create_codeable_concept_from_row(column_name=column_name)
+                    data_type = row[MetadataColumns.ETL_TYPE]  # this has been normalized while loading + we take ETL_type, not var_type, to get the narrowest type (in which we cast values)
+                    visibility = row[MetadataColumns.VISIBILITY]  # this has been normalized while loading
+                    dimension = self.mapping_column_to_dimension[column_name] if column_name in self.mapping_column_to_dimension else None  # else covers: there is no dataType for this column; there is no datatype in that type of entity
+                    categorical_values = None
+                    if column_name in self.mapping_column_to_categorical_value:
+                        # for categorical values, we first need to take the list of (normalized) values that are available for the current column, and then take their CC
+                        normalized_categorical_values = self.mapping_column_to_categorical_value[column_name]
+                        categorical_values = [self.mapping_categorical_value_to_cc[normalized_categorical_value] for normalized_categorical_value in normalized_categorical_values]
                     if cc is not None:
                         # some columns have no attributed ontology code
                         # we still add the codeable_concept as a LabFeature
                         # but, it will have only the text (such as "BIS", or "TooYoung") and no associated codings
                         if table_name == TableNames.LABORATORY_FEATURE:
                             category = self.get_lab_feature_category(column_name=column_name)
-                            data_type = row[MetadataColumns.ETL_TYPE]  # this has been normalized while loading + we take ETL_type, not var_type, to get the narrowest type (in which we cast values)
-                            dimension = self.mapping_column_to_dimension[column_name]
-                            visibility = row[MetadataColumns.VISIBILITY]  # this has been normalized while loading
-                            # for categorical values, we first need to take the list of (normalized) values that are available for the current column, and then take their CC
-                            categorical_values = None
-                            if column_name in self.mapping_column_to_categorical_value:
-                                normalized_categorical_values = self.mapping_column_to_categorical_value[column_name]
-                                categorical_values = []
-                                for normalized_categorical_value in normalized_categorical_values:
-                                    categorical_values.append(self.mapping_categorical_value_to_cc[normalized_categorical_value])
-                            new_lab_feature = LaboratoryFeature(id_value=NO_ID, code=cc, category=category,
-                                                                permitted_datatype=data_type, dimension=dimension,
-                                                                counter=self.counter, hospital_name=self.execution.hospital_name,
-                                                                categorical_values=categorical_values, visibility=visibility)
-                            log.info(f"adding a new LabFeature instance about {cc.text}: {new_lab_feature}")
-                            self.laboratory_features.append(new_lab_feature)
-                            if len(self.laboratory_features) >= BATCH_SIZE:
-                                write_in_file(resource_list=self.laboratory_features, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_FEATURE, count=count)
-                                self.laboratory_features = []
-                                count = count + 1
+                            new_feature = LaboratoryFeature(id_value=NO_ID, code=cc, category=category,
+                                                            permitted_datatype=data_type, dimension=dimension,
+                                                            counter=self.counter, hospital_name=self.execution.hospital_name,
+                                                            categorical_values=categorical_values, visibility=visibility)
                         elif table_name == TableNames.DIAGNOSIS_FEATURE:
-                            data_type = row[MetadataColumns.ETL_TYPE]  # this has been normalized while loading + we take ETL_type, not var_type, to get the narrowest type (in which we cast values)
-                            dimension = None  # no dimension for Diagnosis data because we only associate patient to their diagnosis (a disease name)
-                            visibility = row[MetadataColumns.VISIBILITY]
-                            log.debug(f"for column {column_name}, dimension is {dimension}")
-                            new_diag_feature = DiagnosisFeature(id_value=NO_ID, code=cc,
-                                                                permitted_datatype=data_type,
-                                                                dimension=dimension, counter=self.counter,
-                                                                hospital_name=self.execution.hospital_name,
-                                                                categorical_values=None, visibility=visibility)
-                            log.info(f"adding a new DiagFeature instance about {cc.text}: {new_diag_feature}")
-                            self.diagnosis_features.append(new_diag_feature)
-                            if len(self.diagnosis_features) >= BATCH_SIZE:
-                                write_in_file(resource_list=self.diagnosis_features,
-                                              current_working_dir=self.execution.working_dir_current,
-                                              table_name=TableNames.DIAGNOSIS_FEATURE, count=count)
-                                self.diagnosis_features = []
-                                count = count + 1
+                            new_feature = DiagnosisFeature(id_value=NO_ID, code=cc,
+                                                            permitted_datatype=data_type,
+                                                            dimension=dimension, counter=self.counter,
+                                                            hospital_name=self.execution.hospital_name,
+                                                            categorical_values=categorical_values, visibility=visibility)
+                        elif table_name == TableNames.GENOMIC_FEATURE:
+                            new_feature = GenomicFeature(id_value=NO_ID, code=cc,
+                                                            permitted_datatype=data_type,
+                                                            dimension=dimension, counter=self.counter,
+                                                            hospital_name=self.execution.hospital_name,
+                                                            categorical_values=categorical_values, visibility=visibility)
                         else:
                             raise NotImplementedError("To be implemented")
+
+                        log.info(f"adding a new {table_name} instance about {cc.text}: {new_feature}")
+                        self.features.append(new_feature)
+                        if len(self.features) >= BATCH_SIZE:
+                            write_in_file(resource_list=self.features,
+                                          current_working_dir=self.execution.working_dir_current,
+                                          table_name=table_name, count=count)
+                            self.features.clear()
+                            count = count + 1
                     else:
                         # the column was not present in the data, or it was present several times
                         # this should never happen
@@ -184,34 +169,13 @@ class Transform(Task):
             else:
                 log.debug(f"I am skipping column {column_name} because it has been marked as not being part of LabFeature instances.")
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
-        self.write_remaining_instances_to_database(resources=self.laboratory_features, table_name=TableNames.LABORATORY_FEATURE, count=count, unique_variables=["code"])
-        self.write_remaining_instances_to_database(resources=self.diagnosis_features, table_name=TableNames.DIAGNOSIS_FEATURE, count=count, unique_variables=["code"])
+        self.write_remaining_instances_to_database(resources=self.features, table_name=table_name, count=count, unique_variables=["code"])
 
     def create_laboratory_features(self) -> None:
-        log.info(f"create Lab. Feat. instances in memory")
-
-        # 1. first, we retrieve the existing LabFeature instances to not recreate new CodeableConcepts for them
-        # this will avoid to send again API queries to re-build already-built CodeableConcept
-        result = self.database.find_operation(table_name=TableNames.LABORATORY_FEATURE, filter_dict={}, projection={"code.text": 1})
-        db_lab_feature_names = []
-        for res in result:
-            db_lab_feature_names.append(res["code"]["text"])
-
-        # 2., then we can create non-existing LabFeature instances
-        self.create_features(table_name=TableNames.LABORATORY_FEATURE, db_existing_features=db_lab_feature_names)
+        self.create_features(table_name=TableNames.LABORATORY_FEATURE)
 
     def create_diagnosis_features(self):
-        log.info(f"create Diag. Feat. instances in memory")
-
-        # 1. first, we retrieve the existing DiagFeature instances to not recreate new CodeableConcepts for them
-        # this will avoid to send again API queries to re-build already-built CodeableConcept
-        # TODO NELLY: select distinct based on coding system+code
-        # TODO Nelly: Do the same for laboratory records, etc...: get their codeableConcept in-memory first? or maybe compute the display only if we insert it in the db?
-        result = self.database.find_operation(table_name=TableNames.DIAGNOSIS_FEATURE, filter_dict={}, projection={"code.text": 1})
-        db_diag_feature_names = []
-        for res in result:
-            db_diag_feature_names.append(res["code"]["text"])
-        self.create_features(table_name=TableNames.DIAGNOSIS_FEATURE, db_existing_features=db_diag_feature_names)
+        self.create_features(table_name=TableNames.DIAGNOSIS_FEATURE)
 
     def create_medicine_features(self):
         # TODO Nelly: implement this
@@ -222,38 +186,38 @@ class Transform(Task):
         pass
 
     def create_genomic_features(self):
-        # TODO Nelly: implement this
-        pass
+        self.create_features(table_name=TableNames.GENOMIC_FEATURE)
 
     ##############################################################
     # RECORDS
     ##############################################################
 
-    def create_laboratory_records(self) -> None:
-        log.info(f"create Lab. Rec. instances in memory")
+    def create_records(self, table_name: str) -> None:
+        log.info(f"create {table_name} instances in memory")
 
         # a. load some data from the database to compute references
-        self.mapping_hospital_to_hospital_id = self.database.retrieve_mapping(table_name=TableNames.HOSPITAL, key_fields="name", value_fields="identifier")
-        log.debug(f"{self.mapping_hospital_to_hospital_id}")
+        mapping_hospital_to_hospital_id = self.database.retrieve_mapping(table_name=TableNames.HOSPITAL, key_fields="name", value_fields="identifier")
+        log.debug(f"{mapping_hospital_to_hospital_id}")
 
-        self.mapping_column_to_labfeat_id = self.database.retrieve_mapping(table_name=TableNames.LABORATORY_FEATURE, key_fields="code.text", value_fields="identifier")
-        log.debug(f"{self.mapping_column_to_labfeat_id}")
+        feature_table_name = TableNames.get_feature_table_from_record_table(record_table_name=table_name)
+        mapping_column_to_feature_id = self.database.retrieve_mapping(table_name=feature_table_name, key_fields="code.text", value_fields="identifier")
+        log.debug(f"{mapping_column_to_feature_id}")
 
-        # b. Create LabRecord instance, and write them in temporary (JSON) files
+        # b. Create Record instance, and write them in temporary (JSON) files
         count = 1
         for index, row in self.data.iterrows():
-            # create LabRecord instances by associating observations to patients (and possibly the sample)
+            # create Record instances by associating observations to patients
             for column_name, value in row.items():
                 # log.debug(f"for row {index} (type: {type(index)}) and column {column_name} (type: {type(column_name)}), value is {value}")
                 if value is None or value == "" or not is_not_nan(value):
-                    # if there is no value for that LabFeature, no need to create a LabRecord instance
+                    # if there is no value for that Feature, no need to create a Record instance
                     # log.error(f"skipping value {value} because it is None, or empty or nan")
                     pass
                 else:
-                    if column_name in self.mapping_column_to_labfeat_id:
+                    if column_name in mapping_column_to_feature_id:
                         # we know a code for this column, so we can register the value of that LabFeature
-                        lab_feature_id = Identifier(self.mapping_column_to_labfeat_id[column_name])
-                        hospital_id = Identifier(self.mapping_hospital_to_hospital_id[self.execution.hospital_name])
+                        feature_id = Identifier(value=mapping_column_to_feature_id[column_name])
+                        hospital_id = Identifier(mapping_hospital_to_hospital_id[self.execution.hospital_name])
                         # for patient and sample instances, no need to go through a mapping because they have an ID assigned by the hospital
                         id_column_for_patients = ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]
                         # we cannot use PatientAnonymizedIdentifier otherwise we would concat a set hospital name to the anonymized patient id
@@ -266,93 +230,76 @@ class Transform(Task):
 
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
                         anonymized_value, is_anonymized = self.anonymize_value(column_name=column_name, fairified_value=fairified_value)
-                        new_laboratory_record = LaboratoryRecord(id_value=NO_ID, feature_id=lab_feature_id,
-                                                                 patient_id=patient_id, hospital_id=hospital_id,
-                                                                 sample_id=sample_id,
-                                                                 value=fairified_value,
-                                                                 anonymized_value=anonymized_value if is_anonymized else None,
-                                                                 counter=self.counter, hospital_name=self.execution.hospital_name)
-                        # log.info(f"adding a new LabRecord instance: {new_laboratory_record}")
-                        self.laboratory_records.append(new_laboratory_record)
-                        if len(self.laboratory_records) >= BATCH_SIZE:
-                            write_in_file(resource_list=self.laboratory_records, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_RECORD, count=count)
-                            # no need to load LabRecords instances because they are never referenced
-                            self.laboratory_records = []
+                        if table_name == TableNames.LABORATORY_RECORD:
+                            new_record = LaboratoryRecord(id_value=NO_ID, feature_id=feature_id,
+                                                                     patient_id=patient_id, hospital_id=hospital_id,
+                                                                     sample_id=sample_id,
+                                                                     value=fairified_value,
+                                                                     anonymized_value=anonymized_value if is_anonymized else None,
+                                                                     counter=self.counter,
+                                                                     hospital_name=self.execution.hospital_name)
+                        elif table_name == TableNames.DIAGNOSIS_RECORD:
+                            if TableNames.SAMPLE in ID_COLUMNS[self.execution.hospital_name]:
+                                # https://github.com/Nelly-Barret/BETTER-fairificator/issues/146
+                                # in this case, the ID in the diagnosis data is the SAMPLE id, not the patient one
+                                # thus, we need to get it by hand (to effectively record a patient ID)
+                                # in any case, clinical data MUST be ingested before the diagnosis data, otherwise the mapping wil be empty
+                                sample_id = row[ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE]]
+                                if sample_id in self.mapping_sample_id_to_patient_id:
+                                    patient_id = Identifier(value=self.mapping_sample_id_to_patient_id[sample_id])
+                                else:
+                                    # in case this sample has no associated sample barcode
+                                    # we take the sample bar code (which is, at least, a bit better than None)
+                                    patient_id = Identifier(value=sample_id)
+                            else:
+                                # this is the normal case, we can get the patient ID directly from the data
+                                id_column_for_patients = ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]
+                                patient_id = Identifier(value=self.patient_ids_mapping[row[id_column_for_patients]])
+                            if fairified_value is None:
+                                # the patient has genetic mutation but he is not ill
+                                # thus, we do not record it in database
+                                new_record = None
+                            else:
+                                new_record = DiagnosisRecord(id_value=NO_ID, feature_id=feature_id,
+                                                                  patient_id=patient_id, hospital_id=hospital_id,
+                                                                  value=fairified_value,
+                                                                  anonymized_value=anonymized_value if is_anonymized else None,
+                                                                  counter=self.counter,
+                                                                  hospital_name=self.execution.hospital_name)
+                        elif table_name == TableNames.GENOMIC_RECORD:
+                            log.info(row)
+                            new_record = GenomicRecord(id_value=NO_ID, feature_id=feature_id,
+                                                          patient_id=patient_id, hospital_id=hospital_id,
+                                                          uri=None,
+                                                          value=fairified_value,
+                                                          anonymized_value=anonymized_value if is_anonymized else None,
+                                                          counter=self.counter,
+                                                          hospital_name=self.execution.hospital_name)
+                        else:
+                            raise NotImplementedError("Not implemented yet.")
+                        log.info(new_record)
+                        if new_record is not None:  # it can be None if the patient is a carrier but not diseased
+                            self.records.append(new_record)
+                        log.info(f"{len(self.records)} records")
+                        if len(self.records) >= BATCH_SIZE:
+                            log.info(f"writing {len(self.records)}")
+                            write_in_file(resource_list=self.records, current_working_dir=self.execution.working_dir_current,
+                                          table_name=table_name, count=count)
+                            self.records.clear()
                             count = count + 1
                     else:
                         # this represents the case when a column has not been converted to a LabFeature resource
                         # this may happen for ID column for instance, or in BUZZI many clinical columns are not described in the metadata, thus skipped here
                         # log.error(f"Skipping column {column_name} for row {index}")
                         pass
+        # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
+        self.write_remaining_instances_to_database(resources=self.records, table_name=table_name, count=count, unique_variables=["code"])
 
-        write_in_file(resource_list=self.laboratory_records, current_working_dir=self.execution.working_dir_current, table_name=TableNames.LABORATORY_RECORD, count=count)
+    def create_laboratory_records(self) -> None:
+        self.create_records(table_name=TableNames.LABORATORY_RECORD)
 
     def create_diagnosis_records(self):
-        log.info(f"create Diag. Rec. instances in memory")
-
-        self.mapping_column_to_diagfeat_id = self.database.retrieve_mapping(table_name=TableNames.DIAGNOSIS_FEATURE, key_fields="code.text", value_fields="identifier")
-        log.debug(f"{self.mapping_column_to_diagfeat_id}")
-
-        # b. Create DiagRecord instance, and write them in temporary (JSON) files
-        count = 1
-        for index, row in self.data.iterrows():
-            # create DiagRecord instances by associating diagnoses to patients
-            for column_name, value in row.items():
-                # log.debug(f"for row {index} and column {column_name}, value is {value}")
-                if value is None or value == "" or not is_not_nan(value):
-                    # if there is no value for that LabFeature, no need to create a LabRecord instance
-                    pass
-                else:
-                    if column_name in self.mapping_column_to_diagfeat_id:
-                        # log.info("I know a code for column %s", column_name)
-                        # we know a code for this column, so we can register the value of that LabFeature
-                        diag_feature_id = Identifier(value=self.mapping_column_to_diagfeat_id[column_name])
-                        hospital_id = Identifier(self.mapping_hospital_to_hospital_id[self.execution.hospital_name])
-                        if TableNames.SAMPLE in ID_COLUMNS[self.execution.hospital_name]:
-                            # https://github.com/Nelly-Barret/BETTER-fairificator/issues/146
-                            # in this case, the ID in the diagnosis data is the SAMPLE id, not the patient one
-                            # thus, we need to get it by hand (to effectively record a patient ID)
-                            # in any case, clinical data MUST be ingested before the diagnosis data, otherwise the mapping wil be empty
-                            sample_id = row[ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE]]
-                            if sample_id in self.mapping_sample_id_to_patient_id:
-                                patient_id = Identifier(value=self.mapping_sample_id_to_patient_id[sample_id])
-                            else:
-                                # in case this sample has no associated sample barcode
-                                # we take the sample bar code (which is, at least, a bit better than None)
-                                patient_id = Identifier(value=sample_id)
-                        else:
-                            # this is the normal case, we can get the patient ID directly from the data
-                            id_column_for_patients = ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]
-                            patient_id = Identifier(value=self.patient_ids_mapping[row[id_column_for_patients]])
-                        # log.debug(f"patient_id = {patient_id.to_json()} of type {type(patient_id)}")
-                        fairified_value = self.fairify_value(column_name=column_name, value=value)
-                        if fairified_value is None:
-                            # the patient has genetic mutation but he is not ill
-                            # thus, we do not record it in database
-                            pass
-                        else:
-                            anonymized_value, is_anonymized = self.anonymize_value(column_name=column_name, fairified_value=fairified_value)
-                            new_diag_record = DiagnosisRecord(id_value=NO_ID, feature_id=diag_feature_id,
-                                                              patient_id=patient_id, hospital_id=hospital_id,
-                                                              value=fairified_value,
-                                                              anonymized_value=anonymized_value if is_anonymized else None,
-                                                              counter=self.counter,
-                                                              hospital_name=self.execution.hospital_name)
-                            self.diagnosis_records.append(new_diag_record)
-                            if len(self.diagnosis_records) >= BATCH_SIZE:
-                                write_in_file(resource_list=self.diagnosis_records,
-                                              current_working_dir=self.execution.working_dir_current,
-                                              table_name=TableNames.DIAGNOSIS_RECORD, count=count)
-                                # no need to load LabRecords instances because they are never referenced
-                                self.diagnosis_records = []
-                                count = count + 1
-                    else:
-                        # this should never happen
-                        # this represents the case when a column has not been converted to a LabFeature resource
-                        pass
-
-        write_in_file(resource_list=self.diagnosis_records, current_working_dir=self.execution.working_dir_current,
-                      table_name=TableNames.DIAGNOSIS_RECORD, count=count)
+        self.create_records(table_name=TableNames.DIAGNOSIS_RECORD)
 
     def create_medicine_records(self):
         # TODO Nelly: implement this
@@ -363,8 +310,7 @@ class Transform(Task):
         pass
 
     def create_genomic_records(self):
-        # TODO Nelly: implement this
-        pass
+        self.create_records(table_name=TableNames.GENOMIC_RECORD)
 
     ##############################################################
     # OTHER ENTITIES

@@ -68,8 +68,6 @@ class TestExtract(unittest.TestCase):
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()
 
-        log.debug(extract.metadata.columns)
-
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
         assert len(extract.metadata.columns) == 13, "The expected number of columns is 13."
@@ -115,8 +113,6 @@ class TestExtract(unittest.TestCase):
         assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_CODE_1][0])
 
         # e. check var type normalization
-        log.debug(extract.metadata.columns)
-        log.debug(extract.metadata.to_string())
         assert extract.metadata[MetadataColumns.VAR_TYPE][0] == DataTypes.INTEGER  # patient id
         assert extract.metadata[MetadataColumns.VAR_TYPE][1] == DataTypes.FLOAT  # molecule A
         assert extract.metadata[MetadataColumns.VAR_TYPE][2] == DataTypes.STRING  # molecule B
@@ -126,8 +122,6 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.VAR_TYPE][6] == DataTypes.DATETIME  # date of birth
 
         # f. check ETL type normalization
-        log.debug(extract.metadata.columns)
-        log.debug(MetadataColumns.ETL_TYPE)
         assert extract.metadata[MetadataColumns.ETL_TYPE][0] == DataTypes.INTEGER  # patient id
         assert extract.metadata[MetadataColumns.ETL_TYPE][1] == DataTypes.FLOAT  # molecule A
         assert extract.metadata[MetadataColumns.ETL_TYPE][2] == DataTypes.INTEGER  # molecule B
@@ -436,8 +430,6 @@ class TestExtract(unittest.TestCase):
 
         with open(os.path.join(DOCKER_FOLDER_TEST, TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH), "r") as f:
             expected_dict = json.load(f)
-        log.info(expected_dict)
-        log.info(extract.mapping_diagnosis_to_cc)
         assert expected_dict == extract.mapping_diagnosis_to_cc  # == performs a deep equality
 
     # def test_run_value_analysis(self):

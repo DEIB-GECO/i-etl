@@ -51,6 +51,17 @@ class Operators(EnumAsClass):
             }
 
     @classmethod
+    def lookup(cls, join_table_name: str, field_table_1: str, field_table_2: str, lookup_field_name: str) -> dict:
+        return {
+            "$lookup": {
+                "from": join_table_name,  # the "second" table of the join
+                "localField": field_table_2,  # the field of the "second" table to join
+                "foreignField": field_table_1,  # the field of the "first" table to join
+                "as": lookup_field_name,  # the name of the (new array) field added containing either the joined resource (of the second table) or an empty array if no join could be made for the tuple
+            }
+        }
+
+    @classmethod
     def sort(cls, field: str, sort_order: int) -> dict:
         return {
             "$sort": {

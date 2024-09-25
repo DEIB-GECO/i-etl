@@ -7,6 +7,7 @@ from constants.defaults import DEFAULT_CODING_DISPLAY, SNOMED_OPERATORS_LIST, SN
 from statistics.QualityStatistics import QualityStatistics
 from utils.api_utils import send_query_to_api, parse_json_response, parse_xml_response, parse_html_response
 from utils.assertion_utils import is_not_nan
+from utils.setup_logger import log
 from utils.str_utils import process_spaces, remove_operators_in_strings, remove_specific_tokens
 
 REPORTING_NOT_WORKING_QUERIES = []

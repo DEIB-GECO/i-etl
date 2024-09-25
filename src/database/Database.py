@@ -57,6 +57,10 @@ class Database:
         if self.execution.db_drop:
             self.drop_db()
         self.db = self.client[self.execution.db_name]
+        # in any case, drop the stats because we want the stats of the current execution
+        self.drop_table(table_name=TableNames.STATS_DB)
+        self.drop_table(table_name=TableNames.STATS_TIME)
+        self.drop_table(table_name=TableNames.STATS_QUALITY)
 
         log.debug(f"the connection string is: {self.execution.db_connection}")
         log.debug(f"the new MongoClient is: {self.client}")
@@ -74,6 +78,9 @@ class Database:
 
     def check_table_exists(self, table_name: str) -> bool:
         return table_name in self.db.list_collection_names()
+
+    def drop_table(self, table_name: str) -> None:
+        self.db.drop_collection(table_name)
 
     def drop_db(self) -> None:
         """
@@ -212,6 +219,14 @@ class Database:
         """
         return self.db[table_name].count_documents(filter_dict)
 
+    def inverse_inner_join(self, name_table_1: str, name_table_2: str, field_table_1: str, field_table_2: str, lookup_name: str) -> CommandCursor:
+        operations = []
+        operations.append(Operators.lookup(join_table_name=name_table_2, field_table_1=field_table_1, field_table_2=field_table_2, lookup_field_name=lookup_name))
+        operations.append(Operators.match(field=lookup_name, value={"$eq": []}, is_regex=False))  # we get only pairs that could not match
+        log.info(name_table_1)
+        log.info(operations)
+        return self.db[name_table_1].aggregate(operations)
+
     def create_unique_index(self, table_name: str, columns: dict) -> None:
         """
         Create a unique constraint/index on a (set of) column(s).
@@ -319,7 +334,7 @@ class Database:
 
     def get_max_resource_counter_id(self) -> int:
         max_value = -1
-        for table_name in TableNames.values(db=self, check_exists=True):
+        for table_name in TableNames.values(db=self):
             if table_name == TableNames.SAMPLE:
                 # pass because Sample resources have their ID assigned by hospitals, not the FAIRificator
                 pass

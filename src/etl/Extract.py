@@ -85,6 +85,8 @@ class Extract(Task):
 
         # index_col is False to not add a column with line numbers
         self.metadata = read_tabular_file_as_string(self.execution.metadata_filepath)  # keep all metadata as str
+        log.debug(self.metadata)
+        log.debug(self.metadata.columns)
         log.debug(self.metadata.dtypes)
 
         log.info("Will preprocess metadata")
@@ -214,8 +216,9 @@ class Extract(Task):
         pass
 
     def load_genomic_data_file(self):
-        # TODO Nelly: implement this
-        pass
+        # TODO Nelly: this is for HSJD for now (24/09/2024)
+        # this may need to be revised depending on the data we will have later
+        self.load_tabular_data_file()
 
     def load_patient_id_mapping(self) -> None:
         log.info(f"Patient ID mapping filepath is {self.execution.anonymized_patient_ids_filepath}")
@@ -270,7 +273,7 @@ class Extract(Task):
         # this will avoid to send again API queries to re-build already-built CodeableConcept
         # we get all the categorical values across all tables to not miss any of them
         existing_categorical_codeable_concepts = {}
-        for feature_table_name in TableNames.features(db=self.database, check_exists=True):
+        for feature_table_name in TableNames.features(db=self.database):
             # the set of categorical values are defined in Features only, thus we can restrict the find to only those:
             # categorical_values_for_table_name = {'_id': ObjectId('66b9b890583ee775ef4edcb9'), 'categorical_values': [{...}, {...}, ...]}
             categorical_values_for_table_name = self.database.find_operation(table_name=feature_table_name, filter_dict={"categorical_values": {"$exists": 1}}, projection={"categorical_values": 1})
@@ -390,13 +393,11 @@ class Extract(Task):
                 # this column is described in the metadata but not in the data
                 add_dimension_from_metadata = True
 
-            log.debug(f"For column {column_name}, add dimension from metadata is {add_dimension_from_metadata}")
             if add_dimension_from_metadata:
                 # in this case, we have not set the dimension from the data because:
                 # 1. there is a dimension provided by the description, so we use it (even though a dimension could be computed from the data)
                 # 2. otherwise (no dimension is provided and none could be computed from the data), we set it to None
                 column_expected_dimension = row[MetadataColumns.VAR_DIMENSION]
-                log.debug(row[MetadataColumns.VAR_DIMENSION])
                 if is_not_nan(column_expected_dimension):
                     # if there is a dimension provided in the metadata (this may be overridden if there are dimensions in the cells values)
                     self.mapping_column_to_dimension[column_name] = column_expected_dimension

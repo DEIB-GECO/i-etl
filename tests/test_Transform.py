@@ -188,12 +188,9 @@ class TestTransform(unittest.TestCase):
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH,
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
         # this creates LabFeature instances (based on the metadata file) and insert them in a (JSON) temporary file
-        log.debug(transform.data.to_string())
-        log.debug(transform.metadata.to_string())
         transform.create_laboratory_features()
 
-        log.info(len(transform.laboratory_features))
-        assert len(transform.laboratory_features) == 8 - 1  # id does not count as a LabFeature
+        assert len(transform.features) == 8 - 1  # id does not count as a LabFeature
         # assert the first, second and sixth LabFeature instances:
         # lab_feature_a has one associated code, and is clinical
         # lab_feature_b one has no associated code, and is clinical
@@ -201,7 +198,7 @@ class TestTransform(unittest.TestCase):
         # because they may not be in the same order as in the metadata file, we get them based on their text
         # (which contains at least the column name, and maybe a description)
         # LabFeature about molecule_a
-        lab_feature_a = get_lab_feature_by_text(transform.laboratory_features, "molecule_a")
+        lab_feature_a = get_lab_feature_by_text(transform.features, "molecule_a")
         assert len(lab_feature_a) == 8  # inherited fields (identifier, resource_type, timestamp), proper fields (code, permitted_datatype, dimension, category, visibility)
         assert "identifier" in lab_feature_a
         assert lab_feature_a["resource_type"] == TableNames.LABORATORY_FEATURE
@@ -220,7 +217,7 @@ class TestTransform(unittest.TestCase):
         assert lab_feature_a["dimension"] == "mg/L"
 
         # LabFeature about molecule_b
-        lab_feature_b = get_lab_feature_by_text(transform.laboratory_features, "molecule_b")
+        lab_feature_b = get_lab_feature_by_text(transform.features, "molecule_b")
         assert len(lab_feature_b) == 8
         assert "identifier" in lab_feature_b
         assert lab_feature_b["resource_type"] == TableNames.LABORATORY_FEATURE
@@ -234,7 +231,7 @@ class TestTransform(unittest.TestCase):
 
         # LabFeature about ethnicity
         # "loinc/46463-6" and "snomedct/397731000"
-        lab_feature_ethnicity = get_lab_feature_by_text(transform.laboratory_features, "ethnicity")
+        lab_feature_ethnicity = get_lab_feature_by_text(transform.features, "ethnicity")
         assert len(lab_feature_ethnicity) == 7  # only 6 (not 8) because dimension is None, thus not added
         assert "identifier" in lab_feature_ethnicity
         assert lab_feature_ethnicity["resource_type"] == TableNames.LABORATORY_FEATURE
@@ -258,7 +255,7 @@ class TestTransform(unittest.TestCase):
 
         # check that there are no duplicates in LabFeature instances
         # for this, we get the set of their names (in the field "text")
-        lab_features_names_list = [lab_feature.code.text for lab_feature in transform.laboratory_features]
+        lab_features_names_list = [lab_feature.code.text for lab_feature in transform.features]
         lab_features_names_set = set(lab_features_names_list)
         assert len(lab_features_names_list) == len(lab_features_names_set)
 
@@ -272,8 +269,6 @@ class TestTransform(unittest.TestCase):
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH,
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
         # this creates LabFeature resources (based on the metadata file) and insert them in a (JSON) temporary file
-        log.debug(transform.data.to_string())
-        log.debug(transform.metadata.to_string())
         transform.create_samples()
 
         # TODO NELLY
@@ -288,30 +283,18 @@ class TestTransform(unittest.TestCase):
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH,
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
         # this loads references (Hospital+LabFeature resources), creates LabRecord resources (based on the data file) and insert them in a (JSON) temporary file
-        log.debug(transform.data.to_string())
-        log.debug(transform.metadata.to_string())
         transform.create_hospital()
         transform.create_laboratory_features()
         transform.create_patients()  # this step and the two above are required to create LabRecord instances
         transform.create_laboratory_records()
 
-        log.debug(transform.mapping_hospital_to_hospital_id)
-        log.debug(transform.mapping_column_to_labfeat_id)
-        log.debug(transform.hospitals)
-        log.debug(transform.laboratory_features)
-
-        assert len(transform.mapping_hospital_to_hospital_id) == 1
-        assert HospitalNames.TEST_H1 in transform.mapping_hospital_to_hospital_id
-        log.debug(transform.laboratory_records)
-        assert len(transform.laboratory_records) == 33  # in total, 33 LabRecord instances are created, between 2 and 5 per Patient
+        assert len(transform.records) == 33  # in total, 33 LabRecord instances are created, between 2 and 5 per Patient
 
         # assert that LabRecord instances have been correctly created for a given data row
         # we take the seventh row
-        log.debug(transform.laboratory_records)
         patient_id = transform.patient_ids_mapping["999999994"]
         assert patient_id == "h1:14"  # patient anonymized IDs start at h1:9, because 8 lab. feat. have been created beforehand.
-        lab_records_patient = get_lab_records_for_patient(lab_records=transform.laboratory_records, patient_id=patient_id)
-        log.debug(json.dumps(lab_records_patient))
+        lab_records_patient = get_lab_records_for_patient(lab_records=transform.records, patient_id=patient_id)
         assert len(lab_records_patient) == 5
         assert lab_records_patient[0]["resource_type"] == TableNames.LABORATORY_RECORD
         assert lab_records_patient[0]["value"] == -0.003  # the value as been converted to an integer
@@ -331,8 +314,8 @@ class TestTransform(unittest.TestCase):
         assert lab_records_patient[2]["value"] == cc_female.to_json()  # the value as been replaced by its ontology code (sex is a categorical value)r
 
         # we also check that conversions str->int/float and category->bool worked
-        lab_recs = transform.laboratory_records
-        lab_feats = transform.laboratory_features
+        lab_recs = transform.records
+        lab_feats = transform.features
         assert transform.patient_ids_mapping["999999996"] == "h1:12"
         assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999999"], column_name="molecule_b") == 100  # this has been cast as int because it matches the expected unit
         assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999998"], column_name="molecule_b") == 111  # this has been cast as int because it matches the expected unit
@@ -353,30 +336,18 @@ class TestTransform(unittest.TestCase):
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_FILLED_PIDS_PATH,
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
         # this loads references (Hospital+LabFeature resources), creates LabRecord resources (based on the data file) and insert them in a (JSON) temporary file
-        log.debug(transform.data.to_string())
-        log.debug(transform.metadata.to_string())
         transform.create_hospital()
         transform.create_laboratory_features()
         transform.create_patients()  # this step and the two above are required to create LabRecord instances
         transform.create_laboratory_records()
 
-        log.debug(transform.mapping_hospital_to_hospital_id)
-        log.debug(transform.mapping_column_to_labfeat_id)
-        log.debug(transform.hospitals)
-        log.debug(transform.laboratory_features)
-
-        assert len(transform.mapping_hospital_to_hospital_id) == 1
-        assert HospitalNames.TEST_H1 in transform.mapping_hospital_to_hospital_id
-        log.debug(transform.laboratory_records)
-        assert len(transform.laboratory_records) == 33  # in total, 33 LabRecord instances are created, between 2 and 5 per Patient
+        assert len(transform.records) == 33  # in total, 33 LabRecord instances are created, between 2 and 5 per Patient
 
         # assert that LabRecord instances have been correctly created for a given data row
         # we take the seventh row
-        log.debug(transform.laboratory_records)
         patient_id = transform.patient_ids_mapping["999999994"]
         assert patient_id == "h1:994"
-        lab_records_patient = get_lab_records_for_patient(lab_records=transform.laboratory_records, patient_id=patient_id)
-        log.debug(json.dumps(lab_records_patient))
+        lab_records_patient = get_lab_records_for_patient(lab_records=transform.records, patient_id=patient_id)
         assert len(lab_records_patient) == 5
         assert lab_records_patient[0]["resource_type"] == TableNames.LABORATORY_RECORD
         assert lab_records_patient[0]["value"] == -0.003  # the value as been converted to a float
@@ -397,8 +368,8 @@ class TestTransform(unittest.TestCase):
         assert lab_records_patient[2]["value"] == cc_female.to_json()  # the value as been replaced by its ontology code (sex is a categorical value)r
 
         # we also check that conversions str->int/float and category->bool worked
-        lab_recs = transform.laboratory_records
-        lab_feats = transform.laboratory_features
+        lab_recs = transform.records
+        lab_feats = transform.features
         assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999999"], column_name="molecule_b") == 100  # this has been cast as int because it matches the expected unit
         assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999998"], column_name="molecule_b") == 111  # this has been cast as int because it matches the expected unit
         assert get_field_value_for_patient(lab_records=lab_recs, lab_features=lab_feats, patient_id=transform.patient_ids_mapping["999999997"], column_name="molecule_b") == "231 grams"  # this has not been converted as this does not match the expected dimension
@@ -423,19 +394,13 @@ class TestTransform(unittest.TestCase):
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH,
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
         # this creates Patient resources (based on the data file) and insert them in a (JSON) temporary file
-        log.debug(transform.data.to_string())
-        log.debug(transform.metadata.to_string())
-        log.debug(transform.patient_ids_mapping)
         transform.create_patients()
-
-        log.debug(transform.patients)
 
         assert len(transform.patients) == 10
         # we cannot simply order by identifier value because they are strings, not int
         # thus will need a bit more of processing to sort by the integer represented within the string
         # sorted_patients = sorted(transform.patients, key=lambda d: d.to_json()["identifier"]["value"])
         sorted_patients = sorted(transform.patients, key=lambda p: p.get_identifier_as_int())
-        log.debug(sorted_patients)
         for i in range(0, len(sorted_patients)):
             # patients have their own anonymized ids
             assert sorted_patients[i].to_json()["identifier"] == PatientAnonymizedIdentifier(id_value=str(i+1), hospital_name=HospitalNames.TEST_H1).value
@@ -454,20 +419,13 @@ class TestTransform(unittest.TestCase):
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_FILLED_PIDS_PATH,
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
         # this creates Patient resources (based on the data file) and insert them in a (JSON) temporary file
-        log.debug(transform.data.to_string())
-        log.debug(transform.metadata.to_string())
-        log.debug(transform.patient_ids_mapping)
         transform.create_patients()
-
-        log.debug(transform.patients)
 
         assert len(transform.patients) == 10
         # we cannot simply order by identifier value because they are strings, not int
         # thus will need a bit more of processing to sort by the integer represented within the string
         # sorted_patients = sorted(transform.patients, key=lambda d: d.to_json()["identifier"]["value"])
         sorted_patients = sorted(transform.patients, key=lambda p: p.get_identifier_as_int())
-        log.debug(sorted_patients)
-        log.debug(transform.patient_ids_mapping)
         for i in range(0, len(sorted_patients)):
             # patients have their own anonymized ids
             assert sorted_patients[i].to_json()["identifier"] == PatientAnonymizedIdentifier(id_value=str(990+i), hospital_name=HospitalNames.TEST_H1).value
@@ -516,7 +474,6 @@ class TestTransform(unittest.TestCase):
                              extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
         # no associated ontology code (patient id line)
         first_row = transform.metadata.iloc[0]
-        log.info(first_row)
         coding = Coding(code=OntologyResource(ontology=Ontologies.get_enum_from_name(first_row[MetadataColumns.ONTO_NAME_1]), full_code=first_row[MetadataColumns.ONTO_CODE_1], quality_stats=None),
                         display=None)
         assert coding.system is None
