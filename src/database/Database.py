@@ -335,7 +335,7 @@ class Database:
     def get_max_resource_counter_id(self) -> int:
         max_value = -1
         for table_name in TableNames.values(db=self):
-            if table_name == TableNames.SAMPLE:
+            if table_name == TableNames.SAMPLE_RECORD:
                 # pass because Sample resources have their ID assigned by hospitals, not the FAIRificator
                 pass
             else:

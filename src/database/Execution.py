@@ -32,6 +32,7 @@ class Execution:
         self.metadata_filepath = None  # user input
         self.diagnosis_regexes_filepath = None  # user input
         self.laboratory_filepaths = None  # user input
+        self.sample_filepaths = None  # user input
         self.diagnosis_filepaths = None  # user input
         self.medicine_filepaths = None  # user input
         self.imaging_filepaths = None  # user input
@@ -103,6 +104,8 @@ class Execution:
             log.debug(self.diagnosis_regexes_filepath)
             self.laboratory_filepaths = self.check_parameter(key=ParameterKeys.LABORATORY_PATHS, accepted_values=None, default_value=self.laboratory_filepaths)
             log.debug(self.laboratory_filepaths)
+            self.sample_filepaths = self.check_parameter(key=ParameterKeys.SAMPLE_PATHS, accepted_values=None, default_value=self.sample_filepaths)
+            log.debug(self.sample_filepaths)
             self.diagnosis_filepaths = self.check_parameter(key=ParameterKeys.DIAGNOSIS_PATHS, accepted_values=None, default_value=self.diagnosis_filepaths)
             log.debug(self.diagnosis_filepaths)
             self.medicine_filepaths = self.check_parameter(key=ParameterKeys.MEDICINE_PATHS, accepted_values=None, default_value=self.medicine_filepaths)
@@ -189,6 +192,10 @@ class Execution:
             self.laboratory_filepaths = split_list_of_files(self.laboratory_filepaths, prefix_path=FileTypes.get_prefix_for_path(filetype=FileTypes.LABORATORY))  # file 1,file 2, ...,file N
             log.debug(f"{self.laboratory_filepaths}")
 
+        if self.sample_filepaths is not None:
+            self.sample_filepaths = split_list_of_files(self.sample_filepaths, prefix_path=FileTypes.get_prefix_for_path(filetype=FileTypes.SAMPLE))  # file 1,file 2, ...,file N
+            log.debug(f"{self.sample_filepaths}")
+
         # b. ...diagnosis filepaths...
         if self.diagnosis_filepaths is not None:
             log.info(self.diagnosis_filepaths)
@@ -242,6 +249,7 @@ class Execution:
                 "current_filepath": self.current_filepath,
                 ParameterKeys.METADATA_PATH: self.metadata_filepath,
                 ParameterKeys.LABORATORY_PATHS: self.laboratory_filepaths,
+                ParameterKeys.SAMPLE_PATHS: self.sample_filepaths,
                 ParameterKeys.DIAGNOSIS_PATHS: self.diagnosis_filepaths,
                 ParameterKeys.MEDICINE_PATHS: self.medicine_filepaths,
                 ParameterKeys.IMAGING_PATHS: self.imaging_filepaths,

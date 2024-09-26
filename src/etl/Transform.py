@@ -29,7 +29,8 @@ from profiles.Hospital import Hospital
 from profiles.LaboratoryFeature import LaboratoryFeature
 from profiles.LaboratoryRecord import LaboratoryRecord
 from profiles.Patient import Patient
-from profiles.Sample import Sample
+from profiles.SampleRecord import SampleRecord
+from profiles.SampleFeature import SampleFeature
 from database.Counter import Counter
 from constants.defaults import BATCH_SIZE, PATTERN_VALUE_DIMENSION
 from constants.idColumns import NO_ID, ID_COLUMNS
@@ -76,10 +77,18 @@ class Transform(Task):
         log.info(f"Hospital count: {self.database.count_documents(table_name=TableNames.HOSPITAL, filter_dict={})}")
 
         if self.execution.current_file_type == FileTypes.LABORATORY:
+            log.info("********** create lab features")
             self.create_laboratory_features()
-            self.create_patients()
-            self.create_samples()
+            log.info("********** create lab records")
             self.create_laboratory_records()
+            log.info("********** done with lab data")
+        elif self.execution.current_file_type == FileTypes.SAMPLE:
+            log.info("********** create patients")
+            self.create_patients()
+            log.info("********** create sample features")
+            self.create_sample_features()
+            log.info("********** create sample records")
+            self.create_sample_records()
         elif self.execution.current_file_type == FileTypes.DIAGNOSIS:
             self.create_diagnosis_features()
             self.create_diagnosis_records()
@@ -113,10 +122,14 @@ class Transform(Task):
         for row_index, row in self.metadata.iterrows():
             column_name = row[MetadataColumns.COLUMN_NAME]
             # columns to remove have already been removed in the Extract part from the metadata
-            # here, we need to ensure that we create Features only for still-existing columns and not for sample (that are managed aside) nor for ID column
-            if column_name in self.metadata[MetadataColumns.COLUMN_NAME].values and column_name not in SampleColumns.values() and column_name != ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]:
+            # here, we need to ensure that we create Features only for still-existing columns and not for ID column
+            if (column_name in self.metadata[MetadataColumns.COLUMN_NAME].values
+                    and column_name != ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]
+                    and (TableNames.SAMPLE_RECORD not in ID_COLUMNS[self.execution.hospital_name]
+                         or (TableNames.SAMPLE_RECORD in ID_COLUMNS[self.execution.hospital_name] and column_name != ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE_RECORD])
+                    )):
                 if column_name not in db_existing_features:
-                    # we create a new Laboratory Feature from scratch
+                    # we create a new Feature from scratch
                     cc = self.create_codeable_concept_from_row(column_name=column_name)
                     data_type = row[MetadataColumns.ETL_TYPE]  # this has been normalized while loading + we take ETL_type, not var_type, to get the narrowest type (in which we cast values)
                     visibility = row[MetadataColumns.VISIBILITY]  # this has been normalized while loading
@@ -131,11 +144,25 @@ class Transform(Task):
                         # we still add the codeable_concept as a LabFeature
                         # but, it will have only the text (such as "BIS", or "TooYoung") and no associated codings
                         if table_name == TableNames.LABORATORY_FEATURE:
-                            category = self.get_lab_feature_category(column_name=column_name)
-                            new_feature = LaboratoryFeature(id_value=NO_ID, code=cc, category=category,
-                                                            permitted_datatype=data_type, dimension=dimension,
-                                                            counter=self.counter, hospital_name=self.execution.hospital_name,
-                                                            categorical_values=categorical_values, visibility=visibility)
+                            if column_name == SampleColumns.SAMPLE_BAR_CODE:
+                                # we kept this column to be able to associate LabRecords with SampleRecords
+                                # but this column will be created as a Feature in the SampleFeature table
+                                new_feature = None
+                            else:
+                                category = self.get_lab_feature_category(column_name=column_name)
+                                new_feature = LaboratoryFeature(id_value=NO_ID, code=cc, category=category,
+                                                                permitted_datatype=data_type, dimension=dimension,
+                                                                counter=self.counter, hospital_name=self.execution.hospital_name,
+                                                                categorical_values=categorical_values, visibility=visibility)
+                        elif table_name == TableNames.SAMPLE_FEATURE:
+                            # we limit the creation of sample features to a subset of laboratory columns
+                            # but there is a single file that contains both clinical and sample data
+                            new_feature = SampleFeature(id_value=NO_ID, code=cc,
+                                                        permitted_datatype=data_type, dimension=dimension,
+                                                        counter=self.counter,
+                                                        hospital_name=self.execution.hospital_name,
+                                                        categorical_values=categorical_values,
+                                                        visibility=visibility)
                         elif table_name == TableNames.DIAGNOSIS_FEATURE:
                             new_feature = DiagnosisFeature(id_value=NO_ID, code=cc,
                                                             permitted_datatype=data_type,
@@ -151,8 +178,9 @@ class Transform(Task):
                         else:
                             raise NotImplementedError("To be implemented")
 
-                        log.info(f"adding a new {table_name} instance about {cc.text}: {new_feature}")
-                        self.features.append(new_feature)
+                        if new_feature is not None:
+                            log.info(f"adding a new {table_name} instance about {cc.text}: {new_feature}")
+                            self.features.append(new_feature)
                         if len(self.features) >= BATCH_SIZE:
                             write_in_file(resource_list=self.features,
                                           current_working_dir=self.execution.working_dir_current,
@@ -173,6 +201,9 @@ class Transform(Task):
 
     def create_laboratory_features(self) -> None:
         self.create_features(table_name=TableNames.LABORATORY_FEATURE)
+
+    def create_sample_features(self) -> None:
+        self.create_features(table_name=TableNames.SAMPLE_FEATURE)
 
     def create_diagnosis_features(self):
         self.create_features(table_name=TableNames.DIAGNOSIS_FEATURE)
@@ -203,6 +234,9 @@ class Transform(Task):
         mapping_column_to_feature_id = self.database.retrieve_mapping(table_name=feature_table_name, key_fields="code.text", value_fields="identifier")
         log.debug(f"{mapping_column_to_feature_id}")
 
+        mapping_sample_id_to_sample_record_id = self.database.retrieve_mapping(table_name=TableNames.SAMPLE_RECORD, key_fields="sample_base_id", value_fields="identifier")
+        log.debug(f"{mapping_sample_id_to_sample_record_id}")
+
         # b. Create Record instance, and write them in temporary (JSON) files
         count = 1
         for index, row in self.data.iterrows():
@@ -215,7 +249,7 @@ class Transform(Task):
                     pass
                 else:
                     if column_name in mapping_column_to_feature_id:
-                        # we know a code for this column, so we can register the value of that LabFeature
+                        # we know a code for this column, so we can register the value of that Feature in a new Record
                         feature_id = Identifier(value=mapping_column_to_feature_id[column_name])
                         hospital_id = Identifier(mapping_hospital_to_hospital_id[self.execution.hospital_name])
                         # for patient and sample instances, no need to go through a mapping because they have an ID assigned by the hospital
@@ -223,28 +257,41 @@ class Transform(Task):
                         # we cannot use PatientAnonymizedIdentifier otherwise we would concat a set hospital name to the anonymized patient id
                         # patient_id = PatientAnonymizedIdentifier(id_value=self.patient_ids_mapping[row[id_column_for_patients]], hospital_name=self.execution.hospital_name)
                         patient_id = Identifier(value=self.patient_ids_mapping[row[id_column_for_patients]])
-                        id_column_for_samples = ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE] if TableNames.SAMPLE in ID_COLUMNS[self.execution.hospital_name] else ""
-                        sample_id = None
-                        if id_column_for_samples != "":
-                            sample_id = Identifier(value=row[id_column_for_samples])
-
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
                         anonymized_value, is_anonymized = self.anonymize_value(column_name=column_name, fairified_value=fairified_value)
                         if table_name == TableNames.LABORATORY_RECORD:
-                            new_record = LaboratoryRecord(id_value=NO_ID, feature_id=feature_id,
-                                                                     patient_id=patient_id, hospital_id=hospital_id,
-                                                                     sample_id=sample_id,
-                                                                     value=fairified_value,
-                                                                     anonymized_value=anonymized_value if is_anonymized else None,
-                                                                     counter=self.counter,
-                                                                     hospital_name=self.execution.hospital_name)
+                            if column_name == SampleColumns.SAMPLE_BAR_CODE:
+                                # we kept this column to be able to associate LabRecords to SampleRecords
+                                # but, we don't want to register this as a LabRecord.
+                                new_record = None
+                            else:
+                                if SampleColumns.SAMPLE_BAR_CODE in row:
+                                    sample_base_id = row[SampleColumns.SAMPLE_BAR_CODE]
+                                    sample_record_id = Identifier(value=mapping_sample_id_to_sample_record_id[
+                                        sample_base_id]) if sample_base_id in mapping_sample_id_to_sample_record_id else None
+                                else:
+                                    sample_record_id = None
+                                new_record = LaboratoryRecord(id_value=NO_ID, feature_id=feature_id,
+                                                                 patient_id=patient_id, hospital_id=hospital_id,
+                                                                 sample_id=sample_record_id,
+                                                                 value=fairified_value,
+                                                                 anonymized_value=anonymized_value if is_anonymized else None,
+                                                                 counter=self.counter,
+                                                                 hospital_name=self.execution.hospital_name)
+                        elif table_name == TableNames.SAMPLE_RECORD:
+                            # we should definitely create a record for this (column, value) because this is about a sample column
+                            new_record = SampleRecord(id_value=NO_ID, feature_id=feature_id, patient_id=patient_id,
+                                                      hospital_id=hospital_id, value=fairified_value,
+                                                      anonymized_value=anonymized_value if is_anonymized else None,
+                                                      sample_base_id=row[SampleColumns.SAMPLE_BAR_CODE],
+                                                      counter=self.counter, hospital_name=self.execution.hospital_name)
                         elif table_name == TableNames.DIAGNOSIS_RECORD:
-                            if TableNames.SAMPLE in ID_COLUMNS[self.execution.hospital_name]:
+                            if TableNames.SAMPLE_RECORD in ID_COLUMNS[self.execution.hospital_name]:
                                 # https://github.com/Nelly-Barret/BETTER-fairificator/issues/146
                                 # in this case, the ID in the diagnosis data is the SAMPLE id, not the patient one
                                 # thus, we need to get it by hand (to effectively record a patient ID)
                                 # in any case, clinical data MUST be ingested before the diagnosis data, otherwise the mapping wil be empty
-                                sample_id = row[ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE]]
+                                sample_id = row[ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE_RECORD]]
                                 if sample_id in self.mapping_sample_id_to_patient_id:
                                     patient_id = Identifier(value=self.mapping_sample_id_to_patient_id[sample_id])
                                 else:
@@ -256,7 +303,7 @@ class Transform(Task):
                                 id_column_for_patients = ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]
                                 patient_id = Identifier(value=self.patient_ids_mapping[row[id_column_for_patients]])
                             if fairified_value is None:
-                                # the patient has genetic mutation but he is not ill
+                                # the patient has genetic mutation, but he is not ill
                                 # thus, we do not record it in database
                                 new_record = None
                             else:
@@ -267,7 +314,6 @@ class Transform(Task):
                                                                   counter=self.counter,
                                                                   hospital_name=self.execution.hospital_name)
                         elif table_name == TableNames.GENOMIC_RECORD:
-                            log.info(row)
                             new_record = GenomicRecord(id_value=NO_ID, feature_id=feature_id,
                                                           patient_id=patient_id, hospital_id=hospital_id,
                                                           uri=None,
@@ -277,10 +323,8 @@ class Transform(Task):
                                                           hospital_name=self.execution.hospital_name)
                         else:
                             raise NotImplementedError("Not implemented yet.")
-                        log.info(new_record)
                         if new_record is not None:  # it can be None if the patient is a carrier but not diseased
                             self.records.append(new_record)
-                        log.info(f"{len(self.records)} records")
                         if len(self.records) >= BATCH_SIZE:
                             log.info(f"writing {len(self.records)}")
                             write_in_file(resource_list=self.records, current_working_dir=self.execution.working_dir_current,
@@ -297,6 +341,9 @@ class Transform(Task):
 
     def create_laboratory_records(self) -> None:
         self.create_records(table_name=TableNames.LABORATORY_RECORD)
+
+    def create_sample_records(self) -> None:
+        self.create_records(table_name=TableNames.SAMPLE_RECORD)
 
     def create_diagnosis_records(self):
         self.create_records(table_name=TableNames.DIAGNOSIS_RECORD)
@@ -315,37 +362,6 @@ class Transform(Task):
     ##############################################################
     # OTHER ENTITIES
     ##############################################################
-
-    def create_samples(self) -> None:
-        if TableNames.SAMPLE in ID_COLUMNS[self.execution.hospital_name] and ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE] in self.data.columns:
-            # this is a dataset with samples
-            log.info(f"create Sample instances in memory")
-            created_sample_barcodes = set()
-            count = 1
-            for index, row in self.data.iterrows():
-                sample_barcode = row[SampleColumns.SAMPLE_BAR_CODE]
-                if sample_barcode not in created_sample_barcodes:
-                    sampling = row[SampleColumns.SAMPLING] if SampleColumns.SAMPLING in row else None
-                    sample_quality = row[SampleColumns.SAMPLE_QUALITY] if SampleColumns.SAMPLE_QUALITY in row else None
-                    time_collected = cast_str_to_datetime(str_value=row[SampleColumns.SAMPLE_COLLECTED]) if SampleColumns.SAMPLE_COLLECTED in row else None
-                    time_received = cast_str_to_datetime(str_value=row[SampleColumns.SAMPLE_RECEIVED]) if SampleColumns.SAMPLE_RECEIVED in row else None
-                    too_young = cast_str_to_boolean(str_value=row[SampleColumns.SAMPLE_TOO_YOUNG]) if SampleColumns.SAMPLE_TOO_YOUNG in row else None
-                    bis = cast_str_to_boolean(str_value=row[SampleColumns.SAMPLE_BIS]) if SampleColumns.SAMPLE_BIS in row else None
-                    new_sample = Sample(sample_barcode, sampling=sampling, quality=sample_quality,
-                                        time_collected=time_collected, time_received=time_received,
-                                        too_young=too_young, bis=bis, counter=self.counter, hospital_name=self.execution.hospital_name)
-                    created_sample_barcodes.add(sample_barcode)
-                    self.samples.append(new_sample)
-                    if len(self.samples) >= BATCH_SIZE:
-                        write_in_file(resource_list=self.samples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.SAMPLE, count=count)
-                        self.samples = []
-                        count = count + 1
-                        # no need to load Sample instances because they are referenced using their ID,
-                        # which was provided by the hospital (thus is known by the dataset)
-            write_in_file(resource_list=self.samples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.SAMPLE, count=count)
-            log.debug(f"Created distinct {len(created_sample_barcodes)} samples in total.")
-        else:
-            log.debug("This hospital should not have samples. Skipping it.")
 
     def create_patients(self) -> None:
         log.info(f"create patient instances in memory")
@@ -530,7 +546,7 @@ class Transform(Task):
             self.quality_stats.add_column_with_unmatched_typeof_etl_types(column_name=column_name, typeof_type=type(return_value).__name__, etl_type=etl_type)
 
         # we use type(..).__name__ to get the class name, e.g., "str" or "bool", instead of "<class 'float'>"
-        log.info(f"Column '{column_name}': fairify {type(value).__name__} value '{value}' (unit: {expected_unit}) into {type(return_value).__name__}: {return_value}")
+        # log.info(f"Column '{column_name}': fairify {type(value).__name__} value '{value}' (unit: {expected_unit}) into {type(return_value).__name__}: {return_value}")
         return return_value
 
     def anonymize_value(self, column_name: str, fairified_value: Any) -> tuple:
@@ -557,6 +573,9 @@ class Transform(Task):
                 anonymized_value = anonymized_value.replace(minute=0)
                 anonymized_value = anonymized_value.replace(second=0)
                 return anonymized_value, True
+            else:
+                # no need to anonymize the datetime
+                return fairified_value, False
         elif etl_type == DataTypes.DATE:
             if visibility == Visibility.PUBLIC_WITH_ANONYMIZATION:
                 # anonymize the date

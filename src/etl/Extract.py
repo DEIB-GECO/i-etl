@@ -16,6 +16,7 @@ from enums.FileTypes import FileTypes
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
+from enums.SampleColumns import SampleColumns
 from enums.TableNames import TableNames
 from enums.Visibility import Visibility
 from etl.Task import Task
@@ -51,8 +52,10 @@ class Extract(Task):
         log.info(self.mapping_categorical_value_to_cc)
 
         # load and pre-process data (all kinds)
-        if self.execution.current_file_type in (FileTypes.LABORATORY, FileTypes.DIAGNOSIS, FileTypes.MEDICINE):
-            # laboratory, diagnosis, medicine data
+        log.info(self.execution.current_file_type)
+        if self.execution.current_file_type in (FileTypes.LABORATORY, FileTypes.SAMPLE, FileTypes.DIAGNOSIS, FileTypes.MEDICINE):
+            # laboratory, sample, diagnosis, medicine data
+            log.info("ici")
             self.load_tabular_data_file()
             self.remove_unused_csv_columns()
             if self.execution.current_file_type == FileTypes.DIAGNOSIS:
@@ -202,8 +205,8 @@ class Extract(Task):
         # issue 113: we do not normalize identifiers assigned by hospitals to avoid discrepancies
         columns_no_normalization = []
         columns_no_normalization.append(ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT])
-        if TableNames.SAMPLE in ID_COLUMNS[self.execution.hospital_name]:
-            columns_no_normalization.append(ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE])
+        if TableNames.SAMPLE_RECORD in ID_COLUMNS[self.execution.hospital_name]:
+            columns_no_normalization.append(ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE_RECORD])
 
         for column in self.data:
             if column not in columns_no_normalization:
@@ -265,6 +268,27 @@ class Extract(Task):
                 log.info(f"Drop data column corresponding to the variable {column}.")
                 self.quality_stats.add_column_not_described_in_metadata(data_column_name=column)
                 self.data = self.data.drop(column, axis=1)  # axis=1 -> columns
+
+        # last trick: for (BUZZI) sample data, we remove all clinical columns
+        # and for (BUZZI) clinical data, we remove all sample columns
+        log.info(self.execution.current_file_type)
+        if self.execution.current_file_type == FileTypes.LABORATORY:
+            log.info("keep only clinical columns")
+            # keep only clinical columns + the sampleBarcode (to be able to associate each LabRecord to its sample barcode)
+            log.info(len(self.data.columns))
+            self.data = self.data[self.data.columns.difference(SampleColumns.values_without_barcode())]
+            self.metadata = self.metadata[~self.metadata[MetadataColumns.COLUMN_NAME].isin(SampleColumns.values_without_barcode())]
+            log.info(len(self.data.columns))
+        elif self.execution.current_file_type == FileTypes.SAMPLE:
+            log.info("keep only sample columns")
+            # keep only sample columns + the patient id (to link samples to patients)
+            log.info(len(self.data.columns))
+            columns_to_keep = SampleColumns.values()
+            columns_to_keep.append(ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT])
+            log.info(columns_to_keep)
+            self.data = self.data[self.data.columns.intersection(columns_to_keep)]
+            self.metadata = self.metadata[self.metadata[MetadataColumns.COLUMN_NAME].isin(columns_to_keep)]
+            log.info(self.data.columns)
 
     def compute_mapping_categorical_value_to_cc(self) -> None:
         self.mapping_categorical_value_to_cc = {}
@@ -427,15 +451,15 @@ class Extract(Task):
         log.debug(self.mapping_diagnosis_to_cc)
 
     def compute_mapping_sample_to_patient_id(self):
-        # this requires data, e.g., screening data for BUZZI) to be loaded first
+        # this requires data, e.g., screening data for BUZZI, to be loaded first
         self.mapping_sample_id_to_patient_id = {}
 
-        if TableNames.SAMPLE not in ID_COLUMNS[self.execution.hospital_name]:
+        if TableNames.SAMPLE_RECORD not in ID_COLUMNS[self.execution.hospital_name]:
             # Only hospitals with samples need this
             # thus, stopping here
             pass
         else:
-            # we cannot simply read data because when reading the diagnosis data, in-memory objects for screening data have been forgot
+            # we cannot simply read data because when reading the diagnosis data, in-memory objects for screening data have been forgotten
             # however, all screening data has already been inserted in the db, thus we can retrieve the mapping from there
             self.mapping_sample_id_to_patient_id = self.database.retrieve_mapping(table_name=TableNames.LABORATORY_RECORD, key_fields="based_on", value_fields="subject")
             log.info(self.mapping_sample_id_to_patient_id)

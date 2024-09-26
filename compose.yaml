@@ -31,6 +31,7 @@ services:
       - ${SERVER_FOLDER_METADATA}:/home/better-deployed/hospital-data/metadata
       - ${SERVER_FOLDER_DIAGNOSIS_REGEXES}:/home/better-deployed/hospital-data/regexes
       - ${SERVER_FOLDER_LABORATORY}:/home/better-deployed/hospital-data/laboratory
+      - ${SERVER_FOLDER_SAMPLE}:/home/better-deployed/hospital-data/sample
       - ${SERVER_FOLDER_DIAGNOSIS}:/home/better-deployed/hospital-data/diagnosis
       - ${SERVER_FOLDER_MEDICINE}:/home/better-deployed/hospital-data/medicine
       - ${SERVER_FOLDER_IMAGING}:/home/better-deployed/hospital-data/imaging

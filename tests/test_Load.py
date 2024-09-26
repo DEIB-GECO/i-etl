@@ -104,7 +104,7 @@ class TestLoad(unittest.TestCase):
         assert load.database.db[TableNames.LABORATORY_FEATURE].count_documents(filter={}) == 2
         assert load.database.db[TableNames.LABORATORY_RECORD].count_documents(filter={}) == 1
         assert load.database.db[TableNames.HOSPITAL].count_documents(filter={}) == 1
-        assert load.database.db[TableNames.SAMPLE].count_documents(filter={}) == 0
+        assert load.database.db[TableNames.SAMPLE_RECORD].count_documents(filter={}) == 0
 
     def test_create_db_indexes(self):
         load = my_setup(create_indexes=True)
@@ -142,13 +142,13 @@ class TestLoad(unittest.TestCase):
                             assert False, f"{table_name} expects a compound index on two fields."
                     elif table_name in TableNames.records(db=load.database):
                         # there are also two more indexes (instantiate.reference, subject.reference)
-                        if "instantiate.reference" in index_key:
+                        if "instantiate" in index_key:
                             count_indexes = count_indexes + 1
                             assert "unique" not in index
-                        elif "subject.reference" in index_key:
+                        elif "subject" in index_key:
                             count_indexes = count_indexes + 1
                             assert "unique" not in index
-                        elif "based_on.reference" in index_key:
+                        elif "based_on" in index_key:
                             # did not test Sample ref index because it is proper to BUZZI data
                             pass
                             #     count_indexes = count_indexes + 1

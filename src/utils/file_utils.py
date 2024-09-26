@@ -41,7 +41,10 @@ def read_tabular_file_as_string(filepath: str) -> pd.DataFrame:
 
 
 def split_list_of_files(joined_filepaths: str, prefix_path: str) -> [str]:
+    log.info(prefix_path)
+    log.info(joined_filepaths)
     split_files = joined_filepaths.split(",")
+    log.info(split_files)
     for i in range(len(split_files)):
         current_file = split_files[i]
         if prefix_path is None:

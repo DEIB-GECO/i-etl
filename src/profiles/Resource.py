@@ -21,11 +21,7 @@ class Resource:
         self.identifier = None
         if id_value == NO_ID:
             # we are creating a new instance, we assign it a new ID
-            # for Sample data only, we expect to have an ID assigned by the hospital, thus it cannot be NO_ID
-            if resource_type == TableNames.SAMPLE:
-                raise ValueError("Sample instances should have an ID.")
-            else:
-                id_to_use = str(counter.increment())
+            id_to_use = str(counter.increment())
         else:
             # we are retrieving a resource from the DB and reconstruct it in-memory:
             # it already has an identifier, thus we simply reconstruct it with the value

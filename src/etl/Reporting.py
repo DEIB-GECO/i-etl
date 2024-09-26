@@ -36,19 +36,10 @@ class Reporting(Task):
         self.nb_of_cc_with_no_coding_per_table = {}
 
     def run(self):
-        log.info(self.db_stats)
-        log.info(self.db_stats.to_json())
-        log.info(self.quality_stats)
-        log.info(self.quality_stats.to_json())
-        log.info(self.time_stats)
-        log.info(self.time_stats.to_json())
         self.report = {}
         self.report = self.report | self.db_stats.to_json()
-        # log.info(self.report)
         self.report = self.report | self.quality_stats.to_json()
-        log.info(self.report)
         self.report = self.report | self.time_stats.to_json()
-        log.info(self.report)
 
         # 4. print the final report
         self.print_report()
@@ -60,7 +51,6 @@ class Reporting(Task):
 
     def print_report(self) -> None:
         log.info("**** FINAL REPORT ****")
-        log.info(self.report)
         # to get double-quoted keys and check it in jsonlint
         # we use default=str to be able to serialize datetime (otherwise non-serializable object)
         log.info(json.dumps(self.report, default=str))

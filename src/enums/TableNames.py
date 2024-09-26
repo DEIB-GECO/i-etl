@@ -7,7 +7,8 @@ class TableNames(EnumAsClass):
     PATIENT = "Patient"
     LABORATORY_FEATURE = "LaboratoryFeature"
     LABORATORY_RECORD = "LaboratoryRecord"
-    SAMPLE = "Sample"
+    SAMPLE_FEATURE = "SampleFeature"
+    SAMPLE_RECORD = "SampleRecord"
     DIAGNOSIS_FEATURE = "DiagnosisFeature"
     DIAGNOSIS_RECORD = "DiagnosisRecord"
     GENOMIC_FEATURE = "GenomicFeature"
@@ -65,7 +66,7 @@ class TableNames(EnumAsClass):
 
     @classmethod
     def data_tables(cls, db):
-        return cls.get_tables(filters=["Feature", "Record", "Hospital", "Patient", "Sample"], db=db)
+        return cls.get_tables(filters=["Feature", "Record", "Hospital", "Patient"], db=db)
 
     @classmethod
     def get_tables(cls, filters: list, db):

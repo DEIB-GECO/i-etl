@@ -27,7 +27,7 @@ class Load(Task):
 
         self.database.load_json_in_table(table_name=TableNames.LABORATORY_RECORD, unique_variables=["recorded_by", "subject", "based_on", "instantiate"])
 
-        self.database.load_json_in_table(table_name=TableNames.SAMPLE, unique_variables=["identifier"])
+        self.database.load_json_in_table(table_name=TableNames.SAMPLE_RECORD, unique_variables=["identifier"])
 
         self.database.load_json_in_table(table_name=TableNames.DIAGNOSIS_RECORD, unique_variables=["recorded_by", "subject", "instantiate"])
 
@@ -60,9 +60,9 @@ class Load(Task):
         # for Record instances, we create an index per reference because we usually join each reference to a table
         for table_name in TableNames.records(db=self.database):
             # a table name of the form XRecord
-            self.database.create_non_unique_index(table_name=table_name, columns={"instantiate.reference": 1})
-            self.database.create_non_unique_index(table_name=table_name, columns={"subject.reference": 1})
-            self.database.create_non_unique_index(table_name=table_name, columns={"based_on.reference": 1})
+            self.database.create_non_unique_index(table_name=table_name, columns={"instantiate": 1})
+            self.database.create_non_unique_index(table_name=table_name, columns={"subject": 1})
+            self.database.create_non_unique_index(table_name=table_name, columns={"based_on": 1})
             count += 3
 
         log.info(f"Finished to create {count} indexes.")

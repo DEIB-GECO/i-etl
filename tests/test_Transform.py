@@ -259,19 +259,6 @@ class TestTransform(unittest.TestCase):
         lab_features_names_set = set(lab_features_names_list)
         assert len(lab_features_names_list) == len(lab_features_names_set)
 
-    def test_create_samples(self):
-        transform = my_setup(hospital_name=HospitalNames.TEST_H1,
-                             extracted_metadata_path=TheTestFiles.EXTR_METADATA_LABORATORY_PATH,
-                             extracted_data_paths=TheTestFiles.EXTR_LABORATORY_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_LABORATORY_CATEGORICAL_PATH,
-                             extracted_column_to_categorical_path=TheTestFiles.EXTR_LABORATORY_COL_CAT_PATH,
-                             extracted_column_dimension_path=TheTestFiles.EXTR_LABORATORY_DIMENSIONS_PATH,
-                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH,
-                             extracted_mapping_diagnosis_to_cc_path=TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH)
-        # this creates LabFeature resources (based on the metadata file) and insert them in a (JSON) temporary file
-        transform.create_samples()
-
-        # TODO NELLY
 
     def test_create_lab_records_without_samples_without_pid(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1,

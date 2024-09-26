@@ -1,7 +1,8 @@
 import os
 
 from constants.structure import DOCKER_FOLDER_MEDICINE, DOCKER_FOLDER_DIAGNOSIS, DOCKER_FOLDER_GENOMIC, \
-    DOCKER_FOLDER_LABORATORY, DOCKER_FOLDER_IMAGING, DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS, DOCKER_FOLDER_TEST
+    DOCKER_FOLDER_LABORATORY, DOCKER_FOLDER_IMAGING, DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS, DOCKER_FOLDER_TEST, \
+    DOCKER_FOLDER_SAMPLE
 from enums.EnumAsClass import EnumAsClass
 from enums.ParameterKeys import ParameterKeys
 from utils.setup_logger import log
@@ -9,6 +10,7 @@ from utils.setup_logger import log
 
 class FileTypes(EnumAsClass):
     LABORATORY = "laboratory"
+    SAMPLE = "sample"
     DIAGNOSIS = "diagnosis"
     MEDICINE = "medicine"
     GENOMIC = "genomic"
@@ -20,6 +22,8 @@ class FileTypes(EnumAsClass):
     def get_execution_key(cls, filetype) -> str | None:
         if filetype == FileTypes.LABORATORY:
             return ParameterKeys.LABORATORY_PATHS
+        elif filetype == FileTypes.SAMPLE:
+            return ParameterKeys.SAMPLE_PATHS
         elif filetype == FileTypes.DIAGNOSIS:
             return ParameterKeys.DIAGNOSIS_PATHS
         elif filetype == FileTypes.MEDICINE:
@@ -42,10 +46,11 @@ class FileTypes(EnumAsClass):
         else:
             if filetype == FileTypes.LABORATORY:
                 return DOCKER_FOLDER_LABORATORY
+            elif filetype == FileTypes.SAMPLE:
+                return DOCKER_FOLDER_SAMPLE
             elif filetype == FileTypes.GENOMIC:
                 return DOCKER_FOLDER_GENOMIC
             elif filetype == FileTypes.DIAGNOSIS or filetype == FileTypes.DIAGNOSIS_REGEX:
-                log.info("ici")
                 return DOCKER_FOLDER_DIAGNOSIS
             elif filetype == FileTypes.MEDICINE:
                 return DOCKER_FOLDER_MEDICINE

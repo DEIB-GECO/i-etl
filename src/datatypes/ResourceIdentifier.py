@@ -11,13 +11,9 @@ class ResourceIdentifier(Identifier):
             super().__init__(value=id_value)
         else:
             # we are building a new resource ID
-            # the only exception is for Sample, we do not append the prefix
             # for patient, we have anonymized ids of the form hospital_name:ID (hospital_name is given as the resource type)
             # for other resources, we have something of the form resource_type:ID
-            if resource_type == TableNames.SAMPLE:
-                resource_id = id_value
-            else:
-                resource_id = resource_type + DELIMITER_PATIENT_ID + id_value
+            resource_id = resource_type + DELIMITER_PATIENT_ID + id_value
             super().__init__(value=resource_id)
 
     def get_as_int(self):
