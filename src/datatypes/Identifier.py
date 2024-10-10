@@ -5,7 +5,7 @@ class Identifier:
     def __init__(self, value: str):
         self.value = value
 
-    def get_as_int(self):
+    def get_int_id(self):
         raise NotImplemented("This method should be overridden in child classes.")
 
     def __getstate__(self):

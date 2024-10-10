@@ -1,5 +1,5 @@
 from enums.TableNames import TableNames
-from profiles.Resource import Resource
+from entities.Resource import Resource
 from database.Counter import Counter
 
 

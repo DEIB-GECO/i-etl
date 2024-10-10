@@ -46,7 +46,7 @@ class Resource:
     def get_identifier_as_int(self):
         # Resource identifiers (except Patient ones, which override this method) are a stringified int, e.g., "1", "2", etc
         # we only need to cast this value to int
-        return self.identifier.get_as_int()
+        return self.identifier.get_int_id()
 
     def __getstate__(self):
         # we need to check whether each field is a NaN value because we do not want to add fields for NaN values

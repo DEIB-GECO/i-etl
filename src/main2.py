@@ -7,10 +7,7 @@ from bson.json_util import loads
 from pymongo.mongo_client import MongoClient
 
 from datatypes.OntologyResource import OntologyResource
-from enums.FileTypes import FileTypes
-from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
-from enums.SampleColumns import SampleColumns
 from utils.file_utils import read_tabular_file_as_string
 from utils.setup_logger import log
 
@@ -49,31 +46,17 @@ def main_ontology_api():
     # print(Coding.compute_display_from_api(ontology=Ontologies.GSSO, ontology_code="GSSO_000818"))
     # print()
     # print(Coding.compute_display_from_api(ontology=Ontologies.ORPHANET, ontology_code="ORPHA:159"))
-    o1 = OntologyResource(ontology=Ontologies.LOINC, full_code="LA6675-8", quality_stats=None)
-    print(f"label: {o1.get_resource_label_from_api(single_ontology_code=o1.full_code)}")
-    o2 = OntologyResource(ontology=Ontologies.LOINC, full_code="60478-5", quality_stats=None)
-    print(f"label: {o2.get_resource_label_from_api(single_ontology_code=o2.full_code)}")
+    o1 = OntologyResource(ontology=Ontologies.LOINC, full_code="LA6675-8", label=None, quality_stats=None)
+    print(f"label: {o1.label}")
+    o2 = OntologyResource(ontology=Ontologies.LOINC, full_code="60478-5", label=None, quality_stats=None)
+    print(f"label: {o2.label}")
 
 
 def main_ontology_code_class():
-    # o1 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="1306850007")
-    # o1.compute_concat_codes()
-    # o1.compute_concat_names()
-    # o2 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="264275001 | Fluorescence polarization immunoassay technique |  :  250895007| Intensity  change |   ")
-    # o2.compute_concat_codes()
-    # o2.compute_concat_names()
-    # o3 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="  365471004 |   finding of  details of   relatives  |    :247591002|  affected |=   (410515003|known present( qualifier value) |= 782964007|  genetic disease |)")
-    # o3.compute_concat_codes()
-    # o3.compute_concat_names()
-    o = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="1306850007")
-    o.compute_concat_names()
-    log.info(o.concat_names)
-
-    return 0
     resources = json.load(open("datasets/local/all_codes_gen.json"))
     for metadata_file in os.listdir("/Users/nelly/Documents/google-drive-data/metadata/"):
         print(metadata_file)
-        df = read_tabular_file_as_string("/Users/nelly/Documents/google-drive-data/metadata/" + metadata_file)
+        df = read_tabular_file_as_string("/Users/nelly/Documents/google-drive-data/metadata/" + metadata_file, read_as_string=False)
         it = 0
         early_stop = False
 
@@ -81,11 +64,8 @@ def main_ontology_code_class():
         for i in range(len(df)):
             for onto, code in zip(["ontology", "secondary_ontology"], ["ontology_code", "secondary_ontology_code"]):
                 if not pd.isna(df.iloc[i][onto]) and df.iloc[i][code] not in resources:
-                    o = OntologyResource(ontology=Ontologies.get_enum_from_name(ontology_name=df.iloc[i][onto]), full_code=df.iloc[i][code], quality_stats=None)
+                    o = OntologyResource(ontology=Ontologies.get_enum_from_name(ontology_name=df.iloc[i][onto]), full_code=df.iloc[i][code], label=None, quality_stats=None)
                     log.info(f"----- iteration {it} -----")
-                    log.info(o.full_code)
-                    o.compute_concat_codes()
-                    o.compute_concat_names()
                     res = int(input())
                     if res == 1:
                         resources[df.iloc[i][code]] = o.to_json()
@@ -110,10 +90,7 @@ def main_ontology_code_class():
                         for key, value in json_resource.items():
                             if key != "value" and key != "explanation" and value != "" and value not in resources:
                                 log.info(f"----- iteration {it} -----")
-                                o = OntologyResource(ontology=Ontologies.get_enum_from_name(ontology_name=key), full_code=value)
-                                log.info(o.full_code)
-                                o.compute_concat_codes()
-                                o.compute_concat_names()
+                                o = OntologyResource(ontology=Ontologies.get_enum_from_name(ontology_name=key), full_code=value, label=None, quality_stats=None)
                                 res = int(input())
                                 if res == 1:
                                     resources[str(value)] = o.to_json()

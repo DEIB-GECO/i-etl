@@ -1,34 +1,19 @@
 {
   "disease_form": {
     "start": {
-      "coding": [
-        {
-          "system": "https://pubchem.ncbi.nlm.nih.gov",
-          "code": "02468",
-          "display": "start"
-        }
-      ],
-      "text": ""
+      "system": "https://pubchem.ncbi.nlm.nih.gov",
+      "code": "02468",
+      "label": "start"
     },
     "middle": {
-      "coding": [
-        {
-          "system": "https://pubchem.ncbi.nlm.nih.gov",
-          "code": "203:468",
-          "display": "middle"
-        }
-      ],
-      "text": ""
+      "system": "https://pubchem.ncbi.nlm.nih.gov",
+      "code": "203:468",
+      "label": "middle"
     },
     "end": {
-      "coding": [
-        {
-          "system": "https://pubchem.ncbi.nlm.nih.gov",
-          "code": "4097625",
-          "display": "end"
-        }
-      ],
-      "text": ""
+      "system": "https://pubchem.ncbi.nlm.nih.gov",
+      "code": "4097625",
+      "label": "end"
     }
   }
 }

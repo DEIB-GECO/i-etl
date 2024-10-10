@@ -65,7 +65,7 @@ def get_lab_feature_by_text(lab_features: list, lab_feature_text: str) -> dict:
     """
     json_lab_features = [lab_feature.to_json() for lab_feature in lab_features]
     for json_lab_feature in json_lab_features:
-        if "code" in json_lab_feature and "text" in json_lab_feature["code"] and json_lab_feature["code"]["text"].startswith(lab_feature_text):
+        if "name" in json_lab_feature and json_lab_feature["name"] == lab_feature_text:
             return json_lab_feature
     return {}
 
@@ -76,13 +76,10 @@ def get_lab_records_for_patient(lab_records: list, patient_id: str) -> list[dict
     """
     matching_lab_records = []
     json_lab_records_list = [lab_record.to_json() for lab_record in lab_records]
-    log.debug(json_lab_records_list)
-    log.debug(patient_id)
     for json_lab_record in json_lab_records_list:
         if json_lab_record["subject"] == patient_id:
             matching_lab_records.append(json_lab_record)
     # also sort them by LabFeature reference id
-    log.debug(matching_lab_records)
     return sorted(matching_lab_records, key=lambda d: d["instantiate"])
 
 
@@ -98,12 +95,10 @@ def get_field_value_for_patient(lab_records: list, lab_features: list, patient_i
 
     lab_feature = None
     for lab_feat in lab_features:
-        if lab_feat.to_json()["code"]["text"] == column_name:
+        if lab_feat.to_json()["name"] == column_name:
             lab_feature = lab_feat.to_json()
             break
     if lab_feature is not None:
-        log.debug(lab_records)
-        log.debug(patient_id)
         for lab_record in lab_records:
             json_lab_record = lab_record.to_json()
             log.info(f"checking {json_lab_record['subject']} vs. {patient_id} and {json_lab_record['instantiate']} vs. {lab_feature['identifier']}")

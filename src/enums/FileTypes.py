@@ -59,5 +59,4 @@ class FileTypes(EnumAsClass):
             elif filetype == FileTypes.PATIENT_IDS:
                 return DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS
             else:
-                log.info("la")
                 return None

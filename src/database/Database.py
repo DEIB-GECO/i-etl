@@ -12,7 +12,7 @@ from pymongo.cursor import Cursor
 from database.Execution import Execution
 from enums.TableNames import TableNames
 from enums.UpsertPolicy import UpsertPolicy
-from constants.idColumns import DELIMITER_PATIENT_ID
+from constants.idColumns import DELIMITER_RESOURCE_ID
 from query.Operators import Operators
 from utils.setup_logger import log
 
@@ -56,11 +56,12 @@ class Database:
         log.info(f"drop db is: {self.execution.db_drop}")
         if self.execution.db_drop:
             self.drop_db()
-        self.db = self.client[self.execution.db_name]
-        # in any case, drop the stats because we want the stats of the current execution
-        self.drop_table(table_name=TableNames.STATS_DB)
-        self.drop_table(table_name=TableNames.STATS_TIME)
-        self.drop_table(table_name=TableNames.STATS_QUALITY)
+            self.db = self.client[self.execution.db_name]
+            self.drop_table(table_name=TableNames.STATS_DB)
+            self.drop_table(table_name=TableNames.STATS_TIME)
+            self.drop_table(table_name=TableNames.STATS_QUALITY)
+        else:
+            self.db = self.client[self.execution.db_name]
 
         log.debug(f"the connection string is: {self.execution.db_connection}")
         log.debug(f"the new MongoClient is: {self.client}")
@@ -161,6 +162,7 @@ class Database:
         return filter_dict
 
     def retrieve_mapping(self, table_name: str, key_fields: str, value_fields: str):
+        # TODO Nelly: add a distinct to the find
         cursor = self.find_operation(table_name=table_name, filter_dict={}, projection={key_fields: 1, value_fields: 1})
         mapping = {}
         for result in cursor:
@@ -170,10 +172,9 @@ class Database:
                 projected_key = projected_key[one_key]
             projected_value = result
             for one_value in value_fields.split("."):
-                # this covers the case when the value of the mapping is a nested field, e.g., code.text
+                # this covers the case when the value of the mapping is a nested field, e.g., ontology_resource.label
                 projected_value = projected_value[one_value]
             mapping[projected_key] = projected_value
-        log.info(mapping)
         return mapping
 
     def load_json_in_table(self, table_name: str, unique_variables) -> None:
@@ -199,16 +200,16 @@ class Database:
         """
         return self.db[table_name].find(filter_dict, projection)
 
-    def find_distinct_operation(self, table_name: str, key: str, filter: dict):
+    def find_distinct_operation(self, table_name: str, key: str, filter_dict: dict):
         """
         Perform a distinct operation on a field "key", with some filters on instances ("filter")
         :param table_name: A string being the table name in which the find operation is performed.
         :param key: A string being the key on which to apply the distinct; this is also the returned field.
-        :param filter: A dict being the set of filters (conditions) to apply on the data in the given table. Give {} to apply no filter.
+        :param filter_dict: A dict being the set of filters (conditions) to apply on the data in the given table. Give {} to apply no filter.
         :return: A Cursor on the results, i.e., the distinct results.
         """
         # db["LaboratoryRecord"].distinct("instantiate", {"value": {"$exists": 0}})
-        return self.db[table_name].distinct(key, filter)
+        return self.db[table_name].distinct(key, filter_dict)
 
     def count_documents(self, table_name: str, filter_dict: dict) -> int:
         """
@@ -223,8 +224,6 @@ class Database:
         operations = []
         operations.append(Operators.lookup(join_table_name=name_table_2, field_table_1=field_table_1, field_table_2=field_table_2, lookup_field_name=lookup_name))
         operations.append(Operators.match(field=lookup_name, value={"$eq": []}, is_regex=False))  # we get only pairs that could not match
-        log.info(name_table_1)
-        log.info(operations)
         return self.db[name_table_1].aggregate(operations)
 
     def create_unique_index(self, table_name: str, columns: dict) -> None:
@@ -253,10 +252,10 @@ class Database:
 
         if from_string:
             # we need to parse the string to long
-            operations.append(Operators.project(field=field, projected_value={"split_var": {"$split": [f"${field}", DELIMITER_PATIENT_ID]}}))
+            operations.append(Operators.project(field=field, projected_value={"split_var": {"$split": [f"${field}", DELIMITER_RESOURCE_ID]}}))
             operations.append(Operators.unwind(field="split_var"))
             operations.append(Operators.match(field="split_var", value="^[0-9]+$", is_regex=True))  # only numbers
-            operations.append(Operators.group_by(group_key={"var": "$split_var"}, group_by_name="min_max", operator="$max", field={"$toLong": "$split_var"}))
+            operations.append(Operators.group_by(group_key={"var": "$split_var"}, groups=[{"name": "min_max", "operator": "$max", "field": {"$toLong": "$split_var"}}]))
             operations.append(Operators.sort(field="min_max", sort_order=sort_order))
             operations.append(Operators.limit(1))
 
@@ -307,30 +306,11 @@ class Database:
         cursor = self.db[TableNames.LABORATORY_RECORD].aggregate([
             Operators.match(field="instantiate.reference", value=lab_feature_url, is_regex=False),
             Operators.project(field="value", projected_value=None),
-            Operators.group_by(group_key=None, group_by_name="avg_val", operator="$avg", field="$value")
+            Operators.group_by(group_key=None, groups=[{"name": "avg_val", "operator": "$avg", "field": "$value"}])
         ])
 
         for result in cursor:
             return float(result)  # There should be only one result, so we can return directly the min or max value
-
-    def get_value_distribution_of_lab_feature(self, lab_feature_url: str, min_value: float) -> CommandCursor:
-        """
-        Compute the value distribution among all the LabRecord instances for a certain LabFeature instance.
-        :param lab_feature_url: A string being the LabFeature url of the form LabFeature/X, where X is the
-        LabFeature number, and for which the value distribution will be computed among the LabRecord instances
-        referring to that LabFeature (url).
-        :param min_value: A float value being the minimum frequency that an element should have to be part of the plot.
-        :return: A CommandCursor to iterate over the value distribution of the form { "value": frequency, ... }
-        """
-        pipeline = [
-            Operators.match(field="instantiate.reference", value=lab_feature_url, is_regex=False),
-            Operators.project(field="value", projected_value=None),
-            Operators.group_by(group_key="$value", group_by_name="total", operator="$sum", field=1),
-            Operators.match(field="total", value={"$gt": min_value}, is_regex=False),
-            Operators.sort(field="_id", sort_order=1)
-        ]
-        # .collation({"locale": "en_US", "numericOrdering": "true"})
-        return self.db[TableNames.LABORATORY_RECORD].aggregate(pipeline)
 
     def get_max_resource_counter_id(self) -> int:
         max_value = -1

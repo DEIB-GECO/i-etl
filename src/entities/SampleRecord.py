@@ -3,17 +3,17 @@ from typing import Any
 
 from datatypes.Identifier import Identifier
 from enums.TableNames import TableNames
-from profiles.Record import Record
+from entities.Record import Record
 from database.Counter import Counter
 
 
 class SampleRecord(Record):
     def __init__(self, id_value: str, feature_id: Identifier, patient_id: Identifier,
-                 hospital_id: Identifier, value: Any, anonymized_value: Any, sample_base_id: str,
-                 counter: Counter, hospital_name: str):
+                 hospital_id: Identifier, value: Any, anonymized_value: Any, base_id: str,
+                 counter: Counter, hospital_name: str, dataset_name: str):
         # set up the resource ID
         super().__init__(id_value=id_value, feature_id=feature_id, patient_id=patient_id, hospital_id=hospital_id,
                          value=value, anonymized_value=anonymized_value, resource_type=TableNames.SAMPLE_RECORD,
-                         counter=counter, hospital_name=hospital_name)
+                         counter=counter, hospital_name=hospital_name, dataset_name=dataset_name)
 
-        self.sample_base_id = sample_base_id
+        self.base_id = base_id

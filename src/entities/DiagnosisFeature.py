@@ -1,25 +1,22 @@
-from datatypes.CodeableConcept import CodeableConcept
+from datatypes.OntologyResource import OntologyResource
 from enums.TableNames import TableNames
 from enums.Visibility import Visibility
-from profiles.Feature import Feature
+from entities.Feature import Feature
 from database.Counter import Counter
 
 
 class DiagnosisFeature(Feature):
-    def __init__(self, id_value: str, code: CodeableConcept, permitted_datatype: str, dimension: str | None,
-                 counter: Counter, hospital_name: str, categorical_values: list[CodeableConcept] | None,
+    def __init__(self, id_value: str, name: str, ontology_resource: OntologyResource, permitted_datatype: str, dimension: str | None,
+                 counter: Counter, hospital_name: str, categorical_values: list[OntologyResource] | None,
                  visibility: Visibility):
         """
         Create a new Disease instance.
         This is different from a DiseaseRecord:
         - a Disease instance models a disease definition
         - a DiseaseRecord instance models that Patient P has Disease D
-        :param code: the set of ontology terms (LOINC, ICD, ...) referring to that disease.
+        :param codes: the set of ontology terms (LOINC, ICD, ...) referring to that disease.
         """
         # set up the resource ID
-        super().__init__(id_value=id_value, resource_type=TableNames.DIAGNOSIS_FEATURE, code=code,
+        super().__init__(id_value=id_value, name=name, resource_type=TableNames.DIAGNOSIS_FEATURE, ontology_resource=ontology_resource,
                          column_type=permitted_datatype, dimension=dimension, counter=counter,
                          hospital_name=hospital_name, categorical_values=categorical_values, visibility=visibility)
-
-        # set up the resource attributes
-        self.code = code

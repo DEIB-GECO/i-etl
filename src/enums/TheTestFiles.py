@@ -29,6 +29,6 @@ class TheTestFiles(EnumAsClass):
     EXTR_LABORATORY_COL_CAT_PATH = "extr-data-lab-column-categorical.json"
     EXTR_GENOMICS_CATEGORICAL_PATH = "extr-data-gen-categorical.json"
     EXTR_LABORATORY_DIMENSIONS_PATH = "extr-data-lab-column-to-dimension.json"
-    EXTR_JSON_DIAGNOSIS_TO_CC_PATH = "extr-data-diag-to-cc.json"
+    EXTR_JSON_DIAGNOSIS_TO_OT_PATH = "extr-data-diag-to-or.json"
     EXTR_EMPTY_PIDS_PATH = "extr-empty-pids.json"
     EXTR_FILLED_PIDS_PATH = "extr-filled-pids.json"

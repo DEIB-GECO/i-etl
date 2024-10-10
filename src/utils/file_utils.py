@@ -24,16 +24,21 @@ def get_json_resource_file(current_working_dir: str, table_name: str, count: int
     return os.path.join(current_working_dir, f"{table_name}{str(count)}.json")
 
 
-def read_tabular_file_as_string(filepath: str) -> pd.DataFrame:
+def read_tabular_file_as_string(filepath: str, read_as_string: bool) -> pd.DataFrame:
     if filepath.endswith(".csv"):
-        return pd.read_csv(filepath, index_col=False, dtype=str, keep_default_na=True)
+        if read_as_string:
+            return pd.read_csv(filepath, index_col=False, dtype=str, keep_default_na=True)
+        else:
+            return pd.read_csv(filepath, index_col=False, keep_default_na=True)
     elif filepath.endswith(".xls") or filepath.endswith(".xlsx"):
         # for Excel files, there may be several sheets, so we load all data in a single dataframe
-        all_sheets = pd.read_excel(filepath, sheet_name=None, index_col=False, dtype=str, keep_default_na=True)
+        if read_as_string:
+            all_sheets = pd.read_excel(filepath, sheet_name=None, index_col=False, dtype=str, keep_default_na=True)
+        else:
+            all_sheets = pd.read_excel(filepath, sheet_name=None, index_col=False, keep_default_na=True)
         df = DataFrame()
         for key, value in all_sheets.items():
             if key != "Legend":  # skip the sheet describing the columns
-                log.info(value.columns)
                 df = pd.concat([df, value], ignore_index=True)
         return df
     else:

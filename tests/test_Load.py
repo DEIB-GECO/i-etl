@@ -36,38 +36,42 @@ def my_setup(create_indexes: bool) -> Load:
     # 2. create few "fake" files in the current working directory in order to test insertion and index creation
     lab_features = [
         {
-            "identifier": {"value": "1"},
-            "code": {
-                "text": "age (Age in weeks)",
-                "coding": [{"system": Ontologies.LOINC["url"], "code": "123-456", "display": "age (Age in weeks)"}]},
+            "identifier": "LaboratoryFeature:1",
+            "ontology_resource": {
+                "system": Ontologies.LOINC["url"],
+                "code": "123-456",
+                "label": "age (Age in weeks)"
+            },
             "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())
         }, {
-            "identifier": {"value": "2"},
-            "code": {
-                "text": "twin (Whether the baby has a twin)",
-                "coding": [{"system": Ontologies.LOINC["url"], "code": "123-457", "display": "twin (Whether the baby has a twin)"}]},
+            "identifier": "LaboratoryFeature:2",
+            "ontology_resource": {
+                "system": Ontologies.LOINC["url"],
+                "code": "123-457",
+                "label": "twin (Whether the baby has a twin)"
+            },
             "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())
         }
     ]
 
     lab_records = [
         {
-            "identifier": {"value": "1"},
+            "identifier": "LaboratoryRecord:1",
             "value": 12,
-            "subject": {"reference": "1", "type": TableNames.PATIENT},
-            "recorded_by": {"reference": "1", "type": TableNames.HOSPITAL},
-            "instantiate": {"reference": "1", "type": TableNames.LABORATORY_FEATURE},
+            "subject": "test:1",
+            "recorded_by": "Hospital:1",
+            "instantiate": "LaboratoryFeature:1",
             "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())
         }
     ]
 
     patients = [
-        {"identifier": {"value": "1"}, "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())},
-        {"identifier": {"value": "2"}, "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())},
-        {"identifier": {"value": "3"}, "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())}
+        {"identifier": "test:1", "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())},
+        {"identifier": "test:2", "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())},
+        {"identifier": "test:3", "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())}
     ]
 
-    hospital = {"identifier": {"value": "1"}, "name": HospitalNames.TEST_H1}
+    hospital = {"identifier": "Hospital:1", "name": HospitalNames.TEST_H1}
 
     # 3. write them in temporary JSON files
     path_lab_features = os.path.join(TestLoad.execution.working_dir_current, TableNames.LABORATORY_FEATURE+"1.json")
@@ -100,7 +104,6 @@ class TestLoad(unittest.TestCase):
         load = my_setup(create_indexes=True)
         load.load_remaining_data()
 
-        assert load.database.db[TableNames.PATIENT].count_documents(filter={}) == 3
         assert load.database.db[TableNames.LABORATORY_FEATURE].count_documents(filter={}) == 2
         assert load.database.db[TableNames.LABORATORY_RECORD].count_documents(filter={}) == 1
         assert load.database.db[TableNames.HOSPITAL].count_documents(filter={}) == 1
@@ -134,8 +137,8 @@ class TestLoad(unittest.TestCase):
                         assert "unique" not in index
                 else:
                     if table_name in TableNames.features(db=load.database):
-                        # there is also a double index (code.coding.system and code.coding.code)
-                        if "code.coding.system" in index_key and "code.coding.code" in index_key:
+                        # there is also a double index (ontology_resource.system and ontology_resource.code)
+                        if "ontology_resource.system" in index_key and "ontology_resource.code" in index_key:
                             count_indexes = count_indexes + 1
                             assert "unique" not in index
                         else:

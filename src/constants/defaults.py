@@ -8,4 +8,4 @@ PATTERN_VALUE_DIMENSION = re.compile(r'^ *([0-9]+[.,]*[0-9]*) *([a-zA-Z_.-]+) *$
 SNOMED_OPERATORS_LIST = ["|", "(", ")", "{", "}", ",", ":", "=", "+"]
 SNOMED_OPERATORS_STR = "".join(SNOMED_OPERATORS_LIST)
 
-DEFAULT_CODING_DISPLAY = ""
+DEFAULT_ONTOLOGY_RESOURCE_LABEL = ""

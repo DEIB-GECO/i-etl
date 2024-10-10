@@ -1,6 +1,6 @@
 from datatypes.PatientAnonymizedIdentifier import PatientAnonymizedIdentifier
 from enums.HospitalNames import HospitalNames
-from profiles.Patient import Patient
+from entities.Patient import Patient
 from enums.TableNames import TableNames
 from database.Counter import Counter
 from constants.idColumns import NO_ID

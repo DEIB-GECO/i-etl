@@ -15,8 +15,8 @@ class Reporting(Task):
     NB_INSTANCES = "Number of instances"
     REC_NO_VALUE = "Record instances with no 'value' field"
     REC_NO_VALUE_INST = "Record instances with no 'value' field per 'instantiate'"
-    CC_NO_TEXT = "CodeableConcept with empty 'text' field"
-    CC_NO_CODING = "CodeableConcept with empty 'coding' field"
+    CC_EMPTY_TEXT = "CodeableConcept with empty 'text' field"
+    CC_EMPTY_LIST = "CodeableConcept with empty 'list' field"
 
     def __init__(self, database: Database, execution: Execution, quality_stats: QualityStatistics, db_stats: DatabaseStatistics,
                  time_stats: TimeStatistics):
@@ -33,7 +33,7 @@ class Reporting(Task):
         self.nb_of_rec_with_no_value = {}
         self.nb_of_rec_with_no_value_per_instantiate = {}
         self.nb_of_cc_with_no_text_per_table = {}
-        self.nb_of_cc_with_no_coding_per_table = {}
+        self.nb_of_cc_with_no_onto_resources_per_table = {}
 
     def run(self):
         self.report = {}
@@ -42,7 +42,7 @@ class Reporting(Task):
         self.report = self.report | self.time_stats.to_json()
 
         # 4. print the final report
-        self.print_report()
+        # self.print_report()
 
         # 5. save each stat report in the database
         self.database.insert_one_tuple(table_name=TableNames.STATS_DB, one_tuple=self.db_stats.to_json())

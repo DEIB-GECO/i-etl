@@ -28,13 +28,16 @@ class Operators(EnumAsClass):
             }
 
     @classmethod
-    def project(cls, field: str, projected_value: str | dict | None) -> dict:
+    def project(cls, field: str | list, projected_value: str | dict | None) -> dict:
+        # this is the SQL SELECT operator
+        # where each field that is wanted in the result has value 1 and unwanted fields have value 0
         if type(projected_value) is str:
-            # in this case, we case to keep a certain field
+            # in this case, we want to keep a certain field
             # and choose what should be the value of that field (in case of composed fields)
             return {
                 "$project": {
-                    projected_value: "$" + field
+                    projected_value: "$" + field,
+                    "_id": 0
                 }
             }
         elif type(projected_value) is dict:
@@ -44,14 +47,25 @@ class Operators(EnumAsClass):
             }
         else:
             # in that case, we only want to keep a certain field
-            return {
-                "$project": {
-                    field: 1
+            if isinstance(field, list):
+                # we want to keep several fields
+                fields = {f: 1 for f in field}
+                fields["_id"] = 0
+                return {
+                    "$project": fields
                 }
-            }
+            else:
+                # we want to keep a single field
+                return {
+                    "$project": {
+                        field: 1,
+                        "_id": 0
+                    }
+                }
 
     @classmethod
     def lookup(cls, join_table_name: str, field_table_1: str, field_table_2: str, lookup_field_name: str) -> dict:
+        # this is a SQL join between two tables
         return {
             "$lookup": {
                 "from": join_table_name,  # the "second" table of the join
@@ -62,7 +76,18 @@ class Operators(EnumAsClass):
         }
 
     @classmethod
+    def union(cls, second_table_name: str, second_pipeline: list):
+        # this is the SQL UNION operator
+        return {
+            "$unionWith": {
+                "coll": second_table_name,
+                "pipeline": second_pipeline
+            }
+        }
+
+    @classmethod
     def sort(cls, field: str, sort_order: int) -> dict:
+        # this is the SQL ORDER BY operator
         return {
             "$sort": {
                 field: sort_order
@@ -71,20 +96,30 @@ class Operators(EnumAsClass):
 
     @classmethod
     def limit(cls, nb: int) -> dict:
+        # this is the SQL LIMIT operator
         return {
             "$limit": nb
         }
 
     @classmethod
-    def group_by(cls, group_key: Any, group_by_name: str, operator: str, field) -> dict:
-        return {
-            "$group": {
-                "_id": group_key,
-                group_by_name: {
-                    operator: field  # $avg: $<the field on which the avg is computed>
-                }
-            }
+    def group_by(cls, group_key: dict | str | None, groups: list) -> dict:
+        # this is the SQL GROUP BY operator
+        """
+        Compute group by (on one or many fields, with one or many operators)
+        :param group_key: The $group stage separates documents into groups according to a "group key". The output is one document for each unique group key.
+        :param groups: a list of objects for each group by to add to the query (there is only one object is one group by)
+        The objects are of the form: {"name": group_by_name, "operator", the aggregation operator (min, max, avg, etc), "field": the field on which to compute the group by
+        If groups is empty, this means that we simply use the group_by operator to simulate a distinct
+        :return:
+        """
+        query = {
+            "$group": {}
         }
+
+        query["$group"]["_id"] = group_key
+        for group_by in groups:
+            query["$group"][group_by["name"]] = {group_by["operator"]: group_by["field"]}
+        return query
 
     @classmethod
     def unwind(cls, field: str) -> dict:

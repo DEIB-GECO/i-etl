@@ -12,7 +12,7 @@ from datatypes.PatientAnonymizedIdentifier import PatientAnonymizedIdentifier
 from datatypes.ResourceIdentifier import ResourceIdentifier
 from enums.ParameterKeys import ParameterKeys
 from enums.HospitalNames import HospitalNames
-from profiles.ResourceTest import ResourceTest
+from entities.ResourceTest import ResourceTest
 from database.Counter import Counter
 from enums.TableNames import TableNames
 from enums.UpsertPolicy import UpsertPolicy

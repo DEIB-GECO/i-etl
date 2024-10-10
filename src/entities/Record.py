@@ -2,14 +2,14 @@ from typing import Any
 
 from datatypes.Identifier import Identifier
 from datatypes.Reference import Reference
-from profiles.Resource import Resource
+from entities.Resource import Resource
 from database.Counter import Counter
 
 
 class Record(Resource):
     def __init__(self, id_value: str, feature_id: Identifier, patient_id: Identifier,
                  hospital_id: Identifier, value: Any, anonymized_value: Any, resource_type: str, counter: Counter,
-                 hospital_name: str):
+                 hospital_name: str, dataset_name: str):
         """
 
         """
@@ -23,3 +23,4 @@ class Record(Resource):
         self.subject = patient_id.value  # Reference(resource_identifier=patient_id)
         self.recorded_by = hospital_id.value  # Reference(resource_identifier=hospital_id)
         self.instantiate = feature_id.value  # Reference(resource_identifier=feature_id)
+        self.dataset_name = dataset_name

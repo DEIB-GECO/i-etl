@@ -7,7 +7,7 @@ from utils.setup_logger import log
 if __name__ == '__main__':
     filepath = "/Users/nelly/Documents/boulot/postdoc-polimi/BETTER-fairificator/datasets/data/BUZZI/diagnoses-cleaned.xlsx"  # sys.argv[1]
     new_filepath = "/Users/nelly/Documents/boulot/postdoc-polimi/BETTER-fairificator/datasets/data/BUZZI/diagnoses-pre-processed.csv"  # sys.argv[2]
-    df = read_tabular_file_as_string(filepath=filepath)
+    df = read_tabular_file_as_string(filepath=filepath, read_as_string=False)
 
     log.info(df)
 

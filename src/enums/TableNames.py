@@ -30,7 +30,6 @@ class TableNames(EnumAsClass):
     @classmethod
     def values(cls, db):
         # override the values() method of Enum to only return tables that exists in the DB
-        log.info(db)
         xs = []
         for name, value in vars(cls).items():
             if not (name.startswith('__') or isinstance(value, classmethod)) and (db is None or (db.check_table_exists(table_name=value) and db is not None)):
@@ -53,6 +52,19 @@ class TableNames(EnumAsClass):
             return None
 
     @classmethod
+    def get_record_table_from_feature_table(cls, feature_table_name: str) -> str:
+        if not feature_table_name.endswith("Feature"):
+            # this is not a Feature table name
+            return None
+        else:
+            extracted_entity = feature_table_name.replace("Feature", "")
+            for record_table_name in cls.records(db=None):
+                if record_table_name.startswith(extracted_entity):
+                    return record_table_name
+            # no associated Record table name found
+            return None
+
+    @classmethod
     def features(cls, db):
         return cls.get_tables(filters=["Feature"], db=db)
 
@@ -71,7 +83,6 @@ class TableNames(EnumAsClass):
     @classmethod
     def get_tables(cls, filters: list, db):
         table_names = []
-        log.info(db)
         for name, value in vars(cls).items():
             if not (name.startswith('__') or isinstance(value, classmethod)):
                 if db is None or (db.check_table_exists(table_name=value) and db is not None):

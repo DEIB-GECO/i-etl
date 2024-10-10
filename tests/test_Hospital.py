@@ -1,6 +1,6 @@
 from datatypes.ResourceIdentifier import ResourceIdentifier
 from enums.HospitalNames import HospitalNames
-from profiles.Hospital import Hospital
+from entities.Hospital import Hospital
 from enums.TableNames import TableNames
 from constants.idColumns import NO_ID
 from database.Counter import Counter

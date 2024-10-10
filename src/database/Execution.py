@@ -93,7 +93,9 @@ class Execution:
         # (this happens in tests: data is given by hand, i.e., without set_up, but the anonymized patient IDs file still has to exist
         self.anonymized_patient_ids_filepath = self.check_parameter(key=ParameterKeys.ANONYMIZED_PATIENT_IDS, accepted_values=None, default_value=self.anonymized_patient_ids_filepath)
         log.debug(self.anonymized_patient_ids_filepath)
-        self.setup_mapping_to_anonymized_patient_ids()
+        if self.anonymized_patient_ids_filepath is not None:
+            # it may be None when we are computing the catalogue data (because we don't need it)
+            self.setup_mapping_to_anonymized_patient_ids()
 
         # E. set up the data and metadata files
         if setup_data_files:
@@ -198,8 +200,6 @@ class Execution:
 
         # b. ...diagnosis filepaths...
         if self.diagnosis_filepaths is not None:
-            log.info(self.diagnosis_filepaths)
-            log.info(FileTypes.get_prefix_for_path(filetype=FileTypes.DIAGNOSIS))
             self.diagnosis_filepaths = split_list_of_files(self.diagnosis_filepaths, prefix_path=FileTypes.get_prefix_for_path(filetype=FileTypes.DIAGNOSIS))  # file 1,file 2, ...,file N
             log.debug(f"{self.diagnosis_filepaths}")
 

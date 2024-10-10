@@ -10,10 +10,8 @@ from utils.str_utils import process_spaces
 class MetadataColumns(EnumAsClass):
     # ontology names HAVE TO be normalized by hand here because we can't refer to static methods
     # because they do not exist yet in the execution context
-    ONTO_NAME_1 = "ontology"
-    ONTO_CODE_1 = "ontology_code"
-    ONTO_NAME_2 = "secondary_ontology"
-    ONTO_CODE_2 = "secondary_ontology_code"
+    ONTO_NAME = "ontology"
+    ONTO_CODE = "ontology_code"
     DATASET_NAME = "dataset"
     COLUMN_NAME = "name"
     SIGNIFICATION_EN = "description"

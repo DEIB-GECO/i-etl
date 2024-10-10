@@ -1,23 +1,27 @@
 {
   "m": {
-    "coding": [
-      {
-        "display": "Male",
-        "system": "http://snomed.info/sct",
-        "code": "248153007"
-      }
-    ],
-    "text": "m"
+    "label": "Male",
+    "system": "http://snomed.info/sct",
+    "code": "248153007"
   },
   "f": {
-    "coding": [
-      {
-        "display": "Female",
-        "system": "http://snomed.info/sct",
-        "code": "248152002"
-      }
-    ],
-    "text": "f"
+    "label": "Female",
+    "system": "http://snomed.info/sct",
+    "code": "248152002"
   },
-  "0": {"coding": [{"system": "http://snomed.info/sct", "code": "373067005", "display": "No"}], "text": "0"}, "na": {"coding": [{"system": "http://snomed.info/sct", "code": "276727009", "display": "Null"}], "text": "na"}, "1": {"coding": [{"system": "http://snomed.info/sct", "code": "373066001", "display": "Yes"}], "text": "1"}
+  "0": {
+    "system": "http://snomed.info/sct",
+    "code": "373067005",
+    "label": "No"
+  },
+  "na": {
+    "system": "http://snomed.info/sct",
+    "code": "276727009",
+    "label": "Null"
+  },
+  "1": {
+    "system": "http://snomed.info/sct",
+    "code": "373066001",
+    "label": "Yes"
+  }
 }

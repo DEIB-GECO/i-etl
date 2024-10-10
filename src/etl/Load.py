@@ -23,7 +23,7 @@ class Load(Task):
             self.create_db_indexes()
 
     def load_remaining_data(self) -> None:
-        self.database.load_json_in_table(table_name=TableNames.PATIENT, unique_variables=["identifier"])
+        # patients are loaded when the first file is loaded to be able to map patients and their samples
 
         self.database.load_json_in_table(table_name=TableNames.LABORATORY_RECORD, unique_variables=["recorded_by", "subject", "based_on", "instantiate"])
 
@@ -54,7 +54,7 @@ class Load(Task):
         # this is because we usually ask for a code for a given ontology (what is a coe without its ontology? nothing)
         for table_name in TableNames.features(db=self.database):
             # a table name of the form XFeature
-            self.database.create_non_unique_index(table_name=table_name, columns={"code.coding.system": 1, "code.coding.code": 1})
+            self.database.create_non_unique_index(table_name=table_name, columns={"ontology_resource.system": 1, "ontology_resource.code": 1})
             count += 1
 
         # for Record instances, we create an index per reference because we usually join each reference to a table

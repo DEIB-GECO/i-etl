@@ -70,14 +70,12 @@ class TestExtract(unittest.TestCase):
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 13, "The expected number of columns is 13."
+        assert len(extract.metadata.columns) == 11, "The expected number of columns is 11."
         assert len(extract.metadata) == 8, "The expected number of lines is 8."
 
         # b. checking the first line completely
-        assert extract.metadata[MetadataColumns.ONTO_NAME_1][1] == "loinc"
-        assert extract.metadata[MetadataColumns.ONTO_CODE_1][1] == "1234"
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_NAME_2][1])  # this should be nan as the cell is empty
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_CODE_2][1])  # this should be empty too
+        assert extract.metadata[MetadataColumns.ONTO_NAME][1] == "loinc"
+        assert extract.metadata[MetadataColumns.ONTO_CODE][1] == "1234"
         assert extract.metadata[MetadataColumns.COLUMN_NAME][1] == "molecule_a"  # all lower case
         assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][1] == "The molecule Alpha"  # kept as it is in the metadata for more clarity
         assert extract.metadata[MetadataColumns.VAR_TYPE][1] == "float"
@@ -94,23 +92,23 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][0] == "The Patient ID"  # non-normalized description
 
         # d. test normalization of ontology codes
-        assert extract.metadata[MetadataColumns.ONTO_NAME_1][1] == "loinc"
-        assert extract.metadata[MetadataColumns.ONTO_NAME_1][5] == "loinc"
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_NAME_1][2])
-        assert extract.metadata[MetadataColumns.ONTO_NAME_1][3] == "snomedct"
-        assert extract.metadata[MetadataColumns.ONTO_NAME_1][4] == "snomedct"
-        assert extract.metadata[MetadataColumns.ONTO_NAME_1][6] == "snomedct"
-        assert extract.metadata[MetadataColumns.ONTO_NAME_1][7] == "snomedct"
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_NAME_1][0])
+        assert extract.metadata[MetadataColumns.ONTO_NAME][1] == "loinc"
+        assert extract.metadata[MetadataColumns.ONTO_NAME][5] == "loinc"
+        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_NAME][2])
+        assert extract.metadata[MetadataColumns.ONTO_NAME][3] == "snomedct"
+        assert extract.metadata[MetadataColumns.ONTO_NAME][4] == "snomedct"
+        assert extract.metadata[MetadataColumns.ONTO_NAME][6] == "snomedct"
+        assert extract.metadata[MetadataColumns.ONTO_NAME][7] == "snomedct"
+        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_NAME][0])
 
-        assert extract.metadata[MetadataColumns.ONTO_CODE_1][1] == "1234"
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_CODE_1][2])
-        assert extract.metadata[MetadataColumns.ONTO_CODE_1][3] == "421416008"
-        assert extract.metadata[MetadataColumns.ONTO_CODE_1][4] == "123: 789"  # this will be normalized later while building OntologyResource objects
-        assert extract.metadata[MetadataColumns.ONTO_CODE_1][5] == " 46463-6 "  # same as above
-        assert extract.metadata[MetadataColumns.ONTO_CODE_1][6] == "456:7z9"
-        assert extract.metadata[MetadataColumns.ONTO_CODE_1][7] == "124678"
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_CODE_1][0])
+        assert extract.metadata[MetadataColumns.ONTO_CODE][1] == "1234"
+        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_CODE][2])
+        assert extract.metadata[MetadataColumns.ONTO_CODE][3] == "421416008"
+        assert extract.metadata[MetadataColumns.ONTO_CODE][4] == "123: 789"  # this will be normalized later while building OntologyResource objects
+        assert extract.metadata[MetadataColumns.ONTO_CODE][5] == " 46463-6 "  # same as above
+        assert extract.metadata[MetadataColumns.ONTO_CODE][6] == "456:7z9"
+        assert extract.metadata[MetadataColumns.ONTO_CODE][7] == "124678"
+        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_CODE][0])
 
         # e. check var type normalization
         assert extract.metadata[MetadataColumns.VAR_TYPE][0] == DataTypes.INTEGER  # patient id
@@ -147,14 +145,12 @@ class TestExtract(unittest.TestCase):
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 13, "The expected number of columns is 13."
+        assert len(extract.metadata.columns) == 11, "The expected number of columns is 11."
         assert len(extract.metadata) == 3, "The expected number of lines is 3."
 
         # b. checking the first line completely
-        assert extract.metadata[MetadataColumns.ONTO_NAME_1][2] == "omim"
-        assert extract.metadata[MetadataColumns.ONTO_CODE_1][2] == "1245/   983 "  # this will be normalized later when building OntologyResource objects
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_NAME_2][2])  # this should be nan as the cell is empty
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_CODE_2][2])  # this should be empty too
+        assert extract.metadata[MetadataColumns.ONTO_NAME][2] == "omim"
+        assert extract.metadata[MetadataColumns.ONTO_CODE][2] == "1245/   983 "  # this will be normalized later when building OntologyResource objects
         assert extract.metadata[MetadataColumns.COLUMN_NAME][2] == "disease_form"  # all lower case, with an underscore
         assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][2] == "The form of the disease"  # kept as it is in the metadata for more clarity
         assert extract.metadata[MetadataColumns.VAR_TYPE][2] == "category"  # all lower case
@@ -169,13 +165,13 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][0] == "The Patient ID"  # non-normalized description
 
         # d. test normalization of ontology codes
-        assert extract.metadata[MetadataColumns.ONTO_NAME_1][1] == "omim"
-        assert extract.metadata[MetadataColumns.ONTO_NAME_1][2] == "omim"
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_NAME_1][0])
+        assert extract.metadata[MetadataColumns.ONTO_NAME][1] == "omim"
+        assert extract.metadata[MetadataColumns.ONTO_NAME][2] == "omim"
+        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_NAME][0])
 
-        assert extract.metadata[MetadataColumns.ONTO_CODE_1][1] == "1569 - 456"  # this will be normalized later with OntologyResource
-        assert extract.metadata[MetadataColumns.ONTO_CODE_1][2] == "1245/   983 "
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_CODE_1][0])
+        assert extract.metadata[MetadataColumns.ONTO_CODE][1] == "1569 - 456"  # this will be normalized later with OntologyResource
+        assert extract.metadata[MetadataColumns.ONTO_CODE][2] == "1245/   983 "
+        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_CODE][0])
 
         # e. more general checks
         # DATASET: this should be the dataset name, and there should be no other datasets in that column
@@ -193,14 +189,12 @@ class TestExtract(unittest.TestCase):
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 13, "The expected number of columns is 13."
+        assert len(extract.metadata.columns) == 11, "The expected number of columns is 11."
         assert len(extract.metadata) == 3, "The expected number of lines is 3."
 
         # b. checking the first line completely
-        assert extract.metadata[MetadataColumns.ONTO_NAME_1][2] == "loinc"
-        assert extract.metadata[MetadataColumns.ONTO_CODE_1][2] == "3265970"
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_NAME_2][2])  # this should be nan as the cell is empty
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_CODE_2][2])  # this should be empty too
+        assert extract.metadata[MetadataColumns.ONTO_NAME][2] == "loinc"
+        assert extract.metadata[MetadataColumns.ONTO_CODE][2] == "3265970"
         assert extract.metadata[MetadataColumns.COLUMN_NAME][2] == "is_inherited"  # all lower case, with an underscore
         assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][2] == "Whether the gene is inherited"  # kept as it is in the metadata for more clarity
         assert extract.metadata[MetadataColumns.VAR_TYPE][2] == "bool"  # all lower case
@@ -212,13 +206,13 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][0] == "The Patient ID"  # non-normalized description
 
         # d. test normalization of ontology codes
-        assert extract.metadata[MetadataColumns.ONTO_NAME_1][1] == "loinc"
-        assert extract.metadata[MetadataColumns.ONTO_NAME_1][2] == "loinc"
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_NAME_1][0])
+        assert extract.metadata[MetadataColumns.ONTO_NAME][1] == "loinc"
+        assert extract.metadata[MetadataColumns.ONTO_NAME][2] == "loinc"
+        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_NAME][0])
 
-        assert extract.metadata[MetadataColumns.ONTO_CODE_1][1] == "326597056"
-        assert extract.metadata[MetadataColumns.ONTO_CODE_1][2] == "3265970"
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_CODE_1][0])
+        assert extract.metadata[MetadataColumns.ONTO_CODE][1] == "326597056"
+        assert extract.metadata[MetadataColumns.ONTO_CODE][2] == "3265970"
+        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_CODE][0])
 
         # e. more general checks
         # DATASET: this should be the dataset name, and there should be no other datasets in that column
@@ -296,33 +290,29 @@ class TestExtract(unittest.TestCase):
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()  # required to compute mapped values
-        extract.compute_mapping_categorical_value_to_cc()
+        extract.compute_mapping_categorical_value_to_onto_resource()
 
-        assert len(extract.mapping_categorical_value_to_cc.keys()) == 2  # 2 categorical values only (F/M)
+        assert len(extract.mapping_categorical_value_to_onto_resource.keys()) == 2  # 2 categorical values only (F/M)
         # checking "male" mapping
-        assert "m" in extract.mapping_categorical_value_to_cc  # normalized categorical value
-        cc_male = extract.mapping_categorical_value_to_cc["m"].to_json()
-        assert "coding" in cc_male
-        assert "text" in cc_male
-        assert len(cc_male["coding"][0]) == 3  # system, code, and display keys
-        assert "system" in cc_male["coding"][0]
-        assert "code" in cc_male["coding"][0]
-        assert "display" in cc_male["coding"][0]
-        assert cc_male["coding"][0]["display"] == "Male"  # display got from the API
-        assert cc_male["coding"][0]["system"] == Ontologies.SNOMEDCT["url"]  # normalized (ontology) key
-        assert cc_male["coding"][0]["code"] == "248153007"  # normalized ontology code
+        assert "m" in extract.mapping_categorical_value_to_onto_resource  # normalized categorical value
+        cc_male = extract.mapping_categorical_value_to_onto_resource["m"].to_json()
+        assert len(cc_male) == 3  # system, code, and label keys
+        assert "system" in cc_male
+        assert "code" in cc_male
+        assert "label" in cc_male
+        assert cc_male["label"] == "Male"  # display got from the API
+        assert cc_male["system"] == Ontologies.SNOMEDCT["url"]  # normalized (ontology) key
+        assert cc_male["code"] == "248153007"  # normalized ontology code
         # checking "female" mapping
-        assert "f" in extract.mapping_categorical_value_to_cc  # normalized categorical value
-        cc_female = extract.mapping_categorical_value_to_cc["f"].to_json()
-        assert "coding" in cc_female
-        assert "text" in cc_female
-        assert len(cc_female["coding"][0]) == 3  # system, code, and display keys
-        assert "system" in cc_female["coding"][0]
-        assert "code" in cc_female["coding"][0]
-        assert "display" in cc_female["coding"][0]
-        assert cc_female["coding"][0]["display"] == "Female"  # display computed with the API
-        assert cc_female["coding"][0]["system"] == Ontologies.SNOMEDCT["url"]  # normalized (ontology) key
-        assert cc_female["coding"][0]["code"] == "248152002"  # normalized ontology code
+        assert "f" in extract.mapping_categorical_value_to_onto_resource  # normalized categorical value
+        cc_female = extract.mapping_categorical_value_to_onto_resource["f"].to_json()
+        assert len(cc_female) == 3  # system, code, and label keys
+        assert "system" in cc_female
+        assert "code" in cc_female
+        assert "label" in cc_female
+        assert cc_female["label"] == "Female"  # display computed with the API
+        assert cc_female["system"] == Ontologies.SNOMEDCT["url"]  # normalized (ontology) key
+        assert cc_female["code"] == "248152002"  # normalized ontology code
 
     def test_removed_unused_columns(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
@@ -420,17 +410,17 @@ class TestExtract(unittest.TestCase):
             expected_dict = json.load(f)
         assert expected_dict == extract.patient_ids_mapping
 
-    def test_compute_mapping_disease_to_cc(self):
+    def test_compute_mapping_disease_to_onto_resource(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_DIAGNOSIS_TO_CC_PATH,
                            data_type=FileTypes.DIAGNOSIS_REGEX,
                            pids_path=TheTestFiles.ORIG_FILLED_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-        extract.compute_mapping_diagnosis_to_cc()
+        extract.compute_mapping_diagnosis_to_onto_resource()
 
-        with open(os.path.join(DOCKER_FOLDER_TEST, TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_CC_PATH), "r") as f:
+        with open(os.path.join(DOCKER_FOLDER_TEST, TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_OT_PATH), "r") as f:
             expected_dict = json.load(f)
-        assert expected_dict == extract.mapping_diagnosis_to_cc  # == performs a deep equality
+        assert expected_dict == extract.mapping_diagnosis_to_onto_resource  # == performs a deep equality
 
     # def test_run_value_analysis(self):
     #     self.fail()

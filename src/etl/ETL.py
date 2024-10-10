@@ -42,8 +42,6 @@ class ETL:
         time_stats.start_total_execution_timer()
         is_last_file = False
         file_counter = 0
-        log.debug(f"{self.execution.laboratory_filepaths}")
-        log.debug(f"{type(self.execution.laboratory_filepaths)}")
 
         # 1. aggregate all filepaths given by the user
         # in order to be able to ingest them all with a single loop
@@ -73,7 +71,6 @@ class ETL:
         # 2. iterate over all the files
         quality_stats = QualityStatistics(record_stats=True)
         for one_file in all_filepaths.keys():
-            log.debug(f"{one_file}")
             file_counter = file_counter + 1
             if file_counter == len(all_filepaths):
                 is_last_file = True
@@ -93,12 +90,11 @@ class ETL:
                     time_stats.start_total_transform_timer()
                     self.transform = Transform(database=self.database, execution=self.execution, data=self.extract.data,
                                                metadata=self.extract.metadata,
-                                               mapping_categorical_value_to_cc=self.extract.mapping_categorical_value_to_cc,
+                                               mapping_categorical_value_to_onto_resource=self.extract.mapping_categorical_value_to_onto_resource,
                                                mapping_column_to_categorical_value=self.extract.mapping_column_to_categorical_value,
                                                mapping_column_to_dimension=self.extract.mapping_column_to_dimension,
                                                patient_ids_mapping=self.extract.patient_ids_mapping,
-                                               mapping_diagnosis_to_cc=self.extract.mapping_diagnosis_to_cc,
-                                               mapping_sample_id_to_patient_id=self.extract.mapping_sample_id_to_patient_id,
+                                               mapping_diagnosis_to_onto_resource=self.extract.mapping_diagnosis_to_onto_resource,
                                                quality_stats=quality_stats, time_stats=time_stats)
                     self.transform.run()
                     time_stats.stop_total_transform_timer()
