@@ -14,7 +14,7 @@ class DiagnosisFeature(Feature):
         This is different from a DiseaseRecord:
         - a Disease instance models a disease definition
         - a DiseaseRecord instance models that Patient P has Disease D
-        :param codes: the set of ontology terms (LOINC, ICD, ...) referring to that disease.
+        :param ontology_resource: the set of ontology terms (LOINC, ICD, ...) referring to that disease.
         """
         # set up the resource ID
         super().__init__(id_value=id_value, name=name, resource_type=TableNames.DIAGNOSIS_FEATURE, ontology_resource=ontology_resource,
