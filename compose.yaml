@@ -23,14 +23,13 @@ services:
       # we need to provide to Docker the access to the folders where there is the data and the metadata
       # this is mandatory to access data in the hospital - otherwise Docker won't see any file outside those copied in the image
       # SERVER_FOLDER_METADATA is the hospital server folder where the metadata is - this is a "ghost copy"/"open view" which will show the same files in /home/better-deployed/hospital-data/X
-      # same applies for SERVER_FOLDER_LABORATORY, SERVER_FOLDER_DIAGNOSIS, etc
+      # same applies for SERVER_FOLDER_PHENOTYPIC, SERVER_FOLDER_DIAGNOSIS, etc
       # For the Docker image, the data, resp. metadata, is now in /home/better-deployed/hospital-data/lab, etc
       # Therefore, the metadata and data paths given to the ETL should start with /home/better-deployed/hospital-data/
       # And instead of asking users to provide such an absolute path (which they don't have to see because this is the Docker internal structure),
       # we let the ETL build it by appending the data filename to that path
       - ${SERVER_FOLDER_METADATA}:/home/better-deployed/hospital-data/metadata
-      - ${SERVER_FOLDER_DIAGNOSIS_REGEXES}:/home/better-deployed/hospital-data/regexes
-      - ${SERVER_FOLDER_LABORATORY}:/home/better-deployed/hospital-data/laboratory
+      - ${SERVER_FOLDER_PHENOTYPIC}:/home/better-deployed/hospital-data/phenotypic
       - ${SERVER_FOLDER_SAMPLE}:/home/better-deployed/hospital-data/sample
       - ${SERVER_FOLDER_DIAGNOSIS}:/home/better-deployed/hospital-data/diagnosis
       - ${SERVER_FOLDER_MEDICINE}:/home/better-deployed/hospital-data/medicine

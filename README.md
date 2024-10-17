@@ -30,8 +30,8 @@ Parameters with a * (star) are required, others can be left empty.
 |----------------------------|--------------------------------------------------------------------------------------------------------------------|
 | `SERVER_FOLDER_METADATA`*  | The absolute (server) path to the folder containing the metadata file.                                             |
 | `METADATA`*                | The metadata filename.                                                                                             |
-| `SERVER_FOLDER_LABORATORY` | The absolute (server) path to the folder containing laboratory data.<br/>Default value: `/dev/null`                |
-| `LABORATORY`               | The list of one or several laboratory data filenames, separated with commas (,).<br/>Default value: empty          |
+| `SERVER_FOLDER_PHENOTYPIC` | The absolute (server) path to the folder containing laboratory data.<br/>Default value: `/dev/null`                |
+| `PHENOTYPIC`               | The list of one or several laboratory data filenames, separated with commas (,).<br/>Default value: empty          |
 | `SERVER_FOLDER_DIAGNOSIS`  | The absolute (server) path to the folder containing diagnosis data.<br/>Default value: `/dev/null`                 | 
 | `DIAGNOSIS`                | The list of one or several diagnosis data filenames, separated with commas (,).<br/>Default value: empty           | 
 | `SERVER_FOLDER_MEDICINE`   | The absolute (server) path to the folder containing medicine data.<br/>Default value: `/dev/null`                  |

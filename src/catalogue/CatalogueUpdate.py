@@ -21,16 +21,13 @@ class CatalogueUpdate:
         datasets = self.get_datasets()
         log.info(datasets)
         for dataset_profile in datasets:
-            log.info(dataset_profile)
-            log.info(type(dataset_profile))
             self.catalogue_data[dataset_profile] = {}
             self.catalogue_data[dataset_profile]["description"] = "This is a dataset"
             self.catalogue_data[dataset_profile]["nb_patients"] = self.compute_nb_patients_for_dataset(dataset_name=dataset_profile)
             self.catalogue_data[dataset_profile]["timestamp"] = datetime.datetime.now()
             self.catalogue_data[dataset_profile]["features"] = []
             for feature_id_type_tuple in self.get_feature_ids_in_dataset(dataset_name=dataset_profile):
-                log.info(feature_id_type_tuple)
-                feature_json_data = self.compute_json_data_for_one_feature(dataset_name=dataset_profile, feature_id=feature_id_type_tuple[0], feature_entity=feature_id_type_tuple[1], nb_patients=self.catalogue_data[dataset_profile]["nb_patients"])
+                feature_json_data = self.compute_json_data_for_one_feature(dataset_name=dataset_profile, feature_id=feature_id_type_tuple[0], feature_entity=feature_id_type_tuple[1])
                 self.catalogue_data[dataset_profile]["features"].append(feature_json_data)
         log.info(json.dumps(self.catalogue_data, default=str))  # default=str for converting datetime objects to strings
 
@@ -50,11 +47,11 @@ class CatalogueUpdate:
         operations.append(where_dataset_name)
         operations.append(get_instantiate)
         for record_table_name in TableNames.records(db=self.db):
-            if record_table_name != TableNames.LABORATORY_RECORD:  # this is the base of the union
+            if record_table_name != TableNames.PHENOTYPIC_RECORD:  # this is the base of the union
                 operations.append(Operators.union(second_table_name=record_table_name, second_pipeline=[where_dataset_name, get_instantiate]))
         operations.append(Operators.group_by(group_key="$instantiate", groups=[]))  # to simulate distinct because we cannot combine distinct and an aggregation pipeline
         log.info(operations)
-        cursor = self.db.db[TableNames.LABORATORY_RECORD].aggregate(operations)
+        cursor = self.db.db[TableNames.PHENOTYPIC_RECORD].aggregate(operations)
         # _id contains the Feature id (and is not the MongoDB id in this particular case,
         # and this is because group_by used the field _id to know on which field to do the group by)
         return [(result["_id"], ResourceIdentifier.get_type(identifier=result["_id"])) for result in cursor]
@@ -67,16 +64,16 @@ class CatalogueUpdate:
         operations.append(where_dataset_name)
         operations.append(get_subject)
         for record_table_name in TableNames.records(db=self.db):
-            if record_table_name != TableNames.LABORATORY_RECORD:  # this is the base of the union
+            if record_table_name != TableNames.PHENOTYPIC_RECORD:  # this is the base of the union
                 operations.append(Operators.union(second_table_name=record_table_name, second_pipeline=[where_dataset_name, get_subject]))
         operations.append(Operators.group_by(group_key="$subject", groups=[]))  # to simulate distinct because we cannot combine distinct and an aggregation pipeline
         operations.append(Operators.group_by(group_key="$subject", groups=[{"name": "p_count", "operator": "$sum", "field": 1}]))  # to simulate count
         log.info(operations)
-        cursor = self.db.db[TableNames.LABORATORY_RECORD].aggregate(operations)
+        cursor = self.db.db[TableNames.PHENOTYPIC_RECORD].aggregate(operations)
         for result in cursor:
             return result["p_count"]
 
-    def compute_json_data_for_one_feature(self, dataset_name: str, feature_id: str, feature_entity: str, nb_patients: int) -> dict:
+    def compute_json_data_for_one_feature(self, dataset_name: str, feature_id: str, feature_entity: str) -> dict:
         feature_info = {
             "feature": {},
             "statistics": {},
@@ -86,18 +83,32 @@ class CatalogueUpdate:
         # compute feature information
         operations = []
         operations.append(Operators.match(field="identifier", value=feature_id, is_regex=False))
-        operations.append(Operators.project(field=["ontology_resource.system", "ontology_resource.code", "ontology_resource.label", "permitted_datatype"], projected_value=None))
+        operations.append(Operators.project(field=["original_name", "ontology_resource.system", "ontology_resource.code", "ontology_resource.label", "permitted_datatype"], projected_value=None))
         log.info(operations)
-        log.info(feature_entity)
         cursor = self.db.db[feature_entity].aggregate(operations)
         agg_type = AggregationTypes.CONTINUOUS
+        feature_label = None
+        original_name = None
         for feature in cursor:
             # there is only one result because we get the info for a single feature
             # but if there is no data for this feature, cursor.next() will throw an error, thus using a for loop
-            log.info(feature["ontology_resource"]["label"])
+            log.info(f"{feature_entity}/{feature_id}: {feature}")
             # this allows us to compute the aggregation type, based on the datatype
             datatype = feature["permitted_datatype"]
-            feature_label = feature["ontology_resource"]["label"]
+            if "original_name" in feature:
+                original_name = feature["original_name"]
+            if "ontology_resource" in feature:
+                if "label" in feature["ontology_resource"]:
+                    feature_label = feature["ontology_resource"]["label"]
+                else:
+                    feature_label = feature["original_name"]
+                if "system" in feature["ontology_resource"] and "code" in feature["ontology_resource"]:
+                    feature_code = f"{feature["ontology_resource"]["system"]}/{feature["ontology_resource"]["code"]}"
+                else:
+                    feature_code = ""
+            else:
+                feature_label = feature["original_name"]
+                feature_code = ""
             if datatype in [DataTypes.CATEGORY, DataTypes.BOOLEAN, DataTypes.REGEX, DataTypes.STRING]:
                 agg_type = AggregationTypes.CATEGORICAL
             elif datatype in [DataTypes.DATE, DataTypes.DATETIME]:
@@ -105,7 +116,7 @@ class CatalogueUpdate:
             feature_info["feature"] = {
                 CatalogueEntries.FEATURE_ID: feature_id,
                 CatalogueEntries.FEATURE_NAME: feature_label,
-                CatalogueEntries.FEATURE_CODES: f"{feature["ontology_resource"]["system"]}/{feature["ontology_resource"]["code"]}",
+                CatalogueEntries.FEATURE_CODES: feature_code,
                 CatalogueEntries.FEATURE_TYPE: datatype,
                 CatalogueEntries.FEATURE_AGG_TYPE: agg_type,
                 CatalogueEntries.FEATURE_ENTITY: feature_entity
@@ -113,13 +124,11 @@ class CatalogueUpdate:
 
         # compute feature statistics
         log.info("compute stats")
-        statistics = self.compute_stats(dataset_name=dataset_name, feature_id=feature_id, feature_entity=feature_entity, feature_label=feature_label, nb_patients=nb_patients)
-        log.info(statistics)
+        statistics = self.compute_stats(dataset_name=dataset_name, feature_id=feature_id, feature_entity=feature_entity, feature_name=original_name)
         feature_info["statistics"] = {}
         feature_info["statistics"][CatalogueEntries.STATS_REC_COUNT] = statistics["record_count"]
         feature_info["statistics"][CatalogueEntries.STATS_PERC_EMPTY_CELLS] = statistics["perc_empty_cells"]
         feature_info["statistics"][CatalogueEntries.UNCATEGORIZED_CATEGORIES] = statistics["unknown_categorical_values"]
-        log.info(feature_info["statistics"])
 
         # compute feature aggregated data
         log.info("compute aggregated data")
@@ -151,31 +160,31 @@ class CatalogueUpdate:
         else:
             log.error(f"Unrecognised aggregation type {feature_entity} for feature {feature_id}.")
 
-        log.info(feature_info)
+        # log.info(feature_info)
         return feature_info
 
-    def compute_stats(self, dataset_name: str, feature_entity: str, feature_id: str, feature_label: str, nb_patients: int) -> dict:
+    def compute_stats(self, dataset_name: str, feature_entity: str, feature_id: str, feature_name: str) -> dict:
         record_table = TableNames.get_record_table_from_feature_table(feature_table_name=feature_entity)
         rec_count = self.db.count_documents(table_name=record_table, filter_dict={"dataset_name": dataset_name, "instantiate": feature_id})
-        # cursor = self.db.find_operation(table_name=TableNames.STATS_QUALITY, filter_dict={}, projection={"columns_unmatched_typeof_etl_types": 1})
-        # perc_empty_cells = 0.0
-        # for res in cursor:
-        #     # there is only one result
-        #     # columns_unmatched_typeof_etl_types: { affected: { typeof_type: 'str', etl_type: 'bool' }, ... }
-        #     perc_empty_cells = res[""]
-        # perc_empty_cells = perc_empty_cells / rec_count
+        cursor = self.db.find_operation(table_name=TableNames.STATS_QUALITY, filter_dict={}, projection={f"empty_cells_per_column.{feature_name}": 1})
+        count_empty_cells = 0
+        for res in cursor:
+            if "empty_cells_per_column" in res and feature_name in res["empty_cells_per_column"]:
+                count_empty_cells = res["empty_cells_per_column"][feature_name]
+            else:
+                count_empty_cells = 0
+            break
+        percentage_empty_cells = round((float(count_empty_cells) / (count_empty_cells + rec_count)) * 100, 3)
         cursor = self.db.find_operation(table_name=TableNames.STATS_QUALITY, filter_dict={}, projection={"unknown_categorical_values": 1})
         unknown_categorical_values = {}
-        log.info(feature_label)
         for res in cursor:
-            log.info(res)
-            if "unknown_categorical_values" in res and feature_label in res["unknown_categorical_values"]:
+            if "unknown_categorical_values" in res and feature_name in res["unknown_categorical_values"]:
                 # there are some unknown categorical values for this feature
                 # that have been reported while computing quality stats
-                unknown_categorical_values = res["unknown_categorical_values"][feature_label]
+                unknown_categorical_values = res["unknown_categorical_values"][feature_name]
             else:
                 unknown_categorical_values = {}
-        return {"record_count": rec_count, "perc_empty_cells": round((1-(rec_count/float(nb_patients)))*100, 3), "unknown_categorical_values": unknown_categorical_values}
+        return {"record_count": rec_count, "perc_empty_cells": percentage_empty_cells,  "unknown_categorical_values": unknown_categorical_values}
 
     def compute_values_and_their_counts(self, dataset_name: str, feature_entity: str, feature_id: str) -> dict:
         # returns two values: the values and their counts
@@ -195,11 +204,27 @@ class CatalogueUpdate:
         operations.append(Operators.match(field="value", value={"$not": {"$type": "object"}}, is_regex=False))  # {value:{$not:{$type:'object'}}}
         operations.append(Operators.project(field="value", projected_value=None))
         operations.append(group_by_value)
+        log.info(Operators.equality(field="$value.label", value=""))
+        log.info(Operators.concat(["$value.system", "/", "$value.code"]))
+        log.info(Operators.if_condition(cond=Operators.equality(field="$value.label", value=""), if_part=Operators.concat(["$value.system", "/", "$value.code"]), else_part="$value.label"))
+        log.info(Operators.project(Operators.if_condition(cond=Operators.equality(field="$value.label", value=""), if_part=Operators.concat(["$value.system", "/", "$value.code"]), else_part="$value.label"), projected_value="value"))
+        # {'value': {'$cond': {'if': {'$eq': ['$value.label', '']}, 'then': {'$concat': ['$value.system', '/', '$value.code']}, 'else': '$value.label'}}, '_id': 0}
         operations.append(Operators.union(second_table_name=record_table, second_pipeline=[
             match_on_instantiate,
             match_on_ds,
             Operators.match(field="value", value={"$type": "object"}, is_regex=False),
-            Operators.project(field="value.label", projected_value="value"),  # get the text of the codeable concept (the base is _id and not value because of the join)
+            # get the text of the codeable concept (the base is _id and not value because of the join)
+            # if the label is empty, which may happen when the API call failed, we get the url to the concept (at least)
+            # "field1": {"$ifNull": ["$field1", "$field2"]}
+            # I use the above dict instead of field="value.label" to cover the case when no label has been retrieved for the categorical value
+            # {
+            #     "$cond": {
+            #         "if": { $eq: [ { "$ifNull": [ "$field.value", "" ] }, "" ] },
+            #         "then": "No Data",
+            #         "else": "$field.value"
+            #     }
+            # }
+            Operators.project(field=Operators.if_condition(cond=Operators.equality(field="$value.label", value=""), if_part=Operators.concat(["$value.system", "/", "$value.code"]), else_part="$value.label"), projected_value="value"),
             group_by_value
         ]))
         log.info(operations)
@@ -222,10 +247,21 @@ class CatalogueUpdate:
         #    }}
         # ]);
         record_table = TableNames.get_record_table_from_feature_table(feature_table_name=feature_entity)
+        or_on_types = Operators.or_operator([
+            {"value": {"$type": "long"}},
+            {"value": {"$type": "double"}},
+            {"value": {"$type": "decimal"}},
+            {"value": {"$type": "int"}},
+            {"value": {"$type": "bool"}},
+            {"value": {"$type": "timestamp"}},
+            {"value": {"$type": "date"}}
+        ])
         log.info(record_table)
         operations = []
         operations.append(Operators.match(field="instantiate", value=feature_id, is_regex=False))
         operations.append(Operators.match(field="dataset_name", value=dataset_name, is_regex=False))
+        # keep only int/float values (it may happen if there are some numeric values and one is "no information")
+        operations.append(Operators.match(field=None, value=or_on_types, is_regex=False))
         operations.append(Operators.group_by(group_key=None, groups=[
             {"name": "max_val", "operator": "$max", "field": "$value"},
             {"name": "min_val", "operator": "$min", "field": "$value"},

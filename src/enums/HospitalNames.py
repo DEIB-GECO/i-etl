@@ -19,10 +19,17 @@ class HospitalNames(EnumAsClass):
     TEST_H1 = "test_h1"
     TEST_H2 = "test_h2"
     TEST_H3 = "test_h3"
+    KAGGLE_EDA = "eda"
+    KAGGLE_COVID = "covid"
 
     @classmethod
     def short(cls, hospital_name) -> str:
-        return hospital_name.split("_")[1]  # the second part corresponds to the hospital name (only)
+        if "_" in hospital_name:
+            return hospital_name.split("_")[1]  # the second part corresponds to the hospital name (only)
+        else:
+            # this is a simple hospital name, such as covid, eda, etc
+            # we can return it directly
+            return hospital_name
 
     @classmethod
     def normalize(cls, hospital_name: str) -> str:

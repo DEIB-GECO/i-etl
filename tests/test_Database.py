@@ -492,7 +492,7 @@ class TestDatabase(unittest.TestCase):
             assert my_tuples_as_json == read_tuples
 
     def test_write_in_file_no_resource(self):
-        database = Database(TestDatabase.execution)
+        _ = Database(TestDatabase.execution)
         my_tuples = []
         write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, count=2)
         filepath = os.path.join(TestDatabase.execution.working_dir_current, f"{TableNames.TEST}2.json")
@@ -702,7 +702,7 @@ class TestDatabase(unittest.TestCase):
         # as an exception, we insert into LABORATORY_RECORD, not in TableNames.TEST,
         # because the method is made to set up resource counter and is expected to work on the
         # TableNames table names only
-        database.db[TableNames.LABORATORY_RECORD].insert_many(documents=my_resources_1)
-        database.db[TableNames.LABORATORY_FEATURE].insert_many(documents=my_resources_2)
+        database.db[TableNames.PHENOTYPIC_RECORD].insert_many(documents=my_resources_1)
+        database.db[TableNames.PHENOTYPIC_FEATURE].insert_many(documents=my_resources_2)
         max_resource_id = database.get_max_resource_counter_id()
         assert max_resource_id == 999, "The expected max resource id is 999."

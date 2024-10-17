@@ -21,7 +21,7 @@ ID_COLUMNS = {
     },
     HospitalNames.TEST_H1: {
         TableNames.PATIENT: MetadataColumns.normalize_name("id"),
-        TableNames.SAMPLE_RECORD: ""
+        TableNames.SAMPLE_RECORD: MetadataColumns.normalize_name("sid"),
     },
     HospitalNames.TEST_H2: {
         TableNames.PATIENT: MetadataColumns.normalize_name("id"),
@@ -30,5 +30,13 @@ ID_COLUMNS = {
     HospitalNames.TEST_H3: {
         TableNames.PATIENT: MetadataColumns.normalize_name("id"),
         TableNames.SAMPLE_RECORD: ""
+    },
+    HospitalNames.KAGGLE_EDA: {
+        TableNames.PATIENT: MetadataColumns.normalize_name("id"),
+        TableNames.SAMPLE_RECORD: MetadataColumns.normalize_name("sid"),
+    },
+    HospitalNames.KAGGLE_COVID: {
+        TableNames.PATIENT: MetadataColumns.normalize_name("id"),
+        TableNames.SAMPLE_RECORD: MetadataColumns.normalize_name("sid")
     }
 }

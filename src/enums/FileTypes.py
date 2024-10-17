@@ -1,7 +1,7 @@
 import os
 
 from constants.structure import DOCKER_FOLDER_MEDICINE, DOCKER_FOLDER_DIAGNOSIS, DOCKER_FOLDER_GENOMIC, \
-    DOCKER_FOLDER_LABORATORY, DOCKER_FOLDER_IMAGING, DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS, DOCKER_FOLDER_TEST, \
+    DOCKER_FOLDER_PHENOTYPIC, DOCKER_FOLDER_IMAGING, DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS, DOCKER_FOLDER_TEST, \
     DOCKER_FOLDER_SAMPLE
 from enums.EnumAsClass import EnumAsClass
 from enums.ParameterKeys import ParameterKeys
@@ -9,7 +9,7 @@ from utils.setup_logger import log
 
 
 class FileTypes(EnumAsClass):
-    LABORATORY = "laboratory"
+    PHENOTYPIC = "phenotypic"
     SAMPLE = "sample"
     DIAGNOSIS = "diagnosis"
     MEDICINE = "medicine"
@@ -20,8 +20,8 @@ class FileTypes(EnumAsClass):
 
     @classmethod
     def get_execution_key(cls, filetype) -> str | None:
-        if filetype == FileTypes.LABORATORY:
-            return ParameterKeys.LABORATORY_PATHS
+        if filetype == FileTypes.PHENOTYPIC:
+            return ParameterKeys.PHENOTYPIC_PATHS
         elif filetype == FileTypes.SAMPLE:
             return ParameterKeys.SAMPLE_PATHS
         elif filetype == FileTypes.DIAGNOSIS:
@@ -44,8 +44,8 @@ class FileTypes(EnumAsClass):
         if os.getenv("CONTEXT_MODE") == "TEST":
             return DOCKER_FOLDER_TEST
         else:
-            if filetype == FileTypes.LABORATORY:
-                return DOCKER_FOLDER_LABORATORY
+            if filetype == FileTypes.PHENOTYPIC:
+                return DOCKER_FOLDER_PHENOTYPIC
             elif filetype == FileTypes.SAMPLE:
                 return DOCKER_FOLDER_SAMPLE
             elif filetype == FileTypes.GENOMIC:

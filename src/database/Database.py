@@ -158,7 +158,7 @@ class Database:
         # July 18th, 2024: bulk_write modifies the hospital lists in Transform (even if I use deep copies everywhere)
         # It changes (only?) the timestamp value with +1/100, e.g., 2024-07-18T14:34:32Z becomes 2024-07-18T14:34:33Z
         # in the tests I use a delta to compare datetime
-        self.db[table_name].bulk_write(copy.deepcopy(operations))
+        self.db[table_name].bulk_write(copy.deepcopy(operations), ordered=False)
         return filter_dict
 
     def retrieve_mapping(self, table_name: str, key_fields: str, value_fields: str):
@@ -177,15 +177,18 @@ class Database:
             mapping[projected_key] = projected_value
         return mapping
 
-    def load_json_in_table(self, table_name: str, unique_variables) -> None:
+    def load_json_in_table(self, table_name: str, unique_variables: list[str]) -> None:
+        log.info(f"Load data in {table_name}")
+        # first, create an index on the unique variables to speed up the upsert (which checks whether each document already exists)
+        self.create_unique_index(table_name=table_name, columns={elem: 1 for elem in unique_variables})
         for filename in os.listdir(self.execution.working_dir_current):
             if re.search(table_name+"[0-9]+", filename) is not None:
                 # implementation note: we cannot simply use filename.startswith(table_name)
-                # because both LaboratoryFeature and LaboratoryRecord start with Laboratory
+                # because both XFeature and XRecord start with X
                 # the solution is to use a regex
                 with open(os.path.join(self.execution.working_dir_current, filename), "r") as json_datafile:
                     tuples = bson.json_util.loads(json_datafile.read())
-                    log.debug(f"Table {table_name}, file {filename}, loading {len(tuples)} tuples")
+                    log.debug(f"Table {table_name}, file {filename}, loading {len(tuples)} tuples with unique variables being {unique_variables}")
                     _ = self.upsert_one_batch_of_tuples(table_name=table_name,
                                                         unique_variables=unique_variables,
                                                         the_batch=tuples)
@@ -208,7 +211,6 @@ class Database:
         :param filter_dict: A dict being the set of filters (conditions) to apply on the data in the given table. Give {} to apply no filter.
         :return: A Cursor on the results, i.e., the distinct results.
         """
-        # db["LaboratoryRecord"].distinct("instantiate", {"value": {"$exists": 0}})
         return self.db[table_name].distinct(key, filter_dict)
 
     def count_documents(self, table_name: str, filter_dict: dict) -> int:
@@ -303,7 +305,7 @@ class Database:
         to that LabFeature.
         :return: A float value being the average value for the given LabFeature instance (url).
         """
-        cursor = self.db[TableNames.LABORATORY_RECORD].aggregate([
+        cursor = self.db[TableNames.PHENOTYPIC_RECORD].aggregate([
             Operators.match(field="instantiate.reference", value=lab_feature_url, is_regex=False),
             Operators.project(field="value", projected_value=None),
             Operators.group_by(group_key=None, groups=[{"name": "avg_val", "operator": "$avg", "field": "$value"}])

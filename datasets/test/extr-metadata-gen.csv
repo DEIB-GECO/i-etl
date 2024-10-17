@@ -1,4 +1,4 @@
-"ontology","ontology_code","ontology_comment","snomed_vartype","test h1","TEST H2","test_H3","dataset","name","Significato_it","description","phenotypic","visibility","vartype","etl_type","dimension","details","JSON_values","Multiplicity","Doubts"
-,,,,,,,0,0,1,"extr-data-gen.csv","id","The Patient ID","The Patient ID","no","PUBLIC_WITHOUT_ANONYMIZATION","integer","int",,,,,
-"loinc",326597056,,,0,0,1,"extr-data-gen.csv","gene","The gene in cause","The gene in cause","no","PUBLIC_WITHOUT_ANONYMIZATION","string","str",,,,,
-"loinc",3265970,,,0,0,1,"extr-data-gen.csv","is_inherited","Whether the gene is inherited","Whether the gene is inherited","no","PUBLIC_WITHOUT_ANONYMIZATION","bool","bool",,,,,
+"ontology","ontology_code","ontology_comment","snomed_vartype","test h1","TEST H2","test_H3","dataset","name","Significato_it","description","visibility","vartype","etl_type","dimension","details","JSON_values","Multiplicity","Doubts"
+,,,,0,0,1,"extr-data-gen.csv","id","The Patient ID","The Patient ID","PUBLIC_WITHOUT_ANONYMIZATION","integer","int",,,,,
+"loinc",326597056,,,0,0,1,"extr-data-gen.csv","gene","The gene in cause","The gene in cause","PUBLIC_WITHOUT_ANONYMIZATION","string","str",,,,,
+"loinc",3265970,,,0,0,1,"extr-data-gen.csv","is_inherited","Whether the gene is inherited","Whether the gene is inherited","PUBLIC_WITHOUT_ANONYMIZATION","bool","bool",,,,,

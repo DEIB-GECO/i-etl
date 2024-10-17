@@ -11,5 +11,11 @@ DATASET_LOCALES = {
     # use-case 3
     HospitalNames.IT_BUZZI_UC3: "it_IT",
     HospitalNames.ES_TERRASSA: "es_ES",
-    HospitalNames.DE_UKK: "de_DE"
+    HospitalNames.DE_UKK: "de_DE",
+    # test and experiments
+    HospitalNames.TEST_H1: "en_GB",
+    HospitalNames.TEST_H2: "en_GB",
+    HospitalNames.TEST_H3: "en_GB",
+    HospitalNames.KAGGLE_EDA: "en_GB",
+    HospitalNames.KAGGLE_COVID: "en_GB"
 }

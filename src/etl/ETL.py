@@ -45,16 +45,14 @@ class ETL:
 
         # 1. aggregate all filepaths given by the user
         # in order to be able to ingest them all with a single loop
-        # we will also store the file type (lab., diagnosis, etc) so that Transform knows in which table store data
+        # we will also store the file type (phen., diagnosis, etc) so that Transform knows in which table store data
         all_filepaths = {}
         if self.execution.sample_filepaths is not None:
-            # to be kept first because this contains the creation of patients
-            # if there is no sample data, then laboratory data will come first ad will create patients
             for sample_filepath in self.execution.sample_filepaths:
                 all_filepaths[sample_filepath] = FileTypes.SAMPLE
-        if self.execution.laboratory_filepaths is not None:
-            for laboratory_filepath in self.execution.laboratory_filepaths:
-                all_filepaths[laboratory_filepath] = FileTypes.LABORATORY
+        if self.execution.phenotypic_filepaths is not None:
+            for phenotypic_filepath in self.execution.phenotypic_filepaths:
+                all_filepaths[phenotypic_filepath] = FileTypes.PHENOTYPIC
         if self.execution.diagnosis_filepaths is not None:
             for diagnosis_filepath in self.execution.diagnosis_filepaths:
                 all_filepaths[diagnosis_filepath] = FileTypes.DIAGNOSIS
@@ -69,6 +67,7 @@ class ETL:
                 all_filepaths[imaging_filepath] = FileTypes.IMAGING
 
         # 2. iterate over all the files
+        log.info(all_filepaths)
         quality_stats = QualityStatistics(record_stats=True)
         for one_file in all_filepaths.keys():
             file_counter = file_counter + 1

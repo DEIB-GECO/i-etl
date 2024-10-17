@@ -15,7 +15,6 @@ class MetadataColumns(EnumAsClass):
     DATASET_NAME = "dataset"
     COLUMN_NAME = "name"
     SIGNIFICATION_EN = "description"
-    PHENOTYPIC = "phenotypic"
     VISIBILITY = "visibility"
     VAR_TYPE = "vartype"
     ETL_TYPE = "etl_type"

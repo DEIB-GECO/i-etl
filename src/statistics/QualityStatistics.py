@@ -22,6 +22,7 @@ class QualityStatistics(Statistics):
         self.data_columns_not_in_metadata = []  # list of data columns that are "removed" because not part of the metadata
 
         # counts done during the ETL
+        self.empty_cells_per_column = {}  # { "column_name": X }
         self.failed_api_calls = {}  # { "ontology/id_code": api_error, ... }
         self.unknown_categorical_values = {}  # { column_name: [ set of unknown categorical values ], ... }
         self.unknown_boolean_values = {}  # { column_name: [ set of unknown categorical boolean values ], ... }
@@ -85,6 +86,12 @@ class QualityStatistics(Statistics):
     def add_column_not_described_in_metadata(self, data_column_name: str):
         if self.record_stats and data_column_name not in self.data_columns_not_in_metadata:
             self.data_columns_not_in_metadata.append(data_column_name)
+
+    def count_empty_cell_for_column(self, column_name: str) -> None:
+        if column_name not in self.empty_cells_per_column:
+            self.empty_cells_per_column[column_name] = 1
+        else:
+            self.empty_cells_per_column[column_name] += 1
 
     def add_failed_api_call(self, ontology_name: str, id_code: str, api_error: str):
         if self.record_stats and f"{ontology_name}/{id_code}" not in self.failed_api_calls:

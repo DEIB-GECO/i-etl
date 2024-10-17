@@ -84,7 +84,7 @@ class DatabaseStatistics(Statistics):
             self.unknown_hospital_refs_per_table[table_name] = {"elements": unknown_hospital_refs, "size": len(unknown_hospital_refs)}
 
     def compute_unknown_lab_feat_refs_in_lab_feature(self, database: Database) -> None:
-        self.unknown_lab_feat_refs_in_lab_record = self.compute_unknown_ref_in_rec(database=database, record_table_name=TableNames.LABORATORY_RECORD)
+        self.unknown_lab_feat_refs_in_lab_record = self.compute_unknown_ref_in_rec(database=database, record_table_name=TableNames.PHENOTYPIC_RECORD)
 
     def compute_unknown_diag_feat_refs_in_diag_feature(self, database: Database) -> None:
         self.unknown_diag_feat_refs_in_diag_record = self.compute_unknown_ref_in_rec(database=database, record_table_name=TableNames.DIAGNOSIS_RECORD)

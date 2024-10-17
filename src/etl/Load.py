@@ -25,7 +25,7 @@ class Load(Task):
     def load_remaining_data(self) -> None:
         # patients are loaded when the first file is loaded to be able to map patients and their samples
 
-        self.database.load_json_in_table(table_name=TableNames.LABORATORY_RECORD, unique_variables=["recorded_by", "subject", "based_on", "instantiate"])
+        self.database.load_json_in_table(table_name=TableNames.PHENOTYPIC_RECORD, unique_variables=["recorded_by", "subject", "based_on", "instantiate"])
 
         self.database.load_json_in_table(table_name=TableNames.SAMPLE_RECORD, unique_variables=["identifier"])
 

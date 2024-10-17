@@ -31,7 +31,7 @@ class Execution:
         # parameters related to the project structure and the input/output files
         self.metadata_filepath = None  # user input
         self.diagnosis_regexes_filepath = None  # user input
-        self.laboratory_filepaths = None  # user input
+        self.phenotypic_filepaths = None  # user input
         self.sample_filepaths = None  # user input
         self.diagnosis_filepaths = None  # user input
         self.medicine_filepaths = None  # user input
@@ -104,8 +104,8 @@ class Execution:
             log.debug(self.metadata_filepath)
             self.diagnosis_regexes_filepath = self.check_parameter(key=ParameterKeys.DIAGNOSIS_REGEXES, accepted_values=None, default_value=self.diagnosis_regexes_filepath)
             log.debug(self.diagnosis_regexes_filepath)
-            self.laboratory_filepaths = self.check_parameter(key=ParameterKeys.LABORATORY_PATHS, accepted_values=None, default_value=self.laboratory_filepaths)
-            log.debug(self.laboratory_filepaths)
+            self.phenotypic_filepaths = self.check_parameter(key=ParameterKeys.PHENOTYPIC_PATHS, accepted_values=None, default_value=self.phenotypic_filepaths)
+            log.debug(self.phenotypic_filepaths)
             self.sample_filepaths = self.check_parameter(key=ParameterKeys.SAMPLE_PATHS, accepted_values=None, default_value=self.sample_filepaths)
             log.debug(self.sample_filepaths)
             self.diagnosis_filepaths = self.check_parameter(key=ParameterKeys.DIAGNOSIS_PATHS, accepted_values=None, default_value=self.diagnosis_filepaths)
@@ -189,10 +189,10 @@ class Execution:
         # A. if there is a single file, this will put that single file in a list (of one element)
         #    otherwise, when the user provides several files, it will split them in an array
         # B. then, we append to each the Docker rooted data folder (because Docker can't access data in the server itself, it has to be in the shared volumes)
-        # a. we process laboratory data filepaths...
-        if self.laboratory_filepaths is not None:
-            self.laboratory_filepaths = split_list_of_files(self.laboratory_filepaths, prefix_path=FileTypes.get_prefix_for_path(filetype=FileTypes.LABORATORY))  # file 1,file 2, ...,file N
-            log.debug(f"{self.laboratory_filepaths}")
+        # a. we process phenotypic data filepaths...
+        if self.phenotypic_filepaths is not None:
+            self.phenotypic_filepaths = split_list_of_files(self.phenotypic_filepaths, prefix_path=FileTypes.get_prefix_for_path(filetype=FileTypes.PHENOTYPIC))  # file 1,file 2, ...,file N
+            log.debug(f"{self.phenotypic_filepaths}")
 
         if self.sample_filepaths is not None:
             self.sample_filepaths = split_list_of_files(self.sample_filepaths, prefix_path=FileTypes.get_prefix_for_path(filetype=FileTypes.SAMPLE))  # file 1,file 2, ...,file N
@@ -248,7 +248,7 @@ class Execution:
                 "working_dir_current": self.working_dir_current,
                 "current_filepath": self.current_filepath,
                 ParameterKeys.METADATA_PATH: self.metadata_filepath,
-                ParameterKeys.LABORATORY_PATHS: self.laboratory_filepaths,
+                ParameterKeys.PHENOTYPIC_PATHS: self.phenotypic_filepaths,
                 ParameterKeys.SAMPLE_PATHS: self.sample_filepaths,
                 ParameterKeys.DIAGNOSIS_PATHS: self.diagnosis_filepaths,
                 ParameterKeys.MEDICINE_PATHS: self.medicine_filepaths,

@@ -3,6 +3,7 @@ from typing import Any
 
 from enums.EnumAsClass import EnumAsClass
 from utils.assertion_utils import THE_DATETIME_FORMAT
+from utils.setup_logger import log
 
 
 class Operators(EnumAsClass):
@@ -20,26 +21,53 @@ class Operators(EnumAsClass):
                 }
             }
         else:
-            # this is a match with a "hard-coded" value (in value)
-            return {
-                "$match": {
-                    field: value
+            # this is a match with a "hard-coded" value (in value) or a complex operator
+            if field is None:
+                # the value is a complex operator, e.g., and/or
+                return {
+                    "$match": value
                 }
+            else:
+                # this is a match with a "hard-coded" value (in value)
+                return {
+                    "$match": {
+                        field: value
+                    }
             }
 
     @classmethod
-    def project(cls, field: str | list, projected_value: str | dict | None) -> dict:
+    def or_operator(cls, list_of_conditions: list[dict]) -> dict:
+        # list_of_conditions is a list where each element is a dict-like condition,
+        # containing the field and the condition to apply
+        # e.g., [{"value": 3}, {"value": {"$type": "bool"}}]
+        return {
+            "$or": list_of_conditions
+        }
+
+    @classmethod
+    def project(cls, field: str | list | dict, projected_value: str | dict | None) -> dict:
         # this is the SQL SELECT operator
         # where each field that is wanted in the result has value 1 and unwanted fields have value 0
         if type(projected_value) is str:
             # in this case, we want to keep a certain field
             # and choose what should be the value of that field (in case of composed fields)
-            return {
-                "$project": {
-                    projected_value: "$" + field,
-                    "_id": 0
+            if type(field) is dict:
+                # if the composed field may be empty, we use an alternative field ("$ifNull", within the field)
+                log.info(field)
+                return {
+                    "$project": {
+                        projected_value: field,
+                        "_id": 0
+                    }
                 }
-            }
+            else:
+                # else, we simply return the projection
+                return {
+                    "$project": {
+                        projected_value: "$" + field,
+                        "_id": 0
+                    }
+                }
         elif type(projected_value) is dict:
             # in case we give a complex projection, e.g., with $split
             return {
@@ -125,6 +153,33 @@ class Operators(EnumAsClass):
     def unwind(cls, field: str) -> dict:
         return {
             "$unwind": f"${field}"
+        }
+
+    @classmethod
+    def concat(cls, list_of_strings: list) -> dict:
+        return {
+            "$concat": list_of_strings
+        }
+
+    @classmethod
+    def if_condition(cls, cond: dict, if_part: dict|str, else_part: dict|str) -> dict:
+        log.info(cond)
+        log.info(if_part)
+        log.info(else_part)
+        res= {
+            "$cond": {
+                "if": cond,
+                "then": if_part,
+                "else": else_part
+            }
+        }
+        log.info(res)
+        return res
+
+    @classmethod
+    def equality(cls, field: str, value: str) -> dict:
+        return {
+            "$eq": [field, value]
         }
 
     @classmethod

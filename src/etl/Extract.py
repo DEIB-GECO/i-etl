@@ -45,8 +45,8 @@ class Extract(Task):
         self.compute_mapping_categorical_value_to_onto_resource()
 
         # load and pre-process data (all kinds)
-        if self.execution.current_file_type in (FileTypes.LABORATORY, FileTypes.SAMPLE, FileTypes.DIAGNOSIS, FileTypes.MEDICINE):
-            # laboratory, sample, diagnosis, medicine data
+        if self.execution.current_file_type in (FileTypes.PHENOTYPIC, FileTypes.SAMPLE, FileTypes.DIAGNOSIS, FileTypes.MEDICINE):
+            # phenotypic, sample, diagnosis, medicine data
             self.load_tabular_data_file()
             self.remove_unused_csv_columns()
         elif self.execution.current_file_type == FileTypes.IMAGING:
@@ -55,13 +55,13 @@ class Extract(Task):
             self.load_genomic_data_file()
         # here we do not have a case for REGEX_DIAGNOSIS, because we will load it after, with a separate method
         else:
-            raise TypeError(f"The type of the current file is unknown. It should be laboratory, diagnosis, medicine, imaging or genomic. It is of type: {self.execution.current_file_type}")
+            raise TypeError(f"The type of the current file is unknown. It should be phenotypic, diagnosis, medicine, imaging or genomic. It is of type: {self.execution.current_file_type}")
 
         # The remaining task of 1. (loading metadata) has to be done after the data is loaded because
         # the dimensions are either extracted from the metadata (if described) or from the data
-        # we do this only for lab data, otherwise we end up with units extracted from any string containing both digits and chars
+        # we do this only for phen. data, otherwise we end up with units extracted from any string containing both digits and chars
         # TODO Nelly: instead, compute this only for non-string columns
-        if self.execution.current_file_type == FileTypes.LABORATORY:
+        if self.execution.current_file_type == FileTypes.PHENOTYPIC:
             self.compute_column_to_dimension()
 
         # if provided as input, load the mapping between patient IDs and anonymized IDs
@@ -264,6 +264,7 @@ class Extract(Task):
         for index, row in self.metadata.iterrows():
             column_name = MetadataColumns.normalize_name(row[MetadataColumns.COLUMN_NAME])
             candidate_json_values = row[MetadataColumns.JSON_VALUES]
+            log.info(f" JSON values for {column_name}: {candidate_json_values}")
             if is_not_nan(candidate_json_values):
                 # we get the possible categorical values for the column, e.g., F, or M, or NA for sex
                 try:
@@ -271,9 +272,11 @@ class Extract(Task):
                 except Exception:
                     self.quality_stats.add_categorical_colum_with_unparseable_json(column_name=column_name, broken_json=candidate_json_values)
                     json_categorical_values = {}
+                log.info(json_categorical_values)
                 self.mapping_column_to_categorical_value[column_name] = []
                 for json_categorical_value in json_categorical_values:
                     normalized_categorical_value = MetadataColumns.normalize_value(json_categorical_value["value"])
+                    or_has_been_built = False
                     # log.info(f"For column {column_name}, processing value: {normalized_categorical_value}")
                     if normalized_categorical_value not in self.mapping_categorical_value_to_onto_resource:
                         # the categorical value does not exist yet in the mapping, thus:
@@ -290,7 +293,14 @@ class Extract(Task):
                                 if key != "value" and key != "explanation":
                                     ontology = Ontologies.get_enum_from_name(ontology_name=key)
                                     onto_resource = OntologyResource(ontology=ontology, full_code=val, label=None, quality_stats=self.quality_stats)
-                                    self.mapping_categorical_value_to_onto_resource[normalized_categorical_value] = onto_resource
+                                    if onto_resource.system is not None and onto_resource.code is not None:
+                                        or_has_been_built = True
+                                        self.mapping_categorical_value_to_onto_resource[normalized_categorical_value] = onto_resource
+                                    else:
+                                        # the ontology system is unknown or no code has been provided,
+                                        # thus the OntologyResource contains only None fields,
+                                        # thus we do not record it as a possible category
+                                        pass
                             # {
                             #   'm': {"system": "snomed", "code": "248153007", "label": "m (Male)"},
                             #   'f': {"system": "snomed", "code": "248152002", "label": "f (Female)"},
@@ -303,7 +313,9 @@ class Extract(Task):
                             log.debug(f"The categorical value {normalized_categorical_value} already exists in the database as a CC. Taking it from here.")
                             self.mapping_categorical_value_to_onto_resource[normalized_categorical_value] = existing_categorical_codeable_concepts[normalized_categorical_value]
                         # in any case (regardless how the CC is build), we need to record that this value is a categorical value for that column
-                        if normalized_categorical_value not in self.mapping_column_to_categorical_value[column_name]:
+                        if or_has_been_built and normalized_categorical_value not in self.mapping_column_to_categorical_value[column_name]:
+                            # record the normalized value only if we have built an OR
+                            # otherwise, do add it, and Transform will return the normalized (non-FAIRified) value
                             self.mapping_column_to_categorical_value[column_name].append(normalized_categorical_value)
                     else:
                         # this categorical value is already present in the mapping self.mapping_categorical_value_to_cc

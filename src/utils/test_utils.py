@@ -59,50 +59,50 @@ def wrong_number_of_docs(number: int):
     return f"The expected number of documents is {number}."
 
 
-def get_lab_feature_by_text(lab_features: list, lab_feature_text: str) -> dict:
+def get_feature_by_text(features: list, feature_text: str) -> dict:
     """
-    :param lab_features: list of LabFeature instances
+    :param features: list of LabFeature instances
     """
-    json_lab_features = [lab_feature.to_json() for lab_feature in lab_features]
-    for json_lab_feature in json_lab_features:
-        if "name" in json_lab_feature and json_lab_feature["name"] == lab_feature_text:
-            return json_lab_feature
+    json_features = [feature.to_json() for feature in features]
+    for json_feature in json_features:
+        if "original_name" in json_feature and json_feature["original_name"] == feature_text:
+            return json_feature
     return {}
 
 
-def get_lab_records_for_patient(lab_records: list, patient_id: str) -> list[dict]:
+def get_records_for_patient(records: list, patient_id: str) -> list[dict]:
     """
-    :param lab_records: list of LabRecord resources
+    :param records: list of LabRecord resources
     """
-    matching_lab_records = []
-    json_lab_records_list = [lab_record.to_json() for lab_record in lab_records]
-    for json_lab_record in json_lab_records_list:
-        if json_lab_record["subject"] == patient_id:
-            matching_lab_records.append(json_lab_record)
-    # also sort them by LabFeature reference id
-    return sorted(matching_lab_records, key=lambda d: d["instantiate"])
+    matching_records = []
+    json_records_list = [record.to_json() for record in records]
+    for json_record in json_records_list:
+        if json_record["subject"] == patient_id:
+            matching_records.append(json_record)
+    # also sort them by PhenFeature reference id
+    return sorted(matching_records, key=lambda d: d["instantiate"])
 
 
-def get_field_value_for_patient(lab_records: list, lab_features: list, patient_id: str, column_name: str) -> Any:
+def get_field_value_for_patient(records: list, features: list, patient_id: str, column_name: str) -> Any:
     """
-    :param lab_records: list of LaboratoryRecord resources
-    :param lab_features: list of LaboratoryFeature resource
+    :param records: list of XRecord resources
+    :param features: list of XFeature resource
     :param patient_id: the patient (ID) for which we want to get a specific value
     :param column_name: the column for which we want to get the value
     """
 
     log.info(f"looking for the value of column {column_name} for patient {patient_id}")
 
-    lab_feature = None
-    for lab_feat in lab_features:
-        if lab_feat.to_json()["name"] == column_name:
-            lab_feature = lab_feat.to_json()
+    feature = None
+    for feature in features:
+        if feature.to_json()["original_name"] == column_name:
+            feature = feature.to_json()
             break
-    if lab_feature is not None:
-        for lab_record in lab_records:
-            json_lab_record = lab_record.to_json()
-            log.info(f"checking {json_lab_record['subject']} vs. {patient_id} and {json_lab_record['instantiate']} vs. {lab_feature['identifier']}")
+    if feature is not None:
+        for record in records:
+            json_lab_record = record.to_json()
+            log.info(f"checking {json_lab_record['subject']} vs. {patient_id} and {json_lab_record['instantiate']} vs. {feature['identifier']}")
             if json_lab_record["subject"] == patient_id:
-                if json_lab_record["instantiate"] == lab_feature["identifier"]:
+                if json_lab_record["instantiate"] == feature["identifier"]:
                     return json_lab_record["value"]
     return None

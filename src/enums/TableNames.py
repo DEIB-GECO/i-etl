@@ -5,8 +5,8 @@ from utils.setup_logger import log
 class TableNames(EnumAsClass):
     HOSPITAL = "Hospital"
     PATIENT = "Patient"
-    LABORATORY_FEATURE = "LaboratoryFeature"
-    LABORATORY_RECORD = "LaboratoryRecord"
+    PHENOTYPIC_FEATURE = "PhenotypicFeature"
+    PHENOTYPIC_RECORD = "PhenotypicRecord"
     SAMPLE_FEATURE = "SampleFeature"
     SAMPLE_RECORD = "SampleRecord"
     DIAGNOSIS_FEATURE = "DiagnosisFeature"

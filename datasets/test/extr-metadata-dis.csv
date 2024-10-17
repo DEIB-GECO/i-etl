@@ -1,4 +1,4 @@
-"ontology","ontology_code","ontology_comment","snomed_vartype","test h1","TEST H2","test_H3","dataset","name","Significato_it","description","phenotypic","visibility","vartype","etl_type","dimension","details","JSON_values","Multiplicity","Doubts"
-,,,,,,,1,0,0,"extr-data-dis.csv","id","The Patient ID","The Patient ID","no","PUBLIC_WITHOUT_ANONYMIZATION","integer","int",,,,,
-"omim","1569-456",,,1,0,0,"extr-data-dis.csv","disease_name","The disease of the patient","The disease of the patient ","no","PUBLIC_WITHOUT_ANONYMIZATION","str","str",,,,,
-"omim","1245/983",,,1,0,0,"extr-data-dis.csv","disease_form","The form of the disease","The form of the disease","no","PUBLIC_WITHOUT_ANONYMIZATION","category","category",,,"[{""value"": ""start"", ""pubchem"": ""023468""}, {""value"": ""middle"", ""pubchem"": ""203:468""}, {""value"": ""end"", ""pubchem"": ""4097625""}]",,
+"ontology","ontology_code","ontology_comment","snomed_vartype","test h1","TEST H2","test_H3","dataset","name","Significato_it","description","visibility","vartype","etl_type","dimension","details","JSON_values","Multiplicity","Doubts"
+,,,,1,0,0,"extr-data-dis.csv","id","The Patient ID","The Patient ID","PUBLIC_WITHOUT_ANONYMIZATION","integer","int",,,,,
+"omim","1569-456",,,1,0,0,"extr-data-dis.csv","disease_name","The disease of the patient","The disease of the patient ","PUBLIC_WITHOUT_ANONYMIZATION","str","str",,,,,
+"omim","1245/983",,,1,0,0,"extr-data-dis.csv","disease_form","The form of the disease","The form of the disease","PUBLIC_WITHOUT_ANONYMIZATION","category","category",,,"[{""value"": ""start"", ""pubchem"": ""023468""}, {""value"": ""middle"", ""pubchem"": ""203:468""}, {""value"": ""end"", ""pubchem"": ""4097625""}]",,

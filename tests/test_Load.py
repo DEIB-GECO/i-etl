@@ -74,14 +74,14 @@ def my_setup(create_indexes: bool) -> Load:
     hospital = {"identifier": "Hospital:1", "name": HospitalNames.TEST_H1}
 
     # 3. write them in temporary JSON files
-    path_lab_features = os.path.join(TestLoad.execution.working_dir_current, TableNames.LABORATORY_FEATURE+"1.json")
-    path_lab_records = os.path.join(TestLoad.execution.working_dir_current, TableNames.LABORATORY_RECORD+"1.json")
+    path_lab_features = os.path.join(TestLoad.execution.working_dir_current, TableNames.PHENOTYPIC_FEATURE + "1.json")
+    path_lab_records = os.path.join(TestLoad.execution.working_dir_current, TableNames.PHENOTYPIC_RECORD + "1.json")
     path_patients = os.path.join(TestLoad.execution.working_dir_current, TableNames.PATIENT+"1.json")
     path_hospital = os.path.join(TestLoad.execution.working_dir_current, TableNames.HOSPITAL+"1.json")
     # insert the data that is inserted during the Transform step
     with open(path_lab_features, 'w') as f:
         json.dump(lab_features, f)
-    load.database.db[TableNames.LABORATORY_FEATURE].insert_many(lab_features)
+    load.database.db[TableNames.PHENOTYPIC_FEATURE].insert_many(lab_features)
     with open(path_hospital, 'w') as f:
         json.dump(hospital, f)
     load.database.db[TableNames.HOSPITAL].insert_one(hospital)
@@ -104,8 +104,8 @@ class TestLoad(unittest.TestCase):
         load = my_setup(create_indexes=True)
         load.load_remaining_data()
 
-        assert load.database.db[TableNames.LABORATORY_FEATURE].count_documents(filter={}) == 2
-        assert load.database.db[TableNames.LABORATORY_RECORD].count_documents(filter={}) == 1
+        assert load.database.db[TableNames.PHENOTYPIC_FEATURE].count_documents(filter={}) == 2
+        assert load.database.db[TableNames.PHENOTYPIC_RECORD].count_documents(filter={}) == 1
         assert load.database.db[TableNames.HOSPITAL].count_documents(filter={}) == 1
         assert load.database.db[TableNames.SAMPLE_RECORD].count_documents(filter={}) == 0
 
