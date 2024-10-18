@@ -2,10 +2,9 @@ import os
 
 from dotenv import load_dotenv
 
-from catalogue.CatalogueUpdate import CatalogueUpdate
 from database.Database import Database
 from database.Execution import Execution
-
+from generators.DataGenerationTask import DataGenerationTask
 
 if __name__ == '__main__':
     # A. load the env. variables defined in .env.
@@ -16,5 +15,5 @@ if __name__ == '__main__':
     execution.internals_set_up()
     execution.file_set_up(setup_files=False)
     database = Database(execution=execution)
-    catalogue_update = CatalogueUpdate(db=database)
-    catalogue_update.compute_data_for_catalogue()
+    data_generator = DataGenerationTask(execution=execution)
+    data_generator.run()

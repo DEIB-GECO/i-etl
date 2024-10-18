@@ -24,10 +24,11 @@ services:
       # this is mandatory to access data in the hospital - otherwise Docker won't see any file outside those copied in the image
       # SERVER_FOLDER_METADATA is the hospital server folder where the metadata is - this is a "ghost copy"/"open view" which will show the same files in /home/better-deployed/hospital-data/X
       # same applies for SERVER_FOLDER_PHENOTYPIC, SERVER_FOLDER_DIAGNOSIS, etc
-      # For the Docker image, the data, resp. metadata, is now in /home/better-deployed/hospital-data/lab, etc
+      # For the Docker image, the data, resp. metadata, is now in /home/better-deployed/hospital-data/
       # Therefore, the metadata and data paths given to the ETL should start with /home/better-deployed/hospital-data/
       # And instead of asking users to provide such an absolute path (which they don't have to see because this is the Docker internal structure),
       # we let the ETL build it by appending the data filename to that path
+      - ${SERVER_FOLDER_DATA_GENERATION}:/home/better-deployed/hospital-data/gen-data
       - ${SERVER_FOLDER_METADATA}:/home/better-deployed/hospital-data/metadata
       - ${SERVER_FOLDER_PHENOTYPIC}:/home/better-deployed/hospital-data/phenotypic
       - ${SERVER_FOLDER_SAMPLE}:/home/better-deployed/hospital-data/sample
@@ -40,6 +41,7 @@ services:
       - ${SERVER_FOLDER_LOG_ETL}:/home/better-deployed/working-dir
     environment:
       - CONTEXT_MODE=${CONTEXT_MODE:-DEV}
+      - MY_ENV_FILE=${MY_ENV_FILE:-.env}
     networks:
       - network-fairificator
 networks:

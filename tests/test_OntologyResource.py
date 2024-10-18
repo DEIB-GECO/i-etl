@@ -31,4 +31,4 @@ class TestOntologyResource(unittest.TestCase):
         assert o1.label == "Patient-related Identification code"
         assert o2.label == "Fluorescence polarization immunoassay technique:Intensity change"
         assert o3.label == "Details of relatives:Affecting=(Known present=Genetic disease)"
-        assert o4.label == "alternative mRNA splicing via spliceosome" # removed comma between splicing and via because this is a snomed operator
+        assert o4.label == "alternative mRNA splicing via spliceosome"  # removed comma between splicing and via because this is a snomed operator

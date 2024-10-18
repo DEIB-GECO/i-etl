@@ -3,11 +3,15 @@ import locale
 from database.Database import Database
 from database.Execution import Execution
 from enums.FileTypes import FileTypes
+from enums.HospitalNames import HospitalNames
 from etl.Extract import Extract
 from etl.Load import Load
 from etl.Reporting import Reporting
 from etl.Transform import Transform
 from constants.locales import DATASET_LOCALES
+from preprocessing.PreprocessBuzziUC1 import PreprocessBuzziUC1
+from preprocessing.PreprocessCovid import PreprocessCovid
+from preprocessing.PreprocessEda import PreprocessEda
 from statistics.DatabaseStatistics import DatabaseStatistics
 from statistics.QualityStatistics import QualityStatistics
 from statistics.TimeStatistics import TimeStatistics

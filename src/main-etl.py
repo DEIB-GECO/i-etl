@@ -1,8 +1,11 @@
 import os.path
 import sys
 
+from dotenv import load_dotenv
+
 from database.Database import Database
 from database.Execution import Execution
+from preprocessing.PreprocessingTask import PreprocessingTask
 
 sys.path.append('.')  # add the current project to the python path to be runnable in cmd-line
 
@@ -15,8 +18,22 @@ if __name__ == "__main__":
     # python3 main.py
     # the code supposes to have a .env file next to main.py
     try:
+        # A. load the env. variables defined in .env.
+        # note: specifying the .env in the compose.yml only gives access to those env. var. to Docker (not to Python)
+        load_dotenv(os.environ["MY_ENV_FILE"])
+
+        # create a new execution instance for that run
         execution = Execution()
-        execution.set_up(setup_data_files=True)
+        execution.internals_set_up()
+
+        # preprocess data files
+        preprocessing_task = PreprocessingTask(execution=execution)
+        preprocessing_task.run()
+
+        # store data files in the current execution instance
+        execution.file_set_up(setup_files=True)
+
+        # create the database instance (incl. connection)
         database = Database(execution=execution)
 
         # if database.client is not None and database.db is not None and execution.has_no_none_attributes():

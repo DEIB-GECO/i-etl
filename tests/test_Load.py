@@ -27,8 +27,8 @@ def my_setup(create_indexes: bool) -> Load:
         # no need to set the metadata and data filepaths as we get only insert data that is written in temporary JSON files
     }
     set_env_variables_from_dict(env_vars=args)
-
-    TestLoad.execution.set_up(setup_data_files=False)  # no need to setup the files, we get data and metadata as input
+    TestLoad.execution.internals_set_up()
+    TestLoad.execution.file_set_up(setup_files=False)  # no need to setup the files, we get data and metadata as input
     database = Database(TestLoad.execution)
     load = Load(database=database, execution=TestLoad.execution, create_indexes=create_indexes,
                 quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False))

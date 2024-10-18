@@ -4,6 +4,7 @@ import os
 import pandas as pd
 from pandas import DataFrame
 
+from constants.structure import GROUND_DATA_FOLDER_FOR_GENERATION, GROUND_METADATA_FOLDER_FOR_GENERATION
 from utils.setup_logger import log
 
 
@@ -45,23 +46,9 @@ def read_tabular_file_as_string(filepath: str, read_as_string: bool) -> pd.DataF
         raise ValueError(f"The extension of the tabular file {filepath} is not recognised. Accepted extensions are .csv, .xls, and .xlsx.")
 
 
-def split_list_of_files(joined_filepaths: str, prefix_path: str) -> [str]:
-    log.info(prefix_path)
-    log.info(joined_filepaths)
-    split_files = joined_filepaths.split(",")
-    log.info(split_files)
-    for i in range(len(split_files)):
-        current_file = split_files[i]
-        if prefix_path is None:
-            if not os.path.isfile(current_file):
-                raise FileNotFoundError(f"The specified data file {current_file} does not exist.")
-        else:
-            prefixed_file = os.path.join(prefix_path, current_file)
-            if not os.path.isfile(prefixed_file):
-                raise FileNotFoundError(f"The specified data file {prefixed_file} does not exist.")
-            elif os.sep in current_file:
-                raise ValueError(f"The given file ({current_file}) should be a file name, but it looks like a path.")
-            else:
-                split_files[i] = prefixed_file
+def get_ground_data(filename: str) -> str:
+    return os.path.join(GROUND_DATA_FOLDER_FOR_GENERATION, filename)
 
-    return split_files  # [file 1, file 2, ..., file N]
+
+def get_ground_metadata(filename: str) -> str:
+    return os.path.join(GROUND_METADATA_FOLDER_FOR_GENERATION, filename)

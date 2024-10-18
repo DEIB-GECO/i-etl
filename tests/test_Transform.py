@@ -49,7 +49,8 @@ def my_setup(hospital_name: str, extracted_metadata_path: str, extracted_data_pa
         # no need to set the metadata and data filepaths as we get already the loaded data and metadata as arguments
     }
     set_env_variables_from_dict(env_vars=args)
-    TestTransform.execution.set_up(setup_data_files=False)  # no need to setup the files, we get data and metadata as input
+    TestTransform.execution.internals_set_up()
+    TestTransform.execution.file_set_up(setup_files=False)  # no need to set up the files, we get data and metadata as input
     database = Database(TestTransform.execution)
     # I load:
     # - the data and metadata from two CSV files that I obtained by running the Extract step

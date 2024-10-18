@@ -1,5 +1,6 @@
 import logging
 
+import headfake.fieldset
 import urllib3
 
 logging.basicConfig(
@@ -20,4 +21,9 @@ logging.getLogger("PIL").setLevel(logging.WARNING)
 logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.ERROR)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+logging.getLogger("faker").setLevel(logging.ERROR)
+logging.getLogger("factory").setLevel(logging.ERROR)
+logging.getLogger("headfake").setLevel(logging.ERROR)
+logging.getLogger("faker").setLevel(logging.ERROR)
+logging.getLogger("fieldset").setLevel(logging.ERROR)
 

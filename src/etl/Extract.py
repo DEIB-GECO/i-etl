@@ -164,6 +164,7 @@ class Extract(Task):
                 self.quality_stats.add_column_unknown_ontology(column_name=column_name, ontology_name=onto_name)
 
     def load_tabular_data_file(self) -> None:
+        log.info(self.execution.current_filepath)
         assert os.path.exists(self.execution.current_filepath), "The provided samples file could not be found. Please check the filepath you specify when running this script."
 
         log.info(f"Data filepath is {self.execution.current_filepath}")

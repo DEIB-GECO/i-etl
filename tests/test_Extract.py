@@ -33,8 +33,12 @@ def my_setup(metadata_path: str, data_paths: str, data_type: FileTypes, pids_pat
         ParameterKeys.ANONYMIZED_PATIENT_IDS: pids_path
     }
     set_env_variables_from_dict(env_vars=args)
-    TestExtract.execution.set_up(setup_data_files=True)
-    TestExtract.execution.current_filepath = get_filepath_from_execution(datatype=data_type)
+    TestExtract.execution.internals_set_up()
+    TestExtract.execution.file_set_up(setup_files=True)  # we need to set up the metadata file at least
+    # in the dev mode, this is done by the preprocessing class (which may simply copy the datasets without preproecssing)
+    # but, this also takes care of prepending the prefix
+    # in tests, we do not go through the preprocessing, so we have to do it by have
+    TestExtract.execution.current_filepath = os.path.join(FileTypes.get_prefix_for_path(data_type), data_paths)
     log.debug(TestExtract.execution.current_filepath)
     database = Database(TestExtract.execution)
     extract = Extract(database=database, execution=TestExtract.execution, quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False))

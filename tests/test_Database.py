@@ -6,20 +6,19 @@ import unittest
 
 import pytest
 
+from constants.idColumns import NO_ID
+from constants.structure import TEST_DB_NAME
+from database.Counter import Counter
 from database.Database import Database
 from database.Execution import Execution
 from datatypes.PatientAnonymizedIdentifier import PatientAnonymizedIdentifier
 from datatypes.ResourceIdentifier import ResourceIdentifier
-from enums.ParameterKeys import ParameterKeys
-from enums.HospitalNames import HospitalNames
 from entities.ResourceTest import ResourceTest
-from database.Counter import Counter
+from enums.HospitalNames import HospitalNames
+from enums.ParameterKeys import ParameterKeys
 from enums.TableNames import TableNames
 from enums.UpsertPolicy import UpsertPolicy
-from constants.structure import TEST_DB_NAME
-from constants.idColumns import NO_ID
 from utils.file_utils import write_in_file
-from utils.setup_logger import log
 from utils.test_utils import wrong_number_of_docs, compare_tuples, set_env_variables_from_dict
 
 
@@ -35,7 +34,8 @@ class TestDatabase(unittest.TestCase):
             ParameterKeys.HOSPITAL_NAME: HospitalNames.TEST_H1
         }
         set_env_variables_from_dict(env_vars=args)
-        TestDatabase.execution.set_up(setup_data_files=False)
+        TestDatabase.execution.internals_set_up()
+        TestDatabase.execution.file_set_up(setup_files=False)
 
     def test_check_server_is_up(self):
         # test with the correct (default) string
@@ -69,7 +69,8 @@ class TestDatabase(unittest.TestCase):
 
         # 2. we create a new instance to the same database, with drop_db=False
         set_env_variables_from_dict(env_vars={ParameterKeys.DB_DROP: "False"})
-        TestDatabase.execution.set_up(setup_data_files=False)
+        TestDatabase.execution.internals_set_up()
+        TestDatabase.execution.file_set_up(setup_files=False)
         database = Database(execution=TestDatabase.execution)
 
         # 3. check that the database still exists (i.e., the constructor did not reset it)
@@ -152,7 +153,8 @@ class TestDatabase(unittest.TestCase):
             # very important: we should not reset the database, otherwise we cannot test whether upsert works
         }
         set_env_variables_from_dict(env_vars=args)
-        TestDatabase.execution.set_up(setup_data_files=False)
+        TestDatabase.execution.internals_set_up()
+        TestDatabase.execution.file_set_up(setup_files=False)
         database = Database(execution=TestDatabase.execution)
         my_tuple_age = {"name": "Nelly", "age": 27, "city": "Lyon"}  # same as my_tuple but with a different age and a new field
         database.upsert_one_tuple(table_name=TableNames.TEST, unique_variables=["name"], one_tuple=my_tuple_age)
@@ -168,7 +170,8 @@ class TestDatabase(unittest.TestCase):
             ParameterKeys.DB_DROP: "False"
         }
         set_env_variables_from_dict(env_vars=args)
-        TestDatabase.execution.set_up(setup_data_files=False)
+        TestDatabase.execution.internals_set_up()
+        TestDatabase.execution.file_set_up(setup_files=False)
         database = Database(execution=TestDatabase.execution)
         my_tuple_age = {"name": "Nelly", "age": 27, "city": "Lyon"}  # same as my_tuple but with a different age and a new field city
         my_original_tuple_age = copy.deepcopy(my_tuple_age)
@@ -185,7 +188,8 @@ class TestDatabase(unittest.TestCase):
             ParameterKeys.DB_DROP: "False"
         }
         set_env_variables_from_dict(env_vars=args)
-        TestDatabase.execution.set_up(setup_data_files=False)
+        TestDatabase.execution.internals_set_up()
+        TestDatabase.execution.file_set_up(setup_files=False)
         database = Database(execution=TestDatabase.execution)
         my_new_tuple = {"name": "Julien", "age": "30"}  # a new tuple (with a different key)
         my_original_new_tuple = copy.deepcopy(my_new_tuple)
@@ -231,7 +235,8 @@ class TestDatabase(unittest.TestCase):
             ParameterKeys.DB_DROP: "False"
         }
         set_env_variables_from_dict(env_vars=args)
-        TestDatabase.execution.set_up(setup_data_files=False)
+        TestDatabase.execution.internals_set_up()
+        TestDatabase.execution.file_set_up(setup_files=False)
         database = Database(execution=TestDatabase.execution)
         my_tuple_age = {"name": "Nelly", "age": 27, "city": "Lyon"}  # same as my_tuple but with a different age and a new field
         my_original_tuple_age = copy.deepcopy(my_tuple_age)
@@ -250,7 +255,8 @@ class TestDatabase(unittest.TestCase):
             ParameterKeys.DB_DROP: "False"
         }
         set_env_variables_from_dict(env_vars=args)
-        TestDatabase.execution.set_up(setup_data_files=False)
+        TestDatabase.execution.internals_set_up()
+        TestDatabase.execution.file_set_up(setup_files=False)
         database = Database(execution=TestDatabase.execution)
         my_tuple_age = {"name": "Nelly", "age": 27, "city": "Lyon"}  # same as my_tuple but with a different age and a new field city
         my_original_tuple_age = copy.deepcopy(my_tuple_age)
@@ -269,7 +275,8 @@ class TestDatabase(unittest.TestCase):
             ParameterKeys.DB_DROP: "False"
         }
         set_env_variables_from_dict(env_vars=args)
-        TestDatabase.execution.set_up(setup_data_files=False)
+        TestDatabase.execution.internals_set_up()
+        TestDatabase.execution.file_set_up(setup_files=False)
         database = Database(execution=TestDatabase.execution)
         my_new_tuple = {"name": "Nelly", "age": 26, "city": "Lyon"}
         database.upsert_one_tuple(table_name=TableNames.TEST, unique_variables=["name", "age"], one_tuple=my_new_tuple)
@@ -287,7 +294,8 @@ class TestDatabase(unittest.TestCase):
             ParameterKeys.DB_DROP: "False"
         }
         set_env_variables_from_dict(env_vars=args)
-        TestDatabase.execution.set_up(setup_data_files=False)
+        TestDatabase.execution.internals_set_up()
+        TestDatabase.execution.file_set_up(setup_files=False)
         database = Database(execution=TestDatabase.execution)
         my_new_tuple = {"name": "Nelly", "age": 26, "city": "Lyon"}
         my_original_new_tuple = copy.deepcopy(my_new_tuple)
@@ -327,7 +335,8 @@ class TestDatabase(unittest.TestCase):
             ParameterKeys.DB_DROP: "False"
         }
         set_env_variables_from_dict(env_vars=args)
-        TestDatabase.execution.set_up(setup_data_files=False)
+        TestDatabase.execution.internals_set_up()
+        TestDatabase.execution.file_set_up(setup_files=False)
         database = Database(TestDatabase.execution)
         my_batch_3 = [{"name": "Nelly", "age": 27}, {"name": "Anna", "citizenship": "Italian"}]
         database.upsert_one_batch_of_tuples(table_name=TableNames.TEST, unique_variables=["name"], the_batch=my_batch_3)
@@ -366,7 +375,8 @@ class TestDatabase(unittest.TestCase):
             ParameterKeys.DB_DROP: "False"
         }
         set_env_variables_from_dict(env_vars=args)
-        TestDatabase.execution.set_up(setup_data_files=False)
+        TestDatabase.execution.internals_set_up()
+        TestDatabase.execution.file_set_up(setup_files=False)
         database = Database(execution=TestDatabase.execution)
         my_tuples_age = [{"name": "Nelly", "age": 26, "city": "Lyon"}, {"name": "Anna", "age": -1, "city": "Milano"}]  # same as my_tuple but with a different age and a new field
         my_original_tuples_age = copy.deepcopy(my_tuples_age)
@@ -385,7 +395,8 @@ class TestDatabase(unittest.TestCase):
             ParameterKeys.DB_DROP: "False"
         }
         set_env_variables_from_dict(env_vars=args)
-        TestDatabase.execution.set_up(setup_data_files=False)
+        TestDatabase.execution.internals_set_up()
+        TestDatabase.execution.file_set_up(setup_files=False)
         database = Database(execution=TestDatabase.execution)
         my_tuples_age_2 = [{"name": "Nelly", "age": 26, "city": "Paris"}, {"name": "Pietro", "age": -1, "city": "Milano"}]
         my_original_tuple_age_2 = copy.deepcopy(my_tuples_age_2)

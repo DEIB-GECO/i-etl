@@ -2,12 +2,17 @@ import os
 from datetime import timedelta, datetime
 from typing import Any
 
+import dotenv
+from dotenv import load_dotenv
+
 from utils.assertion_utils import THE_DATETIME_FORMAT
 from utils.setup_logger import log
 
 
 # for setting up the tests with specific (env) parameters
 def set_env_variables_from_dict(env_vars: dict):
+    # it is not possible to change the values of a .env and to write them in the .env file
+    # so, we simply change them within the env
     for key, value in env_vars.items():
         os.environ[key] = value
 
