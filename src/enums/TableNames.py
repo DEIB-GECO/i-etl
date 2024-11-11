@@ -30,13 +30,15 @@ class TableNames(EnumAsClass):
     @classmethod
     def values(cls, db):
         # override the values() method of Enum to only return tables that exists in the DB
-        xs = []
+        table_names = []
         for name, value in vars(cls).items():
             if not (name.startswith('__') or isinstance(value, classmethod)) and (db is None or (db.check_table_exists(table_name=value) and db is not None)):
                 # if DB is None, we do not want to check particularly whether the tables exist or not (we simply want to iterate over the table names)
                 # if DB is not None, we want to check that the table exists in the DB
-                xs.append(value)
-        return xs
+                if "Statistics" not in value:
+                    # this is not a table for reporting stats
+                    table_names.append(value)
+        return table_names
 
     @classmethod
     def get_feature_table_from_record_table(cls, record_table_name: str) -> str:

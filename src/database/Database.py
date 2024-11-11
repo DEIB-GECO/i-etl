@@ -96,6 +96,7 @@ class Database:
         self.client.close()
 
     def insert_one_tuple(self, table_name: str, one_tuple: dict) -> None:
+        log.info(f"In table {table_name}, insert {one_tuple}")
         self.db[table_name].insert_one(one_tuple)
 
     def insert_many_tuples(self, table_name: str, tuples: list[dict] | tuple) -> None:
@@ -231,6 +232,12 @@ class Database:
         operations.append(Operators.lookup(join_table_name=name_table_2, field_table_1=field_table_1, field_table_2=field_table_2, lookup_field_name=lookup_name))
         operations.append(Operators.match(field=lookup_name, value={"$eq": []}, is_regex=False))  # we get only pairs that could not match
         return self.db[name_table_1].aggregate(operations)
+
+    def list_existing_indexes(self, table_name: str) -> list:
+        log.info(f"list indexes in {table_name}")
+        index_list = [res.values() for res in self.db[table_name].list_indexes()]
+        log.info(index_list)
+        return index_list
 
     def create_unique_index(self, table_name: str, columns: dict) -> None:
         """

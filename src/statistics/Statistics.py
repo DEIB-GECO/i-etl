@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import jsonpickle
 
 from database.Database import Database
@@ -8,6 +10,7 @@ from utils.setup_logger import log
 class Statistics:
     def __init__(self, record_stats: bool):
         self.record_stats = record_stats
+        self.timestamp = datetime.now()
 
     def __getstate__(self):
         # we want to add only dict and list members while serializing statistics
