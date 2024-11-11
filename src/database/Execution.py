@@ -38,7 +38,7 @@ class Execution:
 
         # parameters related to the database
         self.db_connection = None  # user input
-        self.db_drop = True  # user input
+        self.db_drop = False  # user input
         self.db_upsert_policy = UpsertPolicy.DO_NOTHING  # user input
         self.columns_to_remove = []  # user input
 
