@@ -1,5 +1,6 @@
 from database.Database import Database
 from database.Execution import Execution
+from enums.Profile import Profile
 from enums.TableNames import TableNames
 from etl.Task import Task
 from statistics.QualityStatistics import QualityStatistics
@@ -23,22 +24,19 @@ class Load(Task):
             self.create_db_indexes()
 
     def load_remaining_data(self) -> None:
-        # patients are loaded when the first file is loaded to be able to map patients and their samples
-
-        self.database.load_json_in_table(table_name=TableNames.PHENOTYPIC_RECORD, unique_variables=["recorded_by", "subject", "based_on", "instantiate"])
-
-        self.database.load_json_in_table(table_name=TableNames.SAMPLE_RECORD, unique_variables=["identifier"])
-
-        self.database.load_json_in_table(table_name=TableNames.DIAGNOSIS_RECORD, unique_variables=["recorded_by", "subject", "instantiate"])
-
-        self.database.load_json_in_table(table_name=TableNames.MEDICINE_RECORD, unique_variables=["recorded_by", "subject", "instantiate"])
-
-        self.database.load_json_in_table(table_name=TableNames.IMAGING_RECORD, unique_variables=["recorded_by", "subject", "instantiate"])
-
-        self.database.load_json_in_table(table_name=TableNames.GENOMIC_RECORD, unique_variables=["recorded_by", "subject", "instantiate"])
+        log.info("load remaining data")
+        record_table_name = Profile.get_record_table_name_from_profile(self.execution.current_file_profile)
+        unique_variables = ["recorded_by", "subject", "instantiate"]
+        if self.execution.current_file_profile == Profile.DIAGNOSIS:
+            # we allow patients to have several diagnoses
+            unique_variables.append("value")
+        self.database.load_json_in_table(table_name=record_table_name, unique_variables=unique_variables)
 
     def create_db_indexes(self) -> None:
         log.info(f"Creating indexes.")
+        log.info(f"features tables: {TableNames.features(db=self.database)}")
+        log.info(f"records tables: {TableNames.records(db=self.database)}")
+        log.info(f"values tables: {TableNames.values(db=self.database)}")
 
         count = 0
 

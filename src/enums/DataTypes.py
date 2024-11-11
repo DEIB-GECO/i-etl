@@ -15,11 +15,10 @@ class DataTypes(EnumAsClass):
     IMAGE = "image"
     REGEX = "regex"
 
-    METADATA_NB_UNRECOGNIZED_VAR_TYPE = 0
     METADATA_NB_UNRECOGNIZED_ETL_TYPE = 0
 
     @classmethod
-    def normalize(cls, data_type: str, is_etl: bool) -> str:
+    def normalize(cls, data_type: str) -> str:
         if is_not_nan(data_type):
             data_type = process_spaces(input_string=data_type)
             data_type = data_type.lower()
@@ -44,10 +43,7 @@ class DataTypes(EnumAsClass):
                 return DataTypes.REGEX
             else:
                 log.error(f"{data_type} is not a recognized data type; we will use string type by default.")
-                if is_etl:
-                    DataTypes.METADATA_NB_UNRECOGNIZED_ETL_TYPE += 1
-                else:
-                    DataTypes.METADATA_NB_UNRECOGNIZED_VAR_TYPE += 1
+                DataTypes.METADATA_NB_UNRECOGNIZED_ETL_TYPE += 1
                 return DataTypes.STRING
         else:
             return data_type

@@ -3,6 +3,7 @@ import re
 from datetime import datetime
 from typing import Any
 
+import pandas as pd
 from pandas import DataFrame
 
 from database.Database import Database
@@ -10,7 +11,8 @@ from database.Execution import Execution
 from datatypes.OntologyResource import OntologyResource
 from datatypes.Identifier import Identifier
 from enums.DataTypes import DataTypes
-from enums.FileTypes import FileTypes
+from enums.DiagnosisColumns import DiagnosisColumns
+from enums.Profile import Profile
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from enums.TableNames import TableNames
@@ -25,8 +27,8 @@ from entities.Hospital import Hospital
 from entities.PhenotypicFeature import PhenotypicFeature
 from entities.PhenotypicRecord import PhenotypicRecord
 from entities.Patient import Patient
-from entities.SampleRecord import SampleRecord
-from entities.SampleFeature import SampleFeature
+from entities.ClinicalRecord import ClinicalRecord
+from entities.ClinicalFeature import ClinicalFeature
 from database.Counter import Counter
 from constants.defaults import BATCH_SIZE, PATTERN_VALUE_DIMENSION
 from constants.idColumns import NO_ID, ID_COLUMNS
@@ -44,7 +46,6 @@ class Transform(Task):
                  mapping_categorical_value_to_onto_resource: dict,
                  mapping_column_to_categorical_value: dict,
                  mapping_column_to_dimension: dict, patient_ids_mapping: dict,
-                 mapping_diagnosis_to_onto_resource: dict,
                  quality_stats: QualityStatistics, time_stats: TimeStatistics):
         super().__init__(database=database, execution=execution, quality_stats=quality_stats, time_stats=time_stats)
         self.counter = Counter()
@@ -58,7 +59,6 @@ class Transform(Task):
         # to keep track of anonymized vs. hospital patient ids
         # this is empty if no file as been provided by the user, otherwise it contains some mappings <patient ID, anonymized ID>
         self.patient_ids_mapping = patient_ids_mapping
-        self.mapping_diagnosis_to_onto_resource = mapping_diagnosis_to_onto_resource  # it may be None if this is not BUZZI
 
         # to record objects that will be further inserted in the database
         self.features = []
@@ -75,33 +75,33 @@ class Transform(Task):
         log.info("********** create patients")
         self.create_patients()
 
-        if self.execution.current_file_type == FileTypes.PHENOTYPIC:
+        log.info(self.execution.current_file_profile)
+        if self.execution.current_file_profile == Profile.PHENOTYPIC:
             log.info("********** create phen. features")
             self.create_phenotypic_features()
             log.info("********** create phen. records")
             self.create_phenotypic_records()
             log.info("********** done with phen. data")
-        elif self.execution.current_file_type == FileTypes.SAMPLE:
+        elif self.execution.current_file_profile == Profile.CLINICAL:
             log.info("********** create sample features")
             self.create_sample_features()
             log.info("********** create sample records")
             self.create_sample_records()
-        elif self.execution.current_file_type == FileTypes.DIAGNOSIS:
+        elif self.execution.current_file_profile == Profile.DIAGNOSIS:
             self.create_diagnosis_features()
             self.create_diagnosis_records()
-        elif self.execution.current_file_type == FileTypes.MEDICINE:
+        elif self.execution.current_file_profile == Profile.MEDICINE:
             self.create_medicine_features()
             self.create_medicine_records()
-        elif self.execution.current_file_type == FileTypes.IMAGING:
+        elif self.execution.current_file_profile == Profile.IMAGING:
             self.create_imaging_features()
             self.create_imaging_records()
-        elif self.execution.current_file_type == FileTypes.GENOMIC:
+        elif self.execution.current_file_profile == Profile.GENOMIC:
             log.info("process genomic data!")
             self.create_genomic_features()
             self.create_genomic_records()
         else:
-            raise TypeError(
-                f"The current file type ({self.execution.current_file_type} is unknown. It should be phenotypic, diagnosis, medicine, imaging or genomic.")
+            raise TypeError(f"The current file profile '{self.execution.current_file_profile}' is unknown.")
 
     ##############################################################
     # FEATURES
@@ -110,7 +110,7 @@ class Transform(Task):
     def create_features(self, table_name: str) -> None:
         # 1. get existing features in memory
         result = self.database.find_operation(table_name=table_name, filter_dict={}, projection={"ontology_resource.label": 1})
-        db_existing_features = [res["ontology_resource"]["label"] for res in result]
+        db_existing_features = [res["ontology_resource"]["label"] if "ontology_resource" in res and "label" in res["ontology_resource"] else None for res in result]
 
         # 2. create non-existing features in-memory, then insert them
         log.info(f"create Feature instances of type {table_name} in memory")
@@ -119,12 +119,12 @@ class Transform(Task):
             column_name = row[MetadataColumns.COLUMN_NAME]
             # columns to remove have already been removed in the Extract part from the metadata
             # here, we need to ensure that we create Features only for still-existing columns and not for ID column
-            if column_name in self.metadata[MetadataColumns.COLUMN_NAME].values and column_name not in (ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT], ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE_RECORD]):
+            if column_name in self.metadata[MetadataColumns.COLUMN_NAME].values and column_name not in (ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT], ID_COLUMNS[self.execution.hospital_name][TableNames.CLINICAL_RECORD]):
                 if column_name not in db_existing_features:
                     # we create a new Feature from scratch
                     new_feature = None
                     onto_resource = self.create_ontology_resource_from_row(column_name=column_name)
-                    data_type = row[MetadataColumns.ETL_TYPE]  # this has been normalized while loading + we take ETL_type, not var_type, to get the narrowest type (in which we cast values)
+                    data_type = row[MetadataColumns.ETL_TYPE]  # this has been normalized while loading + we take ETL_type to get the narrowest type (in which we cast values)
                     visibility = row[MetadataColumns.VISIBILITY]  # this has been normalized while loading
                     dimension = self.mapping_column_to_dimension[column_name] if column_name in self.mapping_column_to_dimension else None  # else covers: there is no dataType for this column; there is no datatype in that type of entity
                     categorical_values = None
@@ -143,14 +143,14 @@ class Transform(Task):
                                                         hospital_name=self.execution.hospital_name,
                                                         categorical_values=categorical_values,
                                                         visibility=visibility)
-                    elif table_name == TableNames.SAMPLE_FEATURE:
-                        new_feature = SampleFeature(id_value=NO_ID,
-                                                    original_name=column_name, ontology_resource=onto_resource,
-                                                    permitted_datatype=data_type, dimension=dimension,
-                                                    counter=self.counter,
-                                                    hospital_name=self.execution.hospital_name,
-                                                    categorical_values=categorical_values,
-                                                    visibility=visibility)
+                    elif table_name == TableNames.CLINICAL_FEATURE:
+                        new_feature = ClinicalFeature(id_value=NO_ID,
+                                                      original_name=column_name, ontology_resource=onto_resource,
+                                                      permitted_datatype=data_type, dimension=dimension,
+                                                      counter=self.counter,
+                                                      hospital_name=self.execution.hospital_name,
+                                                      categorical_values=categorical_values,
+                                                      visibility=visibility)
                     elif table_name == TableNames.DIAGNOSIS_FEATURE:
                         new_feature = DiagnosisFeature(id_value=NO_ID, original_name=column_name,
                                                        ontology_resource=onto_resource,
@@ -197,7 +197,7 @@ class Transform(Task):
         self.create_features(table_name=TableNames.PHENOTYPIC_FEATURE)
 
     def create_sample_features(self) -> None:
-        self.create_features(table_name=TableNames.SAMPLE_FEATURE)
+        self.create_features(table_name=TableNames.CLINICAL_FEATURE)
 
     def create_diagnosis_features(self):
         self.create_features(table_name=TableNames.DIAGNOSIS_FEATURE)
@@ -232,12 +232,12 @@ class Transform(Task):
         # b. Create Record instance, and write them in temporary (JSON) files
         count = 1
         for index, row in self.data.iterrows():
-            # create Record instances by associating observations to patients
+            # create Record instances by associating observations to a patient, a record and a hospital
             for column_name, value in row.items():
                 # log.debug(f"for row {index} (type: {type(index)}) and column {column_name} (type: {type(column_name)}), value is {value}")
                 if value is None or value == "" or not is_not_nan(value):
                     # if there is no value for that Feature, no need to create a Record instance
-                    # log.error(f"skipping value {value} because it is None, or empty or nan")
+                    # log.error(f"skipping value {value} in column {column_name} because it is None, or empty or nan")
                     self.quality_stats.count_empty_cell_for_column(column_name=column_name)
                     pass
                 else:
@@ -252,7 +252,6 @@ class Transform(Task):
                                                                                fairified_value=fairified_value)
                         dataset_name = self.execution.current_filepath
                         if table_name == TableNames.PHENOTYPIC_RECORD:
-
                             new_record = PhenotypicRecord(id_value=NO_ID, feature_id=feature_id,
                                                           patient_id=patient_id, hospital_id=hospital_id,
                                                           value=fairified_value,
@@ -260,30 +259,21 @@ class Transform(Task):
                                                           counter=self.counter,
                                                           hospital_name=self.execution.hospital_name,
                                                           dataset_name=dataset_name)
-                        elif table_name == TableNames.SAMPLE_RECORD:
-                            new_record = SampleRecord(id_value=NO_ID, feature_id=feature_id, patient_id=patient_id,
-                                                      hospital_id=hospital_id, value=fairified_value,
-                                                      anonymized_value=anonymized_value if is_anonymized else None,
-                                                      base_id=row[ID_COLUMNS[self.execution.hospital_name][TableNames.SAMPLE_RECORD]],
-                                                      counter=self.counter, hospital_name=self.execution.hospital_name,
-                                                      dataset_name=dataset_name)
+                        elif table_name == TableNames.CLINICAL_RECORD:
+                            new_record = ClinicalRecord(id_value=NO_ID, feature_id=feature_id, patient_id=patient_id,
+                                                        hospital_id=hospital_id, value=fairified_value,
+                                                        anonymized_value=anonymized_value if is_anonymized else None,
+                                                        base_id=row[ID_COLUMNS[self.execution.hospital_name][TableNames.CLINICAL_RECORD]],
+                                                        counter=self.counter, hospital_name=self.execution.hospital_name,
+                                                        dataset_name=dataset_name)
                         elif table_name == TableNames.DIAGNOSIS_RECORD:
-                            # we can get the patient ID from the data
-                            # and get the anonymized patient id with the mapping
-                            id_column_for_patients = ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]
-                            patient_id = Identifier(value=self.patient_ids_mapping[row[id_column_for_patients]])
-                            if fairified_value is None:
-                                # the patient has genetic mutation, but he is not ill
-                                # thus, we do not record it in database
-                                new_record = None
-                            else:
-                                new_record = DiagnosisRecord(id_value=NO_ID, feature_id=feature_id,
-                                                             patient_id=patient_id, hospital_id=hospital_id,
-                                                             value=fairified_value,
-                                                             anonymized_value=anonymized_value if is_anonymized else None,
-                                                             counter=self.counter,
-                                                             hospital_name=self.execution.hospital_name,
-                                                             dataset_name=dataset_name)
+                            new_record = DiagnosisRecord(id_value=NO_ID, feature_id=feature_id,
+                                                         patient_id=patient_id, hospital_id=hospital_id,
+                                                         value=fairified_value,
+                                                         anonymized_value=anonymized_value if is_anonymized else None,
+                                                         counter=self.counter,
+                                                         hospital_name=self.execution.hospital_name,
+                                                         dataset_name=dataset_name)
                         elif table_name == TableNames.GENOMIC_RECORD:
                             new_record = GenomicRecord(id_value=NO_ID, feature_id=feature_id,
                                                        patient_id=patient_id, hospital_id=hospital_id,
@@ -295,18 +285,16 @@ class Transform(Task):
                                                        dataset_name=dataset_name)
                         else:
                             raise NotImplementedError("Not implemented yet.")
-                        if new_record is not None:  # it can be None if the patient is a carrier but not diseased
-
-                            self.records.append(new_record)
+                        self.records.append(new_record)
                         if len(self.records) >= BATCH_SIZE:
-                            log.info(f"writing {len(self.records)}")
+                            log.info(f"writing {len(self.records)} in file")
                             write_in_file(resource_list=self.records,
                                           current_working_dir=self.execution.working_dir_current,
                                           table_name=table_name, count=count)
                             self.records.clear()
                             count = count + 1
                     else:
-                        # this represents the case when a column has not been converted to a PhenFeature resource
+                        # this represents the case when a column has not been converted to a Feature resource
                         # this may happen for ID column for instance, or in BUZZI many clinical columns are not described in the metadata, thus skipped here
                         # log.error(f"Skipping column {column_name} for row {index}")
                         pass
@@ -317,7 +305,7 @@ class Transform(Task):
         self.create_records(table_name=TableNames.PHENOTYPIC_RECORD)
 
     def create_sample_records(self) -> None:
-        self.create_records(table_name=TableNames.SAMPLE_RECORD)
+        self.create_records(table_name=TableNames.CLINICAL_RECORD)
 
     def create_diagnosis_records(self):
         self.create_records(table_name=TableNames.DIAGNOSIS_RECORD)
@@ -370,7 +358,6 @@ class Transform(Task):
                 except Exception:
                     raise ValueError(
                         f"Could not dump the {len(self.patient_ids_mapping)} JSON resources in the file located at {self.execution.anonymized_patient_ids_filepath}.")
-            self.database.create_unique_index(table_name=TableNames.PATIENT, columns={"identifier": 1})  # to speed up the check on whether a patient already exists or not
             self.database.load_json_in_table(table_name=TableNames.PATIENT, unique_variables=["identifier"])
         else:
             # no patient ID in this dataset
@@ -391,13 +378,6 @@ class Transform(Task):
         write_in_file(resource_list=self.hospitals, current_working_dir=self.execution.working_dir_current,
                       table_name=TableNames.HOSPITAL, count=1)
         self.database.load_json_in_table(table_name=TableNames.HOSPITAL, unique_variables=["name"])
-
-    # def write_remaining_instances_to_database(self, resources: list, table_name: str, count: int,
-    #                                           unique_variables: list[str]):
-    #     # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
-    #     write_in_file(resource_list=resources, current_working_dir=self.execution.working_dir_current,
-    #                   table_name=table_name, count=count)
-    #     self.database.load_json_in_table(table_name=table_name, unique_variables=unique_variables)
 
     def create_ontology_resource_from_row(self, column_name: str) -> OntologyResource | None:
         rows = self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name]
@@ -426,7 +406,7 @@ class Transform(Task):
         return_value = None  # to ease logging, we also save the return value in a variable and return it at the very end
         expected_unit = self.mapping_column_to_dimension[column_name] if column_name in self.mapping_column_to_dimension else None  # there was some unit specified in the metadata or extracted from the data
 
-        # log.debug(f"ETL type is {etl_type}, var type is {var_type}, expected unit is {expected_unit}")
+        # log.debug(f"ETL type is {etl_type}, expected unit is {expected_unit}")
         if etl_type == DataTypes.STRING:
             return value  # the value is already normalized, we can return it as is
         elif etl_type == DataTypes.CATEGORY:
@@ -500,16 +480,6 @@ class Transform(Task):
                         return_value = cast_str_to_float(str_value=value)
                     else:
                         return_value = the_normalized_value
-        elif etl_type == DataTypes.REGEX:
-            # this corresponds to a diagnosis name, for which we need to find the corresponding ORPHANET code
-            if value in self.mapping_diagnosis_to_onto_resource:
-                # the standard diagnosis name has corresponding codes (ORPHANET and OMIM)
-                the_cc = self.mapping_diagnosis_to_onto_resource[value]["ontology_resource"]
-                return_value = the_cc
-            else:
-                # log.error(
-                #     f"'{value}' is not described in the companion diagnosis file. Will return '{the_normalized_value}'")
-                return_value = the_normalized_value
         else:
             # Unhandled ETL type: this cannot happen because all ETL types have been checked during the Extract step
             return_value = the_normalized_value

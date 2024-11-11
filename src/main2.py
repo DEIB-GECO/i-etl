@@ -1,5 +1,6 @@
 import json
 import os
+from urllib.request import Request, urlopen
 
 import bson
 import pandas as pd
@@ -8,6 +9,7 @@ from pymongo.mongo_client import MongoClient
 
 from datatypes.OntologyResource import OntologyResource
 from enums.Ontologies import Ontologies
+from etl.Extract import Extract
 from utils.file_utils import read_tabular_file_as_string
 from utils.setup_logger import log
 
@@ -46,17 +48,19 @@ def main_ontology_api():
     # print(Coding.compute_display_from_api(ontology=Ontologies.GSSO, ontology_code="GSSO_000818"))
     # print()
     # print(Coding.compute_display_from_api(ontology=Ontologies.ORPHANET, ontology_code="ORPHA:159"))
-    o1 = OntologyResource(ontology=Ontologies.LOINC, full_code="LA6675-8", label=None, quality_stats=None)
-    print(f"label: {o1.label}")
-    o2 = OntologyResource(ontology=Ontologies.LOINC, full_code="60478-5", label=None, quality_stats=None)
-    print(f"label: {o2.label}")
+    # o1 = OntologyResource(ontology=Ontologies.LOINC, full_code="LA6675-8", label=None, quality_stats=None)
+    # print(f"label: {o1.label}")
+    # o2 = OntologyResource(ontology=Ontologies.LOINC, full_code="60478-5", label=None, quality_stats=None)
+    # print(f"label: {o2.label}")
+    o3 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="258211005", label=None, quality_stats=None)
+    print(f"label: {o3.label}")
 
 
 def main_ontology_code_class():
     resources = json.load(open("datasets/local/all_codes_gen.json"))
     for metadata_file in os.listdir("/Users/nelly/Documents/google-drive-data/metadata/"):
         print(metadata_file)
-        df = read_tabular_file_as_string("/Users/nelly/Documents/google-drive-data/metadata/" + metadata_file, read_as_string=False)
+        df = read_tabular_file_as_string("/Users/nelly/Documents/google-drive-data/metadata/" + metadata_file)
         it = 0
         early_stop = False
 
@@ -115,14 +119,35 @@ def main_ontology_code_class():
         file.write(json.dumps(resources, indent=4))
 
 
+def test_get_inheritance_orphanet():
+    orphanet_codes = ["ORPHA:5", "ORPHA:6", "ORPHA:13", "ORPHA:20", "ORPHA:23",
+                        "ORPHA:25", "ORPHA:27", "ORPHA:28", "ORPHA:33", "ORPHA:35",
+                        "ORPHA:42", "ORPHA:90", "ORPHA:134", "ORPHA:147", "ORPHA:156",
+                        "ORPHA:157", "ORPHA:158", "ORPHA:159", "ORPHA:226", "ORPHA:352",
+                        "ORPHA:394", "ORPHA:395", "ORPHA:511", "ORPHA:586", "ORPHA:716",
+                        "ORPHA:746", "ORPHA:882", "ORPHA:943", "ORPHA:26791", "ORPHA:26792",
+                        "ORPHA:26793", "ORPHA:28378", "ORPHA:51188", "ORPHA:69723",
+                        "ORPHA:71212", "ORPHA:79157", "ORPHA:79159", "ORPHA:79238",
+                        "ORPHA:79239", "ORPHA:79241", "ORPHA:79242", "ORPHA:79282",
+                        "ORPHA:79283", "ORPHA:79284", "ORPHA:79651", "ORPHA:168598",
+                        "ORPHA:181412", "ORPHA:238583", "ORPHA:247525", "ORPHA:247598"]
+
+    for orphanet_code in orphanet_codes:
+        orphanet_code = orphanet_code.replace("ORPHA:", "")
+        inheritance = Extract.get_inheritance_from_diagnosis(diagnosis_code=orphanet_code)
+        chromosome = Extract.get_chromosome_from_diagnosis(diagnosis_code=orphanet_code)
+        log.info(f"{orphanet_code}: {inheritance} ; {chromosome}")
+
+
 if __name__ == '__main__':
     # main_load_json_from_file_as_bson()
     
     # openssl_dir, openssl_cafile = os.path.split(ssl.get_default_verify_paths().openssl_cafile)
     # print(openssl_dir)
     # print(openssl_cafile)
-    # main_ontology_api()
-
+    main_ontology_api()
     # main_ontology_code_class()
+
+    # test_get_inheritance_orphanet()
 
     print("Done.")

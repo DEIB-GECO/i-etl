@@ -1,67 +1,188 @@
 import os
-import sys
+import re
 
-from argparse import FileType
 from pandas import DataFrame
 
-from constants.structure import DOCKER_FOLDER_PREPROCESSED, DOCKER_FOLDER_DATA, DOCKER_FOLDER_PHENOTYPIC, \
-    DOCKER_FOLDER_SAMPLE, DOCKER_FOLDER_DIAGNOSIS
 from database.Execution import Execution
-from enums.FileTypes import FileTypes
+from enums.AccessTypes import AccessTypes
+from enums.DiagnosisColumns import DiagnosisColumns
+from enums.Profile import Profile
 from enums.MetadataColumns import MetadataColumns
 from enums.ParameterKeys import ParameterKeys
 from preprocessing.Preprocess import Preprocess
+from utils.api_utils import send_query_to_api, parse_json_response
 from utils.assertion_utils import is_not_nan
 from utils.file_utils import read_tabular_file_as_string
 from utils.setup_logger import log
 
 
 class PreprocessBuzziUC1(Preprocess):
-    def __init__(self, execution: Execution):
-        super().__init__(execution=execution)
+    def __init__(self, execution: Execution, metadata: DataFrame, data: DataFrame, profile: Profile):
+        super().__init__(execution=execution, metadata=metadata, data=data, profile=profile)
+
+        self.ids = []
+        self.diagnosis_acronyms = []
+        self.diagnosis_names = []
+        self.affected_booleans = []
+        self.orphanet = []
+        self.gene_names = []
+        self.inheritance = []
+        self.chr_number = []
+        self.zigosity = []
+        self.mapping_diagnoses_infos = {}
+        self.mapping_barcode_pid = {}
 
     def run(self):
-        screening_filepaths = os.getenv(ParameterKeys.PHENOTYPIC_PATHS)
-        if screening_filepaths is not None:
-            log.info(screening_filepaths)
-            for screening_filepath in screening_filepaths.split(","):
-                df = read_tabular_file_as_string(filepath=f"{os.path.join(DOCKER_FOLDER_DATA, screening_filepath)}", read_as_string=False)
-                df.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x), inplace=True)
+        log.info("pre-process BUZZI data")
+        if self.profile == Profile.DIAGNOSIS:
+            # 1. associate each disease to its information: gene, orphanet code, zigosity, etc
+            transformation_df = read_tabular_file_as_string(self.execution.diagnosis_regexes_filepath)
+            transformation_df.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x), inplace=True)  # normalize column names
 
-                # 1. split initial screening in sample data and screening (phenotypic) data
-                lab_columns = ["DateOfBirth", "Sex", "City", "GestationalAge", "Ethnicity", "Weight", "Twins", "AntibioticsBaby", "AntibioticsMother", "Meconium", "CortisoneBaby", "CortisoneMother", "TyroidMother", "Premature", "BabyFed", "HUFeed", "MIXFeed", "ARTFeed", "TPNFeed", "ENFeed", "TPNCARNFeed", "TPNMCTFeed", "Hospital", "HospitalCode1", "HospitalCode2", "BirthMethod"]
-                lab_columns = [MetadataColumns.normalize_name(column_name) for column_name in lab_columns]
+            for i, row in transformation_df.iterrows():
+                # acronym column
+                acronym = row[DiagnosisColumns.ACRONYM].lower().strip()
+                if acronym not in self.mapping_diagnoses_infos:
+                    self.mapping_diagnoses_infos[acronym] = {}
+                # gene column
+                if is_not_nan(row[DiagnosisColumns.GENE_NAME]) and "," not in row[DiagnosisColumns.GENE_NAME]:
+                    self.mapping_diagnoses_infos[acronym][DiagnosisColumns.GENE_NAME] = row[DiagnosisColumns.GENE_NAME]
+                else:
+                    # there is no gene for that disease or this is a multigenic disease,
+                    # we do not record this
+                    self.mapping_diagnoses_infos[acronym][DiagnosisColumns.GENE_NAME] = None
+                # diagnosis name column
+                if is_not_nan(row[DiagnosisColumns.DIAGNOSIS_NAME]):
+                    self.mapping_diagnoses_infos[acronym][DiagnosisColumns.DIAGNOSIS_NAME] = row[DiagnosisColumns.DIAGNOSIS_NAME]
+                else:
+                    self.mapping_diagnoses_infos[acronym][DiagnosisColumns.DIAGNOSIS_NAME] = None
+                # orphanet code column
+                if is_not_nan(row[DiagnosisColumns.ORPHANET_CODE]):
+                    code = row[DiagnosisColumns.ORPHANET_CODE].replace("ORPHA:", "")
+                    self.mapping_diagnoses_infos[acronym][DiagnosisColumns.ORPHANET_CODE] = row[DiagnosisColumns.ORPHANET_CODE]
+                    self.mapping_diagnoses_infos[acronym][DiagnosisColumns.INHERITANCE] = PreprocessBuzziUC1.get_inheritance(diagnosis_code=code)
+                    self.mapping_diagnoses_infos[acronym][DiagnosisColumns.CHR_NUMBER] = PreprocessBuzziUC1.get_chromosome(diagnosis_code=code)
+                else:
+                    self.mapping_diagnoses_infos[acronym][DiagnosisColumns.ORPHANET_CODE] = None
+                    self.mapping_diagnoses_infos[acronym][DiagnosisColumns.INHERITANCE] = None
+                    self.mapping_diagnoses_infos[acronym][DiagnosisColumns.CHR_NUMBER] = None
 
-                # a. get sample data: no lab columns
-                # (except patient id, that is kept to be able to know which sample is for which patient)
-                df_samples = DataFrame(df)
-                df_samples = df_samples.drop(lab_columns, axis=1)
+                self.mapping_diagnoses_infos[acronym][DiagnosisColumns.ZIGOSITY] = None
 
-                # b. get lab data: only lab columns + patient id
-                lab_columns.append(MetadataColumns.normalize_name("id"))
-                df_lab = df[lab_columns]
-                df_lab = df_lab.drop_duplicates(subset=["id"], keep=False)
+            # 2. associate each sample barcode to the patient id
+            prefix = Profile.get_prefix_for_path(filetype=Profile.PHENOTYPIC)
+            df = read_tabular_file_as_string(filepath=f"{os.path.join(prefix, "screening.csv")}")
+            self.mapping_barcode_pid = {row["SampleBarcode"]: row["id"] for index, row in df.iterrows()}
 
-                self.save_preprocessed_file(df=df_lab, file_type=FileTypes.PHENOTYPIC, filename="phenotypic.csv")
-                self.save_preprocessed_file(df=df_samples, file_type=FileTypes.SAMPLE, filename="samples.csv")
+            # 3. for each patient, collect the acronym and whether he is affected or a carrier
+            count_affected = 0
+            count_carrier = 0
+            count_skipped = 0
+            for index, row in self.data.iterrows():
+                pid = row["patient_id"]
+                if is_not_nan(row["affetto"]):
+                    count_affected += 1
+                    # the patient is affected by this disease, so we record this
+                    self.record_diagnosis_for_patient(pid=pid, row=row, column="affetto")
+                if is_not_nan(row["carrier"]):
+                    count_carrier += 1
+                    # the patient is a carrier of the disease
+                    # if we decide to record it, we record everything...
+                    if self.execution.record_carrier_patients:
+                        self.record_diagnosis_for_patient(pid=pid, row=row, column="carrier")
+                    else:
+                        # ...otherwise we do not record any information
+                        count_skipped += 1
+                        pass
 
-        diagnosis_filepaths = os.getenv(ParameterKeys.DIAGNOSIS_PATHS)
-        if diagnosis_filepaths is not None:
-            for diagnosis_filepath in diagnosis_filepaths.split(","):
-                # 2. pre-process diagnosis data to:
-                df_diag = read_tabular_file_as_string(filepath=f"{os.path.join(DOCKER_FOLDER_DATA, diagnosis_filepath)}", read_as_string=False)
+            log.info(f"count affected is {count_affected}, count carrier is {count_carrier}, count skipped is {count_skipped}, multi diagnosis is 11 = {count_affected+count_carrier+count_skipped+11}")
+            log.info(f"{len(self.ids)} ids")
+            log.info(f"{len(self.diagnosis_names)} diagnosis name")
+            log.info(f"{len(self.diagnosis_acronyms)} acronyms")
+            log.info(f"{len(self.affected_booleans)} booleans")
+            log.info(f"{len(self.orphanet)} orphanet codes")
+            log.info(f"{len(self.gene_names)} gene names")
+            log.info(f"{len(self.inheritance)} inheritance names")
+            log.info(f"{len(self.chr_number)} chr number")
+            log.info(f"{len(self.zigosity)} zigosity")
 
-                # a. replace the "affetto" and "carrier" columns by the columns "acronym" and "affected"
-                diagnosis = [row["affetto"] if is_not_nan(row["affetto"]) else row["carrier"] if is_not_nan(row["carrier"]) else None for index, row in df_diag.iterrows()]
-                affected_booleans = [True if is_not_nan(row["affetto"]) else False for index, row in df_diag.iterrows()]
-                df_diag["acronym"] = diagnosis
-                df_diag["affected"] = affected_booleans
-                df_diag.drop("carrier", axis=1, inplace=True)
-                df_diag.drop("affetto", axis=1, inplace=True)
+            self.data = DataFrame()
+            self.data[DiagnosisColumns.ID] = self.ids
+            self.data[DiagnosisColumns.DIAGNOSIS_NAME] = self.diagnosis_names
+            self.data[DiagnosisColumns.ACRONYM] = self.diagnosis_acronyms
+            self.data[DiagnosisColumns.AFFECTED] = self.affected_booleans
+            self.data[DiagnosisColumns.ORPHANET_CODE] = self.orphanet
+            self.data[DiagnosisColumns.GENE_NAME] = self.gene_names
+            self.data[DiagnosisColumns.INHERITANCE] = self.inheritance
+            self.data[DiagnosisColumns.CHR_NUMBER] = self.chr_number
+            self.data[DiagnosisColumns.ZIGOSITY] = self.zigosity
 
-                # b. replace the SampleBarCode by the patient id
-                mapping = {row["sample_barcode"]: row["id"] for index, row in df_diag.iterrows()}
-                df_diag["SampleBarcode"] = df_diag["SampleBarcode"].replace(mapping)
-                df_diag.rename(columns={"SampleBarcode": "id"}, inplace=True)
+            # finally, normalize the values (they will be cast in the Transform step)
+            for column in self.data.columns:
+                self.data[column] = self.data[column].apply(lambda x: MetadataColumns.normalize_value(column_value=x))
 
-                self.save_preprocessed_file(df=df_diag, file_type=FileTypes.DIAGNOSIS, filename="diagnoses.csv")
+    def add_id(self, pid):
+        if pid in self.mapping_barcode_pid:
+            # the column is named "patient_id" in buzzi
+            # but this actually contains sample bar codes
+            self.ids.append(self.mapping_barcode_pid[pid])
+        else:
+            # we did not find the corresponding patient id in the mapping,
+            # thus we simply write the sample bar code as it is
+            self.ids.append(pid)
+
+    def record_diagnosis_for_patient(self, pid, row, column: str):
+        # column is "affetto" or "carrier"
+        row[column] = row[column].replace("/", "+") if "/" in row[column] else row[column]
+        for disease in row[column].split("+"):
+            self.add_id(pid=pid)
+            acronym = disease.lower().strip()
+            self.diagnosis_acronyms.append(acronym)
+            if column == "affetto":
+                self.affected_booleans.append(True)
+            else:
+                self.affected_booleans.append(False)  # carrier
+            if acronym in self.mapping_diagnoses_infos:
+                self.diagnosis_names.append(self.mapping_diagnoses_infos[acronym][DiagnosisColumns.DIAGNOSIS_NAME])
+                self.orphanet.append(self.mapping_diagnoses_infos[acronym][DiagnosisColumns.ORPHANET_CODE])
+                self.gene_names.append(self.mapping_diagnoses_infos[acronym][DiagnosisColumns.GENE_NAME])
+                self.inheritance.append(self.mapping_diagnoses_infos[acronym][DiagnosisColumns.INHERITANCE])
+                self.chr_number.append(self.mapping_diagnoses_infos[acronym][DiagnosisColumns.CHR_NUMBER])
+                self.zigosity.append(self.mapping_diagnoses_infos[acronym][DiagnosisColumns.ZIGOSITY])
+            else:
+                self.diagnosis_names.append(None)
+                self.orphanet.append(None)
+                self.gene_names.append(None)
+                self.inheritance.append(None)
+                self.chr_number.append(None)
+                self.zigosity.append(None)
+
+    @classmethod
+    def get_inheritance(cls, diagnosis_code: str) -> str | None:
+        url = f"https://api.orphadata.com/rd-natural_history/orphacodes/{diagnosis_code}"
+        response = send_query_to_api(url=url, secret="nbarret", access_type=AccessTypes.API_KEY_IN_HEADER)
+        data = parse_json_response(response)
+        if "data" in data and "results" in data["data"] and "TypeOfInheritance" in data["data"]["results"]:
+            inheritances = data["data"]["results"]["TypeOfInheritance"]
+            if len(inheritances) >= 1:
+                return data["data"]["results"]["TypeOfInheritance"][0]
+        return None
+
+    @classmethod
+    def get_chromosome(cls, diagnosis_code: str) -> str | None:
+        url = f"https://api.orphadata.com/rd-associated-genes/orphacodes/{diagnosis_code}"
+        response = send_query_to_api(url=url, secret="nbarret", access_type=AccessTypes.API_KEY_IN_HEADER)
+        data = parse_json_response(response)
+        if "data" in data and "results" in data["data"] and "DisorderGeneAssociation" in data["data"]["results"]:
+            associations = data["data"]["results"]["DisorderGeneAssociation"]
+            if len(associations) >= 1:
+                associations = associations[0]
+                if "Gene" in associations and "Locus" in associations["Gene"]:
+                    all_locus = associations["Gene"]["Locus"]
+                    if len(all_locus) >= 1:
+                        all_locus = all_locus[0]
+                        if "GeneLocus" in all_locus:
+                            full_chromosome_position = all_locus["GeneLocus"]
+                            regex_elements = re.search(r"[0-9]+", full_chromosome_position)
+                            return regex_elements.group()  # the chromosome_number is the first number in the string
+        return None

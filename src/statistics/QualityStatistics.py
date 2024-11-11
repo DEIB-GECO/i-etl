@@ -9,12 +9,9 @@ class QualityStatistics(Statistics):
 
         # counts over the (pre-processed) metadata and data files
         self.columns_no_ontology = []  # list of column names for which no ontology resource is provided
-        self.columns_no_var_type = []  # list of column names for which no var type is provided
         self.columns_no_etl_type = []  # list of column names for which no etl type is provided
-        self.columns_unmatched_var_etl_types = {}  # { column_name: { "var_type": vtype, "etl_type": etype }, ... }
         self.columns_unmatched_typeof_etl_types = {}  # { column_name: { "typeof_type": ttype, "etl_type": etype }, ... }
         self.columns_unknown_ontology = {}  # { column_name: [set of unknown ontology names], ... }
-        self.columns_unknown_var_type = {}  # { column_name: unknown_var_type, ... }
         self.columns_unknown_etl_type = {}  # { column_name: unknown_etl_type, ... }
         self.categorical_columns_without_json_values = []  # list of column names for which the ETL type is "category" and for which the column JSON_values is empty
         self.categorical_columns_unparseable_json = {}  # { column_name: broken_json, ... }
@@ -33,20 +30,9 @@ class QualityStatistics(Statistics):
         if self.record_stats and column_name not in self.columns_no_ontology:
             self.columns_no_ontology.append(column_name)
 
-    def add_column_with_no_var_type(self, column_name: str):
-        if self.record_stats and column_name not in self.columns_no_var_type:
-            self.columns_no_var_type.append(column_name)
-
     def add_column_with_no_etl_type(self, column_name: str):
         if self.record_stats and column_name not in self.columns_no_etl_type:
             self.columns_no_etl_type.append(column_name)
-
-    def add_column_with_unmatched_var_etl_types(self, column_name: str, var_type: str, etl_type: str):
-        if self.record_stats:
-            if column_name not in self.columns_unmatched_var_etl_types:
-                self.columns_unmatched_var_etl_types[column_name] = {}
-            self.columns_unmatched_var_etl_types[column_name]["var_type"] = var_type
-            self.columns_unmatched_var_etl_types[column_name]["etl_type"] = etl_type
 
     def add_column_with_unmatched_typeof_etl_types(self, column_name: str, typeof_type: str, etl_type: str):
         # {column_name: { etl_type: [all encountered var types different from etl_type] }, ... }
@@ -62,10 +48,6 @@ class QualityStatistics(Statistics):
                 self.columns_unknown_ontology[column_name] = []
             if ontology_name not in self.columns_unknown_ontology[column_name]:
                 self.columns_unknown_ontology[column_name].append(ontology_name)
-
-    def add_column_unknown_var_type(self, column_name: str, var_type: str):
-        if self.record_stats and column_name not in self.columns_unknown_var_type:
-            self.columns_unknown_var_type[column_name] = var_type
 
     def add_column_unknown_etl_type(self, column_name: str, etl_type: str):
         if self.record_stats and column_name not in self.columns_unknown_etl_type:

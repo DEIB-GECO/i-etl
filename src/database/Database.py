@@ -119,7 +119,7 @@ class Database:
     def upsert_one_tuple(self, table_name: str, unique_variables: list[str], one_tuple: dict) -> None:
         # filter_dict should only contain the fields on which we want a Resource to be unique,
         # e.g., name for Hospital instances, ID for Patient instances,
-        #       the combination of Patient, Hospital, Sample and LabFeature instances for LabRecord instances
+        #       the combination of Patient, Hospital, Clinical and LabFeature instances for LabRecord instances
         #       see https://github.com/Nelly-Barret/BETTER-fairificator/issues/3
         # one_tuple contains the Resource itself (with all its fields; as a JSON dict)
         # use $setOnInsert instead of $set to not modify the existing tuple if it already exists in the DB
@@ -150,7 +150,7 @@ class Database:
             filter_dict = {}
             for unique_variable in unique_variables:
                 if unique_variable in one_tuple:
-                    # only BUZZI LabRecord instances have a "based_on" attribute for the Samples
+                    # only BUZZI LabRecord instances have a "based_on" attribute for the Clinical records
                     # others do not have the "based_on", so we need to check whether that attribute is present or not
                     filter_dict[unique_variable] = one_tuple[unique_variable]
             update_stmt = self.create_update_stmt(the_tuple=one_tuple)
@@ -179,14 +179,18 @@ class Database:
 
     def load_json_in_table(self, table_name: str, unique_variables: list[str]) -> None:
         log.info(f"Load data in {table_name}")
-        # first, create an index on the unique variables to speed up the upsert (which checks whether each document already exists)
-        self.create_unique_index(table_name=table_name, columns={elem: 1 for elem in unique_variables})
+        first_file = True
         for filename in os.listdir(self.execution.working_dir_current):
             if re.search(table_name+"[0-9]+", filename) is not None:
                 # implementation note: we cannot simply use filename.startswith(table_name)
                 # because both XFeature and XRecord start with X
                 # the solution is to use a regex
                 with open(os.path.join(self.execution.working_dir_current, filename), "r") as json_datafile:
+                    if first_file:
+                        # first, create an index on the unique variables to speed up the upsert (which checks whether each document already exists)
+                        # we do this only if we have data for that kind of data
+                        self.create_unique_index(table_name=table_name, columns={elem: 1 for elem in unique_variables})
+                        first_file = False
                     tuples = bson.json_util.loads(json_datafile.read())
                     log.debug(f"Table {table_name}, file {filename}, loading {len(tuples)} tuples with unique variables being {unique_variables}")
                     _ = self.upsert_one_batch_of_tuples(table_name=table_name,
@@ -236,6 +240,7 @@ class Database:
         only one column should be unique. The parameter should be of the form { "colA": 1, ... }.
         :return: Nothing.
         """
+        log.info(f"create index (unique) in {table_name} on columns {columns}")
         self.db[table_name].create_index(columns, unique=True)
 
     def create_non_unique_index(self, table_name: str, columns: dict) -> None:
@@ -246,6 +251,7 @@ class Database:
         only one column should be unique. The parameter should be of the form { "colA": 1, ... }.
         :return: Nothing.
         """
+        log.info(f"create index (non-unique) in {table_name} on columns {columns}")
         self.db[table_name].create_index(columns, unique=False)
 
     def get_min_or_max_value(self, table_name: str, field: str, sort_order: int, from_string: bool) -> int | float:
@@ -317,8 +323,8 @@ class Database:
     def get_max_resource_counter_id(self) -> int:
         max_value = -1
         for table_name in TableNames.values(db=self):
-            if table_name == TableNames.SAMPLE_RECORD:
-                # pass because Sample resources have their ID assigned by hospitals, not the FAIRificator
+            if table_name == TableNames.CLINICAL_RECORD:
+                # pass because Clinical resources have their ID assigned by hospitals, not the FAIRificator
                 pass
             else:
                 current_max_identifier = self.get_max_value(table_name=table_name, field="identifier", from_string=True)
@@ -328,7 +334,7 @@ class Database:
                         if current_max_identifier > max_value:
                             max_value = current_max_identifier
                     except ValueError:
-                        # this identifier is not an integer, e.g., a Sample ID like 24DL54
+                        # this identifier is not an integer, e.g., a Clinical base ID like 24DL54
                         # we simply ignore it and try to find the next maximum integer ID
                         pass
                 else:

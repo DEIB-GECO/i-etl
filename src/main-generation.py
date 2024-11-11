@@ -14,6 +14,5 @@ if __name__ == '__main__':
     execution = Execution()
     execution.internals_set_up()
     execution.file_set_up(setup_files=False)
-    database = Database(execution=execution)
     data_generator = DataGenerationTask(execution=execution)
     data_generator.run()

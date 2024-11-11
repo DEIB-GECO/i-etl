@@ -1,5 +1,8 @@
 import re
 
+import requests
+
+API_SESSION = requests.Session()
 
 BATCH_SIZE = 1000
 

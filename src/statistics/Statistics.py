@@ -2,6 +2,7 @@ import jsonpickle
 
 from database.Database import Database
 from database.Execution import Execution
+from utils.setup_logger import log
 
 
 class Statistics:
@@ -24,6 +25,7 @@ class Statistics:
     def to_json(self):
         # encode creates a stringified JSON object of the class
         # and decode transforms the stringified JSON to a "real" JSON object
+        # log.info(jsonpickle.decode(jsonpickle.encode(self, unpicklable=False)))
         return jsonpickle.decode(jsonpickle.encode(self, unpicklable=False))
 
     def __str__(self) -> str:

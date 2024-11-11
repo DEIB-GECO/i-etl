@@ -5,9 +5,9 @@ from utils.setup_logger import log
 
 if __name__ == '__main__':
     root = "/Users/nelly/Documents/boulot/postdoc-polimi/BETTER-fairificator/datasets/data/BUZZI"
-    diagnoses = read_tabular_file_as_string(os.path.join(root, "diagnoses-cleaned.xlsx"), read_as_string=False)
-    regexes = read_tabular_file_as_string(os.path.join(root, "diagnosis-regexes.xlsx"), read_as_string=False)
-    data = read_tabular_file_as_string(os.path.join(root, "screening.csv"), read_as_string=False)
+    diagnoses = read_tabular_file_as_string(os.path.join(root, "diagnoses-cleaned.xlsx"))
+    regexes = read_tabular_file_as_string(os.path.join(root, "diagnosis-regexes.xlsx"))
+    data = read_tabular_file_as_string(os.path.join(root, "screening.csv"))
 
     # 0. preliminary loading and extraction
     distinct_diseases_carrier_patient = list(diagnoses["carrier"].unique())

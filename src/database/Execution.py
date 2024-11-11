@@ -2,19 +2,18 @@ import getpass
 import logging
 import os.path
 import platform
-import subprocess
 from datetime import datetime
 
 import pymongo
-from dotenv import load_dotenv
+from enums.Profile import Profile
 
-from enums.FileTypes import FileTypes
+from constants.structure import WORKING_DIR, DB_CONNECTION, DOCKER_FOLDER_METADATA, \
+    DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS, \
+    DOCKER_FOLDER_TEST
 from enums.HospitalNames import HospitalNames
 from enums.ParameterKeys import ParameterKeys
 from enums.UpsertPolicy import UpsertPolicy
 from utils import setup_logger
-from constants.structure import WORKING_DIR, DB_CONNECTION, DOCKER_FOLDER_METADATA, DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS, \
-    DOCKER_FOLDER_TEST
 from utils.cast_utils import cast_str_to_int
 from utils.setup_logger import log
 
@@ -30,17 +29,12 @@ class Execution:
 
         # parameters related to the project structure and the input/output files
         self.metadata_filepath = None  # user input
-        self.diagnosis_regexes_filepath = None  # user input
-        self.phenotypic_filepaths = []  # preprocessed data
-        self.sample_filepaths = []  # preprocessed data
-        self.diagnosis_filepaths = []  # preprocessed data
-        self.medicine_filepaths = []  # preprocessed data
-        self.imaging_filepaths = []  # preprocessed data
-        self.genomic_filepaths = []  # preprocessed data
         self.current_filepath = None  # set in the loop on files in ETL
-        self.current_file_type = None  # set in the loop on files in ETL
+        self.current_file_profile = None  # set in Extract
+        self.diagnosis_regexes_filepath = None  # user input
         self.anonymized_patient_ids_filepath = None  # user input
         self.use_en_locale = False  # user input
+        self.record_carrier_patients = False  # user input
 
         # parameters related to the database
         self.db_connection = None  # user input
@@ -62,9 +56,6 @@ class Execution:
         self.user = getpass.getuser()
 
         # parameters related to the ETL pipeline
-        self.is_extract = True
-        self.is_transform = True
-        self.is_load = True
         self.columns_to_remove = []
 
     def internals_set_up(self) -> None:
@@ -80,11 +71,11 @@ class Execution:
         self.use_en_locale = self.check_parameter(key=ParameterKeys.USE_EN_LOCALE, accepted_values=["True", "False", True, False], default_value=self.use_en_locale)
         self.db_upsert_policy = self.check_parameter(key=ParameterKeys.DB_UPSERT_POLICY, accepted_values=UpsertPolicy.values(), default_value=self.db_upsert_policy)
         self.db_drop = self.check_parameter(key=ParameterKeys.DB_DROP, accepted_values=["True", "False", True, False], default_value=self.db_drop)
-        self.is_extract = self.check_parameter(key=ParameterKeys.IS_EXTRACT, accepted_values=["True", "False", True, False], default_value=self.is_extract)
-        self.is_transform = self.check_parameter(key=ParameterKeys.IS_TRANSFORM, accepted_values=["True", "False", True, False], default_value=self.is_transform)
-        self.is_load = self.check_parameter(key=ParameterKeys.IS_LOAD, accepted_values=["True", "False", True, False], default_value=self.is_load)
         self.columns_to_remove = self.check_parameter(key=ParameterKeys.COLUMNS_TO_REMOVE_KEY, accepted_values=None, default_value=self.columns_to_remove)
         self.nb_rows = self.check_parameter(key=ParameterKeys.DATA_GEN_NB_ROWS, accepted_values=None, default_value=self.nb_rows)
+        log.info(self.record_carrier_patients)
+        self.record_carrier_patients = self.check_parameter(key=ParameterKeys.RECORD_CARRIER_PATIENT, accepted_values=["True", "False", True, False], default_value=self.record_carrier_patients)
+        log.info(self.record_carrier_patients)
 
         # C. create working files for the ETL
         self.create_current_working_dir()
@@ -120,7 +111,7 @@ class Execution:
             log.debug(self.diagnosis_regexes_filepath)
             if self.diagnosis_regexes_filepath is not None:
                 self.diagnosis_regexes_filepath = os.path.join(
-                    FileTypes.get_prefix_for_path(filetype=FileTypes.DIAGNOSIS_REGEX), self.diagnosis_regexes_filepath)
+                    Profile.get_prefix_for_path(filetype=Profile.DIAGNOSIS_REGEX), self.diagnosis_regexes_filepath)
                 log.debug(f"{self.diagnosis_regexes_filepath}")
 
     def check_parameter(self, key: str, accepted_values: list|None, default_value) -> str | bool | int | None:
@@ -208,12 +199,6 @@ class Execution:
                 "working_dir_current": self.working_dir_current,
                 "current_filepath": self.current_filepath,
                 ParameterKeys.METADATA_PATH: self.metadata_filepath,
-                ParameterKeys.PHENOTYPIC_PATHS: self.phenotypic_filepaths,
-                ParameterKeys.SAMPLE_PATHS: self.sample_filepaths,
-                ParameterKeys.DIAGNOSIS_PATHS: self.diagnosis_filepaths,
-                ParameterKeys.MEDICINE_PATHS: self.medicine_filepaths,
-                ParameterKeys.IMAGING_PATHS: self.imaging_filepaths,
-                ParameterKeys.GENOMIC_PATHS: self.genomic_filepaths,
                 ParameterKeys.ANONYMIZED_PATIENT_IDS: self.anonymized_patient_ids_filepath,
                 ParameterKeys.DB_NAME: self.db_name,
                 ParameterKeys.DB_DROP: self.db_drop,

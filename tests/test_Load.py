@@ -6,6 +6,7 @@ from datetime import datetime
 from database.Database import Database
 from database.Execution import Execution
 from enums.ParameterKeys import ParameterKeys
+from enums.Profile import Profile
 from etl.Load import Load
 from enums.HospitalNames import HospitalNames
 from enums.Ontologies import Ontologies
@@ -19,7 +20,7 @@ from utils.test_utils import set_env_variables_from_dict
 
 
 # personalized setup called at the beginning of each test
-def my_setup(create_indexes: bool) -> Load:
+def my_setup(profile: Profile, create_indexes: bool) -> Load:
     # 1. as usual, create a Load object (to setup the current working directory)
     args = {
         ParameterKeys.DB_NAME: TEST_DB_NAME,
@@ -29,14 +30,15 @@ def my_setup(create_indexes: bool) -> Load:
     set_env_variables_from_dict(env_vars=args)
     TestLoad.execution.internals_set_up()
     TestLoad.execution.file_set_up(setup_files=False)  # no need to setup the files, we get data and metadata as input
+    TestLoad.execution.current_file_profile = profile
     database = Database(TestLoad.execution)
     load = Load(database=database, execution=TestLoad.execution, create_indexes=create_indexes,
                 quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False))
 
     # 2. create few "fake" files in the current working directory in order to test insertion and index creation
-    lab_features = [
+    phen_features = [
         {
-            "identifier": "LaboratoryFeature:1",
+            "identifier": f"{TableNames.PHENOTYPIC_RECORD}:1",
             "ontology_resource": {
                 "system": Ontologies.LOINC["url"],
                 "code": "123-456",
@@ -44,7 +46,7 @@ def my_setup(create_indexes: bool) -> Load:
             },
             "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())
         }, {
-            "identifier": "LaboratoryFeature:2",
+            "identifier": f"{TableNames.PHENOTYPIC_RECORD}:2",
             "ontology_resource": {
                 "system": Ontologies.LOINC["url"],
                 "code": "123-457",
@@ -54,13 +56,13 @@ def my_setup(create_indexes: bool) -> Load:
         }
     ]
 
-    lab_records = [
+    phen_records = [
         {
-            "identifier": "LaboratoryRecord:1",
+            "identifier": f"{TableNames.PHENOTYPIC_RECORD}:1",
             "value": 12,
             "subject": "test:1",
-            "recorded_by": "Hospital:1",
-            "instantiate": "LaboratoryFeature:1",
+            "recorded_by": f"{TableNames.HOSPITAL}:1",
+            "instantiate": f"{TableNames.PHENOTYPIC_FEATURE}:1",
             "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())
         }
     ]
@@ -71,23 +73,23 @@ def my_setup(create_indexes: bool) -> Load:
         {"identifier": "test:3", "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())}
     ]
 
-    hospital = {"identifier": "Hospital:1", "name": HospitalNames.TEST_H1}
+    hospital = {"identifier": f"{TableNames.HOSPITAL}:1", "name": HospitalNames.TEST_H1}
 
     # 3. write them in temporary JSON files
-    path_lab_features = os.path.join(TestLoad.execution.working_dir_current, TableNames.PHENOTYPIC_FEATURE + "1.json")
-    path_lab_records = os.path.join(TestLoad.execution.working_dir_current, TableNames.PHENOTYPIC_RECORD + "1.json")
+    path_phen_features = os.path.join(TestLoad.execution.working_dir_current, TableNames.PHENOTYPIC_FEATURE + "1.json")
+    path_phen_records = os.path.join(TestLoad.execution.working_dir_current, TableNames.PHENOTYPIC_RECORD + "1.json")
     path_patients = os.path.join(TestLoad.execution.working_dir_current, TableNames.PATIENT+"1.json")
     path_hospital = os.path.join(TestLoad.execution.working_dir_current, TableNames.HOSPITAL+"1.json")
     # insert the data that is inserted during the Transform step
-    with open(path_lab_features, 'w') as f:
-        json.dump(lab_features, f)
-    load.database.db[TableNames.PHENOTYPIC_FEATURE].insert_many(lab_features)
+    with open(path_phen_features, 'w') as f:
+        json.dump(phen_features, f)
+    load.database.db[TableNames.PHENOTYPIC_FEATURE].insert_many(phen_features)
     with open(path_hospital, 'w') as f:
         json.dump(hospital, f)
     load.database.db[TableNames.HOSPITAL].insert_one(hospital)
     # for other files, it will be inserted with the function load_remaining_data()
-    with open(path_lab_records, 'w') as f:
-        json.dump(lab_records, f)
+    with open(path_phen_records, 'w') as f:
+        json.dump(phen_records, f)
     with open(path_patients, 'w') as f:
         json.dump(patients, f)
 
@@ -101,16 +103,19 @@ class TestLoad(unittest.TestCase):
         pass
 
     def test_load_remaining_data(self):
-        load = my_setup(create_indexes=True)
+        load = my_setup(profile=Profile.PHENOTYPIC, create_indexes=True)
         load.load_remaining_data()
 
         assert load.database.db[TableNames.PHENOTYPIC_FEATURE].count_documents(filter={}) == 2
         assert load.database.db[TableNames.PHENOTYPIC_RECORD].count_documents(filter={}) == 1
         assert load.database.db[TableNames.HOSPITAL].count_documents(filter={}) == 1
-        assert load.database.db[TableNames.SAMPLE_RECORD].count_documents(filter={}) == 0
+        assert load.database.db[TableNames.CLINICAL_RECORD].count_documents(filter={}) == 0
+        assert load.database.db[TableNames.CLINICAL_FEATURE].count_documents(filter={}) == 0
+        assert load.database.db[TableNames.GENOMIC_RECORD].count_documents(filter={}) == 0
+        assert load.database.db[TableNames.GENOMIC_FEATURE].count_documents(filter={}) == 0
 
     def test_create_db_indexes(self):
-        load = my_setup(create_indexes=True)
+        load = my_setup(profile=Profile.PHENOTYPIC, create_indexes=True)
         load.create_db_indexes()
 
         # 1. for each table , we check that there are three indexes:

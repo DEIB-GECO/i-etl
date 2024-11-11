@@ -1,10 +1,16 @@
 from enums.EnumAsClass import EnumAsClass
+from enums.MetadataColumns import MetadataColumns
 
 
 class DiagnosisColumns(EnumAsClass):
-    # ontology names HAVE TO be normalized by hand here because we can't refer to static methods
-    # because they do not exist yet in the execution context
-    NAME = "diagnosis_name"
-    ACRONYM = "acronym"
-    ORPHANET_CODE = "orpha_net"
-    AFFECTED = "affected"
+    ID = MetadataColumns.normalize_name(column_name="Id")
+    AFFECTED = MetadataColumns.normalize_name(column_name="Affected")
+    DIAGNOSIS_NAME = MetadataColumns.normalize_name(column_name="DiagnosisName")
+    ACRONYM = MetadataColumns.normalize_name(column_name="Acronym")
+    ORPHANET_CODE = MetadataColumns.normalize_name(column_name="OrphaNet")
+    GENE_NAME = MetadataColumns.normalize_name(column_name="GeneName")
+    INHERITANCE = MetadataColumns.normalize_name(column_name="VariantInheritance")
+    CHR_NUMBER = MetadataColumns.normalize_name(column_name="ChromosomeNumber")
+    ZIGOSITY = MetadataColumns.normalize_name(column_name="Zigosity")
+
+

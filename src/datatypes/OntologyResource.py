@@ -111,6 +111,10 @@ class OntologyResource:
         if compute_from_api:
             try:
                 if code_ontology == Ontologies.SNOMEDCT:
+                    # baseUrl = 'https://browser.ihtsdotools.org/snowstorm/snomed-ct'
+                    # edition = 'MAIN'
+                    # version = '2019-07-31'
+                    # url = f"{baseUrl}/browser/{edition}/{version}/concepts/{single_ontology_code}"
                     url_resource = quote(f"http://purl.bioontology.org/ontology/SNOMEDCT/{single_ontology_code}", safe="")
                     url = f"http://data.bioontology.org/ontologies/SNOMEDCT/classes/{url_resource}"
                     response = send_query_to_api(url=url, secret="d6fb9c05-3309-4158-892f-65434a9133b9", access_type=AccessTypes.API_KEY_IN_URL)
@@ -118,6 +122,7 @@ class OntologyResource:
                     try:
                         return data["prefLabel"]
                     except Exception as e:
+                        log.info(e)
                         quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_ontology_code, api_error=e.args[0])
                         return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif code_ontology == Ontologies.LOINC:

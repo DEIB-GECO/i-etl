@@ -18,19 +18,15 @@ if __name__ == "__main__":
     # python3 main.py
     # the code supposes to have a .env file next to main.py
     try:
+        log.info("Load environment file")
         # A. load the env. variables defined in .env.
         # note: specifying the .env in the compose.yml only gives access to those env. var. to Docker (not to Python)
         load_dotenv(os.environ["MY_ENV_FILE"])
 
         # create a new execution instance for that run
+        log.info("Create execution")
         execution = Execution()
         execution.internals_set_up()
-
-        # preprocess data files
-        preprocessing_task = PreprocessingTask(execution=execution)
-        preprocessing_task.run()
-
-        # store data files in the current execution instance
         execution.file_set_up(setup_files=True)
 
         # create the database instance (incl. connection)

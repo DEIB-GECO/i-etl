@@ -7,8 +7,8 @@ class TableNames(EnumAsClass):
     PATIENT = "Patient"
     PHENOTYPIC_FEATURE = "PhenotypicFeature"
     PHENOTYPIC_RECORD = "PhenotypicRecord"
-    SAMPLE_FEATURE = "SampleFeature"
-    SAMPLE_RECORD = "SampleRecord"
+    CLINICAL_FEATURE = "ClinicalFeature"
+    CLINICAL_RECORD = "ClinicalRecord"
     DIAGNOSIS_FEATURE = "DiagnosisFeature"
     DIAGNOSIS_RECORD = "DiagnosisRecord"
     GENOMIC_FEATURE = "GenomicFeature"
@@ -85,7 +85,7 @@ class TableNames(EnumAsClass):
         table_names = []
         for name, value in vars(cls).items():
             if not (name.startswith('__') or isinstance(value, classmethod)):
-                if db is None or (db.check_table_exists(table_name=value) and db is not None):
+                if db is None or (db is not None and db.check_table_exists(table_name=value)):
                     for one_filter in filters:
                         if value.endswith(one_filter):
                             table_names.append(value)

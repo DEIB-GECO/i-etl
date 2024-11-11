@@ -28,16 +28,11 @@ services:
       # Therefore, the metadata and data paths given to the ETL should start with /home/better-deployed/hospital-data/
       # And instead of asking users to provide such an absolute path (which they don't have to see because this is the Docker internal structure),
       # we let the ETL build it by appending the data filename to that path
-      - ${SERVER_FOLDER_DATA_GENERATION}:/home/better-deployed/hospital-data/gen-data
-      - ${SERVER_FOLDER_METADATA}:/home/better-deployed/hospital-data/metadata
-      - ${SERVER_FOLDER_PHENOTYPIC}:/home/better-deployed/hospital-data/phenotypic
-      - ${SERVER_FOLDER_SAMPLE}:/home/better-deployed/hospital-data/sample
-      - ${SERVER_FOLDER_DIAGNOSIS}:/home/better-deployed/hospital-data/diagnosis
-      - ${SERVER_FOLDER_MEDICINE}:/home/better-deployed/hospital-data/medicine
-      - ${SERVER_FOLDER_IMAGING}:/home/better-deployed/hospital-data/imaging
-      - ${SERVER_FOLDER_GENOMIC}:/home/better-deployed/hospital-data/genomic
-      - ${SERVER_FOLDER_PIDS}:/home/better-deployed/hospital-data/pids
-      - ${SERVER_FOLDER_TEST}:/home/better-deployed/hospital-data/test
+      - ${SERVER_FOLDER_DATA_GENERATION}:/home/better-deployed/synthetic-data
+      - ${SERVER_FOLDER_METADATA}:/home/better-deployed/metadata
+      - ${SERVER_FOLDER_DATA}:/home/better-deployed/real-data
+      - ${SERVER_FOLDER_PIDS}:/home/better-deployed/pids
+      - ${SERVER_FOLDER_TEST}:/home/better-deployed/test
       - ${SERVER_FOLDER_LOG_ETL}:/home/better-deployed/working-dir
     environment:
       - CONTEXT_MODE=${CONTEXT_MODE:-DEV}

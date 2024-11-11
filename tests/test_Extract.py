@@ -6,7 +6,7 @@ from database.Database import Database
 from database.Execution import Execution
 from enums.DataTypes import DataTypes
 from enums.ParameterKeys import ParameterKeys
-from enums.FileTypes import FileTypes
+from enums.Profile import Profile
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
@@ -21,45 +21,25 @@ from utils.test_utils import set_env_variables_from_dict
 
 
 # personalized setup called at the beginning of each test
-def my_setup(metadata_path: str, data_paths: str, data_type: FileTypes, pids_path: str, hospital_name: str) -> Extract:
-    key_data_paths = FileTypes.get_execution_key(data_type)
-    log.info(f"{key_data_paths} for data type {data_type}")
+def my_setup(metadata_path: str, data_paths: str, data_type: Profile, pids_path: str, hospital_name: str) -> Extract:
     args = {
         ParameterKeys.HOSPITAL_NAME: hospital_name,
         ParameterKeys.DB_NAME: TEST_DB_NAME,
         ParameterKeys.DB_DROP: "True",
         ParameterKeys.METADATA_PATH: metadata_path,
-        key_data_paths: data_paths,
+        ParameterKeys.DATA_FILES: data_paths,
         ParameterKeys.ANONYMIZED_PATIENT_IDS: pids_path
     }
     set_env_variables_from_dict(env_vars=args)
     TestExtract.execution.internals_set_up()
     TestExtract.execution.file_set_up(setup_files=True)  # we need to set up the metadata file at least
-    # in the dev mode, this is done by the preprocessing class (which may simply copy the datasets without preproecssing)
-    # but, this also takes care of prepending the prefix
-    # in tests, we do not go through the preprocessing, so we have to do it by have
-    TestExtract.execution.current_filepath = os.path.join(FileTypes.get_prefix_for_path(data_type), data_paths)
+    # in the dev mode, the current_filepath variable is set during the ETL
+    # for tests, we need to manually set it because we have no ETL instance
+    TestExtract.execution.current_filepath = os.path.join(DOCKER_FOLDER_TEST, data_paths)
     log.debug(TestExtract.execution.current_filepath)
     database = Database(TestExtract.execution)
-    extract = Extract(database=database, execution=TestExtract.execution, quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False))
+    extract = Extract(profile=data_type, database=database, execution=TestExtract.execution, quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False))
     return extract
-
-
-def get_filepath_from_execution(datatype: FileTypes):
-    if datatype == FileTypes.PHENOTYPIC:
-        return TestExtract.execution.phenotypic_filepaths[0]
-    elif datatype == FileTypes.SAMPLE:
-        return TestExtract.execution.sample_filepaths[0]
-    elif datatype == FileTypes.DIAGNOSIS:
-        return TestExtract.execution.diagnosis_filepaths[0]
-    elif datatype == FileTypes.MEDICINE:
-        return TestExtract.execution.medicine_filepaths[0]
-    elif datatype == FileTypes.GENOMIC:
-        return TestExtract.execution.genomic_filepaths[0]
-    elif datatype == FileTypes.IMAGING:
-        return TestExtract.execution.imaging_filepaths[0]
-    else:
-        return None
 
 
 class TestExtract(unittest.TestCase):
@@ -67,8 +47,8 @@ class TestExtract(unittest.TestCase):
 
     def test_load_metadata_file_H1_D1(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.ORIG_SAMPLE_PATH,
-                           data_type=FileTypes.SAMPLE,
+                           data_paths=TheTestFiles.ORIG_CLINICAL_PATH,
+                           data_type=Profile.CLINICAL,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()
@@ -83,7 +63,6 @@ class TestExtract(unittest.TestCase):
         assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_CODE][1])
         assert extract.metadata[MetadataColumns.COLUMN_NAME][1] == "sid"  # all lower case
         assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][1] == "The Sample ID"  # kept as it is in the metadata for more clarity
-        assert extract.metadata[MetadataColumns.VAR_TYPE][1] == DataTypes.STRING
         assert extract.metadata[MetadataColumns.ETL_TYPE][1] == DataTypes.STRING
         assert not is_not_nan(extract.metadata[MetadataColumns.JSON_VALUES][1])
         assert extract.metadata[MetadataColumns.VISIBILITY][1] == "PUBLIC_WITHOUT_ANONYMIZATION"
@@ -92,12 +71,12 @@ class TestExtract(unittest.TestCase):
         # DATASET: this should be the dataset name, and there should be no other datasets in that column
         unique_dataset_names = list(extract.metadata[MetadataColumns.DATASET_NAME].unique())
         assert len(unique_dataset_names) == 1
-        assert unique_dataset_names[0] == TheTestFiles.ORIG_SAMPLE_PATH.split(os.sep)[-1]
+        assert unique_dataset_names[0] == TheTestFiles.ORIG_CLINICAL_PATH.split(os.sep)[-1]
 
     def test_load_metadata_file_H1_D2(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_PHENOTYPIC_PATH,
-                           data_type=FileTypes.PHENOTYPIC,
+                           data_type=Profile.PHENOTYPIC,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()
@@ -108,12 +87,10 @@ class TestExtract(unittest.TestCase):
         assert len(extract.metadata) == 4, "The expected number of lines is 4."
 
         # b. checking the "sex" line completely
-        log.info(extract.metadata[MetadataColumns.ONTO_NAME][1])
         assert extract.metadata[MetadataColumns.ONTO_NAME][1] == "snomedct"
         assert extract.metadata[MetadataColumns.ONTO_CODE][1] == "123: 789"
         assert extract.metadata[MetadataColumns.COLUMN_NAME][1] == "sex"  # all lower case
         assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][1] == "The sex at birth"  # kept as it is in the metadata for more clarity
-        assert extract.metadata[MetadataColumns.VAR_TYPE][1] == DataTypes.CATEGORY
         # pandas dataframe does not allow json objects, so we have to store them as JSON-like string
         expected_json_values = [{"value": "M", "snomed_ct": "248153007"}, {"value": "F", "snomed_ct": "248152002"}]
         # "[{""value"": ""M"", ""snomed_ct"": ""248153007""}, {""value"": ""F"", ""snomed_ct"": ""248152002""}]"
@@ -136,19 +113,13 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.ONTO_CODE][2] == " 46463-6 "
         assert extract.metadata[MetadataColumns.ONTO_CODE][3] == "456:7z9"
 
-        # e. check var type normalization
-        assert extract.metadata[MetadataColumns.VAR_TYPE][0] == DataTypes.INTEGER  # patient id
-        assert extract.metadata[MetadataColumns.VAR_TYPE][1] == DataTypes.CATEGORY  # sex
-        assert extract.metadata[MetadataColumns.VAR_TYPE][2] == DataTypes.STRING  # ethnicity
-        assert extract.metadata[MetadataColumns.VAR_TYPE][3] == DataTypes.DATETIME  # date of birth
-
-        # f. check ETL type normalization
+        # e. check ETL type normalization
         assert extract.metadata[MetadataColumns.ETL_TYPE][0] == DataTypes.INTEGER  # patient id
         assert extract.metadata[MetadataColumns.ETL_TYPE][1] == DataTypes.CATEGORY  # sex
         assert extract.metadata[MetadataColumns.ETL_TYPE][2] == DataTypes.STRING  # ethnicity
         assert extract.metadata[MetadataColumns.ETL_TYPE][3] == DataTypes.DATETIME  # date of birth
 
-        # g. more general checks
+        # f. more general checks
         # DATASET: this should be the dataset name, and there should be no other datasets in that column
         unique_dataset_names = list(extract.metadata[MetadataColumns.DATASET_NAME].unique())
         assert len(unique_dataset_names) == 1
@@ -156,8 +127,8 @@ class TestExtract(unittest.TestCase):
 
     def test_load_metadata_file_H1_D3(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.ORIG_DISEASE_PATH,
-                           data_type=FileTypes.DIAGNOSIS,
+                           data_paths=TheTestFiles.ORIG_DIAGNOSIS_PATH,
+                           data_type=Profile.DIAGNOSIS,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()
@@ -172,7 +143,6 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.ONTO_CODE][2] == "1245/   983 "  # this will be normalized later when building OntologyResource objects
         assert extract.metadata[MetadataColumns.COLUMN_NAME][2] == "disease_form"  # all lower case, with an underscore
         assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][2] == "The form of the disease"  # kept as it is in the metadata for more clarity
-        assert extract.metadata[MetadataColumns.VAR_TYPE][2] == "category"  # all lower case
         assert extract.metadata[MetadataColumns.ETL_TYPE][2] == "category"  # all lower case
         # test JSON values in the second line (disease form)
         # pandas dataframe does not allow json objects, so we have to store them as JSON-like string
@@ -196,12 +166,12 @@ class TestExtract(unittest.TestCase):
         # DATASET: this should be the dataset name, and there should be no other datasets in that column
         unique_dataset_names = list(extract.metadata[MetadataColumns.DATASET_NAME].unique())
         assert len(unique_dataset_names) == 1
-        assert unique_dataset_names[0] == TheTestFiles.ORIG_DISEASE_PATH.split(os.sep)[-1]
+        assert unique_dataset_names[0] == TheTestFiles.ORIG_DIAGNOSIS_PATH.split(os.sep)[-1]
 
     def test_load_metadata_file_H3_D1(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_GENOMICS_PATH,
-                           data_type=FileTypes.GENOMIC,
+                           data_type=Profile.GENOMIC,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H3)
         extract.load_metadata_file()
@@ -216,7 +186,6 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.ONTO_CODE][2] == "3265970"
         assert extract.metadata[MetadataColumns.COLUMN_NAME][2] == "is_inherited"  # all lower case, with an underscore
         assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][2] == "Whether the gene is inherited"  # kept as it is in the metadata for more clarity
-        assert extract.metadata[MetadataColumns.VAR_TYPE][2] == "bool"  # all lower case
         assert extract.metadata[MetadataColumns.ETL_TYPE][2] == "bool"  # all lower case
         assert not is_not_nan(extract.metadata[MetadataColumns.JSON_VALUES][2])
 
@@ -240,16 +209,14 @@ class TestExtract(unittest.TestCase):
         assert unique_dataset_names[0] == TheTestFiles.ORIG_GENOMICS_PATH.split(os.sep)[-1]
 
     def test_load_data_file_H1_D1(self):
-        extract = my_setup(metadata_path=TheTestFiles.EXTR_METADATA_SAMPLE_PATH,
-                           data_paths=TheTestFiles.ORIG_SAMPLE_PATH,
-                           data_type=FileTypes.SAMPLE,
+        extract = my_setup(metadata_path=TheTestFiles.EXTR_METADATA_CLINICAL_PATH,
+                           data_paths=TheTestFiles.ORIG_CLINICAL_PATH,
+                           data_type=Profile.CLINICAL,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-        extract.load_tabular_data_file()
+        extract.load_tabular_file()
 
         # a. general size checks
-        log.info(extract.data.columns)
-        log.info(extract.data)
         assert extract.data is not None, "Data is None, while it should not."
         assert len(extract.data.columns) == 6, "The expected number of columns is 6."
         assert len(extract.data) == 10, "The expected number of lines is 10."
@@ -269,10 +236,10 @@ class TestExtract(unittest.TestCase):
     def test_load_data_file_H1_D2(self):
         extract = my_setup(metadata_path=TheTestFiles.EXTR_METADATA_PHENOTYPIC_PATH,
                            data_paths=TheTestFiles.ORIG_PHENOTYPIC_PATH,
-                           data_type=FileTypes.PHENOTYPIC,
+                           data_type=Profile.PHENOTYPIC,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-        extract.load_tabular_data_file()
+        extract.load_tabular_file()
 
         # a. general size checks
         assert extract.data is not None, "Data is None, while it should not."
@@ -292,10 +259,10 @@ class TestExtract(unittest.TestCase):
     def test_load_data_file_H3_D1(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_GENOMICS_PATH,
-                           data_type=FileTypes.GENOMIC,
+                           data_type=Profile.GENOMIC,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H3)
-        extract.load_tabular_data_file()
+        extract.load_tabular_file()
 
         # a. general size checks
         assert extract.data is not None, "Data is None, while it should not."
@@ -326,9 +293,9 @@ class TestExtract(unittest.TestCase):
         assert not is_not_nan(extract.data["is_inherited"][9])
 
     def test_compute_sam_mapped_values(self):
-        extract = my_setup(metadata_path=TheTestFiles.EXTR_METADATA_SAMPLE_PATH,
-                           data_paths=TheTestFiles.EXTR_SAMPLE_DATA_PATH,
-                           data_type=FileTypes.SAMPLE,
+        extract = my_setup(metadata_path=TheTestFiles.EXTR_METADATA_CLINICAL_PATH,
+                           data_paths=TheTestFiles.EXTR_CLINICAL_DATA_PATH,
+                           data_type=Profile.CLINICAL,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()  # required to compute mapped values
@@ -369,7 +336,7 @@ class TestExtract(unittest.TestCase):
     def test_compute_phen_mapped_values(self):
         extract = my_setup(metadata_path=TheTestFiles.EXTR_METADATA_PHENOTYPIC_PATH,
                            data_paths=TheTestFiles.EXTR_PHENOTYPIC_DATA_PATH,
-                           data_type=FileTypes.PHENOTYPIC,
+                           data_type=Profile.PHENOTYPIC,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()  # required to compute mapped values
@@ -399,12 +366,12 @@ class TestExtract(unittest.TestCase):
 
     def test_removed_unused_columns(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.ORIG_SAMPLE_PATH,
-                           data_type=FileTypes.SAMPLE,
+                           data_paths=TheTestFiles.ORIG_CLINICAL_PATH,
+                           data_type=Profile.CLINICAL,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()
-        extract.load_tabular_data_file()  # both operations are needed to run the method
+        extract.load_tabular_file()  # both operations are needed to run the method
         extract.remove_unused_csv_columns()
 
         # we assert that we get rid of the 'molecule_z' column (because it was not described in the metadata
@@ -423,16 +390,14 @@ class TestExtract(unittest.TestCase):
         assert len(described_columns) == len(expected_columns)  # molecule_y has been kept
         assert described_columns == expected_columns
 
-    def test_compute_sam_column_to_dimension(self):
+    def test_compute_clin_column_to_dimension(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.ORIG_SAMPLE_PATH,
-                           data_type=FileTypes.SAMPLE,
+                           data_paths=TheTestFiles.ORIG_CLINICAL_PATH,
+                           data_type=Profile.CLINICAL,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-        log.info(TheTestFiles.ORIG_METADATA_PATH)
-        log.info(self.execution.metadata_filepath)
         extract.load_metadata_file()
-        extract.load_tabular_data_file()  # both operations are needed to run the method
+        extract.load_tabular_file()  # both operations are needed to run the method
         extract.remove_unused_csv_columns()
         extract.compute_column_to_dimension()
 
@@ -452,11 +417,11 @@ class TestExtract(unittest.TestCase):
     def test_compute_phen_column_to_dimension(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_PHENOTYPIC_PATH,
-                           data_type=FileTypes.PHENOTYPIC,
+                           data_type=Profile.PHENOTYPIC,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_metadata_file()
-        extract.load_tabular_data_file()  # both operations are needed to run the method
+        extract.load_tabular_file()  # both operations are needed to run the method
         extract.remove_unused_csv_columns()
         extract.compute_column_to_dimension()
 
@@ -474,7 +439,7 @@ class TestExtract(unittest.TestCase):
     def test_load_empty_patient_id_mapping(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_PHENOTYPIC_PATH,
-                           data_type=FileTypes.PHENOTYPIC,
+                           data_type=Profile.PHENOTYPIC,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_patient_id_mapping()
@@ -490,7 +455,7 @@ class TestExtract(unittest.TestCase):
     def test_load_filled_patient_id_mapping(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_PHENOTYPIC_PATH,
-                           data_type=FileTypes.PHENOTYPIC,
+                           data_type=Profile.PHENOTYPIC,
                            pids_path=TheTestFiles.ORIG_FILLED_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.load_patient_id_mapping()
@@ -512,21 +477,3 @@ class TestExtract(unittest.TestCase):
             # }
             expected_dict = json.load(f)
         assert expected_dict == extract.patient_ids_mapping
-
-    def test_compute_mapping_disease_to_onto_resource(self):
-        extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.ORIG_DIAGNOSIS_TO_CC_PATH,
-                           data_type=FileTypes.DIAGNOSIS_REGEX,
-                           pids_path=TheTestFiles.ORIG_FILLED_PIDS_PATH,
-                           hospital_name=HospitalNames.TEST_H1)
-        extract.compute_mapping_diagnosis_to_onto_resource()
-
-        with open(os.path.join(DOCKER_FOLDER_TEST, TheTestFiles.EXTR_JSON_DIAGNOSIS_TO_OT_PATH), "r") as f:
-            expected_dict = json.load(f)
-        assert expected_dict == extract.mapping_diagnosis_to_onto_resource  # == performs a deep equality
-
-    # def test_run_value_analysis(self):
-    #     self.fail()
-    #
-    # def test_run_variable_analysis(self):
-    #     pass

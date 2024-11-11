@@ -1,10 +1,7 @@
-import jsonpickle
-
 from database.Database import Database
 from enums.TableNames import TableNames
 from statistics.Statistics import Statistics
 from utils.mongodb_utils import jsonify_tuple
-from utils.setup_logger import log
 
 
 class DatabaseStatistics(Statistics):
