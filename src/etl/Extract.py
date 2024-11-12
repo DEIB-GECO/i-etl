@@ -253,10 +253,10 @@ class Extract(Task):
         for feature_table_name in TableNames.features(db=self.database):
             # the set of categorical values are defined in Features only, thus we can restrict the find to only those:
             # categorical_values_for_table_name = {'_id': ObjectId('66b9b890583ee775ef4edcb9'), 'categorical_values': [{...}, {...}, ...]}
-            categorical_values_for_table_name = self.database.find_operation(table_name=feature_table_name, filter_dict={"categorical_values": {"$exists": 1}}, projection={"categorical_values": 1})
+            categorical_values_for_table_name = self.database.find_operation(table_name=feature_table_name, filter_dict={"categories": {"$exists": 1}}, projection={"categories": 1})
             for one_tuple in categorical_values_for_table_name:
                 # existing_categorical_value_for_table_name = [{...}, {...}, ...]}
-                existing_categorical_values_for_table_name = one_tuple["categorical_values"]
+                existing_categorical_values_for_table_name = one_tuple["categories"]
                 for encoded_categorical_value in existing_categorical_values_for_table_name:
                     existing_or = OntologyResource.from_json(encoded_categorical_value, quality_stats=self.quality_stats)
                     existing_categorical_codeable_concepts[existing_or.label] = existing_or

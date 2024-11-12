@@ -136,35 +136,35 @@ class Transform(Task):
                             categorical_values = [self.mapping_categorical_value_to_onto_resource[normalized_categorical_value] for normalized_categorical_value in normalized_categorical_values]
                     if table_name == TableNames.PHENOTYPIC_FEATURE:
                         new_feature = PhenotypicFeature(id_value=NO_ID,
-                                                        original_name=column_name,
+                                                        name=column_name,
                                                         ontology_resource=onto_resource,
                                                         permitted_datatype=data_type, dimension=dimension,
                                                         counter=self.counter,
                                                         hospital_name=self.execution.hospital_name,
-                                                        categorical_values=categorical_values,
+                                                        categories=categorical_values,
                                                         visibility=visibility)
                     elif table_name == TableNames.CLINICAL_FEATURE:
                         new_feature = ClinicalFeature(id_value=NO_ID,
-                                                      original_name=column_name, ontology_resource=onto_resource,
+                                                      name=column_name, ontology_resource=onto_resource,
                                                       permitted_datatype=data_type, dimension=dimension,
                                                       counter=self.counter,
                                                       hospital_name=self.execution.hospital_name,
-                                                      categorical_values=categorical_values,
+                                                      categories=categorical_values,
                                                       visibility=visibility)
                     elif table_name == TableNames.DIAGNOSIS_FEATURE:
-                        new_feature = DiagnosisFeature(id_value=NO_ID, original_name=column_name,
+                        new_feature = DiagnosisFeature(id_value=NO_ID, name=column_name,
                                                        ontology_resource=onto_resource,
                                                        permitted_datatype=data_type,
                                                        dimension=dimension, counter=self.counter,
                                                        hospital_name=self.execution.hospital_name,
-                                                       categorical_values=categorical_values, visibility=visibility)
+                                                       categories=categorical_values, visibility=visibility)
                     elif table_name == TableNames.GENOMIC_FEATURE:
-                        new_feature = GenomicFeature(id_value=NO_ID, original_name=column_name,
+                        new_feature = GenomicFeature(id_value=NO_ID, name=column_name,
                                                      ontology_resource=onto_resource,
                                                      permitted_datatype=data_type,
                                                      dimension=dimension, counter=self.counter,
                                                      hospital_name=self.execution.hospital_name,
-                                                     categorical_values=categorical_values, visibility=visibility)
+                                                     categories=categorical_values, visibility=visibility)
                     else:
                         raise NotImplementedError("To be implemented")
 
@@ -191,7 +191,7 @@ class Transform(Task):
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
         count = count + 1
         write_in_file(resource_list=self.features, current_working_dir=self.execution.working_dir_current, table_name=table_name, count=count)
-        self.database.load_json_in_table(table_name=table_name, unique_variables=["original_name"])
+        self.database.load_json_in_table(table_name=table_name, unique_variables=["name"])
 
     def create_phenotypic_features(self) -> None:
         self.create_features(table_name=TableNames.PHENOTYPIC_FEATURE)
@@ -225,7 +225,7 @@ class Transform(Task):
                                                                          key_fields="name", value_fields="identifier")
         feature_table_name = TableNames.get_feature_table_from_record_table(record_table_name=table_name)
         mapping_column_to_feature_id = self.database.retrieve_mapping(table_name=feature_table_name,
-                                                                      key_fields="original_name",
+                                                                      key_fields="name",
                                                                       value_fields="identifier")
         log.info(mapping_column_to_feature_id)
 
@@ -255,14 +255,14 @@ class Transform(Task):
                             new_record = PhenotypicRecord(id_value=NO_ID, feature_id=feature_id,
                                                           patient_id=patient_id, hospital_id=hospital_id,
                                                           value=fairified_value,
-                                                          anonymized_value=anonymized_value if is_anonymized else None,
+                                                          a_value=anonymized_value if is_anonymized else None,
                                                           counter=self.counter,
                                                           hospital_name=self.execution.hospital_name,
                                                           dataset_name=dataset_name)
                         elif table_name == TableNames.CLINICAL_RECORD:
                             new_record = ClinicalRecord(id_value=NO_ID, feature_id=feature_id, patient_id=patient_id,
                                                         hospital_id=hospital_id, value=fairified_value,
-                                                        anonymized_value=anonymized_value if is_anonymized else None,
+                                                        a_value=anonymized_value if is_anonymized else None,
                                                         base_id=row[ID_COLUMNS[self.execution.hospital_name][TableNames.CLINICAL_RECORD]],
                                                         counter=self.counter, hospital_name=self.execution.hospital_name,
                                                         dataset_name=dataset_name)
@@ -270,16 +270,16 @@ class Transform(Task):
                             new_record = DiagnosisRecord(id_value=NO_ID, feature_id=feature_id,
                                                          patient_id=patient_id, hospital_id=hospital_id,
                                                          value=fairified_value,
-                                                         anonymized_value=anonymized_value if is_anonymized else None,
+                                                         a_value=anonymized_value if is_anonymized else None,
                                                          counter=self.counter,
                                                          hospital_name=self.execution.hospital_name,
                                                          dataset_name=dataset_name)
                         elif table_name == TableNames.GENOMIC_RECORD:
                             new_record = GenomicRecord(id_value=NO_ID, feature_id=feature_id,
                                                        patient_id=patient_id, hospital_id=hospital_id,
-                                                       uri=None,
+                                                       vcfs=None,
                                                        value=fairified_value,
-                                                       anonymized_value=anonymized_value if is_anonymized else None,
+                                                       a_value=anonymized_value if is_anonymized else None,
                                                        counter=self.counter,
                                                        hospital_name=self.execution.hospital_name,
                                                        dataset_name=dataset_name)

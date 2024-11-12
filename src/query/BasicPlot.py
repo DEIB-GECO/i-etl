@@ -11,8 +11,8 @@ class BasicPlot:
         # # Show the entry for Hospital
         # # Show first Patient
         # # Show structure of one LabFeature
-        # # all LabRecord instances for patient 1: {"subject.reference": "Patient1"}
-        # # LabRecord "Ethnicity" for Patient 1: {"$and": [{"subject.reference": "Patient1"}, {"instantiate.reference": "77"}]}
+        # # all LabRecord instances for patient 1: {"has_subject": "Patient1"}
+        # # LabRecord "Ethnicity" for Patient 1: {"$and": [{"has_subject": "Patient1"}, {"instantiates": "77"}]}
         #
         # # 3. comment the 3 lines above
         # # uncomment lines below

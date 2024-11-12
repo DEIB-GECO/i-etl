@@ -60,9 +60,9 @@ def my_setup(profile: Profile, create_indexes: bool) -> Load:
         {
             "identifier": f"{TableNames.PHENOTYPIC_RECORD}:1",
             "value": 12,
-            "subject": "test:1",
-            "recorded_by": f"{TableNames.HOSPITAL}:1",
-            "instantiate": f"{TableNames.PHENOTYPIC_FEATURE}:1",
+            "has_subject": "test:1",
+            "registered_by": f"{TableNames.HOSPITAL}:1",
+            "instantiates": f"{TableNames.PHENOTYPIC_FEATURE}:1",
             "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())
         }
     ]
@@ -150,17 +150,12 @@ class TestLoad(unittest.TestCase):
                             assert False, f"{table_name} expects a compound index on two fields."
                     elif table_name in TableNames.records(db=load.database):
                         # there are also two more indexes (instantiate.reference, subject.reference)
-                        if "instantiate" in index_key:
+                        if "instantiates" in index_key:
                             count_indexes = count_indexes + 1
                             assert "unique" not in index
-                        elif "subject" in index_key:
+                        elif "has_subject" in index_key:
                             count_indexes = count_indexes + 1
                             assert "unique" not in index
-                        elif "based_on" in index_key:
-                            # did not test Sample ref index because it is proper to BUZZI data
-                            pass
-                            #     count_indexes = count_indexes + 1
-                            #     assert "unique" not in index
                         else:
                             assert False, f"{table_name} has an unknown index named {index_key}."
                     else:

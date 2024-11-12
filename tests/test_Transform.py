@@ -157,11 +157,10 @@ class TestTransform(unittest.TestCase):
         assert len(transform.hospitals) == 1
         assert type(transform.hospitals[0]) is Hospital
         current_json_hospital = transform.hospitals[0].to_json()
-        assert len(current_json_hospital.keys()) == 1 + 3  # name + inherited (identifier, resource_type, timestamp)
+        assert len(current_json_hospital.keys()) == 1 + 2  # name + inherited (identifier, timestamp)
         assert current_json_hospital["identifier"] == "Hospital:1"
         assert current_json_hospital["name"] == HospitalNames.TEST_H1
         assert current_json_hospital["timestamp"] is not None
-        assert current_json_hospital["resource_type"] == TableNames.HOSPITAL
 
         # b. check that the in-file hospital is correct
         hospital_file = get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, table_name=TableNames.HOSPITAL, count=1)
@@ -189,28 +188,26 @@ class TestTransform(unittest.TestCase):
         # (which contains at least the column name, and maybe a description)
         # SamFeature about molecule_a
         lab_feature_a = get_feature_by_text(transform.features, "molecule_a")
-        assert len(lab_feature_a) == 8  # inherited fields (identifier, resource_type, timestamp), proper fields (original_name, ontology_resource, permitted_datatype, dimension, visibility)
+        assert len(lab_feature_a) == 7  # inherited fields (identifier, resource_type, timestamp), proper fields (original_name, ontology_resource, permitted_datatype, dimension, visibility)
         assert "identifier" in lab_feature_a
-        assert lab_feature_a["original_name"] == "molecule_a"
-        assert lab_feature_a["resource_type"] == TableNames.CLINICAL_FEATURE
+        assert lab_feature_a["name"] == "molecule_a"
         assert lab_feature_a["ontology_resource"] == {
             "system": Ontologies.LOINC["url"],
             "code": "1234",
             "label": DEFAULT_ONTOLOGY_RESOURCE_LABEL  # this resource does not exist for real in LOINC, thus display is empty
         }
-        assert lab_feature_a["permitted_datatype"] == DataTypes.FLOAT
+        assert lab_feature_a["datatype"] == DataTypes.FLOAT
         assert lab_feature_a["dimension"] == "mg/L"
         assert lab_feature_a["visibility"] == Visibility.PUBLIC_WITHOUT_ANONYMIZATION
         # timestamp is not tested
 
         # LabFeature about molecule_b
         lab_feature_b = get_feature_by_text(transform.features, "molecule_b")
-        assert len(lab_feature_b) == 7
+        assert len(lab_feature_b) == 6
         assert "identifier" in lab_feature_b
-        assert lab_feature_b["resource_type"] == TableNames.CLINICAL_FEATURE
-        assert lab_feature_b["original_name"] == "molecule_b"
+        assert lab_feature_b["name"] == "molecule_b"
         assert "ontology_resource" not in lab_feature_b
-        assert lab_feature_b["permitted_datatype"] == DataTypes.INTEGER
+        assert lab_feature_b["datatype"] == DataTypes.INTEGER
         assert lab_feature_b["dimension"] == "g"  # unit is gram
 
         # check that there are no duplicates in SamFeature instances
@@ -218,7 +215,7 @@ class TestTransform(unittest.TestCase):
         lab_features_names_list = []
         for lab_feature in transform.features:
             if lab_feature is not None:
-                lab_features_names_list.append(lab_feature.original_name)
+                lab_features_names_list.append(lab_feature.name)
         lab_features_names_set = set(lab_features_names_list)
         assert len(lab_features_names_list) == len(lab_features_names_set)
 
@@ -241,26 +238,24 @@ class TestTransform(unittest.TestCase):
         # (which contains at least the column name, and maybe a description)
         # PhenFeature about sex
         lab_feature_a = get_feature_by_text(transform.features, "sex")
-        assert len(lab_feature_a) == 8  # inherited fields (identifier, resource_type, timestamp), proper fields (name, ontology_resource, permitted_datatype, dimension, visibility)
+        assert len(lab_feature_a) == 7  # inherited fields (identifier, resource_type, timestamp), proper fields (name, ontology_resource, permitted_datatype, dimension, visibility)
         assert "identifier" in lab_feature_a
-        assert lab_feature_a["original_name"] == "sex"
-        assert lab_feature_a["resource_type"] == TableNames.PHENOTYPIC_FEATURE
+        assert lab_feature_a["name"] == "sex"
         assert lab_feature_a["ontology_resource"] == {
             "system": Ontologies.SNOMEDCT["url"],
             "code": "123:789",
             "label": f"{DEFAULT_ONTOLOGY_RESOURCE_LABEL}:{DEFAULT_ONTOLOGY_RESOURCE_LABEL}"  # the two codes do not exist for eal in SNOMED, thus using the empty label
         }
-        assert lab_feature_a["permitted_datatype"] == DataTypes.CATEGORY
+        assert lab_feature_a["datatype"] == DataTypes.CATEGORY
         assert "dimension" not in lab_feature_a
 
         # PhenFeature about date_of_birth
         lab_feature_b = get_feature_by_text(transform.features, "date_of_birth")
-        assert len(lab_feature_b) == 6  # no ontology resource and no dimension
+        assert len(lab_feature_b) == 5  # no ontology resource and no dimension
         assert "identifier" in lab_feature_b
-        assert lab_feature_b["resource_type"] == TableNames.PHENOTYPIC_FEATURE
-        assert lab_feature_b["original_name"] == "date_of_birth"
+        assert lab_feature_b["name"] == "date_of_birth"
         assert "ontology_resource" not in lab_feature_b
-        assert lab_feature_b["permitted_datatype"] == DataTypes.DATETIME
+        assert lab_feature_b["datatype"] == DataTypes.DATETIME
         assert "dimension" not in lab_feature_b
 
         # check that there are no duplicates in PhenFeature instances
@@ -268,7 +263,7 @@ class TestTransform(unittest.TestCase):
         lab_features_names_list = []
         for lab_feature in transform.features:
             if lab_feature is not None:
-                lab_features_names_list.append(lab_feature.original_name)
+                lab_features_names_list.append(lab_feature.name)
         lab_features_names_set = set(lab_features_names_list)
         assert len(lab_features_names_list) == len(lab_features_names_set)
 
@@ -339,11 +334,10 @@ class TestTransform(unittest.TestCase):
         assert patient_id == "h1:994"
         records = get_records_for_patient(records=transform.records, patient_id=patient_id)
         assert len(records) == 2
-        assert records[0]["resource_type"] == TableNames.CLINICAL_RECORD
         assert records[0]["value"] == -0.003  # the value as been converted to a float
-        assert records[0]["subject"] == str(patient_id)  # this has not been converted to an integer
-        assert records[0]["recorded_by"] == "Hospital:1"
-        assert records[0]["instantiate"] == "ClinicalFeature:2"  # LabRecord 2 is about molecule_a
+        assert records[0]["has_subject"] == str(patient_id)  # this has not been converted to an integer
+        assert records[0]["registered_by"] == "Hospital:1"
+        assert records[0]["instantiates"] == "ClinicalFeature:2"  # LabRecord 2 is about molecule_a
         pattern_date = re.compile("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2,3}Z")
         assert pattern_date.match(records[0]["timestamp"]["$date"])  # check the date is in datetime (CEST) form
 

@@ -4,6 +4,7 @@ from entities.Patient import Patient
 from enums.TableNames import TableNames
 from database.Counter import Counter
 from constants.idColumns import NO_ID
+from utils.setup_logger import log
 
 
 class TestPatient:
@@ -26,15 +27,6 @@ class TestPatient:
         assert patient1.identifier is not None
         assert patient1.identifier.value == anonymized_p1
 
-    def test_get_type(self):
-        """
-        Check whether the Patient type is indeed the Patient table name.
-        :return: None.
-        """
-        counter = Counter()
-        patient1 = Patient("123", counter=counter, hospital_name=HospitalNames.TEST_H1)
-        assert patient1.resource_type == TableNames.PATIENT
-
     def test_to_json(self):
         counter = Counter()
         patient1 = Patient(NO_ID, counter=counter, hospital_name=HospitalNames.TEST_H1)
@@ -43,6 +35,5 @@ class TestPatient:
         assert patient1_json is not None
         assert patient1_json == {
             "identifier": PatientAnonymizedIdentifier(id_value="1", hospital_name=HospitalNames.TEST_H1).to_json(),
-            "resource_type": TableNames.PATIENT,
             "timestamp": patient1.timestamp
         }

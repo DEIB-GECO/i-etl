@@ -151,8 +151,8 @@ class Database:
             filter_dict = {}
             for unique_variable in unique_variables:
                 if unique_variable in one_tuple:
-                    # only BUZZI LabRecord instances have a "based_on" attribute for the Clinical records
-                    # others do not have the "based_on", so we need to check whether that attribute is present or not
+                    # some Record may hae particular attributes (that other entities do not have)
+                    # so we need to check whether that attribute is present or not
                     filter_dict[unique_variable] = one_tuple[unique_variable]
             update_stmt = self.create_update_stmt(the_tuple=one_tuple)
             operations.append(pymongo.UpdateOne(filter=filter_dict, update=update_stmt, upsert=True))
@@ -319,7 +319,7 @@ class Database:
         :return: A float value being the average value for the given LabFeature instance (url).
         """
         cursor = self.db[TableNames.PHENOTYPIC_RECORD].aggregate([
-            Operators.match(field="instantiate.reference", value=lab_feature_url, is_regex=False),
+            Operators.match(field="instantiates", value=lab_feature_url, is_regex=False),
             Operators.project(field="value", projected_value=None),
             Operators.group_by(group_key=None, groups=[{"name": "avg_val", "operator": "$avg", "field": "$value"}])
         ])

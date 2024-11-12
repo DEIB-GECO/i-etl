@@ -61,9 +61,7 @@ class Execution:
     def internals_set_up(self) -> None:
         log.info("in set_up")
 
-        log.info(os.environ)
-
-        # B. set up env. variables into class
+        # set class variables using env. variables
         self.db_connection = DB_CONNECTION  # this is not a user parameter anymore because this is part of the Docker functioning, not something user should be able to change
         self.db_name = self.check_parameter(key=ParameterKeys.DB_NAME, accepted_values=None, default_value=self.db_name)
         log.debug(f"creating new DB with name {self.db_name}")
@@ -73,11 +71,9 @@ class Execution:
         self.db_drop = self.check_parameter(key=ParameterKeys.DB_DROP, accepted_values=["True", "False", True, False], default_value=self.db_drop)
         self.columns_to_remove = self.check_parameter(key=ParameterKeys.COLUMNS_TO_REMOVE_KEY, accepted_values=None, default_value=self.columns_to_remove)
         self.nb_rows = self.check_parameter(key=ParameterKeys.DATA_GEN_NB_ROWS, accepted_values=None, default_value=self.nb_rows)
-        log.info(self.record_carrier_patients)
         self.record_carrier_patients = self.check_parameter(key=ParameterKeys.RECORD_CARRIER_PATIENT, accepted_values=["True", "False", True, False], default_value=self.record_carrier_patients)
-        log.info(self.record_carrier_patients)
 
-        # C. create working files for the ETL
+        # create working files for the ETL
         self.create_current_working_dir()
         self.setup_logging_files()
 

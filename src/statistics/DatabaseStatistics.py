@@ -49,15 +49,15 @@ class DatabaseStatistics(Statistics):
             self.records_with_no_value[table_name] = {"elements": no_val_records, "size": len(no_val_records)}
 
     def compute_rec_with_no_value_per_instantiate(self, database: Database) -> None:
-        # for each RecordX, get the distinct list of "instantiate" references that do not have a value in the Record
-        # db["LaboratoryRecord"].distinct("instantiate", {"value": {"$exists": 0}})
+        # for each RecordX, get the distinct list of "instantiates" references that do not have a value in the Record
+        # db["LaboratoryRecord"].distinct("instantiates", {"value": {"$exists": 0}})
         # this query returns something like [ { reference: '83' }, { reference: '87' } ]
         # then we process it to return a dict <ref. id, count>, e.g. { "83": {"elements": [...], "size": 5}, "87": {...} }
         for table_name in TableNames.records(db=database):
-            instantiates_no_value = [res for res in database.find_distinct_operation(table_name=table_name, key="instantiate", filter_dict={"value": {"$exists": 0}})]
+            instantiates_no_value = [res for res in database.find_distinct_operation(table_name=table_name, key="instantiates", filter_dict={"value": {"$exists": 0}})]
             records_with_no_val_per_instantiate = {}
             for instantiate_ref in instantiates_no_value:
-                records_with_no_val_per_instantiate[instantiate_ref] = [jsonify_tuple(res) for res in database.find_operation(table_name=table_name, filter_dict={"instantiate": instantiate_ref, "value": {"$exists": 0}}, projection={})]
+                records_with_no_val_per_instantiate[instantiate_ref] = [jsonify_tuple(res) for res in database.find_operation(table_name=table_name, filter_dict={"instantiates": instantiate_ref, "value": {"$exists": 0}}, projection={})]
                 if table_name not in self.records_with_no_value_per_instantiate:
                     self.records_with_no_value_per_instantiate[table_name] = {}
                 self.records_with_no_value_per_instantiate[table_name][instantiate_ref] = {"elements": records_with_no_val_per_instantiate, "size": len(records_with_no_val_per_instantiate)}
@@ -72,12 +72,12 @@ class DatabaseStatistics(Statistics):
 
     def compute_unknown_patient_refs_per_record_table(self, database: Database) -> None:
         for table_name in TableNames.records(db=database):
-            unknown_patient_refs = [jsonify_tuple(res) for res in database.inverse_inner_join(name_table_1=table_name, name_table_2=TableNames.PATIENT, field_table_1="identifier", field_table_2="subject", lookup_name="KnownRefs")]
+            unknown_patient_refs = [jsonify_tuple(res) for res in database.inverse_inner_join(name_table_1=table_name, name_table_2=TableNames.PATIENT, field_table_1="identifier", field_table_2="has_subject", lookup_name="KnownRefs")]
             self.unknown_patient_refs_per_table[table_name] = {"elements": unknown_patient_refs, "size": len(unknown_patient_refs)}
 
     def compute_unknown_hospital_refs_per_record_table(self, database: Database) -> None:
         for table_name in TableNames.records(db=database):
-            unknown_hospital_refs = [jsonify_tuple(res) for res in database.inverse_inner_join(name_table_1=table_name, name_table_2=TableNames.HOSPITAL, field_table_1="identifier", field_table_2="recorded_by", lookup_name="KnownRefs")]
+            unknown_hospital_refs = [jsonify_tuple(res) for res in database.inverse_inner_join(name_table_1=table_name, name_table_2=TableNames.HOSPITAL, field_table_1="identifier", field_table_2="registered_by", lookup_name="KnownRefs")]
             self.unknown_hospital_refs_per_table[table_name] = {"elements": unknown_hospital_refs, "size": len(unknown_hospital_refs)}
 
     def compute_unknown_lab_feat_refs_in_lab_feature(self, database: Database) -> None:
@@ -97,6 +97,6 @@ class DatabaseStatistics(Statistics):
 
     def compute_unknown_ref_in_rec(self, database: Database, record_table_name: str) -> dict:
         feature_table_name = TableNames.get_feature_table_from_record_table(record_table_name=record_table_name)
-        unknown_refs = [jsonify_tuple(res) for res in database.inverse_inner_join(name_table_1=record_table_name, name_table_2=feature_table_name, field_table_1="identifier", field_table_2="instantiate", lookup_name="KnownRefs")]
+        unknown_refs = [jsonify_tuple(res) for res in database.inverse_inner_join(name_table_1=record_table_name, name_table_2=feature_table_name, field_table_1="identifier", field_table_2="instantiates", lookup_name="KnownRefs")]
         unknown_refs_for_rec = {"elements": unknown_refs, "size": len(unknown_refs)}
         return unknown_refs_for_rec

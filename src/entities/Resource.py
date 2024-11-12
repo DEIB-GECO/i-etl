@@ -40,7 +40,6 @@ class Resource:
             # We assign a "simple" (stringified integer) ID to the new resource
             self.identifier = ResourceIdentifier(id_value=id_to_use, resource_type=resource_type)
 
-        self.resource_type = resource_type
         self.timestamp = Operators.from_datetime_to_isodate(current_datetime=datetime.now())
 
     def get_identifier_as_int(self):

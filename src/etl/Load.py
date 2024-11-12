@@ -26,7 +26,7 @@ class Load(Task):
     def load_remaining_data(self) -> None:
         log.info("load remaining data")
         record_table_name = Profile.get_record_table_name_from_profile(self.execution.current_file_profile)
-        unique_variables = ["recorded_by", "subject", "instantiate"]
+        unique_variables = ["registered_by", "has_subject", "instantiates"]
         if self.execution.current_file_profile == Profile.DIAGNOSIS:
             # we allow patients to have several diagnoses
             unique_variables.append("value")
@@ -58,9 +58,8 @@ class Load(Task):
         # for Record instances, we create an index per reference because we usually join each reference to a table
         for table_name in TableNames.records(db=self.database):
             # a table name of the form XRecord
-            self.database.create_non_unique_index(table_name=table_name, columns={"instantiate": 1})
-            self.database.create_non_unique_index(table_name=table_name, columns={"subject": 1})
-            self.database.create_non_unique_index(table_name=table_name, columns={"based_on": 1})
-            count += 3
+            self.database.create_non_unique_index(table_name=table_name, columns={"instantiates": 1})
+            self.database.create_non_unique_index(table_name=table_name, columns={"has_subject": 1})
+            count += 2
 
         log.info(f"Finished to create {count} indexes.")

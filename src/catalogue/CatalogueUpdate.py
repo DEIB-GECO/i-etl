@@ -20,36 +20,36 @@ class CatalogueUpdate:
         # TODO NELLY: compute agg_type
         datasets = self.get_datasets()
         log.info(datasets)
-        for dataset_profile in datasets:
-            self.catalogue_data[dataset_profile] = {}
-            self.catalogue_data[dataset_profile]["description"] = "This is a dataset"
-            self.catalogue_data[dataset_profile]["nb_patients"] = self.compute_nb_patients_for_dataset(dataset_name=dataset_profile)
-            self.catalogue_data[dataset_profile]["timestamp"] = datetime.datetime.now()
-            self.catalogue_data[dataset_profile]["features"] = []
-            for feature_id_type_tuple in self.get_feature_ids_in_dataset(dataset_name=dataset_profile):
-                feature_json_data = self.compute_json_data_for_one_feature(dataset_name=dataset_profile, feature_id=feature_id_type_tuple[0], feature_entity=feature_id_type_tuple[1])
-                self.catalogue_data[dataset_profile]["features"].append(feature_json_data)
+        for dataset_name in datasets:
+            self.catalogue_data[dataset_name] = {}
+            self.catalogue_data[dataset_name]["description"] = "This is a dataset"
+            self.catalogue_data[dataset_name]["nb_patients"] = self.compute_nb_patients_for_dataset(dataset_name=dataset_name)
+            self.catalogue_data[dataset_name]["timestamp"] = datetime.datetime.now()
+            self.catalogue_data[dataset_name]["features"] = []
+            for feature_id_type_tuple in self.get_feature_ids_in_dataset(dataset_name=dataset_name):
+                feature_json_data = self.compute_json_data_for_one_feature(dataset_name=dataset_name, feature_id=feature_id_type_tuple[0], feature_entity=feature_id_type_tuple[1])
+                self.catalogue_data[dataset_name]["features"].append(feature_json_data)
         log.info(json.dumps(self.catalogue_data, default=str))  # default=str for converting datetime objects to strings
 
     def get_datasets(self) -> list[dict]:
         distinct_dataset_names = []
         for record_table_name in TableNames.records(db=self.db):
-            cursor = self.db.db[record_table_name].distinct("dataset_name")
+            cursor = self.db.db[record_table_name].distinct("dataset")
             for dataset_name in cursor:
                 if dataset_name not in distinct_dataset_names:
                     distinct_dataset_names.append(dataset_name)
         return distinct_dataset_names
 
     def get_feature_ids_in_dataset(self, dataset_name: str) -> list:
-        where_dataset_name = Operators.match(field="dataset_name", value=dataset_name, is_regex=False)
-        get_instantiate = Operators.project(field="instantiate", projected_value=None)
+        where_dataset_name = Operators.match(field="dataset", value=dataset_name, is_regex=False)
+        get_instantiate = Operators.project(field="instantiates", projected_value=None)
         operations = []
         operations.append(where_dataset_name)
         operations.append(get_instantiate)
         for record_table_name in TableNames.records(db=self.db):
             if record_table_name != TableNames.PHENOTYPIC_RECORD:  # this is the base of the union
                 operations.append(Operators.union(second_table_name=record_table_name, second_pipeline=[where_dataset_name, get_instantiate]))
-        operations.append(Operators.group_by(group_key="$instantiate", groups=[]))  # to simulate distinct because we cannot combine distinct and an aggregation pipeline
+        operations.append(Operators.group_by(group_key="$instantiates", groups=[]))  # to simulate distinct because we cannot combine distinct and an aggregation pipeline
         log.info(operations)
         cursor = self.db.db[TableNames.PHENOTYPIC_RECORD].aggregate(operations)
         # _id contains the Feature id (and is not the MongoDB id in this particular case,
@@ -58,16 +58,16 @@ class CatalogueUpdate:
 
     def compute_nb_patients_for_dataset(self, dataset_name: str) -> int:
         # computes the number of patients used by this dataset
-        where_dataset_name = Operators.match(field="dataset_name", value=dataset_name, is_regex=False)
-        get_subject = Operators.project(field="subject", projected_value=None)
+        where_dataset_name = Operators.match(field="dataset", value=dataset_name, is_regex=False)
+        get_subject = Operators.project(field="has_subject", projected_value=None)
         operations = []
         operations.append(where_dataset_name)
         operations.append(get_subject)
         for record_table_name in TableNames.records(db=self.db):
             if record_table_name != TableNames.PHENOTYPIC_RECORD:  # this is the base of the union
                 operations.append(Operators.union(second_table_name=record_table_name, second_pipeline=[where_dataset_name, get_subject]))
-        operations.append(Operators.group_by(group_key="$subject", groups=[]))  # to simulate distinct because we cannot combine distinct and an aggregation pipeline
-        operations.append(Operators.group_by(group_key="$subject", groups=[{"name": "p_count", "operator": "$sum", "field": 1}]))  # to simulate count
+        operations.append(Operators.group_by(group_key="$has_subject", groups=[]))  # to simulate distinct because we cannot combine distinct and an aggregation pipeline
+        operations.append(Operators.group_by(group_key="$has_subject", groups=[{"name": "p_count", "operator": "$sum", "field": 1}]))  # to simulate count
         log.info(operations)
         cursor = self.db.db[TableNames.PHENOTYPIC_RECORD].aggregate(operations)
         for result in cursor:
@@ -83,7 +83,7 @@ class CatalogueUpdate:
         # compute feature information
         operations = []
         operations.append(Operators.match(field="identifier", value=feature_id, is_regex=False))
-        operations.append(Operators.project(field=["original_name", "ontology_resource.system", "ontology_resource.code", "ontology_resource.label", "permitted_datatype"], projected_value=None))
+        operations.append(Operators.project(field=["name", "ontology_resource.system", "ontology_resource.code", "ontology_resource.label", "datatype"], projected_value=None))
         log.info(operations)
         cursor = self.db.db[feature_entity].aggregate(operations)
         agg_type = AggregationTypes.CONTINUOUS
@@ -94,20 +94,20 @@ class CatalogueUpdate:
             # but if there is no data for this feature, cursor.next() will throw an error, thus using a for loop
             log.info(f"{feature_entity}/{feature_id}: {feature}")
             # this allows us to compute the aggregation type, based on the datatype
-            datatype = feature["permitted_datatype"]
-            if "original_name" in feature:
-                original_name = feature["original_name"]
+            datatype = feature["datatype"]
+            if "name" in feature:
+                original_name = feature["name"]
             if "ontology_resource" in feature:
                 if "label" in feature["ontology_resource"]:
                     feature_label = feature["ontology_resource"]["label"]
                 else:
-                    feature_label = feature["original_name"]
+                    feature_label = feature["name"]
                 if "system" in feature["ontology_resource"] and "code" in feature["ontology_resource"]:
                     feature_code = f"{feature["ontology_resource"]["system"]}/{feature["ontology_resource"]["code"]}"
                 else:
                     feature_code = ""
             else:
-                feature_label = feature["original_name"]
+                feature_label = feature["name"]
                 feature_code = ""
             if datatype in [DataTypes.CATEGORY, DataTypes.BOOLEAN, DataTypes.REGEX, DataTypes.STRING]:
                 agg_type = AggregationTypes.CATEGORICAL
@@ -165,7 +165,7 @@ class CatalogueUpdate:
 
     def compute_stats(self, dataset_name: str, feature_entity: str, feature_id: str, feature_name: str) -> dict:
         record_table = TableNames.get_record_table_from_feature_table(feature_table_name=feature_entity)
-        rec_count = self.db.count_documents(table_name=record_table, filter_dict={"dataset_name": dataset_name, "instantiate": feature_id})
+        rec_count = self.db.count_documents(table_name=record_table, filter_dict={"dataset": dataset_name, "instantiates": feature_id})
         cursor = self.db.find_operation(table_name=TableNames.STATS_QUALITY, filter_dict={}, projection={f"empty_cells_per_column.{feature_name}": 1})
         count_empty_cells = 0
         for res in cursor:
@@ -194,8 +194,8 @@ class CatalogueUpdate:
         # Objects correspond to OntologyResource, thus we need to unnest it to get their label
         # it seems that we cannot do it in a single query
         # therefore, I get the first simple values, then complex values that I un-nest, and then union these two
-        match_on_instantiate = Operators.match(field="instantiate", value=feature_id, is_regex=False)
-        match_on_ds = Operators.match(field="dataset_name", value=dataset_name, is_regex=False)
+        match_on_instantiate = Operators.match(field="instantiates", value=feature_id, is_regex=False)
+        match_on_ds = Operators.match(field="dataset", value=dataset_name, is_regex=False)
         group_by_value = Operators.group_by(group_key="$value", groups=[
             {"name": "counts", "operator": "$sum", "field": 1},  # {"$group" : {_id:"$province", count:{$sum:1}}}
         ])
@@ -258,8 +258,8 @@ class CatalogueUpdate:
         ])
         log.info(record_table)
         operations = []
-        operations.append(Operators.match(field="instantiate", value=feature_id, is_regex=False))
-        operations.append(Operators.match(field="dataset_name", value=dataset_name, is_regex=False))
+        operations.append(Operators.match(field="instantiates", value=feature_id, is_regex=False))
+        operations.append(Operators.match(field="dataset", value=dataset_name, is_regex=False))
         # keep only int/float values (it may happen if there are some numeric values and one is "no information")
         operations.append(Operators.match(field=None, value=or_on_types, is_regex=False))
         operations.append(Operators.group_by(group_key=None, groups=[
