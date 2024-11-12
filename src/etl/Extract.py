@@ -66,7 +66,6 @@ class Extract(Task):
         # index_col is False to not add a column with line numbers
         self.metadata = read_tabular_file_as_string(self.execution.metadata_filepath)  # keep all metadata as str
         log.info(f"Will preprocess metadata from {self.execution.metadata_filepath}")
-        log.info(list(self.metadata.columns))
 
         # 1. normalize the header, e.g., "Significato it" becomes "significato_it"
         # this also normalizes hospital names if they are in the header (UC 2 and UC 3)
@@ -150,11 +149,10 @@ class Extract(Task):
                     self.quality_stats.add_column_unknown_etl_type(column_name=column_name, etl_type=etl_type)
                 if is_not_nan(onto_name) and Ontologies.get_enum_from_name(onto_name) is None:
                     self.quality_stats.add_column_unknown_ontology(column_name=column_name, ontology_name=onto_name)
+            log.info(list(self.metadata[MetadataColumns.COLUMN_NAME]))
         else:
             # this profile is not used for this dataset, we skip it
             self.metadata = None
-
-        log.info(self.metadata)
 
     def load_tabular_file(self) -> None:
         log.info(self.execution.current_filepath)
@@ -227,12 +225,11 @@ class Extract(Task):
             # therefore, this also keeps data columns that are not described in the metadata
             # but that we need to keep because there is real data to store in the final database
             is_not_described_in_metadata = data_column not in columns_described_in_metadata
-            log.info(is_not_described_in_metadata)
             column_has_to_be_removed = data_column in self.execution.columns_to_remove
             column_is_an_id = data_column in [ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT], ID_COLUMNS[self.execution.hospital_name][TableNames.CLINICAL_RECORD]]
-            if is_not_described_in_metadata or column_has_to_be_removed and not column_is_an_id:
+            if is_not_described_in_metadata or (column_has_to_be_removed and not column_is_an_id):
                 # we drop this column
-                log.info(f"Drop data column corresponding to the variable {data_column}.")
+                log.info(f"Drop data column corresponding to the variable {data_column} (it was not in the metadata: {is_not_described_in_metadata}; it has to be removed: {column_has_to_be_removed} and this is not an ID column {not column_is_an_id}).")
                 self.quality_stats.add_column_not_described_in_metadata(data_column_name=data_column)
                 self.data = self.data.drop(data_column, axis=1)  # axis=1 -> columns
             else:
@@ -241,7 +238,7 @@ class Extract(Task):
         log.debug(f"Columns present in the data: {data_columns}")
         log.debug(f"Columns described in the metadata: {columns_described_in_metadata}")
         log.debug(f"Columns to be explicitly removed: {self.execution.columns_to_remove}")
-        log.debug(f"Columns kept: {self.data.columns}")
+        log.debug(f"Columns kept: {list(self.data.columns)}")
 
     def compute_mapping_categorical_value_to_onto_resource(self) -> None:
         self.mapping_categorical_value_to_onto_resource = {}

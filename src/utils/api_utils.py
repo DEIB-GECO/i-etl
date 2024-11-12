@@ -1,8 +1,7 @@
 import base64
 import json
-import xml
+import xml.dom.minidom
 
-import requests
 from bs4 import BeautifulSoup
 from requests import Response
 

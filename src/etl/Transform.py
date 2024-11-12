@@ -83,10 +83,10 @@ class Transform(Task):
             self.create_phenotypic_records()
             log.info("********** done with phen. data")
         elif self.execution.current_file_profile == Profile.CLINICAL:
-            log.info("********** create sample features")
-            self.create_sample_features()
-            log.info("********** create sample records")
-            self.create_sample_records()
+            log.info("********** create clinical features")
+            self.create_clinical_features()
+            log.info("********** create clinical records")
+            self.create_clinical_records()
         elif self.execution.current_file_profile == Profile.DIAGNOSIS:
             self.create_diagnosis_features()
             self.create_diagnosis_records()
@@ -196,7 +196,7 @@ class Transform(Task):
     def create_phenotypic_features(self) -> None:
         self.create_features(table_name=TableNames.PHENOTYPIC_FEATURE)
 
-    def create_sample_features(self) -> None:
+    def create_clinical_features(self) -> None:
         self.create_features(table_name=TableNames.CLINICAL_FEATURE)
 
     def create_diagnosis_features(self):
@@ -260,10 +260,15 @@ class Transform(Task):
                                                           hospital_name=self.execution.hospital_name,
                                                           dataset_name=dataset_name)
                         elif table_name == TableNames.CLINICAL_RECORD:
+                            if TableNames.CLINICAL_RECORD in ID_COLUMNS[self.execution.hospital_name] and ID_COLUMNS[self.execution.hospital_name][TableNames.CLINICAL_RECORD] in row:
+                                # this dataset contains a sample bar code (or equivalent)
+                                base_id = row[ID_COLUMNS[self.execution.hospital_name][TableNames.CLINICAL_RECORD]]
+                            else:
+                                base_id = None
                             new_record = ClinicalRecord(id_value=NO_ID, feature_id=feature_id, patient_id=patient_id,
                                                         hospital_id=hospital_id, value=fairified_value,
                                                         a_value=anonymized_value if is_anonymized else None,
-                                                        base_id=row[ID_COLUMNS[self.execution.hospital_name][TableNames.CLINICAL_RECORD]],
+                                                        base_id=base_id,
                                                         counter=self.counter, hospital_name=self.execution.hospital_name,
                                                         dataset_name=dataset_name)
                         elif table_name == TableNames.DIAGNOSIS_RECORD:
@@ -304,7 +309,7 @@ class Transform(Task):
     def create_phenotypic_records(self) -> None:
         self.create_records(table_name=TableNames.PHENOTYPIC_RECORD)
 
-    def create_sample_records(self) -> None:
+    def create_clinical_records(self) -> None:
         self.create_records(table_name=TableNames.CLINICAL_RECORD)
 
     def create_diagnosis_records(self):

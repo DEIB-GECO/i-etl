@@ -10,6 +10,7 @@ from pymongo.mongo_client import MongoClient
 from datatypes.OntologyResource import OntologyResource
 from enums.Ontologies import Ontologies
 from etl.Extract import Extract
+from statistics.QualityStatistics import QualityStatistics
 from utils.file_utils import read_tabular_file_as_string
 from utils.setup_logger import log
 
@@ -52,8 +53,22 @@ def main_ontology_api():
     # print(f"label: {o1.label}")
     # o2 = OntologyResource(ontology=Ontologies.LOINC, full_code="60478-5", label=None, quality_stats=None)
     # print(f"label: {o2.label}")
-    o3 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="258211005", label=None, quality_stats=None)
+    q_stats = QualityStatistics(record_stats=True)
+    o3 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="258211005", label=None, quality_stats=q_stats)
+    o4 = OntologyResource(ontology=Ontologies.LOINC, full_code="49051-6", label=None, quality_stats=q_stats)
+    o5 = OntologyResource(ontology=Ontologies.CLIR, full_code="M-0043166", label=None, quality_stats=q_stats)
+    o6 = OntologyResource(ontology=Ontologies.GENE_ONTOLOGY, full_code="GO:0000380", label=None, quality_stats=q_stats)
+    o7 = OntologyResource(ontology=Ontologies.GSSO, full_code="GSSO_006450", label=None, quality_stats=q_stats)
+    o8 = OntologyResource(ontology=Ontologies.PUBCHEM, full_code="126894", label=None, quality_stats=q_stats)
+    o9 = OntologyResource(ontology=Ontologies.ORPHANET, full_code="ORPHA:134", label=None, quality_stats=q_stats)
     print(f"label: {o3.label}")
+    print(f"label: {o4.label}")
+    print(f"label: {o5.label}")
+    print(f"label: {o6.label}")
+    print(f"label: {o7.label}")
+    print(f"label: {o8.label}")
+    print(f"label: {o9.label}")
+    print(q_stats.to_json()["failed_api_calls"])
 
 
 def main_ontology_code_class():

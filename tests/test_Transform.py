@@ -178,7 +178,7 @@ class TestTransform(unittest.TestCase):
                              extracted_column_dimension_path=TheTestFiles.EXTR_CLINICAL_DIMENSIONS_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
         # this creates SamFeature instances (based on the metadata file) and insert them in a (JSON) temporary file
-        transform.create_sample_features()
+        transform.create_clinical_features()
 
         assert len(transform.features) == 6 - 2  # sid and id do not count as SamFeatures
         # assert the third and fourth SamFeature instances:
@@ -321,10 +321,10 @@ class TestTransform(unittest.TestCase):
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_FILLED_PIDS_PATH)
         # this loads references (Hospital+LabFeature resources), creates LabRecord resources (based on the data file) and insert them in a (JSON) temporary file
         transform.create_hospital()
-        transform.create_sample_features()
+        transform.create_clinical_features()
         transform.create_patients()
         # the three above steps are required to create SamRecord instances
-        transform.create_sample_records()
+        transform.create_clinical_records()
 
         assert len(transform.records) == 16  # in total, 16 SamRecord instances are created, between 2 and 5 per Patient
 
