@@ -38,7 +38,7 @@ def my_setup(profile: Profile, create_indexes: bool) -> Load:
     # 2. create few "fake" files in the current working directory in order to test insertion and index creation
     phen_features = [
         {
-            "identifier": f"{TableNames.PHENOTYPIC_RECORD}:1",
+            "identifier": f"{TableNames.PHENOTYPIC_FEATURE}:1",
             "ontology_resource": {
                 "system": Ontologies.LOINC["url"],
                 "code": "123-456",
@@ -46,7 +46,7 @@ def my_setup(profile: Profile, create_indexes: bool) -> Load:
             },
             "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())
         }, {
-            "identifier": f"{TableNames.PHENOTYPIC_RECORD}:2",
+            "identifier": f"{TableNames.PHENOTYPIC_FEATURE}:2",
             "ontology_resource": {
                 "system": Ontologies.LOINC["url"],
                 "code": "123-457",
@@ -76,10 +76,10 @@ def my_setup(profile: Profile, create_indexes: bool) -> Load:
     hospital = {"identifier": f"{TableNames.HOSPITAL}:1", "name": HospitalNames.TEST_H1}
 
     # 3. write them in temporary JSON files
-    path_phen_features = os.path.join(TestLoad.execution.working_dir_current, TableNames.PHENOTYPIC_FEATURE + "1.json")
-    path_phen_records = os.path.join(TestLoad.execution.working_dir_current, TableNames.PHENOTYPIC_RECORD + "1.json")
-    path_patients = os.path.join(TestLoad.execution.working_dir_current, TableNames.PATIENT+"1.json")
-    path_hospital = os.path.join(TestLoad.execution.working_dir_current, TableNames.HOSPITAL+"1.json")
+    path_phen_features = os.path.join(TestLoad.execution.working_dir_current, f"1{TableNames.PHENOTYPIC_FEATURE}1.json")
+    path_phen_records = os.path.join(TestLoad.execution.working_dir_current, f"1{TableNames.PHENOTYPIC_RECORD}1.json")
+    path_patients = os.path.join(TestLoad.execution.working_dir_current, f"1{TableNames.PATIENT}1.json")
+    path_hospital = os.path.join(TestLoad.execution.working_dir_current, f"1{TableNames.HOSPITAL}1.json")
     # insert the data that is inserted during the Transform step
     with open(path_phen_features, 'w') as f:
         json.dump(phen_features, f)

@@ -30,7 +30,7 @@ class Load(Task):
         if self.execution.current_file_profile == Profile.DIAGNOSIS:
             # we allow patients to have several diagnoses
             unique_variables.append("value")
-        self.database.load_json_in_table(table_name=record_table_name, unique_variables=unique_variables)
+        self.database.load_json_in_table(table_name=record_table_name, unique_variables=unique_variables, file_count=self.execution.current_file_number)
 
     def create_db_indexes(self) -> None:
         log.info(f"Creating indexes.")

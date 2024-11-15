@@ -8,8 +8,8 @@ from constants.structure import GROUND_DATA_FOLDER_FOR_GENERATION, GROUND_METADA
 from utils.setup_logger import log
 
 
-def write_in_file(resource_list: list, current_working_dir: str, table_name: str, count: int) -> None:
-    filename = get_json_resource_file(current_working_dir=current_working_dir, table_name=table_name, count=count)
+def write_in_file(resource_list: list, current_working_dir: str, table_name: str, file_count: int, profile_count: int) -> None:
+    filename = get_json_resource_file(current_working_dir=current_working_dir, table_name=table_name, file_count=file_count, profile_count=profile_count)
     if len(resource_list) > 0:
         with open(filename, "w") as data_file:
             try:
@@ -21,8 +21,8 @@ def write_in_file(resource_list: list, current_working_dir: str, table_name: str
         log.warning(f"No data when writing file {filename}.")
 
 
-def get_json_resource_file(current_working_dir: str, table_name: str, count: int) -> str:
-    return os.path.join(current_working_dir, f"{table_name}{str(count)}.json")
+def get_json_resource_file(current_working_dir: str, table_name: str, file_count: int, profile_count: int) -> str:
+    return os.path.join(current_working_dir, f"{str(file_count)}{table_name}{str(profile_count)}.json")
 
 
 def read_tabular_file_as_string(filepath: str) -> pd.DataFrame:

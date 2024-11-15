@@ -494,8 +494,8 @@ class TestDatabase(unittest.TestCase):
         ]
         my_tuples_as_json = [my_tuples[i].to_json() for i in range(len(my_tuples))]
 
-        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, count=1)
-        filepath = os.path.join(TestDatabase.execution.working_dir_current, TableNames.TEST+"1.json")
+        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, profile_count=1, file_count=1)
+        filepath = os.path.join(TestDatabase.execution.working_dir_current, f"1{TableNames.TEST}1.json")
         assert os.path.exists(filepath) is True
         with open(filepath) as my_file:
             read_tuples = json.load(my_file)
@@ -505,8 +505,8 @@ class TestDatabase(unittest.TestCase):
     def test_write_in_file_no_resource(self):
         _ = Database(TestDatabase.execution)
         my_tuples = []
-        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, count=2)
-        filepath = os.path.join(TestDatabase.execution.working_dir_current, f"{TableNames.TEST}2.json")
+        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, profile_count=2, file_count=1)
+        filepath = os.path.join(TestDatabase.execution.working_dir_current, f"1{TableNames.TEST}2.json")
         assert os.path.exists(filepath) is False  # no file should have been created since there is no data to write
 
     def test_load_json_in_table(self):
@@ -522,11 +522,11 @@ class TestDatabase(unittest.TestCase):
 
         # I need to write the tuples in the working dir
         # because load_json_in_table() looks for files having the given table name in that directory
-        filepath = os.path.join(TestDatabase.execution.working_dir_current, f"{TableNames.TEST}1.json")
+        filepath = os.path.join(TestDatabase.execution.working_dir_current, f"1{TableNames.TEST}1.json")
         with open(filepath, 'w') as f:
             json.dump(my_tuples, f)
 
-        database.load_json_in_table(table_name=TableNames.TEST, unique_variables=["name", "age"])
+        database.load_json_in_table(table_name=TableNames.TEST, unique_variables=["name", "age"], file_count=1)
 
         docs = [doc for doc in database.db[TableNames.TEST].find({}).sort({"name": 1, "age": 1})]
         expected_docs = [my_original_tuples[1], my_original_tuples[0], my_original_tuples[3], my_original_tuples[4]]

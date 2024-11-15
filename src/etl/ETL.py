@@ -57,7 +57,7 @@ class ETL:
             self.execution.current_filepath = os.path.join(DOCKER_FOLDER_DATA, one_filename)
             log.info(self.execution.current_filepath)
 
-            log.info(f"--- Starting to ingest file '{self.execution.current_filepath}'")
+            log.info(f"--- Starting to ingest file '{self.execution.current_filepath}', with number {self.execution.current_file_number}")
 
             # we have to iterate over all profiles because we do not know yet
             # which dataset is associated to which subset of profiles
@@ -90,6 +90,7 @@ class ETL:
                     self.load = Load(database=self.database, execution=self.execution, create_indexes=is_last_file, quality_stats=quality_stats, time_stats=time_stats)
                     self.load.run()
                     time_stats.stop_total_load_timer()
+            self.execution.current_file_number += 1
         # finally, compute DB stats and give all (time, quality and db) stats to the report
         time_stats.stop_total_execution_timer()
         db_stats = DatabaseStatistics(record_stats=True)

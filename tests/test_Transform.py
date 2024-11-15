@@ -163,7 +163,7 @@ class TestTransform(unittest.TestCase):
         assert current_json_hospital["timestamp"] is not None
 
         # b. check that the in-file hospital is correct
-        hospital_file = get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, table_name=TableNames.HOSPITAL, count=1)
+        hospital_file = get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, table_name=TableNames.HOSPITAL, profile_count=1, file_count=1)
         with open(hospital_file) as f:
             written_hospitals = json.load(f)
         assert len(written_hospitals) == 1

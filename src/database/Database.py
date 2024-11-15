@@ -178,11 +178,11 @@ class Database:
             mapping[projected_key] = projected_value
         return mapping
 
-    def load_json_in_table(self, table_name: str, unique_variables: list[str]) -> None:
+    def load_json_in_table(self, table_name: str, unique_variables: list[str], file_count: int) -> None:
         log.info(f"Load data in {table_name}")
         first_file = True
         for filename in os.listdir(self.execution.working_dir_current):
-            if re.search(table_name+"[0-9]+", filename) is not None:
+            if re.search(str(file_count)+table_name+"[0-9]+", filename) is not None:
                 # implementation note: we cannot simply use filename.startswith(table_name)
                 # because both XFeature and XRecord start with X
                 # the solution is to use a regex
@@ -194,6 +194,7 @@ class Database:
                         first_file = False
                     tuples = bson.json_util.loads(json_datafile.read())
                     log.debug(f"Table {table_name}, file {filename}, loading {len(tuples)} tuples with unique variables being {unique_variables}")
+                    # log.info(tuples)
                     _ = self.upsert_one_batch_of_tuples(table_name=table_name,
                                                         unique_variables=unique_variables,
                                                         the_batch=tuples)
@@ -330,23 +331,19 @@ class Database:
     def get_max_resource_counter_id(self) -> int:
         max_value = -1
         for table_name in TableNames.values(db=self):
-            if table_name == TableNames.CLINICAL_RECORD:
-                # pass because Clinical resources have their ID assigned by hospitals, not the FAIRificator
-                pass
-            else:
-                current_max_identifier = self.get_max_value(table_name=table_name, field="identifier", from_string=True)
-                if current_max_identifier is not None:
-                    try:
-                        current_max_identifier = int(current_max_identifier)
-                        if current_max_identifier > max_value:
-                            max_value = current_max_identifier
-                    except ValueError:
-                        # this identifier is not an integer, e.g., a Clinical base ID like 24DL54
-                        # we simply ignore it and try to find the next maximum integer ID
-                        pass
-                else:
-                    # the table is not created yet (this happens when we start from a fresh new DB, thus we skip this)
+            current_max_identifier = self.get_max_value(table_name=table_name, field="identifier", from_string=True)
+            if current_max_identifier is not None:
+                try:
+                    current_max_identifier = int(current_max_identifier)
+                    if current_max_identifier > max_value:
+                        max_value = current_max_identifier
+                except ValueError:
+                    # this identifier is not an integer, e.g., a Clinical base ID like 24DL54
+                    # we simply ignore it and try to find the next maximum integer ID
                     pass
+            else:
+                # the table is not created yet (this happens when we start from a fresh new DB, thus we skip this)
+                pass
         return max_value
 
     def __str__(self) -> str:

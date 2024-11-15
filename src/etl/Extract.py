@@ -149,7 +149,7 @@ class Extract(Task):
                     self.quality_stats.add_column_unknown_etl_type(column_name=column_name, etl_type=etl_type)
                 if is_not_nan(onto_name) and Ontologies.get_enum_from_name(onto_name) is None:
                     self.quality_stats.add_column_unknown_ontology(column_name=column_name, ontology_name=onto_name)
-            log.info(list(self.metadata[MetadataColumns.COLUMN_NAME]))
+            # log.info(list(self.metadata[MetadataColumns.COLUMN_NAME]))
         else:
             # this profile is not used for this dataset, we skip it
             self.metadata = None
@@ -215,9 +215,7 @@ class Extract(Task):
         # because people took the time to describe it.
         # for this, we get the union of both sets and remove the columns that are not described in the metadata
         data_columns = list(set(self.data.columns))  # get the distinct list of columns
-        log.info(data_columns)
         columns_described_in_metadata = list(self.metadata[MetadataColumns.COLUMN_NAME])
-        log.info(columns_described_in_metadata)
         columns_described_in_metadata = [col_name if is_not_nan(col_name) else "" for col_name in columns_described_in_metadata]  # it may happen that some columns have no name, thus they appear as nan in the list; thus, we label them '' (empty string)
         for data_column in data_columns:
             # we remove the column if it is not described in the metadata or if it explicitly marked as
@@ -229,16 +227,16 @@ class Extract(Task):
             column_is_an_id = data_column in [ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT], ID_COLUMNS[self.execution.hospital_name][TableNames.CLINICAL_RECORD]]
             if is_not_described_in_metadata or (column_has_to_be_removed and not column_is_an_id):
                 # we drop this column
-                log.info(f"Drop data column corresponding to the variable {data_column} (it was not in the metadata: {is_not_described_in_metadata}; it has to be removed: {column_has_to_be_removed} and this is not an ID column {not column_is_an_id}).")
+                # log.info(f"Drop data column corresponding to the variable {data_column} (it was not in the metadata: {is_not_described_in_metadata}; it has to be removed: {column_has_to_be_removed} and this is not an ID column {not column_is_an_id}).")
                 self.quality_stats.add_column_not_described_in_metadata(data_column_name=data_column)
                 self.data = self.data.drop(data_column, axis=1)  # axis=1 -> columns
             else:
                 # we keep this column
                 pass
-        log.debug(f"Columns present in the data: {data_columns}")
-        log.debug(f"Columns described in the metadata: {columns_described_in_metadata}")
-        log.debug(f"Columns to be explicitly removed: {self.execution.columns_to_remove}")
-        log.debug(f"Columns kept: {list(self.data.columns)}")
+        # log.debug(f"Columns present in the data: {data_columns}")
+        # log.debug(f"Columns described in the metadata: {columns_described_in_metadata}")
+        # log.debug(f"Columns to be explicitly removed: {self.execution.columns_to_remove}")
+        # log.debug(f"Columns kept: {list(self.data.columns)}")
 
     def compute_mapping_categorical_value_to_onto_resource(self) -> None:
         self.mapping_categorical_value_to_onto_resource = {}
@@ -332,8 +330,8 @@ class Extract(Task):
                 current_column_info = DataFrame(self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name])
                 if current_column_info[MetadataColumns.ETL_TYPE].iloc[0] == DataTypes.CATEGORY:
                     self.quality_stats.add_categorical_column_with_no_json(column_name=column_name)
-        log.debug(f"{self.mapping_categorical_value_to_onto_resource}")
-        log.debug(f"{self.mapping_column_to_categorical_value}")
+        # log.debug(f"{self.mapping_categorical_value_to_onto_resource}")
+        # log.debug(f"{self.mapping_column_to_categorical_value}")
 
     def compute_column_to_dimension(self) -> None:
         self.mapping_column_to_dimension = {}
@@ -387,4 +385,4 @@ class Extract(Task):
                         self.mapping_column_to_dimension[column_name] = column_expected_dimension
                     else:
                         self.mapping_column_to_dimension[column_name] = None
-        log.debug(self.mapping_column_to_dimension)
+        # log.debug(self.mapping_column_to_dimension)

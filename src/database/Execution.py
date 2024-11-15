@@ -31,6 +31,7 @@ class Execution:
         self.metadata_filepath = None  # user input
         self.current_filepath = None  # set in the loop on files in ETL
         self.current_file_profile = None  # set in Extract
+        self.current_file_number = 1  # set in the ETL
         self.diagnosis_regexes_filepath = None  # user input
         self.anonymized_patient_ids_filepath = None  # user input
         self.use_en_locale = False  # user input

@@ -179,7 +179,9 @@ class Transform(Task):
                     if len(self.features) >= BATCH_SIZE:
                         write_in_file(resource_list=self.features,
                                       current_working_dir=self.execution.working_dir_current,
-                                      table_name=table_name, count=count)
+                                      table_name=table_name,
+                                      file_count=self.execution.current_file_number,
+                                      profile_count=count)
                         self.features.clear()
                         count = count + 1
                 else:
@@ -190,8 +192,11 @@ class Transform(Task):
                     f"I am skipping column {column_name} because it has been dropped or is an ID column.")
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
         count = count + 1
-        write_in_file(resource_list=self.features, current_working_dir=self.execution.working_dir_current, table_name=table_name, count=count)
-        self.database.load_json_in_table(table_name=table_name, unique_variables=["name"])
+        write_in_file(resource_list=self.features, current_working_dir=self.execution.working_dir_current,
+                      table_name=table_name,
+                      file_count=self.execution.current_file_number,
+                      profile_count=count)
+        self.database.load_json_in_table(table_name=table_name, unique_variables=["name"], file_count=self.execution.current_file_number)
 
     def create_phenotypic_features(self) -> None:
         self.create_features(table_name=TableNames.PHENOTYPIC_FEATURE)
@@ -295,7 +300,9 @@ class Transform(Task):
                             log.info(f"writing {len(self.records)} in file")
                             write_in_file(resource_list=self.records,
                                           current_working_dir=self.execution.working_dir_current,
-                                          table_name=table_name, count=count)
+                                          table_name=table_name,
+                                          file_count=self.execution.current_file_number,
+                                          profile_count=count)
                             self.records.clear()
                             count = count + 1
                     else:
@@ -304,7 +311,8 @@ class Transform(Task):
                         # log.error(f"Skipping column {column_name} for row {index}")
                         pass
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
-        write_in_file(resource_list=self.records, current_working_dir=self.execution.working_dir_current, table_name=table_name, count=count)
+        write_in_file(resource_list=self.records, current_working_dir=self.execution.working_dir_current,
+                      table_name=table_name, file_count=self.execution.current_file_number, profile_count=count)
 
     def create_phenotypic_records(self) -> None:
         self.create_records(table_name=TableNames.PHENOTYPIC_RECORD)
@@ -349,13 +357,14 @@ class Transform(Task):
                 if len(self.patients) >= BATCH_SIZE:
                     write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current,
                                   table_name=TableNames.PATIENT,
-                                  count=count)  # this will save the data if it has reached BATCH_SIZE
+                                  file_count=self.execution.current_file_number,
+                                  profile_count=count)  # this will save the data if it has reached BATCH_SIZE
                     self.patients = []
                     count = count + 1
                     # no need to load Patient instances because they are referenced using their ID,
                     # which was provided by the hospital (thus is known by the dataset)
             write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current,
-                          table_name=TableNames.PATIENT, count=count)
+                          table_name=TableNames.PATIENT, file_count=self.execution.current_file_number, profile_count=count)
             # finally, we also write the mapping patient ID / anonymized ID in a file - this will be ingested for subsequent runs to not renumber existing anonymized patients
             with open(self.execution.anonymized_patient_ids_filepath, "w") as data_file:
                 try:
@@ -363,7 +372,7 @@ class Transform(Task):
                 except Exception:
                     raise ValueError(
                         f"Could not dump the {len(self.patient_ids_mapping)} JSON resources in the file located at {self.execution.anonymized_patient_ids_filepath}.")
-            self.database.load_json_in_table(table_name=TableNames.PATIENT, unique_variables=["identifier"])
+            self.database.load_json_in_table(table_name=TableNames.PATIENT, unique_variables=["identifier"], file_count=self.execution.current_file_number)
         else:
             # no patient ID in this dataset
             # this may happen, e.g., for BUZZI diagnosis data which uses SampleBarCode instead
@@ -381,8 +390,8 @@ class Transform(Task):
         new_hospital = Hospital(id_value=NO_ID, name=self.execution.hospital_name, counter=self.counter)
         self.hospitals.append(new_hospital)
         write_in_file(resource_list=self.hospitals, current_working_dir=self.execution.working_dir_current,
-                      table_name=TableNames.HOSPITAL, count=1)
-        self.database.load_json_in_table(table_name=TableNames.HOSPITAL, unique_variables=["name"])
+                      table_name=TableNames.HOSPITAL, file_count=self.execution.current_file_number, profile_count=1)
+        self.database.load_json_in_table(table_name=TableNames.HOSPITAL, unique_variables=["name"], file_count=self.execution.current_file_number)
 
     def create_ontology_resource_from_row(self, column_name: str) -> OntologyResource | None:
         rows = self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name]
