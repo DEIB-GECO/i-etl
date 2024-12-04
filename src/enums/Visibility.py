@@ -4,18 +4,18 @@ from utils.setup_logger import log
 
 
 class Visibility(EnumAsClass):
-    PUBLIC_WITHOUT_ANONYMIZATION = "PUBLIC_WITHOUT_ANONYMIZATION"
-    PUBLIC_WITH_ANONYMIZATION = "PUBLIC_WITH_ANONYMIZATION"
+    PUBLIC = "PUBLIC"
+    ANONYMIZED = "ANONYMIZED"
     PRIVATE = "PRIVATE"
 
     METADATA_NB_UNRECOGNIZED_VISIBILITY = 0
 
     @classmethod
     def get_enum_from_name(cls, visibility_str: str):
-        for existing_ontology in Visibility.values():
-            if existing_ontology == visibility_str:
-                return existing_ontology  # return the ontology enum
-        # at the end of the loop, no enum value could match the given ontology
+        for existing_visibility in Visibility.values():
+            if existing_visibility == visibility_str:
+                return existing_visibility  # return the visibility enum
+        # at the end of the loop, no enum value could match the given visibility
         # thus we need to raise an error
         raise ValueError(f"The given visibility value ({visibility_str}) does not correspond to any known visibility.")
 

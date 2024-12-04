@@ -31,12 +31,16 @@ ID_COLUMNS = {
         TableNames.PATIENT: MetadataColumns.normalize_name("id"),
         TableNames.CLINICAL_RECORD: ""
     },
-    HospitalNames.KAGGLE_EDA: {
+    HospitalNames.EXPES_EDA: {
         TableNames.PATIENT: MetadataColumns.normalize_name("id"),
-        TableNames.CLINICAL_RECORD: MetadataColumns.normalize_name("sid"),
+        TableNames.CLINICAL_RECORD: ""
     },
-    HospitalNames.KAGGLE_COVID: {
+    HospitalNames.EXPES_COVID: {
         TableNames.PATIENT: MetadataColumns.normalize_name("id"),
         TableNames.CLINICAL_RECORD: MetadataColumns.normalize_name("sid")
+    },
+    HospitalNames.EXPES_KIDNEY: {
+        TableNames.PATIENT: MetadataColumns.normalize_name("individual_id"),
+        TableNames.CLINICAL_RECORD: MetadataColumns.normalize_name("sample_id")
     }
 }

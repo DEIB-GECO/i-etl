@@ -1,7 +1,7 @@
 "ontology","ontology_code","ontology_comment","snomed_vartype","test h1","TEST H2","test_H3","dataset","profile","name","Significato_it","description","visibility","vartype","etl_type","dimension","details","JSON_values","Multiplicity","Doubts"
-,,,,1,0,0,"extr-data-clin.csv","CLINICAL","id","The Patient ID","The Patient ID","PUBLIC_WITHOUT_ANONYMIZATION","integer","int",,,,,
-,,,,1,0,0,"extr-data-clin.csv","CLINICAL","sid","The Sample ID","The Sample ID","PUBLIC_WITHOUT_ANONYMIZATION","str","string",,,,,
-"loinc",1234,"bla","float",1,0,0,"extr-data-clin.csv","CLINICAL","molecule_a","The molecule Alpha","The molecule Alpha","PUBLIC_WITHOUT_ANONYMIZATION","float","float","mg/L","How much moleculeA is in the blood",,,
-,,"Bla 2","float",1,0,0,"extr-data-clin.csv","CLINICAL","molecule_b","The molecule Beta","The molecule Beta","PUBLIC_WITHOUT_ANONYMIZATION","str","int",,,,,
-"snomedct","421416008","Bla 3","float",1,0,0,"extr-data-clin.csv","CLINICAL","molecule_g","The molecule Gamma","The molecule Gamma","PUBLIC_WITHOUT_ANONYMIZATION","boolean","bool",,"Whether moleculeG is present","[{""snomed_ct"": ""373067005"", ""value"": ""0""}, {""snomed_ct"": ""276727009"", ""value"": ""na""}, {""snomed_ct"": ""373066001"", ""value"": ""1""}]"
-"snomedct","124678","Bla 7",,1,0,0,"extr-data-clin.csv","CLINICAL","molecule_y","The molecule Yota","The molecule Yota","PUBLIC_WITHOUT_ANONYMIZATION","str","str",,,,,
+,,,,1,0,0,"extr-data-clin.csv","CLINICAL","id","The Patient ID","The Patient ID","PUBLIC","integer","int",,,,,
+,,,,1,0,0,"extr-data-clin.csv","CLINICAL","sid","The Sample ID","The Sample ID","PUBLIC","str","string",,,,,
+"loinc",1234,"bla","float",1,0,0,"extr-data-clin.csv","CLINICAL","molecule_a","The molecule Alpha","The molecule Alpha","PUBLIC","float","float","mg/L","How much moleculeA is in the blood",,,
+,,"Bla 2","float",1,0,0,"extr-data-clin.csv","CLINICAL","molecule_b","The molecule Beta","The molecule Beta","PUBLIC","str","int",,,,,
+"snomedct","421416008","Bla 3","float",1,0,0,"extr-data-clin.csv","CLINICAL","molecule_g","The molecule Gamma","The molecule Gamma","PUBLIC","boolean","bool",,"Whether moleculeG is present","[{""snomed_ct"": ""373067005"", ""value"": ""0""}, {""snomed_ct"": ""276727009"", ""value"": ""na""}, {""snomed_ct"": ""373066001"", ""value"": ""1""}]"
+"snomedct","124678","Bla 7",,1,0,0,"extr-data-clin.csv","CLINICAL","molecule_y","The molecule Yota","The molecule Yota","PUBLIC","str","str",,,,,

@@ -38,7 +38,7 @@ class OntologyResource:
             if label is None:
                 # when we create a new OntologyResource from scratch, we need to compute the label with ontology API
                 # if the query to the API does not work, we can still use the column name as the label of the OntoResource
-                self.compute_label(code_ontology=ontology, code_elements=code_elements, quality_stats=quality_stats)
+                self.compute_label(ontology=ontology, code_elements=code_elements, quality_stats=quality_stats)
             else:
                 # when we retrieve a OntologyResource from the db, we do NOT want to compute again its label
                 # we still get the existing label
@@ -81,7 +81,7 @@ class OntologyResource:
                 if element != "|":
                     self.code += element
 
-    def compute_label(self, code_ontology: Ontologies, code_elements: list, quality_stats: QualityStatistics) -> None:
+    def compute_label(self, ontology: Ontologies, code_elements: list, quality_stats: QualityStatistics) -> None:
         self.label = ""
         for i in range(len(code_elements)):
             element = code_elements[i]
@@ -92,7 +92,7 @@ class OntologyResource:
                     pass
                 else:
                     # this is a code, we get its label (name)
-                    resource_label = self.get_resource_label_from_api(code_ontology=code_ontology, single_ontology_code=element, quality_stats=quality_stats)
+                    resource_label = OntologyResource.get_resource_label_from_api(ontology=ontology, single_code=element, quality_stats=quality_stats)
                     if resource_label is not None:
                         resource_label = process_spaces(input_string=resource_label)
                         resource_label = remove_specific_tokens(input_string=resource_label, tokens=["(property)", "- finding", "-finding", "(qualifier value)", "(observable entity)", "(social concept)", "(procedure)", "(assessment scale)", "- action", "-action", "- attribute", "-attribute"])  # useless and may break parsing (due to parenthesis and dash)
@@ -104,14 +104,15 @@ class OntologyResource:
                 if element != "|":
                     self.label += element
 
-    def get_resource_label_from_api(self, code_ontology: Ontologies, single_ontology_code: str, quality_stats: QualityStatistics) -> str:
+    @classmethod
+    def get_resource_label_from_api(cls, ontology: Ontologies, single_code: str, quality_stats: QualityStatistics) -> str:
         # column_name is to be used when the label of the OntologyResource could not be computed with any of the APIs
         compute_from_api = True
-        ontology_name = code_ontology["name"]
+        ontology_name = ontology["name"]
         if compute_from_api:
             try:
-                if code_ontology == Ontologies.SNOMEDCT:
-                    url_resource = quote(f"http://purl.bioontology.org/ontology/SNOMEDCT/{single_ontology_code}", safe="")
+                if ontology == Ontologies.SNOMEDCT:
+                    url_resource = quote(f"http://purl.bioontology.org/ontology/SNOMEDCT/{single_code}", safe="")
                     url = f"http://data.bioontology.org/ontologies/SNOMEDCT/classes/{url_resource}"
                     response = send_query_to_api(url=url, secret="d6fb9c05-3309-4158-892f-65434a9133b9", access_type=AccessTypes.API_KEY_IN_URL)
                     if response is None:
@@ -121,15 +122,15 @@ class OntologyResource:
                         if "prefLabel" in data:
                             return data["prefLabel"]
                         else:
-                            error = f"No label field for resource {single_ontology_code}."
+                            error = f"No label field for resource {single_code}."
                     elif response.status_code == 404 or response.status_code == 400:
-                        error = f"Resource {single_ontology_code} not found."
+                        error = f"Resource {single_code} not found."
                     else:
                         error = f"Failed connection to SNOMED-CT API."
-                    quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_ontology_code, api_error=error)
+                    quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
-                elif code_ontology == Ontologies.LOINC:
-                    url = f"https://loinc.regenstrief.org/searchapi/loincs?query={single_ontology_code}"
+                elif ontology == Ontologies.LOINC:
+                    url = f"https://loinc.regenstrief.org/searchapi/loincs?query={single_code}"
                     response = send_query_to_api(url=url, secret="nbarret d7=47@xiz$g=-Ns", access_type=AccessTypes.AUTHENTICATION)
                     data = parse_json_response(response)
                     if response is None:
@@ -139,38 +140,38 @@ class OntologyResource:
                             if "COMPONENT" in data["Results"][0]:
                                 return data["Results"][0]["COMPONENT"]
                             else:
-                                error = f"No field label for resource {single_ontology_code}"
+                                error = f"No field label for resource {single_code}"
                         else:
-                            error = f"Resource {single_ontology_code} not found."
+                            error = f"Resource {single_code} not found."
                     else:
                         error = f"Failed connection to SNOMED-CT API."
-                    quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_ontology_code, api_error=error)
+                    quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
-                elif code_ontology == Ontologies.PUBCHEM:
-                    url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{single_ontology_code}/description/JSON"
+                elif ontology == Ontologies.PUBCHEM:
+                    url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{single_code}/description/JSON"
                     response = send_query_to_api(url, secret=None, access_type=AccessTypes.USER_AGENT)
                     if response is None:
                         error = f"Failed connection to SNOMED-CT API."
                     elif response.status_code == 404 or response.status_code == 400:
-                        error = f"Resource {single_ontology_code} not found."
+                        error = f"Resource {single_code} not found."
                     elif response.status_code == 200:
                         data = parse_json_response(response)
                         if "InformationList" in data and "Information" in data["InformationList"] and len(data["InformationList"]["Information"]) > 0:
                             if "Title" in data["InformationList"]["Information"][0]:
                                 return data["InformationList"]["Information"][0]["Title"]
                             else:
-                                error = f"No label field for resource {single_ontology_code}."
+                                error = f"No label field for resource {single_code}."
                         else:
-                            error = f"Resource {single_ontology_code} not found."
+                            error = f"Resource {single_code} not found."
                     else:
                         error = f"Failed connection to PUBCHEM API."
-                    quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_ontology_code, api_error=error)
+                    quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
-                elif code_ontology == Ontologies.CLIR:
-                    quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_ontology_code, api_error="No API access for the CLIR ontology.")
+                elif ontology == Ontologies.CLIR:
+                    quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_code, api_error="No API access for the CLIR ontology.")
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
-                elif code_ontology == Ontologies.GSSO:
-                    iri = f"http://purl.obolibrary.org/obo/{single_ontology_code.upper()}"  # we need to upper case the GSSO_, otherwise the API returns None
+                elif ontology == Ontologies.GSSO:
+                    iri = f"http://purl.obolibrary.org/obo/{single_code.upper()}"  # we need to upper case the GSSO_, otherwise the API returns None
                     url = f"https://ontobee.org/ontology/GSSO?iri={iri}"
                     response = send_query_to_api(url=url, secret="d6fb9c05-3309-4158-892f-65434a9133b9", access_type=AccessTypes.API_KEY_IN_BEARER)
                     if response is None:
@@ -189,42 +190,42 @@ class OntologyResource:
                                 if one_class.getAttribute("rdf:about") == iri:
                                     expected_element = one_class
                             if expected_element is None:
-                                error = f"Resource {single_ontology_code} not found."
+                                error = f"Resource {single_code} not found."
                             else:
                                 if len(expected_element.getElementsByTagName("rdfs:label")) > 0:
                                     return expected_element.getElementsByTagName("rdfs:label")[0].childNodes[0].data
                                 else:
-                                    error = f"No field label for resource {single_ontology_code}"
+                                    error = f"No field label for resource {single_code}"
                         else:
-                            error = f"Resource {single_ontology_code} not found."
+                            error = f"Resource {single_code} not found."
                     elif response.status_code == 404 or response.status_code == 400:
-                        error = f"Resource {single_ontology_code} not found."
+                        error = f"Resource {single_code} not found."
                     else:
                         error = f"Failed connection to GSSO API."
-                    quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_ontology_code,  api_error=error)
+                    quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
-                elif code_ontology == Ontologies.ORPHANET:
-                    url = f"https://api.orphacode.org/EN/ClinicalEntity/orphacode/{single_ontology_code}/Name"
+                elif ontology == Ontologies.ORPHANET:
+                    url = f"https://api.orphacode.org/EN/ClinicalEntity/orphacode/{single_code}/Name"
                     response = send_query_to_api(url=url, secret="nbarret", access_type=AccessTypes.API_KEY_IN_HEADER)
                     if response is None:
                         error = f"Failed connection to SNOMED-CT API."
                     elif response.status_code == 404 or response.status_code == 400:
-                        error = f"Resource {single_ontology_code} not found."
+                        error = f"Resource {single_code} not found."
                     elif response.status_code == 200:
                         data = parse_json_response(response)
                         if "Preferred term" in data:
                             return data["Preferred term"]
                         else:
-                            error = f"No label field for resource {single_ontology_code}."
+                            error = f"No label field for resource {single_code}."
                     else:
                         error = f"Failed connection to ORPHANET API."
-                    quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_ontology_code, api_error=error)
+                    quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
-                elif code_ontology == Ontologies.GENE_ONTOLOGY:
+                elif ontology == Ontologies.GENE_ONTOLOGY:
                     # as of 03/09/2024, this ontology is queried by accessing the webpage describing the resource
                     # it seems that there is an RDF query tool, but it is not sure that this can be queried as an API
                     # and there is no documentation on existing properties to query some codes
-                    url = f"https://amigo.geneontology.org/amigo/term/GO:{single_ontology_code}"
+                    url = f"https://amigo.geneontology.org/amigo/term/GO:{single_code}"
                     response = send_query_to_api(url=url, secret=None, access_type=AccessTypes.USER_AGENT)
                     if response is None:
                         error = f"Failed connection to GO API."
@@ -234,19 +235,50 @@ class OntologyResource:
                         if header != "":
                             return header
                         else:
-                            error = f"No label field for resource {single_ontology_code}."
+                            error = f"No label field for resource {single_code}."
                     elif response.status_code == 404 or response.status_code == 400:
-                        error = f"Resource {single_ontology_code} not found."
+                        error = f"Resource {single_code} not found."
                     else:
                         error = f"Failed connection to GO API."
-                    quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_ontology_code,  api_error=error)
+                    quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_code, api_error=error)
+                    return DEFAULT_ONTOLOGY_RESOURCE_LABEL
+                elif ontology == Ontologies.OMIM:
+                    # TODO NELLY: get OMIM API key (default one on OMIM website nfNEOscLNWWXdSmUoMLPPA is unauthorized)
+                    url = f"https://api.omim.org/api/entry?mimNumber={single_code}&include=text&format=json"
+                    response = send_query_to_api(url=url, secret="nfNEOscLNWWXdSmUoMLPPA", access_type=AccessTypes.API_KEY_IN_HEADER)
+                    if response is None:
+                        error = f"Failed connection to OMIM API."
+                    elif response.status_code == 200:
+                        data = parse_json_response(response)
+                        if "text" in data:
+                            return data["text"]
+                        else:
+                            error = f"No text field for resource {single_code}."
+                    else:
+                        error = f"Failed connection to OMIM API."
+                    quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_code, api_error=error)
+                    return DEFAULT_ONTOLOGY_RESOURCE_LABEL
+                elif ontology == Ontologies.HGNC:
+                    url = f"https://rest.ensembl.org/xrefs/id/{single_code}?external_db=HGNC;content-type=application/json;all_levels=1"
+                    response = send_query_to_api(url=url, secret=None, access_type=AccessTypes.USER_AGENT)
+                    if response is None:
+                        error = f"Failed connection to OMIM API."
+                    elif response.status_code == 200:
+                        data = parse_json_response(response)
+                        if len(data) > 0 and "description" in data[0]:
+                            return data[0]["description"]
+                        else:
+                            error = f"No text field for resource {single_code}."
+                    else:
+                        error = f"Failed connection to OMIM API."
+                    quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 else:
-                    quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_ontology_code, api_error=f"Unknown ontology {self.system}")
+                    quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_code, api_error=f"Unknown ontology {ontology}")
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
             except Exception as e:
                 # the API could not be queried, returning empty string
-                quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_ontology_code, api_error=e.args[0])
+                quality_stats.add_failed_api_call(ontology_name=ontology_name, id_code=single_code, api_error=e.args[0])
                 return DEFAULT_ONTOLOGY_RESOURCE_LABEL
         else:
             return DEFAULT_ONTOLOGY_RESOURCE_LABEL

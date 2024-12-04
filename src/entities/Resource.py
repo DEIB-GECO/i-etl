@@ -9,6 +9,7 @@ from enums.TableNames import TableNames
 from database.Counter import Counter
 from query.Operators import Operators
 from utils.assertion_utils import is_not_nan
+from utils.setup_logger import log
 
 
 class Resource:

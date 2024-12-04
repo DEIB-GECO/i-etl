@@ -5,7 +5,8 @@ import urllib3
 
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s, %(levelname)-5s [%(module)s:%(funcName)s:%(lineno)d] %(message)s',
+    # format='%(asctime)s, %(levelname)-5s [%(module)s:%(funcName)s:%(lineno)d] %(message)s',
+    format='[%(module)s:%(funcName)s:%(lineno)d] %(message)s',
     datefmt='%Y-%m-%d:%H:%M:%S',
     handlers=[
         logging.StreamHandler()

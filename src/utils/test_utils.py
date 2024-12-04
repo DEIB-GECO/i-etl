@@ -96,7 +96,7 @@ def get_field_value_for_patient(records: list, features: list, patient_id: str, 
     :param column_name: the column for which we want to get the value
     """
 
-    log.info(f"looking for the value of column {column_name} for patient {patient_id}")
+    # log.info(f"looking for the value of column {column_name} for patient {patient_id}")
 
     feature = None
     for feature in features:
@@ -106,8 +106,7 @@ def get_field_value_for_patient(records: list, features: list, patient_id: str, 
     if feature is not None:
         for record in records:
             json_lab_record = record.to_json()
-            log.info(f"checking {json_lab_record['has_subject']} vs. {patient_id} and {json_lab_record['instantiates']} vs. {feature['identifier']}")
-            if json_lab_record["has_subject"] == patient_id:
-                if json_lab_record["instantiates"] == feature["identifier"]:
-                    return json_lab_record["value"]
+            # log.info(f"checking {json_lab_record['has_subject']} vs. {patient_id} and {json_lab_record['instantiates']} vs. {feature['identifier']}")
+            if json_lab_record["has_subject"] == patient_id and json_lab_record["instantiates"] == feature["identifier"]:
+                return json_lab_record["value"]
     return None

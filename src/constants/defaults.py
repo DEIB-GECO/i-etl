@@ -4,7 +4,10 @@ import requests
 
 API_SESSION = requests.Session()
 
-BATCH_SIZE = 1000
+# 1000 is the max supported by Mongodb.
+# If we set BATCH_SIZE > 1000, Mongodb will send batch of 1k instances,
+# but we will still have fewer files to write and read, thus increasing performance
+BATCH_SIZE = 10000
 
 PATTERN_VALUE_DIMENSION = re.compile(r'^ *([0-9]+[.,]*[0-9]*) *([a-zA-Z_.-]+) *$')  # we add start and end delimiters (^ and $) to not process cells with multiples values inside
 

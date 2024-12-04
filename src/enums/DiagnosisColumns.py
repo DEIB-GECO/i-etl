@@ -7,10 +7,10 @@ class DiagnosisColumns(EnumAsClass):
     AFFECTED = MetadataColumns.normalize_name(column_name="Affected")
     DIAGNOSIS_NAME = MetadataColumns.normalize_name(column_name="DiagnosisName")
     ACRONYM = MetadataColumns.normalize_name(column_name="Acronym")
-    ORPHANET_CODE = MetadataColumns.normalize_name(column_name="OrphaNet")
+    ORPHANET_CODE = MetadataColumns.normalize_name(column_name="OrphanetCode")
     GENE_NAME = MetadataColumns.normalize_name(column_name="GeneName")
     INHERITANCE = MetadataColumns.normalize_name(column_name="VariantInheritance")
     CHR_NUMBER = MetadataColumns.normalize_name(column_name="ChromosomeNumber")
-    ZIGOSITY = MetadataColumns.normalize_name(column_name="Zigosity")
+    ZIGOSITY = MetadataColumns.normalize_name(column_name="Zygosity")
 
 

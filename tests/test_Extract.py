@@ -2,6 +2,8 @@ import json
 import os
 import unittest
 
+import pandas as pd
+
 from database.Database import Database
 from database.Execution import Execution
 from enums.DataTypes import DataTypes
@@ -37,8 +39,16 @@ def my_setup(metadata_path: str, data_paths: str, data_type: Profile, pids_path:
     # for tests, we need to manually set it because we have no ETL instance
     TestExtract.execution.current_filepath = os.path.join(DOCKER_FOLDER_TEST, data_paths)
     log.debug(TestExtract.execution.current_filepath)
+    log.info(os.path.join(DOCKER_FOLDER_TEST, metadata_path))
+    metadata = pd.read_csv(os.path.join(DOCKER_FOLDER_TEST, metadata_path))
     database = Database(TestExtract.execution)
-    extract = Extract(profile=data_type, database=database, execution=TestExtract.execution, quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False))
+    extract = Extract(metadata=metadata, profile=data_type, database=database, execution=TestExtract.execution, quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False))
+    extract.filter_metadata_file()
+    extract.normalize_metadata_file()
+    extract.load_tabular_data()
+    extract.pre_process_data_file()
+    extract.filter_data_file()
+    extract.normalize_data_file()
     return extract
 
 
@@ -51,11 +61,10 @@ class TestExtract(unittest.TestCase):
                            data_type=Profile.CLINICAL,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-        extract.load_metadata_file()
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 10, "The expected number of columns is 10."
+        assert len(extract.metadata.columns) == 20, "The expected number of columns is 20."
         assert len(extract.metadata) == 6, "The expected number of lines is 6."
 
         # b. checking the "sid" line completely
@@ -65,7 +74,7 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][1] == "The Sample ID"  # kept as it is in the metadata for more clarity
         assert extract.metadata[MetadataColumns.ETL_TYPE][1] == DataTypes.STRING
         assert not is_not_nan(extract.metadata[MetadataColumns.JSON_VALUES][1])
-        assert extract.metadata[MetadataColumns.VISIBILITY][1] == "PUBLIC_WITHOUT_ANONYMIZATION"
+        assert extract.metadata[MetadataColumns.VISIBILITY][1] == "PUBLIC"
 
         # g. more general checks
         # DATASET: this should be the dataset name, and there should be no other datasets in that column
@@ -79,11 +88,10 @@ class TestExtract(unittest.TestCase):
                            data_type=Profile.PHENOTYPIC,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-        extract.load_metadata_file()
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 10, "The expected number of columns is 10."
+        assert len(extract.metadata.columns) == 20, "The expected number of columns is 20."
         assert len(extract.metadata) == 4, "The expected number of lines is 4."
 
         # b. checking the "sex" line completely
@@ -95,7 +103,7 @@ class TestExtract(unittest.TestCase):
         expected_json_values = [{"value": "M", "snomed_ct": "248153007"}, {"value": "F", "snomed_ct": "248152002"}]
         # "[{""value"": ""M"", ""snomed_ct"": ""248153007""}, {""value"": ""F"", ""snomed_ct"": ""248152002""}]"
         assert extract.metadata[MetadataColumns.JSON_VALUES][1] == json.dumps(expected_json_values)
-        assert extract.metadata[MetadataColumns.VISIBILITY][1] == "PUBLIC_WITHOUT_ANONYMIZATION"
+        assert extract.metadata[MetadataColumns.VISIBILITY][1] == "PUBLIC"
 
         # c. test the first (Patient ID) line, because there are no ontologies for this one
         assert extract.metadata[MetadataColumns.COLUMN_NAME][0] == "id"  # normalized column name
@@ -131,11 +139,10 @@ class TestExtract(unittest.TestCase):
                            data_type=Profile.DIAGNOSIS,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-        extract.load_metadata_file()
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 10, "The expected number of columns is 10."
+        assert len(extract.metadata.columns) == 20, "The expected number of columns is 20."
         assert len(extract.metadata) == 3, "The expected number of lines is 3."
 
         # b. checking the first line completely
@@ -174,11 +181,10 @@ class TestExtract(unittest.TestCase):
                            data_type=Profile.GENOMIC,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H3)
-        extract.load_metadata_file()
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 10, "The expected number of columns is 10."
+        assert len(extract.metadata.columns) == 20, "The expected number of columns is 20."
         assert len(extract.metadata) == 3, "The expected number of lines is 3."
 
         # b. checking the first line completely
@@ -214,11 +220,10 @@ class TestExtract(unittest.TestCase):
                            data_type=Profile.CLINICAL,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-        extract.load_tabular_file()
 
         # a. general size checks
         assert extract.data is not None, "Data is None, while it should not."
-        assert len(extract.data.columns) == 6, "The expected number of columns is 6."
+        assert len(extract.data.columns) == 5, "The expected number of columns is 5."  # because molecule_y is in the metadata but not the data
         assert len(extract.data) == 10, "The expected number of lines is 10."
 
         # b. checking the first line completely
@@ -231,7 +236,7 @@ class TestExtract(unittest.TestCase):
         assert extract.data["molecule_a"][0] == "0.001", "The expected value is '0.001'."
         assert extract.data["molecule_b"][0] == "100g", "The expected value is '100'."
         assert extract.data["molecule_g"][0] == "1", "The expected value is '1'."  # this will be later converted to bool
-        assert extract.data["molecule_z"][0] == "abc", "The expected value is 'abc'."
+        # assert extract.data["molecule_z"][0] == "abc", "The expected value is 'abc'."  # this has been removed because not described in the metadata
 
     def test_load_data_file_H1_D2(self):
         extract = my_setup(metadata_path=TheTestFiles.EXTR_METADATA_PHENOTYPIC_PATH,
@@ -239,7 +244,6 @@ class TestExtract(unittest.TestCase):
                            data_type=Profile.PHENOTYPIC,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-        extract.load_tabular_file()
 
         # a. general size checks
         assert extract.data is not None, "Data is None, while it should not."
@@ -262,7 +266,6 @@ class TestExtract(unittest.TestCase):
                            data_type=Profile.GENOMIC,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H3)
-        extract.load_tabular_file()
 
         # a. general size checks
         assert extract.data is not None, "Data is None, while it should not."
@@ -298,7 +301,6 @@ class TestExtract(unittest.TestCase):
                            data_type=Profile.CLINICAL,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-        extract.load_metadata_file()  # required to compute mapped values
         extract.compute_mapping_categorical_value_to_onto_resource()
 
         assert len(extract.mapping_categorical_value_to_onto_resource.keys()) == 3  # 0, 1, NA
@@ -339,7 +341,6 @@ class TestExtract(unittest.TestCase):
                            data_type=Profile.PHENOTYPIC,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-        extract.load_metadata_file()  # required to compute mapped values
         extract.compute_mapping_categorical_value_to_onto_resource()
 
         assert len(extract.mapping_categorical_value_to_onto_resource.keys()) == 2  # F/M
@@ -370,11 +371,8 @@ class TestExtract(unittest.TestCase):
                            data_type=Profile.CLINICAL,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-        extract.load_metadata_file()
-        extract.load_tabular_file()  # both operations are needed to run the method
-        extract.remove_unused_csv_columns()
 
-        # we assert that we get rid of the 'molecule_z' column (because it was not described in the metadata
+        # we assert that we get rid of the 'molecule_z' column (because it was not described in the metadata)
         # other columns are kept
         remaining_data_columns = list(extract.data.columns)
         remaining_data_columns.sort()
@@ -396,9 +394,6 @@ class TestExtract(unittest.TestCase):
                            data_type=Profile.CLINICAL,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-        extract.load_metadata_file()
-        extract.load_tabular_file()  # both operations are needed to run the method
-        extract.remove_unused_csv_columns()
         extract.compute_column_to_dimension()
 
         # {'id': None, 'molecule_a': "mg/L", 'molecule_b': "g", 'molecule_g': None, 'molecule_z': None, "molecule_y": None}
@@ -408,7 +403,7 @@ class TestExtract(unittest.TestCase):
         assert "molecule_a" in extract.mapping_column_to_dimension
         assert extract.mapping_column_to_dimension["molecule_a"] == "mg/L"
         assert "molecule_b" in extract.mapping_column_to_dimension
-        assert extract.mapping_column_to_dimension["molecule_b"] == "g"
+        assert extract.mapping_column_to_dimension["molecule_b"] is None  # because we do not extract units from data anymore
         assert "molecule_g" in extract.mapping_column_to_dimension
         assert extract.mapping_column_to_dimension["molecule_g"] is None
         assert "molecule_y" in extract.mapping_column_to_dimension
@@ -420,9 +415,6 @@ class TestExtract(unittest.TestCase):
                            data_type=Profile.PHENOTYPIC,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-        extract.load_metadata_file()
-        extract.load_tabular_file()  # both operations are needed to run the method
-        extract.remove_unused_csv_columns()
         extract.compute_column_to_dimension()
 
         # {'id': None, 'sex': [], 'ethnicity': [], 'date_of_birth': []}
@@ -435,45 +427,3 @@ class TestExtract(unittest.TestCase):
         assert extract.mapping_column_to_dimension["ethnicity"] is None
         assert "date_of_birth" in extract.mapping_column_to_dimension
         assert extract.mapping_column_to_dimension["date_of_birth"] is None
-
-    def test_load_empty_patient_id_mapping(self):
-        extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.ORIG_PHENOTYPIC_PATH,
-                           data_type=Profile.PHENOTYPIC,
-                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
-                           hospital_name=HospitalNames.TEST_H1)
-        extract.load_patient_id_mapping()
-
-        # when the file is empty, the Execution should write an empty list into it
-        assert os.stat(extract.execution.anonymized_patient_ids_filepath).st_size > 0
-        assert extract.patient_ids_mapping == {}
-
-        # get back to the original empty file
-        with open(os.path.join(DOCKER_FOLDER_TEST, TheTestFiles.ORIG_EMPTY_PIDS_PATH), "w") as file:
-            file.write("")
-
-    def test_load_filled_patient_id_mapping(self):
-        extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
-                           data_paths=TheTestFiles.ORIG_PHENOTYPIC_PATH,
-                           data_type=Profile.PHENOTYPIC,
-                           pids_path=TheTestFiles.ORIG_FILLED_PIDS_PATH,
-                           hospital_name=HospitalNames.TEST_H1)
-        extract.load_patient_id_mapping()
-
-        # when the file is not empty, all mappings should be loaded in Extract
-        assert os.stat(extract.execution.anonymized_patient_ids_filepath).st_size > 0
-        with open(os.path.join(DOCKER_FOLDER_TEST, TheTestFiles.EXTR_FILLED_PIDS_PATH), "r") as f:
-            # {
-            #    "999999999": "h1:999",
-            #    "999999998": "h1:998",
-            #    "999999997": "h1:997",
-            #    "999999996": "h1:996",
-            #    "999999995": "h1:995",
-            #    "999999994": "h1:994",
-            #    "999999993": "h1:993",
-            #    "999999992": "h1:992",
-            #    "999999991": "h1:991",
-            #    "999999990": "h1:990"
-            # }
-            expected_dict = json.load(f)
-        assert expected_dict == extract.patient_ids_mapping

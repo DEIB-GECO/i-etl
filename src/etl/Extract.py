@@ -1,10 +1,9 @@
+import itertools
 import json
 import os
-import re
 
 from pandas import DataFrame
 
-from constants.defaults import PATTERN_VALUE_DIMENSION
 from constants.idColumns import ID_COLUMNS
 from database.Database import Database
 from database.Execution import Execution
@@ -27,121 +26,92 @@ from utils.setup_logger import log
 
 class Extract(Task):
 
-    def __init__(self, profile: Profile, database: Database, execution: Execution, quality_stats: QualityStatistics, time_stats: TimeStatistics):
+    def __init__(self, metadata: DataFrame, profile: str, database: Database, execution: Execution, quality_stats: QualityStatistics, time_stats: TimeStatistics):
         super().__init__(database=database, execution=execution, quality_stats=quality_stats, time_stats=time_stats)
-        self.profile = profile
-        self.metadata = None
         self.data = None
-        self.patient_ids_mapping = None
+        self.metadata = metadata
+        self.profile = Profile.normalize(profile)
+        self.columns_dataset_all_profiles = None
         self.mapping_categorical_value_to_onto_resource = {}  # <categorical value label ("JSON_values" column), OntologyResource>
         self.mapping_column_to_categorical_value = {}  # <column name, list of normalized accepted values>
         self.mapping_column_to_vartype = {}  # <column name, var type ("vartype" column)>
         self.mapping_column_to_dimension = {}  # <column name, union of dimension in metadata + those found in the data>
 
     def run(self) -> None:
-        # load and pre-process metadata
-        # this gets the metadata for the current dataset
-        # and sets the profiles of the current dataset
-        self.load_metadata_file()
+
+        # filter and normalize metadata
+        # filter: keep metadata about the current triplet <dataset, profile, hospital>
+        # normalize: the header and the values
+        self.filter_metadata_file()
+        self.normalize_metadata_file()
+
+        # filter and normalize data
+        # filter: remove data columns that are not described in the metadata
+        # normalize: the header
         if self.metadata is not None:
-            self.compute_mapping_categorical_value_to_onto_resource()
-
-            self.load_tabular_file()
+            # preprocess input to have all the necessary data, as described in the metadata
+            self.load_tabular_data()
             self.pre_process_data_file()
-            self.remove_unused_csv_columns()
+            self.filter_data_file()
+            self.normalize_data_file()
 
-            # The remaining task of 1. (loading metadata) has to be done after the data is loaded because
-            # the dimensions are either extracted from the metadata (if described) or from the data
-            # we do this only for phen. data, otherwise we end up with units extracted from any string
-            # containing both digits and chars
-            # TODO Nelly: instead, compute this only for non-string columns
+            # compute mappings (categories and dimension)
+            self.compute_mapping_categorical_value_to_onto_resource()
             self.compute_column_to_dimension()
 
-            # if provided as input, load the mapping between patient IDs and anonymized IDs
-            self.load_patient_id_mapping()
-
-    def load_metadata_file(self) -> None:
-        log.info(f"Metadata filepath is {self.execution.metadata_filepath}")
-
-        # index_col is False to not add a column with line numbers
-        self.metadata = read_tabular_file_as_string(self.execution.metadata_filepath)  # keep all metadata as str
-        log.info(f"Will preprocess metadata from {self.execution.metadata_filepath}")
-
-        # 1. normalize the header, e.g., "Significato it" becomes "significato_it"
+    def filter_metadata_file(self) -> None:
+        # Normalize the header, e.g., "Significato it" becomes "significato_it"
         # this also normalizes hospital names if they are in the header (UC 2 and UC 3)
         self.metadata.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x), inplace=True)
 
-        # 2. Get the metadata associated to the current hospital (but any dataset within that hospital)
-        log.debug(f"working on hospital {self.execution.hospital_name}")
-        # a. we remove columns indicating whether the column is present in the hospital if this is not the current one
-        # for this we check whether there are more than 1 hospital name (> 1) in column names
-        nb_hospitals_in_columns = 0
-        for column_name in self.metadata.columns:
-            normalized_hospital_name = HospitalNames.normalize(hospital_name=column_name)
-            if normalized_hospital_name in HospitalNames.values():
-                # this column is labelled with a hospital name
-                # and indicates whether the associated variables are present in the UC
-                nb_hospitals_in_columns = nb_hospitals_in_columns + 1
-                # take advantage of this, we also rename the hospital name in the metadata header
-                log.info(f"rename {column_name} into {normalized_hospital_name}")
-                self.metadata.rename(columns={column_name: normalized_hospital_name}, inplace=True)
-        log.debug(f"nb_hospitals_in_columns: {nb_hospitals_in_columns}")
-        if nb_hospitals_in_columns > 1:
-            # there are more than one hospital described in this metadata
-            # a. we filter the unnecessary hospital columns (for UC2 and UC3 there are several hospitals in the same metadata file)
-            columns_to_keep = []
-            columns_to_keep.extend([MetadataColumns.normalize_name(column_name=meta_variable) for meta_variable in MetadataColumns.values()])
-            columns_to_keep.append(HospitalNames.normalize(self.execution.hospital_name))
-            self.metadata = self.metadata[columns_to_keep]
-            # b. we remove the column for the hospital, now that we have filtered the rows using it
-            log.debug(f"will drop {HospitalNames.normalize(self.execution.hospital_name)} in {self.metadata.columns}")
-            self.metadata = self.metadata.drop(HospitalNames.normalize(self.execution.hospital_name), axis=1)
-        else:
-            # we have 0 or 1 column specifying the hospital name,
-            # so the metadata is only for the current hospital
-            # thus, nothing to do
-            pass
+        # normalize the profiles before filtering
+        self.metadata.loc[:, MetadataColumns.PROFILE] = self.metadata[MetadataColumns.PROFILE].apply(lambda x: Profile.normalize(file_type=x))
+        self.metadata = self.metadata[self.metadata[MetadataColumns.PROFILE] == self.profile]
 
-        # 3. We keep the metadata of the current dataset and the current profile
-        # get the metadat for the current dataset...
-        filename = os.path.basename(self.execution.current_filepath)
-        if filename not in self.metadata[MetadataColumns.DATASET_NAME].unique():
-            raise ValueError(f"The current dataset ({filename}) is not described in the provided metadata file.")
-        else:
-            self.metadata = self.metadata[self.metadata[MetadataColumns.DATASET_NAME] == filename]
-        # ... and the current profile, if it exists for that dataset
-        self.metadata[MetadataColumns.PROFILE] = self.metadata[MetadataColumns.PROFILE].apply(lambda x: Profile.normalize(file_type=x))
-        current_file_profiles = self.metadata[MetadataColumns.PROFILE].unique()
-        if self.profile in current_file_profiles:
-            self.metadata = self.metadata[self.metadata[MetadataColumns.PROFILE] == self.profile]
-            self.execution.current_file_profile = self.profile
+        # if the filtered metadata (by dataset and profile) is not empty, we check whether we need to further filter
+        # metadata by hospital name
+        if len(self.metadata) > 0:
+            normalized_hospital_name = HospitalNames.normalize(self.execution.hospital_name)
+            if normalized_hospital_name in self.metadata.columns:
+                # the current hospital is in the metadata, we need to select the metadata line for which the
+                # hospital column has 1
+                self.metadata.loc[:, normalized_hospital_name] = self.metadata[normalized_hospital_name].apply(lambda x: MetadataColumns.normalize_value(column_value=x))
+                self.metadata = self.metadata[self.metadata[normalized_hospital_name].isin([1, "1"])]
+            else:
+                # we have no column specifying a hospital name, so the metadata is only for the current hospital
+                # thus, nothing to do
+                pass
 
-            # 4. normalize ontology names (but not codes because they will be normalized within OntologyResource)
-            self.metadata[MetadataColumns.ONTO_NAME] = self.metadata[MetadataColumns.ONTO_NAME].apply(lambda value: Ontologies.normalize_name(
-                ontology_name=value))
-
-            # we also normalize column names described in the metadata, inc. "sex", "dateOfBirth", "Ethnicity", etc
-            self.metadata[MetadataColumns.COLUMN_NAME] = self.metadata[MetadataColumns.COLUMN_NAME].apply(lambda x: MetadataColumns.normalize_name(column_name=x))
-
-            # normalize the ETL type
-            self.metadata[MetadataColumns.ETL_TYPE] = self.metadata[MetadataColumns.ETL_TYPE].apply(lambda x: DataTypes.normalize(data_type=x))
-
-            # normalize the visibility
-            self.metadata[MetadataColumns.VISIBILITY] = self.metadata[MetadataColumns.VISIBILITY].apply(lambda x: Visibility.normalize(visibility=x))
-
-            # 6. reindex the remaining metadata rows, starting from 0
-            # because when dropping rows, rows keep their original indexes
-            # to ease tests, we reindex starting from 0
+            # 6. reindex the remaining metadata because when dropping rows/columns, they keep their original index
             self.metadata.reset_index(drop=True, inplace=True)
 
             log.info(f"{len(self.metadata.columns)} columns and {len(self.metadata)} lines in the metadata file.")
+        else:
+            # no metadata for this combination of <dataset, profile>, so we skip it
+            self.metadata = None
+            log.info("metadata is None")
 
-            # 6. compute some stats about the metadata
-            for index, row in self.metadata.iterrows():
-                column_name = row[MetadataColumns.COLUMN_NAME]
-                etl_type = row[MetadataColumns.ETL_TYPE]
-                onto_name = row[MetadataColumns.ONTO_NAME]
-                if not is_not_nan(row[MetadataColumns.ONTO_CODE]):
+    def normalize_metadata_file(self) -> None:
+        if self.metadata is not None:
+            # Normalize ontology names (but not codes because they will be normalized within OntologyResource)
+            self.metadata.loc[:, MetadataColumns.ONTO_NAME] = self.metadata[MetadataColumns.ONTO_NAME].apply(lambda value: Ontologies.normalize_name(ontology_name=value))
+
+            # Normalize ETL type
+            self.metadata.loc[:, MetadataColumns.ETL_TYPE] = self.metadata[MetadataColumns.ETL_TYPE].apply(lambda x: DataTypes.normalize(data_type=x))
+
+            # Normalize visibility
+            self.metadata.loc[:, MetadataColumns.VISIBILITY] = self.metadata[MetadataColumns.VISIBILITY].apply(lambda x: Visibility.normalize(visibility=x))
+
+            # Normalize column name
+            self.metadata.loc[:, MetadataColumns.COLUMN_NAME] = self.metadata[MetadataColumns.COLUMN_NAME].apply(lambda x: MetadataColumns.normalize_name(column_name=x))
+
+            # Compute some stats about the metadata
+            for row in self.metadata.itertuples(index=False):
+                column_name = row[self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)]
+                etl_type = row[self.metadata.columns.get_loc(MetadataColumns.ETL_TYPE)]
+                onto_name = row[self.metadata.columns.get_loc(MetadataColumns.ONTO_NAME)]
+                onto_code = row[self.metadata.columns.get_loc(MetadataColumns.ONTO_CODE)]
+                if not is_not_nan(onto_code):
                     self.quality_stats.add_column_with_no_ontology(column_name=column_name)
                 if not is_not_nan(etl_type):
                     self.quality_stats.add_column_with_no_etl_type(column_name=column_name)
@@ -149,25 +119,18 @@ class Extract(Task):
                     self.quality_stats.add_column_unknown_etl_type(column_name=column_name, etl_type=etl_type)
                 if is_not_nan(onto_name) and Ontologies.get_enum_from_name(onto_name) is None:
                     self.quality_stats.add_column_unknown_ontology(column_name=column_name, ontology_name=onto_name)
-            # log.info(list(self.metadata[MetadataColumns.COLUMN_NAME]))
         else:
-            # this profile is not used for this dataset, we skip it
-            self.metadata = None
+            # metadata is None because nothing remains from the filtering
+            # skip the normalization (nothing to normalize)
+            pass
 
-    def load_tabular_file(self) -> None:
-        log.info(self.execution.current_filepath)
-        assert os.path.exists(self.execution.current_filepath), "The provided samples file could not be found. Please check the filepath you specify when running this script."
-
+    def load_tabular_data(self) -> None:
         log.info(f"Data filepath is {self.execution.current_filepath}")
-
-        # index_col is False to not add a column with line numbers
-        # we also keep all data as str (we will cast later)
+        assert os.path.exists(self.execution.current_filepath), "The provided data file could not be found."
         self.data = read_tabular_file_as_string(filepath=self.execution.current_filepath)
 
-        # normalize column names ("sex", "dateOfBirth", "Ethnicity", etc) to match column names described in the metadata
-        self.data.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x), inplace=True)
-
-        # we also normalize the data values
+    def normalize_data_file(self):
+        # Normalize the data values
         # they will be cast to the right type (int, float, datetime) in the Transform step
         # issue 113: we do not normalize identifiers assigned by hospitals to avoid discrepancies
         columns_no_normalization = []
@@ -177,66 +140,51 @@ class Extract(Task):
 
         for column in self.data:
             if column not in columns_no_normalization:
-                self.data[column] = self.data[column].apply(lambda x: MetadataColumns.normalize_value(column_value=x))
+                self.data.loc[:, column] = self.data[column].apply(lambda x: MetadataColumns.normalize_value(column_value=x))
 
         log.info(f"{len(self.data.columns)} columns and {len(self.data)} lines in the data file.")
-
-    def load_imaging_data_file(self):
-        # TODO Nelly: implement this
-        pass
-
-    def load_genomic_data_file(self):
-        # TODO Nelly: this is for HSJD for now (24/09/2024)
-        # this may need to be revised depending on the data we will have later
-        self.load_tabular_file()
 
     def pre_process_data_file(self) -> None:
         # preprocess data files, i.e., change the data DataFrame to fit the metadata
         # we do not write the pre-processed data to any new ile, we simply run the ETL with it
         # this avoids to (a) overwrite given data files and (b) to have filenames which differ from the metadata
-        preprocessing_task = PreprocessingTask(execution=self.execution, metadata=self.metadata, data=self.data, profile=self.execution.current_file_profile)
+        preprocessing_task = PreprocessingTask(execution=self.execution, data=self.data, profile=self.profile)
         preprocessing_task.run()
         self.data = preprocessing_task.data
 
-    def load_patient_id_mapping(self) -> None:
-        log.info(f"Patient ID mapping filepath is {self.execution.anonymized_patient_ids_filepath}")
+        # normalize column names
+        self.data = self.data.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x))
 
-        # index_col is False to not add a column with line numbers
-        self.patient_ids_mapping = {}
-        log.debug(self.execution.anonymized_patient_ids_filepath)
-        if self.execution.anonymized_patient_ids_filepath is not None:
-            with open(self.execution.anonymized_patient_ids_filepath, "r") as f:
-                self.patient_ids_mapping = json.load(f)
-        log.info(f"{len(self.patient_ids_mapping)} patient IDs in the mapping file.")
+    def filter_data_file(self) -> None:
+        # Normalize column names ("sex", "dateOfBirth", "Ethnicity", etc) to match column names described in the metadata
+        self.data = self.data.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x))
 
-    def remove_unused_csv_columns(self) -> None:
         # removes the data columns that are NOT described in the metadata or that are explicitly marked as not to be loaded
         # if a column is described in the metadata but is not present in the data or this column is empty we keep it
         # because people took the time to describe it.
-        # for this, we get the union of both sets and remove the columns that are not described in the metadata
         data_columns = list(set(self.data.columns))  # get the distinct list of columns
+        log.info(data_columns[0:5])
         columns_described_in_metadata = list(self.metadata[MetadataColumns.COLUMN_NAME])
-        columns_described_in_metadata = [col_name if is_not_nan(col_name) else "" for col_name in columns_described_in_metadata]  # it may happen that some columns have no name, thus they appear as nan in the list; thus, we label them '' (empty string)
         for data_column in data_columns:
-            # we remove the column if it is not described in the metadata or if it explicitly marked as
-            # a column to remove (except if this is the ID column, that we need to keep)
-            # therefore, this also keeps data columns that are not described in the metadata
-            # but that we need to keep because there is real data to store in the final database
-            is_not_described_in_metadata = data_column not in columns_described_in_metadata
+            # we remove the column if it is not described in the metadata
+            is_not_described_in_current_metadata = data_column not in columns_described_in_metadata
             column_has_to_be_removed = data_column in self.execution.columns_to_remove
             column_is_an_id = data_column in [ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT], ID_COLUMNS[self.execution.hospital_name][TableNames.CLINICAL_RECORD]]
-            if is_not_described_in_metadata or (column_has_to_be_removed and not column_is_an_id):
+            # log.info(f"Column {data_column}: not in subset md: {is_not_described_in_current_metadata}, not in file md: {is_not_described_in_metadata}).")
+            if is_not_described_in_current_metadata or (column_has_to_be_removed and not column_is_an_id):
                 # we drop this column
-                # log.info(f"Drop data column corresponding to the variable {data_column} (it was not in the metadata: {is_not_described_in_metadata}; it has to be removed: {column_has_to_be_removed} and this is not an ID column {not column_is_an_id}).")
-                self.quality_stats.add_column_not_described_in_metadata(data_column_name=data_column)
+                log.info(f"drop column {data_column}")
                 self.data = self.data.drop(data_column, axis=1)  # axis=1 -> columns
+                # we record this column in the stats only if it is not described at all in the current file metadata
+                # this is because we iteratively look at the metadata of each pair <dataset, profile>
+                # and we do not want to record a column as "not described" if it is later described in another profile
+                # if data_column not in self.described_columns_current_file:
+                if is_not_described_in_current_metadata:
+                    log.info(f"Add data column {data_column} as not described.")
+                    self.quality_stats.add_column_not_described_in_metadata(data_column_name=data_column)
             else:
                 # we keep this column
                 pass
-        # log.debug(f"Columns present in the data: {data_columns}")
-        # log.debug(f"Columns described in the metadata: {columns_described_in_metadata}")
-        # log.debug(f"Columns to be explicitly removed: {self.execution.columns_to_remove}")
-        # log.debug(f"Columns kept: {list(self.data.columns)}")
 
     def compute_mapping_categorical_value_to_onto_resource(self) -> None:
         self.mapping_categorical_value_to_onto_resource = {}
@@ -259,9 +207,10 @@ class Extract(Task):
         # 2. then, we associate each column to its set of categorical values
         # if we already compute the cc of that value (e.g., several column have categorical values Yes/No/NA),
         # we do not recompute it and take it from the mapping
-        for index, row in self.metadata.iterrows():
-            column_name = MetadataColumns.normalize_name(row[MetadataColumns.COLUMN_NAME])
-            candidate_json_values = row[MetadataColumns.JSON_VALUES]
+        for row in self.metadata.itertuples(index=False):
+            column_name = row[self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)]
+            candidate_json_values = row[self.metadata.columns.get_loc(MetadataColumns.JSON_VALUES)]
+            column_type = row[self.metadata.columns.get_loc(MetadataColumns.ETL_TYPE)]
             # log.info(f" JSON values for {column_name}: {candidate_json_values}")
             if is_not_nan(candidate_json_values):
                 # we get the possible categorical values for the column, e.g., F, or M, or NA for sex
@@ -327,8 +276,7 @@ class Extract(Task):
             else:
                 # if this was supposed to be categorical (thus having values), we count it in the reporting
                 # otherwise, this is not a categorical column (thus, everything is fine)
-                current_column_info = DataFrame(self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name])
-                if current_column_info[MetadataColumns.ETL_TYPE].iloc[0] == DataTypes.CATEGORY:
+                if column_type == DataTypes.CATEGORY:
                     self.quality_stats.add_categorical_column_with_no_json(column_name=column_name)
         # log.debug(f"{self.mapping_categorical_value_to_onto_resource}")
         # log.debug(f"{self.mapping_column_to_categorical_value}")
@@ -336,53 +284,14 @@ class Extract(Task):
     def compute_column_to_dimension(self) -> None:
         self.mapping_column_to_dimension = {}
 
-        for index, row in self.metadata.iterrows():
-            profile = row[MetadataColumns.PROFILE]
-            if profile == Profile.PHENOTYPIC or profile == Profile.CLINICAL:
-                column_name = row[MetadataColumns.COLUMN_NAME]
-                add_dimension_from_metadata = False
-                if column_name in self.data.columns:  # some columns are in the metadata and not in the data (but are kept), thus we need to check
-                    # we compute the set of units used in the data for that column and keep the most frequent
-                    # if there is no unit for those value, we use the provided dimension if it exists, otherwise None
-                    values_in_columns = self.data[column_name]
-                    units = {}
-                    for value in values_in_columns:
-                        if is_not_nan(value):
-                            m = re.search(PATTERN_VALUE_DIMENSION, value)
-                            if m is not None:
-                                # m.group(0) is the text itself, m.group(1) is the int/float value, m.group(2) is the dimension
-                                unit = m.group(2)
-                                if unit not in units:
-                                    units[unit] = 0
-                                units[unit] += 1
-                            else:
-                                # this value does not contain a dimension or is not of the form "value dimension"
-                                pass
+        for row in self.metadata.itertuples(index=False):
+            dimension = row[self.metadata.columns.get_loc(MetadataColumns.VAR_DIMENSION)]
+            if dimension is not None and is_not_nan(dimension):
+                self.mapping_column_to_dimension[row[self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)]] = dimension
+            else:
+                self.mapping_column_to_dimension[row[self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)]] = None
 
-                    # we only keep the most frequent unit
-                    # during value fairification: values that do not have this unit will not be left as strings
-                    if len(units.keys()) > 0:
-                        # if several units reach the highest frequency, we sorted them in alphabetical order and take the first
-                        max_frequency = max(units.values())
-                        units_with_max_frequency = [unit for unit, frequency in units.items() if frequency == max_frequency]
-                        units_with_max_frequency.sort()
-                        most_frequent_unit = units_with_max_frequency[0]
-                        self.mapping_column_to_dimension[column_name] = most_frequent_unit
-                    else:
-                        # no unit found in those values
-                        add_dimension_from_metadata = True
-                else:
-                    # this column is described in the metadata but not in the data
-                    add_dimension_from_metadata = True
-
-                if add_dimension_from_metadata:
-                    # in this case, we have not set the dimension from the data because:
-                    # 1. there is a dimension provided by the description, so we use it (even though a dimension could be computed from the data)
-                    # 2. otherwise (no dimension is provided and none could be computed from the data), we set it to None
-                    column_expected_dimension = row[MetadataColumns.VAR_DIMENSION]
-                    if is_not_nan(column_expected_dimension):
-                        # if there is a dimension provided in the metadata (this may be overridden if there are dimensions in the cells values)
-                        self.mapping_column_to_dimension[column_name] = column_expected_dimension
-                    else:
-                        self.mapping_column_to_dimension[column_name] = None
-        # log.debug(self.mapping_column_to_dimension)
+        if len(self.mapping_column_to_dimension) > 10:
+            log.debug(dict(itertools.islice(self.mapping_column_to_dimension.items(), 10)))
+        else:
+            log.debug(self.mapping_column_to_dimension)

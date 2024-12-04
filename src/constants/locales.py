@@ -16,6 +16,7 @@ DATASET_LOCALES = {
     HospitalNames.TEST_H1: "en_GB",
     HospitalNames.TEST_H2: "en_GB",
     HospitalNames.TEST_H3: "en_GB",
-    HospitalNames.KAGGLE_EDA: "en_GB",
-    HospitalNames.KAGGLE_COVID: "en_GB"
+    HospitalNames.EXPES_EDA: "en_GB",
+    HospitalNames.EXPES_COVID: "en_GB",
+    HospitalNames.EXPES_KIDNEY: "en_GB"
 }

@@ -9,7 +9,6 @@ DOCKER_FOLDER_GENERATED_DATA = os.path.join(DOCKER_FOLDER, "synthetic-data")
 DOCKER_FOLDER_METADATA = os.path.join(DOCKER_FOLDER, "metadata")
 DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS = os.path.join(DOCKER_FOLDER, "pids")
 DOCKER_FOLDER_TEST = os.path.join(DOCKER_FOLDER, "test")
-DOCKER_FOLDER_PREPROCESSED = "preprocessed"  # where the preprocessed files go before being used by the ETL
 DB_CONNECTION = "mongodb://mongo:27017/"
 
 # the folder containing ground data for data generation

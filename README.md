@@ -42,8 +42,8 @@ In that folder, run `X=Y docker compose up -d` to launch the FAIRification, such
 
 ### Scenario 1: run the ETL with real data
 
-1. We expect to have clinical variables as columns and patients as rows. Please pre-process your data if this is not the case. 
-We also expect that each patient, respectively sample, has an identifier (which will be further anonymized). 
+1. We expect to have variables as columns and patients as rows. Please pre-process your data if this is not the case. 
+We also expect that each patient has an identifier (which will be further anonymized). 
 2. Set also the following parameters in the `.env` file: 
    1. The folder and filepath to the metadata: `SERVER_FOLDER_METADATA` and `METADATA`
    2. The folders and filepaths to your (real or synthetic) data: `SERVER_FOLDER_PHENOTYPIC`, `PHENOTYPIC`, etc

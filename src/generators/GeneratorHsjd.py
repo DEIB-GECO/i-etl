@@ -38,19 +38,19 @@ class GeneratorHsjd(DataGenerator):
         fieldset = self.generate_baseline_clinical_dataset()
         hf = headfake.HeadFake.from_python({"fieldset": fieldset})
         data_1 = hf.generate(num_rows=num_rows)
-        self.save_generated_file(df=data_1, filename="baseline.csv")
+        self.save_generated_file(df=data_1, filename="Baseline_Clinical_Table.xlsx")
 
         # Create the biological dataset
         data_2 = self.generate_biological_dataset(data_1)
-        self.save_generated_file(df=data_2, filename="biological.csv")
+        self.save_generated_file(df=data_2, filename="Biological_Table.xlsx")
 
         # Create the dynamic clinical dataset
         data_3 = self.generate_dynamic_clinical_dataset(data_1, 4)
-        self.save_generated_file(df=data_3, filename="dynamic.csv")
+        self.save_generated_file(df=data_3, filename="Dynamic_Clinical_Table.xlsx")
 
         # Create the genomic dataset
         data_4 = self.generate_genomic_dataset(data_1)
-        self.save_generated_file(df=data_4, filename="genomic.csv")
+        self.save_generated_file(df=data_4, filename="Genomic_Table.xlsx")
 
     def generate_baseline_clinical_dataset(self):
         patient_id = Patient.generate_patient_id(field_name="Patient ID", min_value=1, length=8, prefix="SJD_")

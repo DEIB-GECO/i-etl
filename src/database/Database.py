@@ -133,7 +133,7 @@ class Database:
         update_stmt = self.create_update_stmt(the_tuple=one_tuple)
         self.db[table_name].find_one_and_update(filter=filter_dict, update=update_stmt, upsert=True)
 
-    def upsert_one_batch_of_tuples(self, table_name: str, unique_variables: list[str], the_batch: list[dict]) -> dict:
+    def upsert_one_batch_of_tuples(self, table_name: str, unique_variables: list[str], the_batch: list[dict]) -> None:
         """
 
         :param unique_variables:
@@ -145,22 +145,27 @@ class Database:
         # and send one bulk operation per batch. This allows to save time by not doing a db call per upsert.
         # we use the bulk operation to send sets of BATCH_SIZE operations, each operation doing an upsert
         # this allows to have only one call to the database for each bulk operation (instead of one per upsert operation)
-        operations = []
-        filter_dict = {}
-        for one_tuple in the_batch:
-            filter_dict = {}
-            for unique_variable in unique_variables:
-                if unique_variable in one_tuple:
-                    # some Record may hae particular attributes (that other entities do not have)
-                    # so we need to check whether that attribute is present or not
-                    filter_dict[unique_variable] = one_tuple[unique_variable]
-            update_stmt = self.create_update_stmt(the_tuple=one_tuple)
-            operations.append(pymongo.UpdateOne(filter=filter_dict, update=update_stmt, upsert=True))
+        # transformed this for loop in a one-line stmt
+        # for one_tuple in the_batch:
+            # filter_dict = {unique_variable: unique_variable in one_tuple and one_tuple[unique_variable] for unique_variable in unique_variables}
+            # for unique_variable in unique_variables:
+            #     if unique_variable in one_tuple:
+            #         # some Record may hae particular attributes (that other entities do not have)
+            #         # so we need to check whether that attribute is present or not
+            #         filter_dict[unique_variable] = one_tuple[unique_variable]
+            #     else:
+            #         log.info(f"in the else for {unique_variable} for tuple {one_tuple}")
+            # log.info(filter_dict)
+            # update_stmt = self.create_update_stmt(the_tuple=one_tuple)
+            # operations.append(pymongo.UpdateOne(filter=filter_dict, update=update_stmt, upsert=True))
+        operations = [pymongo.UpdateOne(
+            filter={unique_variable: one_tuple[unique_variable] for unique_variable in unique_variables},
+            update=self.create_update_stmt(the_tuple=one_tuple), upsert=True)
+            for one_tuple in the_batch]
         # July 18th, 2024: bulk_write modifies the hospital lists in Transform (even if I use deep copies everywhere)
         # It changes (only?) the timestamp value with +1/100, e.g., 2024-07-18T14:34:32Z becomes 2024-07-18T14:34:33Z
         # in the tests I use a delta to compare datetime
         self.db[table_name].bulk_write(copy.deepcopy(operations), ordered=False)
-        return filter_dict
 
     def retrieve_mapping(self, table_name: str, key_fields: str, value_fields: str):
         # TODO Nelly: add a distinct to the find
@@ -178,14 +183,11 @@ class Database:
             mapping[projected_key] = projected_value
         return mapping
 
-    def load_json_in_table(self, table_name: str, unique_variables: list[str], file_count: int) -> None:
+    def load_json_in_table(self, table_name: str, unique_variables: list[str], dataset_number: int) -> None:
         log.info(f"Load data in {table_name}")
         first_file = True
         for filename in os.listdir(self.execution.working_dir_current):
-            if re.search(str(file_count)+table_name+"[0-9]+", filename) is not None:
-                # implementation note: we cannot simply use filename.startswith(table_name)
-                # because both XFeature and XRecord start with X
-                # the solution is to use a regex
+            if filename.startswith(f"{str(dataset_number)}{table_name}"):
                 with open(os.path.join(self.execution.working_dir_current, filename), "r") as json_datafile:
                     if first_file:
                         # first, create an index on the unique variables to speed up the upsert (which checks whether each document already exists)
@@ -194,10 +196,7 @@ class Database:
                         first_file = False
                     tuples = bson.json_util.loads(json_datafile.read())
                     log.debug(f"Table {table_name}, file {filename}, loading {len(tuples)} tuples with unique variables being {unique_variables}")
-                    # log.info(tuples)
-                    _ = self.upsert_one_batch_of_tuples(table_name=table_name,
-                                                        unique_variables=unique_variables,
-                                                        the_batch=tuples)
+                    self.upsert_one_batch_of_tuples(table_name=table_name, unique_variables=unique_variables, the_batch=tuples)
 
     def find_operation(self, table_name: str, filter_dict: dict, projection: dict) -> Cursor:
         """
@@ -311,27 +310,11 @@ class Database:
     def get_min_value(self, table_name: str, field: str, from_string: bool) -> int | float:
         return self.get_min_or_max_value(table_name=table_name, field=field, sort_order=1, from_string=from_string)
 
-    def get_avg_value_of_lab_feature(self, lab_feature_url: str) -> int | float:
-        """
-        Compute the average value among all the LabRecord instances for a certain LabFeature.
-        :param lab_feature_url: A string being the LabFeature url of the form LabFeature/X, where X is the
-        LabFeature number, and for which the avg value will be computed among the LabRecord instance referring
-        to that LabFeature.
-        :return: A float value being the average value for the given LabFeature instance (url).
-        """
-        cursor = self.db[TableNames.PHENOTYPIC_RECORD].aggregate([
-            Operators.match(field="instantiates", value=lab_feature_url, is_regex=False),
-            Operators.project(field="value", projected_value=None),
-            Operators.group_by(group_key=None, groups=[{"name": "avg_val", "operator": "$avg", "field": "$value"}])
-        ])
-
-        for result in cursor:
-            return float(result)  # There should be only one result, so we can return directly the min or max value
-
     def get_max_resource_counter_id(self) -> int:
         max_value = -1
         for table_name in TableNames.values(db=self):
             current_max_identifier = self.get_max_value(table_name=table_name, field="identifier", from_string=True)
+            log.info(f"max id in {table_name} is {current_max_identifier}")
             if current_max_identifier is not None:
                 try:
                     current_max_identifier = int(current_max_identifier)

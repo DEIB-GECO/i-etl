@@ -17,6 +17,7 @@ from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from enums.ParameterKeys import ParameterKeys
+from enums.Profile import Profile
 from enums.TableNames import TableNames
 from enums.TheTestFiles import TheTestFiles
 from enums.Visibility import Visibility
@@ -35,7 +36,7 @@ from utils.test_utils import set_env_variables_from_dict, compare_tuples, get_fe
 
 
 # personalized setup called at the beginning of each test
-def my_setup(hospital_name: str, extracted_metadata_path: str, extracted_data_paths: str,
+def my_setup(hospital_name: str, profile: str, extracted_metadata_path: str, extracted_data_paths: str,
              extracted_mapping_categorical_values_path: str,
              extracted_column_to_categorical_path: str,
              extracted_column_dimension_path: str,
@@ -64,13 +65,26 @@ def my_setup(hospital_name: str, extracted_metadata_path: str, extracted_data_pa
         column_to_dimension = json.load(f)
     with open(os.path.join(DOCKER_FOLDER_TEST, extracted_patient_ids_mapping_path), "r") as f:
         patient_ids_mapping = json.load(f)
+
     transform = Transform(database=database, execution=TestTransform.execution, data=data, metadata=metadata,
+                          profile=profile, dataset_number=get_dataset_number_from_profile(profile), file_counter=1,
                           mapping_categorical_value_to_onto_resource=mapping_categorical_values,
                           mapping_column_to_categorical_value=mapping_column_to_categorical_value,
                           mapping_column_to_dimension=column_to_dimension,
                           patient_ids_mapping=patient_ids_mapping,
                           quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False))
     return transform
+
+
+def get_dataset_number_from_profile(profile: str):
+    if profile == Profile.PHENOTYPIC:
+        return 1
+    elif profile == Profile.CLINICAL:
+        return 2
+    elif profile == Profile.DIAGNOSIS:
+        return 3
+    else:
+        return 0
 
 
 @pytest.fixture(autouse=True)
@@ -112,7 +126,7 @@ class TestTransform(unittest.TestCase):
 
     def test_set_resource_counter_id(self):
         # when there is nothing in the database, the counter should be 0
-        transform = my_setup(hospital_name=HospitalNames.TEST_H1,
+        transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.PHENOTYPIC,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_PHENOTYPIC_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_PHENOTYPIC_DATA_PATH,
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_PHENOTYPIC_CATEGORICAL_PATH,
@@ -143,7 +157,7 @@ class TestTransform(unittest.TestCase):
         assert transform.counter.resource_id == 125
 
     def test_create_hospital(self):
-        transform = my_setup(hospital_name=HospitalNames.TEST_H1,
+        transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.PHENOTYPIC,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_PHENOTYPIC_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_PHENOTYPIC_DATA_PATH,
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_PHENOTYPIC_CATEGORICAL_PATH,
@@ -163,73 +177,28 @@ class TestTransform(unittest.TestCase):
         assert current_json_hospital["timestamp"] is not None
 
         # b. check that the in-file hospital is correct
-        hospital_file = get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, table_name=TableNames.HOSPITAL, profile_count=1, file_count=1)
+        hospital_file = get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, table_name=TableNames.HOSPITAL, file_counter=1, dataset_number=get_dataset_number_from_profile(Profile.PHENOTYPIC))
         with open(hospital_file) as f:
             written_hospitals = json.load(f)
         assert len(written_hospitals) == 1
         compare_tuples(original_tuple=current_json_hospital, inserted_tuple=written_hospitals[0])
 
-    def test_create_sam_features_H1_D1(self):
-        transform = my_setup(hospital_name=HospitalNames.TEST_H1,
-                             extracted_metadata_path=TheTestFiles.EXTR_METADATA_CLINICAL_PATH,
-                             extracted_data_paths=TheTestFiles.EXTR_CLINICAL_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
-                             extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
-                             extracted_column_dimension_path=TheTestFiles.EXTR_CLINICAL_DIMENSIONS_PATH,
-                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
-        # this creates SamFeature instances (based on the metadata file) and insert them in a (JSON) temporary file
-        transform.create_clinical_features()
-
-        assert len(transform.features) == 6 - 2  # sid and id do not count as SamFeatures
-        # assert the third and fourth SamFeature instances:
-        # lab_feature_a has one associated code
-        # lab_feature_b has no associated code
-        # because they may not be in the same order as in the metadata file, we get them based on their text
-        # (which contains at least the column name, and maybe a description)
-        # SamFeature about molecule_a
-        lab_feature_a = get_feature_by_text(transform.features, "molecule_a")
-        assert len(lab_feature_a) == 7  # inherited fields (identifier, resource_type, timestamp), proper fields (original_name, ontology_resource, permitted_datatype, dimension, visibility)
-        assert "identifier" in lab_feature_a
-        assert lab_feature_a["name"] == "molecule_a"
-        assert lab_feature_a["ontology_resource"] == {
-            "system": Ontologies.LOINC["url"],
-            "code": "1234",
-            "label": DEFAULT_ONTOLOGY_RESOURCE_LABEL  # this resource does not exist for real in LOINC, thus display is empty
-        }
-        assert lab_feature_a["datatype"] == DataTypes.FLOAT
-        assert lab_feature_a["dimension"] == "mg/L"
-        assert lab_feature_a["visibility"] == Visibility.PUBLIC_WITHOUT_ANONYMIZATION
-        # timestamp is not tested
-
-        # LabFeature about molecule_b
-        lab_feature_b = get_feature_by_text(transform.features, "molecule_b")
-        assert len(lab_feature_b) == 6
-        assert "identifier" in lab_feature_b
-        assert lab_feature_b["name"] == "molecule_b"
-        assert "ontology_resource" not in lab_feature_b
-        assert lab_feature_b["datatype"] == DataTypes.INTEGER
-        assert lab_feature_b["dimension"] == "g"  # unit is gram
-
-        # check that there are no duplicates in SamFeature instances
-        # for this, we get the set of their names (in the field "text")
-        lab_features_names_list = []
-        for lab_feature in transform.features:
-            if lab_feature is not None:
-                lab_features_names_list.append(lab_feature.name)
-        lab_features_names_set = set(lab_features_names_list)
-        assert len(lab_features_names_list) == len(lab_features_names_set)
-
-    def test_create_phen_features_H1_D2(self):
-        transform = my_setup(hospital_name=HospitalNames.TEST_H1,
+    def test_phenotypic_data(self):
+        transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.PHENOTYPIC,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_PHENOTYPIC_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_PHENOTYPIC_DATA_PATH,
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_PHENOTYPIC_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_dimension_path=TheTestFiles.EXTR_PHENOTYPIC_DIMENSIONS_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
-        # this creates PhenFeature instances (based on the metadata file) and insert them in a (JSON) temporary file
+        # this loads references (Hospital+PhenFeature resources), creates LabRecord resources (based on the data file) and insert them in a (JSON) temporary file
+        transform.create_hospital()
+        transform.create_patients()
         transform.create_phenotypic_features()
+        # the three previous steps are required to create PhenRecord instances
+        transform.create_phenotypic_records()
 
+        ## CHECK FEATURES
         assert len(transform.features) == 4 - 1  # id does not count as a PhenFeature
         # assert the fourth and first PhenFeature instances:
         # lab_feature_a has one associated code
@@ -238,13 +207,15 @@ class TestTransform(unittest.TestCase):
         # (which contains at least the column name, and maybe a description)
         # PhenFeature about sex
         lab_feature_a = get_feature_by_text(transform.features, "sex")
-        assert len(lab_feature_a) == 7  # inherited fields (identifier, resource_type, timestamp), proper fields (name, ontology_resource, permitted_datatype, dimension, visibility)
+        assert len(
+            lab_feature_a) == 7  # inherited fields (identifier, resource_type, timestamp), proper fields (name, ontology_resource, permitted_datatype, dimension, visibility)
         assert "identifier" in lab_feature_a
         assert lab_feature_a["name"] == "sex"
         assert lab_feature_a["ontology_resource"] == {
             "system": Ontologies.SNOMEDCT["url"],
             "code": "123:789",
-            "label": f"{DEFAULT_ONTOLOGY_RESOURCE_LABEL}:{DEFAULT_ONTOLOGY_RESOURCE_LABEL}"  # the two codes do not exist for eal in SNOMED, thus using the empty label
+            "label": f"{DEFAULT_ONTOLOGY_RESOURCE_LABEL}:{DEFAULT_ONTOLOGY_RESOURCE_LABEL}"
+            # the two codes do not exist for eal in SNOMED, thus using the empty label
         }
         assert lab_feature_a["datatype"] == DataTypes.CATEGORY
         assert "dimension" not in lab_feature_a
@@ -267,39 +238,26 @@ class TestTransform(unittest.TestCase):
         lab_features_names_set = set(lab_features_names_list)
         assert len(lab_features_names_list) == len(lab_features_names_set)
 
-    def test_create_phen_records(self):
-        transform = my_setup(hospital_name=HospitalNames.TEST_H1,
-                             extracted_metadata_path=TheTestFiles.EXTR_METADATA_PHENOTYPIC_PATH,
-                             extracted_data_paths=TheTestFiles.EXTR_PHENOTYPIC_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_PHENOTYPIC_CATEGORICAL_PATH,
-                             extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
-                             extracted_column_dimension_path=TheTestFiles.EXTR_PHENOTYPIC_DIMENSIONS_PATH,
-                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
-        # this loads references (Hospital+PhenFeature resources), creates LabRecord resources (based on the data file) and insert them in a (JSON) temporary file
-        transform.create_hospital()
-        transform.create_phenotypic_features()
-        transform.create_patients()
-        # the three previous steps are required to create PhenRecord instances
-        transform.create_phenotypic_records()
+        ## CHECK RECORDS
 
         assert len(transform.records) == 17  # in total, 17 PhenRecord instances are created, between 2 and 5 per Patient
 
         # assert that PhenRecord instances have been correctly created for a given data row
         # we take the seventh row
         patient_id = transform.patient_ids_mapping["999999994"]
-        assert patient_id == "h1:10"  # patient anonymized IDs start at h1:4, because 3 phen. feat. + 1 hospital have been created beforehand.
+        assert patient_id == "h1:7"  # patient anonymized IDs start at h1:2, because 1 hospital has been created beforehand.
         phen_records_patient = get_records_for_patient(records=transform.records, patient_id=patient_id)
         female = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="248152002", label=None, quality_stats=None)
         assert phen_records_patient[0]["value"] == female.to_json()  # the value as been replaced by its ontology code (sex is a categorical value)
         assert phen_records_patient[1]["value"] == "black"
-        assert phen_records_patient[2]["value"] == {"$date": "2021-12-22T11:58:38Z"}  # the value as been converted to a MongoDB-style datetime
+        assert phen_records_patient[2]["value"] == {"$date": "2021-12-01T00:00:00Z"}  # the value as been converted to a MongoDB-style datetime and anonymized (remove day and time)
         pattern_date = re.compile("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2,3}Z")
         assert pattern_date.match(phen_records_patient[0]["timestamp"]["$date"])  # check the date is in datetime (CEST) form
 
         # we also check that string are normalized (no caps, etc.)
         recs = transform.records
         feats = transform.features
-        assert transform.patient_ids_mapping["999999996"] == "h1:8"  # 1 Hospital + 3 Phen. Rec
+        assert transform.patient_ids_mapping["999999996"] == "h1:5"  # 1 Hospital before patients
         assert get_field_value_for_patient(records=recs, features=feats, patient_id=transform.patient_ids_mapping["999999999"], column_name="ethnicity") == "white"
         assert get_field_value_for_patient(records=recs, features=feats, patient_id=transform.patient_ids_mapping["999999998"], column_name="ethnicity") == "white"
         assert get_field_value_for_patient(records=recs, features=feats, patient_id=transform.patient_ids_mapping["999999997"], column_name="ethnicity") == "white"
@@ -311,24 +269,67 @@ class TestTransform(unittest.TestCase):
         assert get_field_value_for_patient(records=recs, features=feats, patient_id=transform.patient_ids_mapping["999999991"], column_name="ethnicity") is None
         assert get_field_value_for_patient(records=recs, features=feats, patient_id=transform.patient_ids_mapping["999999990"], column_name="ethnicity") is None
 
-    def test_create_sam_records(self):
-        transform = my_setup(hospital_name=HospitalNames.TEST_H1,
+    def test_clinical_data(self):
+        transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_CLINICAL_DATA_PATH,
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_dimension_path=TheTestFiles.EXTR_CLINICAL_DIMENSIONS_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_FILLED_PIDS_PATH)
-        # this loads references (Hospital+LabFeature resources), creates LabRecord resources (based on the data file) and insert them in a (JSON) temporary file
+        # this loads references (Hospital+ClinFeature resources), creates ClinRecord resources (based on the data file) and insert them in a (JSON) temporary file
         transform.create_hospital()
-        transform.create_clinical_features()
         transform.create_patients()
-        # the three above steps are required to create SamRecord instances
+        transform.create_clinical_features()
+        # the three above steps are required to create ClinRecord instances
         transform.create_clinical_records()
 
-        assert len(transform.records) == 16  # in total, 16 SamRecord instances are created, between 2 and 5 per Patient
+        ## CHECK FEATURES
+        assert len(transform.features) == 6 - 2  # sid and id do not count as SamFeatures
+        # assert the third and fourth SamFeature instances:
+        # lab_feature_a has one associated code
+        # lab_feature_b has no associated code
+        # because they may not be in the same order as in the metadata file, we get them based on their text
+        # (which contains at least the column name, and maybe a description)
+        # SamFeature about molecule_a
+        lab_feature_a = get_feature_by_text(transform.features, "molecule_a")
+        assert len(
+            lab_feature_a) == 7  # inherited fields (identifier, resource_type, timestamp), proper fields (original_name, ontology_resource, permitted_datatype, dimension, visibility)
+        assert "identifier" in lab_feature_a
+        assert lab_feature_a["name"] == "molecule_a"
+        assert lab_feature_a["ontology_resource"] == {
+            "system": Ontologies.LOINC["url"],
+            "code": "1234",
+            "label": DEFAULT_ONTOLOGY_RESOURCE_LABEL
+            # this resource does not exist for real in LOINC, thus display is empty
+        }
+        assert lab_feature_a["datatype"] == DataTypes.FLOAT
+        assert lab_feature_a["dimension"] == "mg/L"
+        assert lab_feature_a["visibility"] == Visibility.PUBLIC
+        # timestamp is not tested
 
-        # assert that LabRecord instances have been correctly created for a given data row
+        # LabFeature about molecule_b
+        lab_feature_b = get_feature_by_text(transform.features, "molecule_b")
+        assert len(lab_feature_b) == 6
+        assert "identifier" in lab_feature_b
+        assert lab_feature_b["name"] == "molecule_b"
+        assert "ontology_resource" not in lab_feature_b
+        assert lab_feature_b["datatype"] == DataTypes.INTEGER
+        assert lab_feature_b["dimension"] == "g"  # unit is gram
+
+        # check that there are no duplicates in SamFeature instances
+        # for this, we get the set of their names (in the field "text")
+        lab_features_names_list = []
+        for lab_feature in transform.features:
+            if lab_feature is not None:
+                lab_features_names_list.append(lab_feature.name)
+        lab_features_names_set = set(lab_features_names_list)
+        assert len(lab_features_names_list) == len(lab_features_names_set)
+
+        ## CHECK RECORDS
+        assert len(transform.records) == 16  # in total, 16 ClinicalRecord instances are created, between 2 and 5 per Patient
+
+        # assert that ClinicalRecord instances have been correctly created for a given data row
         # we take the seventh row
         patient_id = transform.patient_ids_mapping["999999994"]
         assert patient_id == "h1:994"
@@ -359,7 +360,7 @@ class TestTransform(unittest.TestCase):
     # TODO Nelly: check there are no duplicates for SamFeature instances
 
     def test_create_patients_without_pid(self):
-        transform = my_setup(hospital_name=HospitalNames.TEST_H1,
+        transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.PHENOTYPIC,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_PHENOTYPIC_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_PHENOTYPIC_DATA_PATH,
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_PHENOTYPIC_CATEGORICAL_PATH,
@@ -383,7 +384,7 @@ class TestTransform(unittest.TestCase):
             f.write("{}")
 
     def test_create_patients_with_pid(self):
-        transform = my_setup(hospital_name=HospitalNames.TEST_H1,
+        transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.PHENOTYPIC,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_PHENOTYPIC_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_PHENOTYPIC_DATA_PATH,
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_PHENOTYPIC_CATEGORICAL_PATH,
@@ -403,7 +404,7 @@ class TestTransform(unittest.TestCase):
             assert sorted_patients[i].to_json()["identifier"] == PatientAnonymizedIdentifier(id_value=str(990+i), hospital_name=HospitalNames.TEST_H1).value
 
     def test_create_ontology_resource_from_row(self):
-        transform = my_setup(hospital_name=HospitalNames.TEST_H1,
+        transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_CLINICAL_DATA_PATH,
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
@@ -419,7 +420,7 @@ class TestTransform(unittest.TestCase):
         assert onto_resource.to_json() == OntologyResource(ontology=Ontologies.LOINC, full_code="1234", label=None, quality_stats=None).to_json()
 
     def test_ontology_resource(self):
-        transform = my_setup(hospital_name=HospitalNames.TEST_H1,
+        transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_CLINICAL_DATA_PATH,
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
@@ -447,7 +448,7 @@ class TestTransform(unittest.TestCase):
         assert onto_resource.label == "Gamma"
 
     def test_fairify_phen_value(self):
-        transform = my_setup(hospital_name=HospitalNames.TEST_H1,
+        transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.PHENOTYPIC,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_PHENOTYPIC_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_PHENOTYPIC_DATA_PATH,
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_PHENOTYPIC_CATEGORICAL_PATH,
@@ -464,7 +465,7 @@ class TestTransform(unittest.TestCase):
         assert transform.fairify_value(column_name="date_of_birth", value=transform.data.iloc[5][3]) == cast_str_to_datetime(str_value="2021-12-22 11:58:38.881")
 
     def test_fairify_clin_value(self):
-        transform = my_setup(hospital_name=HospitalNames.TEST_H1,
+        transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_CLINICAL_DATA_PATH,
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
@@ -481,3 +482,49 @@ class TestTransform(unittest.TestCase):
         # not variable == np.nan (https://stackoverflow.com/questions/44367557/why-does-assert-np-nan-np-nan-cause-an-error)
         assert np.isnan(transform.fairify_value(column_name="molecule_g", value=transform.data.iloc[6][4]))
         assert np.isnan(transform.fairify_value(column_name="molecule_g", value=transform.data.iloc[7][4]))
+
+    def test_load_empty_patient_id_mapping(self):
+        extract = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,
+                             extracted_metadata_path=TheTestFiles.EXTR_METADATA_CLINICAL_PATH,
+                             extracted_data_paths=TheTestFiles.EXTR_CLINICAL_DATA_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
+                             extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
+                             extracted_column_dimension_path=TheTestFiles.EXTR_CLINICAL_DIMENSIONS_PATH,
+                             extracted_patient_ids_mapping_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH)
+        extract.load_patient_id_mapping()
+
+        # when the file is empty, the Execution should write an empty list into it
+        assert os.stat(extract.execution.anonymized_patient_ids_filepath).st_size > 0
+        assert extract.patient_ids_mapping == {}
+
+        # get back to the original empty file
+        with open(os.path.join(DOCKER_FOLDER_TEST, TheTestFiles.ORIG_EMPTY_PIDS_PATH), "w") as file:
+            file.write("")
+
+    def test_load_filled_patient_id_mapping(self):
+        transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,
+                             extracted_metadata_path=TheTestFiles.EXTR_METADATA_CLINICAL_PATH,
+                             extracted_data_paths=TheTestFiles.EXTR_CLINICAL_DATA_PATH,
+                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
+                             extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
+                             extracted_column_dimension_path=TheTestFiles.EXTR_CLINICAL_DIMENSIONS_PATH,
+                             extracted_patient_ids_mapping_path=TheTestFiles.ORIG_FILLED_PIDS_PATH)
+        transform.load_patient_id_mapping()
+
+        # when the file is not empty, all mappings should be loaded in Extract
+        assert os.stat(transform.execution.anonymized_patient_ids_filepath).st_size > 0
+        with open(os.path.join(DOCKER_FOLDER_TEST, TheTestFiles.EXTR_FILLED_PIDS_PATH), "r") as f:
+            # {
+            #    "999999999": "h1:999",
+            #    "999999998": "h1:998",
+            #    "999999997": "h1:997",
+            #    "999999996": "h1:996",
+            #    "999999995": "h1:995",
+            #    "999999994": "h1:994",
+            #    "999999993": "h1:993",
+            #    "999999992": "h1:992",
+            #    "999999991": "h1:991",
+            #    "999999990": "h1:990"
+            # }
+            expected_dict = json.load(f)
+        assert expected_dict == transform.patient_ids_mapping

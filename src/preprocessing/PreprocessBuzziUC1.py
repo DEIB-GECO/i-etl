@@ -17,8 +17,8 @@ from utils.setup_logger import log
 
 
 class PreprocessBuzziUC1(Preprocess):
-    def __init__(self, execution: Execution, metadata: DataFrame, data: DataFrame, profile: Profile):
-        super().__init__(execution=execution, metadata=metadata, data=data, profile=profile)
+    def __init__(self, execution: Execution, data: DataFrame, profile: Profile):
+        super().__init__(execution=execution, data=data, profile=profile)
 
         self.ids = []
         self.diagnosis_acronyms = []
@@ -39,14 +39,14 @@ class PreprocessBuzziUC1(Preprocess):
             transformation_df = read_tabular_file_as_string(self.execution.diagnosis_regexes_filepath)
             transformation_df.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x), inplace=True)  # normalize column names
 
-            for i, row in transformation_df.iterrows():
+            for row in transformation_df.itertuples(index=False):
                 # acronym column
-                acronym = row[DiagnosisColumns.ACRONYM].lower().strip()
+                acronym = row[transformation_df.columns.get_loc(DiagnosisColumns.ACRONYM)].lower().strip()
                 if acronym not in self.mapping_diagnoses_infos:
                     self.mapping_diagnoses_infos[acronym] = {}
                 # gene column
-                if is_not_nan(row[DiagnosisColumns.GENE_NAME]) and "," not in row[DiagnosisColumns.GENE_NAME]:
-                    self.mapping_diagnoses_infos[acronym][DiagnosisColumns.GENE_NAME] = row[DiagnosisColumns.GENE_NAME]
+                if is_not_nan(row[transformation_df.columns.get_loc(DiagnosisColumns.GENE_NAME)]) and "," not in row[transformation_df.columns.get_loc(DiagnosisColumns.GENE_NAME)]:
+                    self.mapping_diagnoses_infos[acronym][DiagnosisColumns.GENE_NAME] = row[transformation_df.columns.get_loc(DiagnosisColumns.GENE_NAME)]
                 else:
                     # there is no gene for that disease or this is a multigenic disease,
                     # we do not record this
@@ -72,19 +72,19 @@ class PreprocessBuzziUC1(Preprocess):
             # 2. associate each sample barcode to the patient id
             prefix = Profile.get_prefix_for_path(filetype=Profile.PHENOTYPIC)
             df = read_tabular_file_as_string(filepath=f"{os.path.join(prefix, "screening.csv")}")
-            self.mapping_barcode_pid = {row["SampleBarcode"]: row["id"] for index, row in df.iterrows()}
+            self.mapping_barcode_pid = {row[df.columns.get_loc("SampleBarcode")]: row[df.columns.get_loc("id")] for row in df.itertuples(index=False)}
 
             # 3. for each patient, collect the acronym and whether he is affected or a carrier
             count_affected = 0
             count_carrier = 0
             count_skipped = 0
-            for index, row in self.data.iterrows():
-                pid = row["patient_id"]
-                if is_not_nan(row["affetto"]):
+            for row in self.data.itertuples(index=False):
+                pid = row[self.data.columns.get_loc("patient ID")]
+                if is_not_nan(row[self.data.columns.get_loc("affetto")]):
                     count_affected += 1
                     # the patient is affected by this disease, so we record this
                     self.record_diagnosis_for_patient(pid=pid, row=row, column="affetto")
-                if is_not_nan(row["carrier"]):
+                if is_not_nan(row[self.data.columns.get_loc("carrier")]):
                     count_carrier += 1
                     # the patient is a carrier of the disease
                     # if we decide to record it, we record everything...
@@ -117,10 +117,6 @@ class PreprocessBuzziUC1(Preprocess):
             self.data[DiagnosisColumns.CHR_NUMBER] = self.chr_number
             self.data[DiagnosisColumns.ZIGOSITY] = self.zigosity
 
-            # finally, normalize the values (they will be cast in the Transform step)
-            for column in self.data.columns:
-                self.data[column] = self.data[column].apply(lambda x: MetadataColumns.normalize_value(column_value=x))
-
     def add_id(self, pid):
         if pid in self.mapping_barcode_pid:
             # the column is named "patient_id" in buzzi
@@ -133,8 +129,8 @@ class PreprocessBuzziUC1(Preprocess):
 
     def record_diagnosis_for_patient(self, pid, row, column: str):
         # column is "affetto" or "carrier"
-        row[column] = row[column].replace("/", "+") if "/" in row[column] else row[column]
-        for disease in row[column].split("+"):
+        row[column] = row[self.data.columns.get_loc(column)].replace("/", "+") if "/" in row[self.data.columns.get_loc(column)] else row[self.data.columns.get_loc(column)]
+        for disease in row[self.data.columns.get_loc(column)].split("+"):
             self.add_id(pid=pid)
             acronym = disease.lower().strip()
             self.diagnosis_acronyms.append(acronym)

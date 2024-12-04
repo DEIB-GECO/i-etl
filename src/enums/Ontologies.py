@@ -1,5 +1,6 @@
 from enums.EnumAsClass import EnumAsClass
 from utils.assertion_utils import is_not_nan
+from utils.setup_logger import log
 
 from utils.str_utils import process_spaces
 
@@ -14,6 +15,8 @@ class Ontologies(EnumAsClass):
     GSSO = {"name": "gsso", "url": "http://purl.obolibrary.org/obo"}
     ORPHANET = {"name": "orphanet", "url": "https://www.orpha.net/"}
     GENE_ONTOLOGY = {"name": "geneontology", "url": "https://amigo.geneontology.org/amigo"}
+    OMIM = {"name": "omim", "url": "https://omim.org"}
+    HGNC = {"name": "hgnc", "url": "https://rest.ensembl.org/"}
 
     @classmethod
     def get_enum_from_name(cls, ontology_name: str):

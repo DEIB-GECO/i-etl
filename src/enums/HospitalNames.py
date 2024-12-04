@@ -19,8 +19,9 @@ class HospitalNames(EnumAsClass):
     TEST_H1 = "test_h1"
     TEST_H2 = "test_h2"
     TEST_H3 = "test_h3"
-    KAGGLE_EDA = "eda"
-    KAGGLE_COVID = "covid"
+    EXPES_EDA = "eda"
+    EXPES_COVID = "covid"
+    EXPES_KIDNEY = "kidney"
 
     @classmethod
     def short(cls, hospital_name) -> str:

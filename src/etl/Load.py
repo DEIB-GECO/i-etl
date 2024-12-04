@@ -9,9 +9,13 @@ from utils.setup_logger import log
 
 
 class Load(Task):
-    def __init__(self, database: Database, execution: Execution, create_indexes: bool, quality_stats: QualityStatistics, time_stats: TimeStatistics):
+    def __init__(self, database: Database, execution: Execution, create_indexes: bool,
+                 dataset_number: int, profile: str,
+                 quality_stats: QualityStatistics, time_stats: TimeStatistics):
         super().__init__(database=database, execution=execution, quality_stats=quality_stats, time_stats=time_stats)
         self.create_indexes = create_indexes
+        self.dataset_number = dataset_number
+        self.profile = profile
 
     def run(self) -> None:
         # Insert resources that have not been inserted yet, i.e.,
@@ -25,12 +29,12 @@ class Load(Task):
 
     def load_remaining_data(self) -> None:
         log.info("load remaining data")
-        record_table_name = Profile.get_record_table_name_from_profile(self.execution.current_file_profile)
+        record_table_name = Profile.get_record_table_name_from_profile(self.profile)
         unique_variables = ["registered_by", "has_subject", "instantiates"]
-        if self.execution.current_file_profile == Profile.DIAGNOSIS:
+        if self.profile == Profile.DIAGNOSIS:
             # we allow patients to have several diagnoses
             unique_variables.append("value")
-        self.database.load_json_in_table(table_name=record_table_name, unique_variables=unique_variables, file_count=self.execution.current_file_number)
+        self.database.load_json_in_table(table_name=record_table_name, unique_variables=unique_variables, dataset_number=self.dataset_number)
 
     def create_db_indexes(self) -> None:
         log.info(f"Creating indexes.")

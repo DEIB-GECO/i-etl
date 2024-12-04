@@ -10,8 +10,8 @@ from preprocessing.Preprocess import Preprocess
 
 
 class PreprocessCovid(Preprocess):
-    def __init__(self, execution: Execution, metadata: DataFrame, data: DataFrame, profile: Profile):
-        super().__init__(execution=execution, metadata=metadata, data=data, profile=profile)
+    def __init__(self, execution: Execution, data: DataFrame, profile: Profile):
+        super().__init__(execution=execution, data=data, profile=profile)
 
     def run(self):
         if self.profile == Profile.CLINICAL:

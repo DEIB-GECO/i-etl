@@ -407,24 +407,6 @@ class TestDatabase(unittest.TestCase):
         for i in range(len(expected_docs)):
             compare_tuples(original_tuple=expected_docs[i], inserted_tuple=docs[i])
 
-    def test_upsert_one_batch_of_tuples_unknown_key(self):
-        # 1 key is unknown
-        database = Database(execution=TestDatabase.execution)
-        my_tuples = [{"name": "Nelly", "age": 26}, {"name": "Julien", "age": 30}]
-
-        # this will not return an exception (value error) because the upsert contains an unknown key (city does not exist in my_tuple)
-        # instead, it will return an empty dictionary, showing that the key "city" could not be used
-        used_unique_variables = database.upsert_one_batch_of_tuples(table_name=TableNames.TEST, unique_variables=["city"], the_batch=my_tuples)
-        assert len(used_unique_variables.keys()) == 0
-
-        # 1 key is known, 1 key is unknown
-        my_tuples = [{"name": "Nelly", "age": 26}, {"name": "Julien", "age": 30}]
-
-        # similarly, this will return a dict with only "name" has a key, "city" will not appear
-        used_unique_variables = database.upsert_one_batch_of_tuples(table_name=TableNames.TEST, unique_variables=["name", "city"], the_batch=my_tuples)
-        assert len(used_unique_variables.keys()) == 1
-        assert "name" in used_unique_variables
-
     def test_retrieve_resource_identifiers_1(self):
         database = Database(TestDatabase.execution)
         my_id = ResourceIdentifier(id_value="123", resource_type=TableNames.PATIENT)
@@ -494,7 +476,7 @@ class TestDatabase(unittest.TestCase):
         ]
         my_tuples_as_json = [my_tuples[i].to_json() for i in range(len(my_tuples))]
 
-        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, profile_count=1, file_count=1)
+        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, file_counter=1, dataset_number=1)
         filepath = os.path.join(TestDatabase.execution.working_dir_current, f"1{TableNames.TEST}1.json")
         assert os.path.exists(filepath) is True
         with open(filepath) as my_file:
@@ -505,7 +487,7 @@ class TestDatabase(unittest.TestCase):
     def test_write_in_file_no_resource(self):
         _ = Database(TestDatabase.execution)
         my_tuples = []
-        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, profile_count=2, file_count=1)
+        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, file_counter=2, dataset_number=1)
         filepath = os.path.join(TestDatabase.execution.working_dir_current, f"1{TableNames.TEST}2.json")
         assert os.path.exists(filepath) is False  # no file should have been created since there is no data to write
 
@@ -526,7 +508,7 @@ class TestDatabase(unittest.TestCase):
         with open(filepath, 'w') as f:
             json.dump(my_tuples, f)
 
-        database.load_json_in_table(table_name=TableNames.TEST, unique_variables=["name", "age"], file_count=1)
+        database.load_json_in_table(table_name=TableNames.TEST, unique_variables=["name", "age"], dataset_number=1)
 
         docs = [doc for doc in database.db[TableNames.TEST].find({}).sort({"name": 1, "age": 1})]
         expected_docs = [my_original_tuples[1], my_original_tuples[0], my_original_tuples[3], my_original_tuples[4]]
