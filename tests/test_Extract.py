@@ -388,42 +388,42 @@ class TestExtract(unittest.TestCase):
         assert len(described_columns) == len(expected_columns)  # molecule_y has been kept
         assert described_columns == expected_columns
 
-    def test_compute_clin_column_to_dimension(self):
+    def test_compute_clin_column_to_unit(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_CLINICAL_PATH,
                            data_type=Profile.CLINICAL,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-        extract.compute_column_to_dimension()
+        extract.compute_column_to_unit()
 
         # {'id': None, 'molecule_a': "mg/L", 'molecule_b': "g", 'molecule_g': None, 'molecule_z': None, "molecule_y": None}
-        assert len(extract.mapping_column_to_dimension.keys()) == 6
-        assert "id" in extract.mapping_column_to_dimension
-        assert extract.mapping_column_to_dimension["id"] is None
-        assert "molecule_a" in extract.mapping_column_to_dimension
-        assert extract.mapping_column_to_dimension["molecule_a"] == "mg/L"
-        assert "molecule_b" in extract.mapping_column_to_dimension
-        assert extract.mapping_column_to_dimension["molecule_b"] is None  # because we do not extract units from data anymore
-        assert "molecule_g" in extract.mapping_column_to_dimension
-        assert extract.mapping_column_to_dimension["molecule_g"] is None
-        assert "molecule_y" in extract.mapping_column_to_dimension
-        assert extract.mapping_column_to_dimension["molecule_y"] is None
+        assert len(extract.mapping_column_to_unit.keys()) == 6
+        assert "id" in extract.mapping_column_to_unit
+        assert extract.mapping_column_to_unit["id"] is None
+        assert "molecule_a" in extract.mapping_column_to_unit
+        assert extract.mapping_column_to_unit["molecule_a"] == "mg/L"
+        assert "molecule_b" in extract.mapping_column_to_unit
+        assert extract.mapping_column_to_unit["molecule_b"] is None  # because we do not extract units from data anymore
+        assert "molecule_g" in extract.mapping_column_to_unit
+        assert extract.mapping_column_to_unit["molecule_g"] is None
+        assert "molecule_y" in extract.mapping_column_to_unit
+        assert extract.mapping_column_to_unit["molecule_y"] is None
 
-    def test_compute_phen_column_to_dimension(self):
+    def test_compute_phen_column_to_unit(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_PHENOTYPIC_PATH,
                            data_type=Profile.PHENOTYPIC,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-        extract.compute_column_to_dimension()
+        extract.compute_column_to_unit()
 
         # {'id': None, 'sex': [], 'ethnicity': [], 'date_of_birth': []}
-        assert len(extract.mapping_column_to_dimension.keys()) == 4
-        assert "id" in extract.mapping_column_to_dimension
-        assert extract.mapping_column_to_dimension["id"] is None
-        assert "sex" in extract.mapping_column_to_dimension
-        assert extract.mapping_column_to_dimension["sex"] is None
-        assert "ethnicity" in extract.mapping_column_to_dimension
-        assert extract.mapping_column_to_dimension["ethnicity"] is None
-        assert "date_of_birth" in extract.mapping_column_to_dimension
-        assert extract.mapping_column_to_dimension["date_of_birth"] is None
+        assert len(extract.mapping_column_to_unit.keys()) == 4
+        assert "id" in extract.mapping_column_to_unit
+        assert extract.mapping_column_to_unit["id"] is None
+        assert "sex" in extract.mapping_column_to_unit
+        assert extract.mapping_column_to_unit["sex"] is None
+        assert "ethnicity" in extract.mapping_column_to_unit
+        assert extract.mapping_column_to_unit["ethnicity"] is None
+        assert "date_of_birth" in extract.mapping_column_to_unit
+        assert extract.mapping_column_to_unit["date_of_birth"] is None

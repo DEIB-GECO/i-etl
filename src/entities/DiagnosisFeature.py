@@ -6,7 +6,7 @@ from database.Counter import Counter
 
 
 class DiagnosisFeature(Feature):
-    def __init__(self, id_value: str, name: str, ontology_resource: OntologyResource, permitted_datatype: str, dimension: str | None,
+    def __init__(self, id_value: str, name: str, ontology_resource: OntologyResource, permitted_datatype: str, unit: str | None,
                  counter: Counter, hospital_name: str, categories: list[OntologyResource] | None,
                  visibility: Visibility):
         """
@@ -18,5 +18,5 @@ class DiagnosisFeature(Feature):
         """
         # set up the resource ID
         super().__init__(id_value=id_value, name=name, resource_type=TableNames.DIAGNOSIS_FEATURE, ontology_resource=ontology_resource,
-                         column_type=permitted_datatype, dimension=dimension, counter=counter,
+                         column_type=permitted_datatype, unit=unit, counter=counter,
                          hospital_name=hospital_name, categories=categories, visibility=visibility)

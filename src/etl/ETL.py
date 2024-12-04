@@ -55,7 +55,7 @@ class ETL:
         log.info(all_filenames)
 
         self.transform = Transform(database=self.database, execution=self.execution, data=None, metadata=None,
-                                   mapping_categorical_value_to_onto_resource=None, mapping_column_to_dimension=None,
+                                   mapping_categorical_value_to_onto_resource=None, mapping_column_to_unit=None,
                                    mapping_column_to_categorical_value=None, patient_ids_mapping=None, profile=None,
                                    dataset_number=dataset_number, file_counter=file_counter,
                                    quality_stats=quality_stats, time_stats=time_stats)
@@ -113,7 +113,7 @@ class ETL:
                                                    metadata=self.extract.metadata,
                                                    mapping_categorical_value_to_onto_resource=self.extract.mapping_categorical_value_to_onto_resource,
                                                    mapping_column_to_categorical_value=self.extract.mapping_column_to_categorical_value,
-                                                   mapping_column_to_dimension=self.extract.mapping_column_to_dimension,
+                                                   mapping_column_to_unit=self.extract.mapping_column_to_unit,
                                                    patient_ids_mapping=self.transform.patient_ids_mapping,
                                                    profile=profile,
                                                    dataset_number=dataset_number, file_counter=file_counter,

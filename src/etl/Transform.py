@@ -6,7 +6,7 @@ from typing import Any
 import ujson
 from pandas import DataFrame
 
-from constants.defaults import BATCH_SIZE, PATTERN_VALUE_DIMENSION
+from constants.defaults import BATCH_SIZE, PATTERN_VALUE_UNIT
 from constants.idColumns import NO_ID, ID_COLUMNS
 from database.Counter import Counter
 from database.Database import Database
@@ -48,7 +48,7 @@ class Transform(Task):
     def __init__(self, database: Database, execution: Execution, data: DataFrame, metadata: DataFrame,
                  mapping_categorical_value_to_onto_resource: dict,
                  mapping_column_to_categorical_value: dict,
-                 mapping_column_to_dimension: dict, patient_ids_mapping: dict,
+                 mapping_column_to_unit: dict, patient_ids_mapping: dict,
                  profile: str, dataset_number: int, file_counter: int,
                  quality_stats: QualityStatistics, time_stats: TimeStatistics):
         super().__init__(database=database, execution=execution, quality_stats=quality_stats, time_stats=time_stats)
@@ -60,7 +60,7 @@ class Transform(Task):
         # get data, metadata and the mapped values computed in the Extract step
         self.data = data
         self.metadata = metadata
-        self.mapping_column_to_dimension = mapping_column_to_dimension
+        self.mapping_column_to_unit = mapping_column_to_unit
         self.mapping_categorical_value_to_onto_resource = mapping_categorical_value_to_onto_resource
         self.mapping_column_to_categorical_value = mapping_column_to_categorical_value
         # to keep track of anonymized vs. hospital patient ids
@@ -125,7 +125,7 @@ class Transform(Task):
                     onto_resource = self.create_ontology_resource_from_row(column_name=column_name)
                     data_type = row[columns.get_loc(MetadataColumns.ETL_TYPE)]  # this has been normalized while loading + we take ETL_type to get the narrowest type (in which we cast values)
                     visibility = row[columns.get_loc(MetadataColumns.VISIBILITY)]  # this has been normalized while loading
-                    dimension = self.mapping_column_to_dimension[column_name] if column_name in self.mapping_column_to_dimension else None  # else covers: there is no dataType for this column; there is no datatype in that type of entity
+                    unit = self.mapping_column_to_unit[column_name] if column_name in self.mapping_column_to_unit else None  # else covers: there is no dataType for this column; there is no datatype in that type of entity
                     categorical_values = None
                     if column_name in self.mapping_column_to_categorical_value:
                         if data_type in [DataTypes.CATEGORY, DataTypes.REGEX]:
@@ -137,7 +137,7 @@ class Transform(Task):
                         new_feature = PhenotypicFeature(id_value=NO_ID,
                                                         name=column_name,
                                                         ontology_resource=onto_resource,
-                                                        permitted_datatype=data_type, dimension=dimension,
+                                                        permitted_datatype=data_type, unit=unit,
                                                         counter=self.counter,
                                                         hospital_name=self.execution.hospital_name,
                                                         categories=categorical_values,
@@ -145,7 +145,7 @@ class Transform(Task):
                     elif table_name == TableNames.CLINICAL_FEATURE:
                         new_feature = ClinicalFeature(id_value=NO_ID,
                                                       name=column_name, ontology_resource=onto_resource,
-                                                      permitted_datatype=data_type, dimension=dimension,
+                                                      permitted_datatype=data_type, unit=unit,
                                                       counter=self.counter,
                                                       hospital_name=self.execution.hospital_name,
                                                       categories=categorical_values,
@@ -154,28 +154,28 @@ class Transform(Task):
                         new_feature = DiagnosisFeature(id_value=NO_ID, name=column_name,
                                                        ontology_resource=onto_resource,
                                                        permitted_datatype=data_type,
-                                                       dimension=dimension, counter=self.counter,
+                                                       unit=unit, counter=self.counter,
                                                        hospital_name=self.execution.hospital_name,
                                                        categories=categorical_values, visibility=visibility)
                     elif table_name == TableNames.GENOMIC_FEATURE:
                         new_feature = GenomicFeature(id_value=NO_ID, name=column_name,
                                                      ontology_resource=onto_resource,
                                                      permitted_datatype=data_type,
-                                                     dimension=dimension, counter=self.counter,
+                                                     unit=unit, counter=self.counter,
                                                      hospital_name=self.execution.hospital_name,
                                                      categories=categorical_values, visibility=visibility)
                     elif table_name == TableNames.IMAGING_FEATURE:
                         new_feature = ImagingFeature(id_value=NO_ID, name=column_name,
                                                      ontology_resource=onto_resource,
                                                      permitted_datatype=data_type,
-                                                     dimension=dimension, counter=self.counter,
+                                                     unit=unit, counter=self.counter,
                                                      hospital_name=self.execution.hospital_name,
                                                      categories=categorical_values, visibility=visibility)
                     elif table_name == TableNames.MEDICINE_FEATURE:
                         new_feature = MedicineFeature(id_value=NO_ID, name=column_name,
                                                       ontology_resource=onto_resource,
                                                       permitted_datatype=data_type,
-                                                      dimension=dimension, counter=self.counter,
+                                                      unit=unit, counter=self.counter,
                                                       hospital_name=self.execution.hospital_name,
                                                       categories=categorical_values, visibility=visibility)
                     else:
@@ -461,7 +461,7 @@ class Transform(Task):
         etl_type = current_column_info[MetadataColumns.ETL_TYPE].iloc[0]  # we need to take the value itself, otherwise we end up with a series of 1 element (the ETL type)
         the_normalized_value = MetadataColumns.normalize_value(column_value=value)  # we compute only once the cast value and return it whenever we cannot FAIRify deeply the value
         return_value = None  # to ease logging, we also save the return value in a variable and return it at the very end
-        expected_unit = self.mapping_column_to_dimension[column_name] if column_name in self.mapping_column_to_dimension else None  # there was some unit specified in the metadata or extracted from the data
+        expected_unit = self.mapping_column_to_unit[column_name] if column_name in self.mapping_column_to_unit else None  # there was some unit specified in the metadata or extracted from the data
 
         # log.debug(f"ETL type is {etl_type}, expected unit is {expected_unit}")
         if etl_type == DataTypes.STRING:
@@ -489,18 +489,10 @@ class Transform(Task):
                 return_value = str(value)
             else:
                 # this is really a numeric value that we want to cast
-                # several cases:
-                # - no dimension in metadata, no dimension in data: cast
-                # - no dimension in metadata, one dimension in data: extract the dimension + cast
-                # - no dimension in metadata, several dimensions in data: get most frequent one, data values with the frequent dim are cast, others are left as strings
-                # - one dimension in metadata, no dimension in data: cast
-                # - one dimension in metadata, one dimensions in data, they are equal: remove dimension from data + cast
-                # - one dimension in metadata, one dimensions in data, they are not equal: leave data as string
-                # - one dimension in metadata, several dimensions in data: data values with the metadata dim are cast, others are left as strings
-                m = re.search(PATTERN_VALUE_DIMENSION, value)
+                m = re.search(PATTERN_VALUE_UNIT, value)
                 if m is not None:
-                    # there is a dimension in the data value
-                    # m.group(0) is the text itself, m.group(1) is the int/float value, m.group(2) is the dimension
+                    # there is a unit in the data value
+                    # m.group(0) is the text itself, m.group(1) is the int/float value, m.group(2) is the unit
                     the_value = m.group(1)
                     unit = m.group(2)
                     if unit == expected_unit:
@@ -509,14 +501,14 @@ class Transform(Task):
                         elif etl_type == DataTypes.FLOAT:
                             return_value = cast_str_to_float(str_value=the_value)
                     else:
-                        # the feature dimension does not correspond, we return the normalized (string) value
-                        self.quality_stats.add_numerical_value_with_unmatched_dimension(column_name=column_name,
-                                                                                        expected_dimension=expected_unit,
-                                                                                        current_dimension=unit,
+                        # the feature unit does not correspond, we return the normalized (string) value
+                        self.quality_stats.add_numerical_value_with_unmatched_unit(column_name=column_name,
+                                                                                        expected_unit=expected_unit,
+                                                                                        current_unit=unit,
                                                                                         value=value)
                         return_value = the_normalized_value
                 else:
-                    # this value does not contain a dimension or is not of the form "value dimension"
+                    # this value does not contain a unit or is not of the form "value unit"
                     # thus, we cast it depending on the ETL type
                     if etl_type == DataTypes.INTEGER:
                         return_value = cast_str_to_int(str_value=value)

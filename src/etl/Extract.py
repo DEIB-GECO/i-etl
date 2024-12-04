@@ -35,7 +35,7 @@ class Extract(Task):
         self.mapping_categorical_value_to_onto_resource = {}  # <categorical value label ("JSON_values" column), OntologyResource>
         self.mapping_column_to_categorical_value = {}  # <column name, list of normalized accepted values>
         self.mapping_column_to_vartype = {}  # <column name, var type ("vartype" column)>
-        self.mapping_column_to_dimension = {}  # <column name, union of dimension in metadata + those found in the data>
+        self.mapping_column_to_unit = {}  # <column name, unit provided in the metadata>
 
     def run(self) -> None:
 
@@ -55,9 +55,9 @@ class Extract(Task):
             self.filter_data_file()
             self.normalize_data_file()
 
-            # compute mappings (categories and dimension)
+            # compute mappings (categories and unit)
             self.compute_mapping_categorical_value_to_onto_resource()
-            self.compute_column_to_dimension()
+            self.compute_column_to_unit()
 
     def filter_metadata_file(self) -> None:
         # Normalize the header, e.g., "Significato it" becomes "significato_it"
@@ -281,17 +281,17 @@ class Extract(Task):
         # log.debug(f"{self.mapping_categorical_value_to_onto_resource}")
         # log.debug(f"{self.mapping_column_to_categorical_value}")
 
-    def compute_column_to_dimension(self) -> None:
-        self.mapping_column_to_dimension = {}
+    def compute_column_to_unit(self) -> None:
+        self.mapping_column_to_unit = {}
 
         for row in self.metadata.itertuples(index=False):
-            dimension = row[self.metadata.columns.get_loc(MetadataColumns.VAR_DIMENSION)]
-            if dimension is not None and is_not_nan(dimension):
-                self.mapping_column_to_dimension[row[self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)]] = dimension
+            unit = row[self.metadata.columns.get_loc(MetadataColumns.VAR_UNIT)]
+            if unit is not None and is_not_nan(unit):
+                self.mapping_column_to_unit[row[self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)]] = unit
             else:
-                self.mapping_column_to_dimension[row[self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)]] = None
+                self.mapping_column_to_unit[row[self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)]] = None
 
-        if len(self.mapping_column_to_dimension) > 10:
-            log.debug(dict(itertools.islice(self.mapping_column_to_dimension.items(), 10)))
+        if len(self.mapping_column_to_unit) > 10:
+            log.debug(dict(itertools.islice(self.mapping_column_to_unit.items(), 10)))
         else:
-            log.debug(self.mapping_column_to_dimension)
+            log.debug(self.mapping_column_to_unit)

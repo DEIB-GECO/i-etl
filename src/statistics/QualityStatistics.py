@@ -23,8 +23,8 @@ class QualityStatistics(Statistics):
         self.failed_api_calls = {}  # { "ontology/id_code": api_error, ... }
         self.unknown_categorical_values = {}  # { column_name: [ set of unknown categorical values ], ... }
         self.unknown_boolean_values = {}  # { column_name: [ set of unknown categorical boolean values ], ... }
-        self.numerical_values_unmatched_dimension = {}  # { column_name: { value: { "expected_dim": exp_dim, "current_unit": curr_unit }, ... }, ... }
-        self.non_numeric_values_with_dimension = {}  # { column_name: { value: curr_dim, ... }, ... }
+        self.numerical_values_unmatched_unit = {}  # { column_name: { value: { "expected_dim": exp_dim, "current_unit": curr_unit }, ... }, ... }
+        self.non_numeric_values_with_unit = {}  # { column_name: { value: curr_dim, ... }, ... }
 
     def add_column_with_no_ontology(self, column_name: str):
         if self.record_stats and column_name not in self.columns_no_ontology:
@@ -93,19 +93,19 @@ class QualityStatistics(Statistics):
             if boolean_value not in self.unknown_boolean_values[column_name]:
                 self.unknown_boolean_values[column_name].append(boolean_value)
 
-    def add_numerical_value_with_unmatched_dimension(self, column_name: str, expected_dimension: str, current_dimension: str, value: str):
+    def add_numerical_value_with_unmatched_unit(self, column_name: str, expected_unit: str, current_unit: str, value: str):
         # { column_name: { value: { "expected_dim": exp_dim, "current_unit": curr_unit }, ... }, ... }
         if self.record_stats:
-            if column_name not in self.numerical_values_unmatched_dimension:
-                self.numerical_values_unmatched_dimension[column_name] = {}
-            if value not in self.numerical_values_unmatched_dimension[column_name]:
-                self.numerical_values_unmatched_dimension[column_name][value] = {}
-            self.numerical_values_unmatched_dimension[column_name][value] = {"expected_dim": expected_dimension, "current_dim": current_dimension}
+            if column_name not in self.numerical_values_unmatched_unit:
+                self.numerical_values_unmatched_unit[column_name] = {}
+            if value not in self.numerical_values_unmatched_unit[column_name]:
+                self.numerical_values_unmatched_unit[column_name][value] = {}
+            self.numerical_values_unmatched_unit[column_name][value] = {"expected_unit": expected_unit, "current_unit": current_unit}
 
-    def add_non_numeric_value_with_dimension(self, column_name: str, dimension: str, value: str):
+    def add_non_numeric_value_with_unit(self, column_name: str, unit: str, value: str):
         # { column_name: { value: curr_dim, ... }, ... }
         if self.record_stats:
-            if column_name not in self.non_numeric_values_with_dimension:
-                self.non_numeric_values_with_dimension[column_name] = {}
-            if value not in self.non_numeric_values_with_dimension[column_name]:
-                self.non_numeric_values_with_dimension[column_name][value] = dimension
+            if column_name not in self.non_numeric_values_with_unit:
+                self.non_numeric_values_with_unit[column_name] = {}
+            if value not in self.non_numeric_values_with_unit[column_name]:
+                self.non_numeric_values_with_unit[column_name][value] = unit

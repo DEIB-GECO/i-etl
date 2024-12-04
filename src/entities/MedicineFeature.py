@@ -6,8 +6,8 @@ from database.Counter import Counter
 
 
 class MedicineFeature(Feature):
-    def __init__(self, id_value: str, name: str, ontology_resource: OntologyResource, permitted_datatype: str, dimension: str, counter: Counter,
+    def __init__(self, id_value: str, name: str, ontology_resource: OntologyResource, permitted_datatype: str, unit: str, counter: Counter,
                  hospital_name: str, categories: list[OntologyResource], visibility: Visibility):
-        super().__init__(id_value=id_value, name=name, ontology_resource=ontology_resource, column_type=permitted_datatype, dimension=dimension,
+        super().__init__(id_value=id_value, name=name, ontology_resource=ontology_resource, column_type=permitted_datatype, unit=unit,
                          resource_type=TableNames.MEDICINE_FEATURE, counter=counter, hospital_name=hospital_name,
                          categories=categories, visibility=visibility)
