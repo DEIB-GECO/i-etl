@@ -478,24 +478,11 @@ class Transform(Task):
         elif etl_type == DataTypes.DATETIME or etl_type == DataTypes.DATE:
             return_value = cast_str_to_datetime(str_value=value)
         elif etl_type == DataTypes.BOOLEAN:
-            # boolean values may appear as (a) CC (si/no or 0/1), or (b) 0/1 or 0.0/1.0 (1.0/0.0 has to be converted to 1/0)
             value = "1" if value == "1.0" else "0" if value == "0.0" else value
-            # and that same value is also available in the mapping to cc
-            if column_name in self.mapping_column_to_categorical_value and value in \
-                    self.mapping_column_to_categorical_value[
-                        column_name] and value in self.mapping_categorical_value_to_onto_resource:
-                cc = self.mapping_categorical_value_to_onto_resource[value]
-                # this should rather be a boolean, let's cast it as boolean, instead of using Yes/No SNOMED_CT codes
-                if cc == TrueFalse.TRUE:
-                    return_value = True
-                elif cc == TrueFalse.FALSE:
-                    return_value = False
-                else:
-                    self.quality_stats.add_unknown_boolean_value(column_name=column_name, boolean_value=value)
-                    return_value = the_normalized_value
-            else:
-                # no coded value for that value, trying to cast it as boolean
-                return_value = cast_str_to_boolean(str_value=value)
+            return_value = cast_str_to_boolean(str_value=value)
+            if return_value is None:
+                self.quality_stats.add_unknown_boolean_value(column_name=column_name, boolean_value=value)
+                return_value = the_normalized_value
         elif etl_type == DataTypes.INTEGER or etl_type == DataTypes.FLOAT:
             if column_name == ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT]:
                 # do not cast int-like string identifiers as integers because this may add too much normalization
