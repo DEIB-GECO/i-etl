@@ -145,19 +145,6 @@ class Database:
         # and send one bulk operation per batch. This allows to save time by not doing a db call per upsert.
         # we use the bulk operation to send sets of BATCH_SIZE operations, each operation doing an upsert
         # this allows to have only one call to the database for each bulk operation (instead of one per upsert operation)
-        # transformed this for loop in a one-line stmt
-        # for one_tuple in the_batch:
-            # filter_dict = {unique_variable: unique_variable in one_tuple and one_tuple[unique_variable] for unique_variable in unique_variables}
-            # for unique_variable in unique_variables:
-            #     if unique_variable in one_tuple:
-            #         # some Record may hae particular attributes (that other entities do not have)
-            #         # so we need to check whether that attribute is present or not
-            #         filter_dict[unique_variable] = one_tuple[unique_variable]
-            #     else:
-            #         log.info(f"in the else for {unique_variable} for tuple {one_tuple}")
-            # log.info(filter_dict)
-            # update_stmt = self.create_update_stmt(the_tuple=one_tuple)
-            # operations.append(pymongo.UpdateOne(filter=filter_dict, update=update_stmt, upsert=True))
         operations = [pymongo.UpdateOne(
             filter={unique_variable: one_tuple[unique_variable] for unique_variable in unique_variables},
             update=self.create_update_stmt(the_tuple=one_tuple), upsert=True)
@@ -165,7 +152,7 @@ class Database:
         # July 18th, 2024: bulk_write modifies the hospital lists in Transform (even if I use deep copies everywhere)
         # It changes (only?) the timestamp value with +1/100, e.g., 2024-07-18T14:34:32Z becomes 2024-07-18T14:34:33Z
         # in the tests I use a delta to compare datetime
-        self.db[table_name].bulk_write(copy.deepcopy(operations), ordered=False)
+        self.db[table_name].bulk_write(operations, ordered=False)
 
     def retrieve_mapping(self, table_name: str, key_fields: str, value_fields: str):
         # TODO Nelly: add a distinct to the find
@@ -234,7 +221,6 @@ class Database:
         return self.db[name_table_1].aggregate(operations)
 
     def list_existing_indexes(self, table_name: str) -> list:
-        log.info(f"list indexes in {table_name}")
         index_list = [res.values() for res in self.db[table_name].list_indexes()]
         log.info(index_list)
         return index_list

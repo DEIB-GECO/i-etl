@@ -38,8 +38,6 @@ def my_setup(metadata_path: str, data_paths: str, data_type: Profile, pids_path:
     # in the dev mode, the current_filepath variable is set during the ETL
     # for tests, we need to manually set it because we have no ETL instance
     TestExtract.execution.current_filepath = os.path.join(DOCKER_FOLDER_TEST, data_paths)
-    log.debug(TestExtract.execution.current_filepath)
-    log.info(os.path.join(DOCKER_FOLDER_TEST, metadata_path))
     metadata = pd.read_csv(os.path.join(DOCKER_FOLDER_TEST, metadata_path))
     database = Database(TestExtract.execution)
     extract = Extract(metadata=metadata, profile=data_type, database=database, execution=TestExtract.execution, quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False))

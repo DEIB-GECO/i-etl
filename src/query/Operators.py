@@ -53,7 +53,6 @@ class Operators(EnumAsClass):
             # and choose what should be the value of that field (in case of composed fields)
             if type(field) is dict:
                 # if the composed field may be empty, we use an alternative field ("$ifNull", within the field)
-                log.info(field)
                 return {
                     "$project": {
                         projected_value: field,
@@ -163,17 +162,13 @@ class Operators(EnumAsClass):
 
     @classmethod
     def if_condition(cls, cond: dict, if_part: dict|str, else_part: dict|str) -> dict:
-        log.info(cond)
-        log.info(if_part)
-        log.info(else_part)
-        res= {
+        res = {
             "$cond": {
                 "if": cond,
                 "then": if_part,
                 "else": else_part
             }
         }
-        log.info(res)
         return res
 
     @classmethod

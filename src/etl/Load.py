@@ -18,8 +18,7 @@ class Load(Task):
         self.profile = profile
 
     def run(self) -> None:
-        # Insert resources that have not been inserted yet, i.e.,
-        # anything else than Hospital, LabFeature and Disease instances
+        # Insert resources that have not been inserted yet, i.e., all Record instances
         log.debug(f"in the Load class")
         self.load_remaining_data()
 
@@ -30,7 +29,7 @@ class Load(Task):
     def load_remaining_data(self) -> None:
         log.info("load remaining data")
         record_table_name = Profile.get_record_table_name_from_profile(self.profile)
-        unique_variables = ["registered_by", "has_subject", "instantiates"]
+        unique_variables = ["registered_by", "has_subject", "instantiates", "dataset"]
         if self.profile == Profile.DIAGNOSIS:
             # we allow patients to have several diagnoses
             unique_variables.append("value")

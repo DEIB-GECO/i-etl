@@ -3,12 +3,13 @@ from typing import Any
 from datatypes.Identifier import Identifier
 from entities.Resource import Resource
 from database.Counter import Counter
+from utils.setup_logger import log
 
 
 class Record(Resource):
     def __init__(self, id_value: str, feature_id: Identifier, patient_id: Identifier,
                  hospital_id: Identifier, value: Any, resource_type: str, counter: Counter,
-                 hospital_name: str, dataset_name: str):
+                 hospital_name: str, dataset: str):
         """
 
         """
@@ -20,4 +21,4 @@ class Record(Resource):
         self.has_subject = patient_id.value  # Reference(resource_identifier=patient_id)
         self.registered_by = hospital_id.value  # Reference(resource_identifier=hospital_id)
         self.instantiates = feature_id.value  # Reference(resource_identifier=feature_id)
-        self.dataset = dataset_name
+        self.dataset = dataset

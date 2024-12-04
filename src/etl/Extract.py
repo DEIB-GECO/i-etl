@@ -170,7 +170,6 @@ class Extract(Task):
             is_not_described_in_current_metadata = data_column not in columns_described_in_metadata
             column_has_to_be_removed = data_column in self.execution.columns_to_remove
             column_is_an_id = data_column in [ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT], ID_COLUMNS[self.execution.hospital_name][TableNames.CLINICAL_RECORD]]
-            # log.info(f"Column {data_column}: not in subset md: {is_not_described_in_current_metadata}, not in file md: {is_not_described_in_metadata}).")
             if is_not_described_in_current_metadata or (column_has_to_be_removed and not column_is_an_id):
                 # we drop this column
                 log.info(f"drop column {data_column}")
@@ -211,7 +210,6 @@ class Extract(Task):
             column_name = row[self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)]
             candidate_json_values = row[self.metadata.columns.get_loc(MetadataColumns.JSON_VALUES)]
             column_type = row[self.metadata.columns.get_loc(MetadataColumns.ETL_TYPE)]
-            # log.info(f" JSON values for {column_name}: {candidate_json_values}")
             if is_not_nan(candidate_json_values):
                 # we get the possible categorical values for the column, e.g., F, or M, or NA for sex
                 try:
@@ -219,12 +217,10 @@ class Extract(Task):
                 except Exception:
                     self.quality_stats.add_categorical_colum_with_unparseable_json(column_name=column_name, broken_json=candidate_json_values)
                     json_categorical_values = {}
-                # log.info(json_categorical_values)
                 self.mapping_column_to_categorical_value[column_name] = []
                 for json_categorical_value in json_categorical_values:
                     normalized_categorical_value = MetadataColumns.normalize_value(json_categorical_value["value"])
                     or_has_been_built = False
-                    # log.info(f"For column {column_name}, processing value: {normalized_categorical_value}")
                     if normalized_categorical_value not in self.mapping_categorical_value_to_onto_resource:
                         # the categorical value does not exist yet in the mapping, thus:
                         # - it may be retrieved from the db and be added to the mapping

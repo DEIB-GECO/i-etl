@@ -13,11 +13,8 @@ def remove_specific_tokens(input_string: str, tokens: list) -> str:
 
 
 def remove_operators_in_strings(input_string: str) -> str:
-    # log.info(input_string)
     pipe_double_quote_indices = [i if char in ["|", "\""] else -1 for i, char in enumerate(input_string)]
     pipe_double_quote_indices = [i for i in pipe_double_quote_indices if i != -1]
-
-    # log.info(pipe_double_quote_indices)
 
     i = 0
     if len(pipe_double_quote_indices) % 2 != 0 or len(pipe_double_quote_indices) == 0:
@@ -34,7 +31,5 @@ def remove_operators_in_strings(input_string: str) -> str:
             for operator in SNOMED_OPERATORS_LIST:
                 new_text_between_op = new_text_between_op.replace(operator, " ")
             final_text = final_text.replace(text_between_op, new_text_between_op)
-            # log.info(f"{first_op_index}, {second_op_index}: {text_between_op}  ;; {new_text_between_op}")
             i = i+2
-        # log.info(final_text)
         return final_text

@@ -267,14 +267,14 @@ class Transform(Task):
                                                                                fairified_value=fairified_value)
                         if is_anonymized:
                             fairified_value = anonymized_value  # we coule anonymize this value, this is the one to insert in the DB
-                        dataset_name = self.execution.current_filepath
+                        dataset = self.execution.current_filepath
                         if table_name == TableNames.PHENOTYPIC_RECORD:
                             new_record = PhenotypicRecord(id_value=NO_ID, feature_id=feature_id,
                                                           patient_id=patient_id, hospital_id=hospital_id,
                                                           value=fairified_value,
                                                           counter=self.counter,
                                                           hospital_name=self.execution.hospital_name,
-                                                          dataset_name=dataset_name)
+                                                          dataset=dataset)
                         elif table_name == TableNames.CLINICAL_RECORD:
                             if TableNames.CLINICAL_RECORD in ID_COLUMNS[self.execution.hospital_name] and ID_COLUMNS[self.execution.hospital_name][TableNames.CLINICAL_RECORD] in row:
                                 # this dataset contains a sample bar code (or equivalent)
@@ -285,7 +285,7 @@ class Transform(Task):
                                                         hospital_id=hospital_id, value=fairified_value,
                                                         base_id=base_id,
                                                         counter=self.counter, hospital_name=self.execution.hospital_name,
-                                                        dataset_name=dataset_name)
+                                                        dataset=dataset)
                             # log.info(f"new clinical record: {new_record}")
                         elif table_name == TableNames.DIAGNOSIS_RECORD:
                             new_record = DiagnosisRecord(id_value=NO_ID, feature_id=feature_id,
@@ -293,7 +293,7 @@ class Transform(Task):
                                                          value=fairified_value,
                                                          counter=self.counter,
                                                          hospital_name=self.execution.hospital_name,
-                                                         dataset_name=dataset_name)
+                                                         dataset=dataset)
                         elif table_name == TableNames.GENOMIC_RECORD:
                             new_record = GenomicRecord(id_value=NO_ID, feature_id=feature_id,
                                                        patient_id=patient_id, hospital_id=hospital_id,
@@ -301,7 +301,7 @@ class Transform(Task):
                                                        value=fairified_value,
                                                        counter=self.counter,
                                                        hospital_name=self.execution.hospital_name,
-                                                       dataset_name=dataset_name)
+                                                       dataset=dataset)
                         elif table_name == TableNames.IMAGING_RECORD:
                             new_record = ImagingRecord(id_value=NO_ID, feature_id=feature_id,
                                                        patient_id=patient_id, hospital_id=hospital_id,
@@ -309,14 +309,14 @@ class Transform(Task):
                                                        value=fairified_value,
                                                        counter=self.counter,
                                                        hospital_name=self.execution.hospital_name,
-                                                       dataset_name=dataset_name)
+                                                       dataset=dataset)
                         elif table_name == TableNames.MEDICINE_RECORD:
                             new_record = MedicineRecord(id_value=NO_ID, feature_id=feature_id,
                                                         patient_id=patient_id, hospital_id=hospital_id,
                                                         value=fairified_value,
                                                         counter=self.counter,
                                                         hospital_name=self.execution.hospital_name,
-                                                        dataset_name=dataset_name)
+                                                        dataset=dataset)
                         else:
                             raise NotImplementedError("Not implemented yet.")
                         self.records.append(new_record)

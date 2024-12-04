@@ -11,7 +11,7 @@ from etl.Load import Load
 from enums.HospitalNames import HospitalNames
 from enums.Ontologies import Ontologies
 from enums.TableNames import TableNames
-from constants.structure import TEST_DB_NAME
+from constants.structure import TEST_DB_NAME, DOCKER_FOLDER_DATA
 from query.Operators import Operators
 from statistics.QualityStatistics import QualityStatistics
 from statistics.TimeStatistics import TimeStatistics
@@ -36,6 +36,7 @@ def my_setup(profile: Profile, create_indexes: bool) -> Load:
                 quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False))
 
     # 2. create few "fake" files in the current working directory in order to test insertion and index creation
+    TestLoad.execution.current_filepath = os.path.join(DOCKER_FOLDER_DATA, "my_test_dataset.csv")
     phen_features = [
         {
             "identifier": f"{TableNames.PHENOTYPIC_FEATURE}:1",
@@ -63,6 +64,7 @@ def my_setup(profile: Profile, create_indexes: bool) -> Load:
             "has_subject": "test:1",
             "registered_by": f"{TableNames.HOSPITAL}:1",
             "instantiates": f"{TableNames.PHENOTYPIC_FEATURE}:1",
+            "dataset": f"{TestLoad.execution.current_filepath}",
             "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())
         }
     ]

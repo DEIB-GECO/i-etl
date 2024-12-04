@@ -9,7 +9,7 @@ from database.Counter import Counter
 class PhenotypicRecord(Record):
     def __init__(self, id_value: str, feature_id: Identifier, patient_id: Identifier,
                  hospital_id: Identifier, value: Any,
-                 counter: Counter, hospital_name: str, dataset_name: str):
+                 counter: Counter, hospital_name: str, dataset: str):
         """
         A new PhenotypicRecord instance.
         :param id_value: A string being the BETTER ID of the PhenotypicRecord instance.
@@ -21,4 +21,4 @@ class PhenotypicRecord(Record):
         # set up the resource ID
         super().__init__(id_value=id_value, feature_id=feature_id, patient_id=patient_id, hospital_id=hospital_id,
                          value=value, resource_type=TableNames.PHENOTYPIC_RECORD,
-                         counter=counter, hospital_name=hospital_name, dataset_name=dataset_name)
+                         counter=counter, hospital_name=hospital_name, dataset=dataset)
