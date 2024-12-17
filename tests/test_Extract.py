@@ -4,26 +4,25 @@ import unittest
 
 import pandas as pd
 
+from constants.structure import TEST_DB_NAME, DOCKER_FOLDER_TEST
 from database.Database import Database
 from database.Execution import Execution
 from enums.DataTypes import DataTypes
-from enums.ParameterKeys import ParameterKeys
-from enums.Profile import Profile
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
+from enums.ParameterKeys import ParameterKeys
+from enums.Profile import Profile
 from enums.TheTestFiles import TheTestFiles
 from etl.Extract import Extract
-from constants.structure import TEST_DB_NAME, DOCKER_FOLDER_TEST
 from statistics.QualityStatistics import QualityStatistics
 from statistics.TimeStatistics import TimeStatistics
 from utils.assertion_utils import is_not_nan
-from utils.setup_logger import log
 from utils.test_utils import set_env_variables_from_dict
 
 
 # personalized setup called at the beginning of each test
-def my_setup(metadata_path: str, data_paths: str, data_type: Profile, pids_path: str, hospital_name: str) -> Extract:
+def my_setup(metadata_path: str, data_paths: str, data_type: str, pids_path: str, hospital_name: str) -> Extract:
     args = {
         ParameterKeys.HOSPITAL_NAME: hospital_name,
         ParameterKeys.DB_NAME: TEST_DB_NAME,
@@ -40,7 +39,7 @@ def my_setup(metadata_path: str, data_paths: str, data_type: Profile, pids_path:
     TestExtract.execution.current_filepath = os.path.join(DOCKER_FOLDER_TEST, data_paths)
     metadata = pd.read_csv(os.path.join(DOCKER_FOLDER_TEST, metadata_path))
     database = Database(TestExtract.execution)
-    extract = Extract(metadata=metadata, profile=data_type, database=database, execution=TestExtract.execution, quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False))
+    extract = Extract(metadata=metadata, profile=str(data_type), database=database, execution=TestExtract.execution, quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False))
     extract.filter_metadata_file()
     extract.normalize_metadata_file()
     extract.load_tabular_data()

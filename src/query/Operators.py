@@ -45,7 +45,7 @@ class Operators(EnumAsClass):
         }
 
     @classmethod
-    def project(cls, field: str | list | dict, projected_value: str | dict | None) -> dict:
+    def project(cls, field: str | list | dict | None, projected_value: str | dict | None) -> dict:
         # this is the SQL SELECT operator
         # where each field that is wanted in the result has value 1 and unwanted fields have value 0
         if type(projected_value) is str:
@@ -103,6 +103,20 @@ class Operators(EnumAsClass):
         }
 
     @classmethod
+    def cartesian_product(cls, join_table_name: str, field_b: str, lookup_field_name: str, filter_dict: dict) -> dict:
+        if len(filter_dict) == 0:
+            pipeline = [{"$project": {field_b: 1, "_id": 0}}]
+        else:
+            pipeline = [filter_dict, {"$project": {field_b: 1, "_id": 0}}]
+        return {
+            "$lookup": {
+                "from": join_table_name,
+                "pipeline": pipeline,
+                "as": lookup_field_name
+            }
+        }
+
+    @classmethod
     def union(cls, second_table_name: str, second_pipeline: list):
         # this is the SQL UNION operator
         return {
@@ -122,6 +136,13 @@ class Operators(EnumAsClass):
         }
 
     @classmethod
+    def sort_many(cls, map_field_order: dict) -> dict:
+        # this is the SQL ORDER BY operator
+        return {
+            "$sort": map_field_order
+        }
+
+    @classmethod
     def limit(cls, nb: int) -> dict:
         # this is the SQL LIMIT operator
         return {
@@ -135,7 +156,7 @@ class Operators(EnumAsClass):
         Compute group by (on one or many fields, with one or many operators)
         :param group_key: The $group stage separates documents into groups according to a "group key". The output is one document for each unique group key.
         :param groups: a list of objects for each group by to add to the query (there is only one object is one group by)
-        The objects are of the form: {"name": group_by_name, "operator", the aggregation operator (min, max, avg, etc), "field": the field on which to compute the group by
+        The objects are of the form: {"name": group_by_name, "operator", the aggregation operator (min, max, avg, etc.), "field": the field on which to compute the group by
         If groups is empty, this means that we simply use the group_by operator to simulate a distinct
         :return:
         """
@@ -144,6 +165,7 @@ class Operators(EnumAsClass):
         }
 
         query["$group"]["_id"] = group_key
+
         for group_by in groups:
             query["$group"][group_by["name"]] = {group_by["operator"]: group_by["field"]}
         return query
@@ -180,3 +202,23 @@ class Operators(EnumAsClass):
     @classmethod
     def from_datetime_to_isodate(cls, current_datetime: datetime) -> dict:
         return {"$date": current_datetime.strftime(THE_DATETIME_FORMAT)}
+
+    @classmethod
+    def merge(cls, table_name: str, on_attribute: str, when_matched: str, when_not_matched: str) -> dict:
+        # append new tuples, e.g., from an aggregation pipeline, to an existing collection
+        # when matched: replace|keepExisting|merge|fail|pipeline
+        # when not matched: insert|discard|fail
+        return {
+            "$merge": {
+                "into": table_name,
+                "on": on_attribute,
+                "whenMatched": when_matched,
+                "whenNotMatched": when_not_matched
+            }
+        }
+
+    @classmethod
+    def write_to_table(cls, table_name: str) -> dict:
+        return {
+            "$out": table_name
+        }

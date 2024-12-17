@@ -6,12 +6,14 @@ import unittest
 import numpy as np
 import pytest
 
+from constants.defaults import DEFAULT_ONTOLOGY_RESOURCE_LABEL
+from constants.structure import TEST_DB_NAME, DOCKER_FOLDER_TEST
+from database.Counter import Counter
 from database.Database import Database
 from database.Execution import Execution
-from datatypes.OntologyResource import OntologyResource
 from datatypes.Identifier import Identifier
-from datatypes.PatientAnonymizedIdentifier import PatientAnonymizedIdentifier
-from datatypes.ResourceIdentifier import ResourceIdentifier
+from datatypes.OntologyResource import OntologyResource
+from entities.Hospital import Hospital
 from enums.DataTypes import DataTypes
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
@@ -22,16 +24,14 @@ from enums.TableNames import TableNames
 from enums.TheTestFiles import TheTestFiles
 from enums.Visibility import Visibility
 from etl.Transform import Transform
-from entities.Hospital import Hospital
-from constants.structure import TEST_DB_NAME, DOCKER_FOLDER_TEST
-from constants.defaults import DEFAULT_ONTOLOGY_RESOURCE_LABEL
 from statistics.QualityStatistics import QualityStatistics
 from statistics.TimeStatistics import TimeStatistics
 from utils.assertion_utils import is_not_nan
 from utils.cast_utils import cast_str_to_datetime
-from utils.file_utils import read_tabular_file_as_string, get_json_resource_file
+from utils.file_utils import get_json_resource_file
+from utils.file_utils import read_tabular_file_as_string
 from utils.setup_logger import log
-from utils.test_utils import set_env_variables_from_dict, compare_tuples, get_feature_by_text, \
+from utils.test_utils import compare_tuples, set_env_variables_from_dict, get_feature_by_text, \
     get_field_value_for_patient, get_records_for_patient
 
 
@@ -63,16 +63,18 @@ def my_setup(hospital_name: str, profile: str, extracted_metadata_path: str, ext
         mapping_column_to_categorical_value = json.load(f)
     with open(os.path.join(DOCKER_FOLDER_TEST, extracted_column_unit_path), "r") as f:
         column_to_unit = json.load(f)
-    with open(os.path.join(DOCKER_FOLDER_TEST, extracted_patient_ids_mapping_path), "r") as f:
-        patient_ids_mapping = json.load(f)
 
     transform = Transform(database=database, execution=TestTransform.execution, data=data, metadata=metadata,
                           profile=profile, dataset_number=get_dataset_number_from_profile(profile), file_counter=1,
                           mapping_categorical_value_to_onto_resource=mapping_categorical_values,
                           mapping_column_to_categorical_value=mapping_column_to_categorical_value,
-                          mapping_column_to_unit=column_to_unit,
-                          patient_ids_mapping=patient_ids_mapping,
+                          mapping_column_to_unit=column_to_unit, load_patients=True,
                           quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False))
+
+    # create a hospital instance, to be able to create records with references to the hospital
+    transform.database.insert_one_tuple(table_name=TableNames.HOSPITAL, one_tuple=Hospital(name=HospitalNames.TEST_H1, counter=Counter()).to_json())
+    counter = Counter()
+    counter.set_with_database(database=transform.database)
     return transform
 
 
@@ -133,7 +135,12 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
-        transform.set_resource_counter_id()
+        log.info(transform.database.check_table_exists(TableNames.RECORD))
+        log.info(transform.database.check_table_exists(TableNames.FEATURE))
+        log.info(transform.database.check_table_exists(TableNames.PATIENT))
+        log.info(transform.database.check_table_exists(TableNames.HOSPITAL))
+        counter = Counter()
+        counter.set_with_database(database=transform.database)
 
         assert transform.counter.resource_id == 0
 
@@ -141,47 +148,18 @@ class TestTransform(unittest.TestCase):
         # I manually insert some resources in the database
         database = Database(TestTransform.execution)
         my_tuples = [
-            {"identifier": ResourceIdentifier(id_value="1", resource_type=TableNames.PATIENT).to_json()},
-            {"identifier": ResourceIdentifier(id_value="2", resource_type=TableNames.PATIENT).to_json()},
-            {"identifier": ResourceIdentifier(id_value="7", resource_type=TableNames.PATIENT).to_json()},
-            {"identifier": ResourceIdentifier(id_value="3", resource_type=TableNames.PATIENT).to_json()},
-            {"identifier": ResourceIdentifier(id_value="124", resource_type=TableNames.PHENOTYPIC_FEATURE).to_json()},
-            {"identifier": ResourceIdentifier(id_value="9", resource_type=TableNames.PATIENT).to_json()},
-            {"identifier": Identifier(value="123LD456").to_json()},
-            {"identifier": ResourceIdentifier(id_value="123", resource_type=TableNames.PATIENT).to_json()},
-            {"identifier": ResourceIdentifier(id_value="6", resource_type=TableNames.PATIENT).to_json()}
+            {"identifier": Identifier(id_value=1).to_json()},
+            {"identifier": Identifier(id_value=2).to_json()},
+            {"identifier": Identifier(id_value=7).to_json()},
+            {"identifier": Identifier(id_value=3).to_json()},
+            {"identifier": Identifier(id_value=124).to_json()},
+            {"identifier": Identifier(id_value=9).to_json()},
+            {"identifier": Identifier(id_value=123).to_json()},
+            {"identifier": Identifier(id_value=6).to_json()}
         ]
         database.insert_many_tuples(table_name=TableNames.TEST, tuples=my_tuples)
-        transform.set_resource_counter_id()
-
-        assert transform.counter.resource_id == 125
-
-    def test_create_hospital(self):
-        transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.PHENOTYPIC,
-                             extracted_metadata_path=TheTestFiles.EXTR_METADATA_PHENOTYPIC_PATH,
-                             extracted_data_paths=TheTestFiles.EXTR_PHENOTYPIC_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_PHENOTYPIC_CATEGORICAL_PATH,
-                             extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
-                             extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
-                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
-        # this creates a new Hospital resource and insert it in a (JSON) temporary file
-        transform.create_hospital()
-
-        # check that the in-memory hospital is correct
-        assert len(transform.hospitals) == 1
-        assert type(transform.hospitals[0]) is Hospital
-        current_json_hospital = transform.hospitals[0].to_json()
-        assert len(current_json_hospital.keys()) == 1 + 2  # name + inherited (identifier, timestamp)
-        assert current_json_hospital["identifier"] == "Hospital:1"
-        assert current_json_hospital["name"] == HospitalNames.TEST_H1
-        assert current_json_hospital["timestamp"] is not None
-
-        # b. check that the in-file hospital is correct
-        hospital_file = get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, table_name=TableNames.HOSPITAL, file_counter=1, dataset_number=get_dataset_number_from_profile(Profile.PHENOTYPIC))
-        with open(hospital_file) as f:
-            written_hospitals = json.load(f)
-        assert len(written_hospitals) == 1
-        compare_tuples(original_tuple=current_json_hospital, inserted_tuple=written_hospitals[0])
+        counter.set_with_database(database=transform.database)
+        assert counter.resource_id == 125
 
     def test_phenotypic_data(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.PHENOTYPIC,
@@ -191,14 +169,13 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
-        # this loads references (Hospital+PhenFeature resources), creates LabRecord resources (based on the data file) and insert them in a (JSON) temporary file
-        transform.create_hospital()
         transform.create_patients()
-        transform.create_phenotypic_features()
-        # the three previous steps are required to create PhenRecord instances
-        transform.create_phenotypic_records()
+        transform.counter.set_with_database(database=transform.database)
+        transform.create_features()
+        transform.counter.set_with_database(database=transform.database)
+        transform.create_records()
 
-        ## CHECK FEATURES
+        # CHECK FEATURES
         assert len(transform.features) == 4 - 1  # id does not count as a PhenFeature
         # assert the fourth and first PhenFeature instances:
         # lab_feature_a has one associated code
@@ -208,7 +185,7 @@ class TestTransform(unittest.TestCase):
         # PhenFeature about sex
         lab_feature_a = get_feature_by_text(transform.features, "sex")
         assert len(
-            lab_feature_a) == 7  # inherited fields (identifier, resource_type, timestamp), proper fields (name, ontology_resource, permitted_datatype, unit, visibility)
+            lab_feature_a) == 8  # inherited fields (identifier, entity_type, timestamp), proper fields (name, ontology_resource, permitted_datatype, unit, visibility)
         assert "identifier" in lab_feature_a
         assert lab_feature_a["name"] == "sex"
         assert lab_feature_a["ontology_resource"] == {
@@ -219,15 +196,17 @@ class TestTransform(unittest.TestCase):
         }
         assert lab_feature_a["datatype"] == DataTypes.CATEGORY
         assert "unit" not in lab_feature_a
+        assert lab_feature_a["entity_type"] == f"{Profile.PHENOTYPIC}{TableNames.FEATURE}"
 
         # PhenFeature about date_of_birth
         lab_feature_b = get_feature_by_text(transform.features, "date_of_birth")
-        assert len(lab_feature_b) == 5  # no ontology resource and no unit
+        assert len(lab_feature_b) == 6  # no ontology resource and no unit
         assert "identifier" in lab_feature_b
         assert lab_feature_b["name"] == "date_of_birth"
         assert "ontology_resource" not in lab_feature_b
         assert lab_feature_b["datatype"] == DataTypes.DATETIME
         assert "unit" not in lab_feature_b
+        assert lab_feature_b["entity_type"] == f"{Profile.PHENOTYPIC}{TableNames.FEATURE}"
 
         # check that there are no duplicates in PhenFeature instances
         # for this, we get the set of their names (in the field "text")
@@ -238,14 +217,12 @@ class TestTransform(unittest.TestCase):
         lab_features_names_set = set(lab_features_names_list)
         assert len(lab_features_names_list) == len(lab_features_names_set)
 
-        ## CHECK RECORDS
-
+        # CHECK RECORDS
         assert len(transform.records) == 17  # in total, 17 PhenRecord instances are created, between 2 and 5 per Patient
-
         # assert that PhenRecord instances have been correctly created for a given data row
         # we take the seventh row
         patient_id = transform.patient_ids_mapping["999999994"]
-        assert patient_id == "h1:7"  # patient anonymized IDs start at h1:2, because 1 hospital has been created beforehand.
+        assert patient_id == "h1:6"  # patient anonymized IDs start at h1:1, because no hospital has been created beforehand.
         phen_records_patient = get_records_for_patient(records=transform.records, patient_id=patient_id)
         female = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="248152002", label=None, quality_stats=None)
         assert phen_records_patient[0]["value"] == female.to_json()  # the value as been replaced by its ontology code (sex is a categorical value)
@@ -257,7 +234,7 @@ class TestTransform(unittest.TestCase):
         # we also check that string are normalized (no caps, etc.)
         recs = transform.records
         feats = transform.features
-        assert transform.patient_ids_mapping["999999996"] == "h1:5"  # 1 Hospital before patients
+        assert transform.patient_ids_mapping["999999996"] == "h1:4"  # 0 Hospital before patients
         assert get_field_value_for_patient(records=recs, features=feats, patient_id=transform.patient_ids_mapping["999999999"], column_name="ethnicity") == "white"
         assert get_field_value_for_patient(records=recs, features=feats, patient_id=transform.patient_ids_mapping["999999998"], column_name="ethnicity") == "white"
         assert get_field_value_for_patient(records=recs, features=feats, patient_id=transform.patient_ids_mapping["999999997"], column_name="ethnicity") == "white"
@@ -277,14 +254,14 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_FILLED_PIDS_PATH)
-        # this loads references (Hospital+ClinFeature resources), creates ClinRecord resources (based on the data file) and insert them in a (JSON) temporary file
-        transform.create_hospital()
+        transform.load_patient_id_mapping()
         transform.create_patients()
-        transform.create_clinical_features()
-        # the three above steps are required to create ClinRecord instances
-        transform.create_clinical_records()
+        transform.counter.set_with_database(database=transform.database)
+        transform.create_features()
+        transform.counter.set_with_database(database=transform.database)
+        transform.create_records()
 
-        ## CHECK FEATURES
+        # CHECK FEATURES
         assert len(transform.features) == 6 - 2  # sid and id do not count as SamFeatures
         # assert the third and fourth SamFeature instances:
         # lab_feature_a has one associated code
@@ -294,7 +271,7 @@ class TestTransform(unittest.TestCase):
         # SamFeature about molecule_a
         lab_feature_a = get_feature_by_text(transform.features, "molecule_a")
         assert len(
-            lab_feature_a) == 7  # inherited fields (identifier, resource_type, timestamp), proper fields (original_name, ontology_resource, permitted_datatype, unit, visibility)
+            lab_feature_a) == 8  # inherited fields (identifier, entity_type, timestamp), proper fields (original_name, ontology_resource, permitted_datatype, unit, visibility)
         assert "identifier" in lab_feature_a
         assert lab_feature_a["name"] == "molecule_a"
         assert lab_feature_a["ontology_resource"] == {
@@ -306,16 +283,18 @@ class TestTransform(unittest.TestCase):
         assert lab_feature_a["datatype"] == DataTypes.FLOAT
         assert lab_feature_a["unit"] == "mg/L"
         assert lab_feature_a["visibility"] == Visibility.PUBLIC
+        assert lab_feature_a["entity_type"] == f"{Profile.CLINICAL}{TableNames.FEATURE}"
         # timestamp is not tested
 
         # LabFeature about molecule_b
         lab_feature_b = get_feature_by_text(transform.features, "molecule_b")
-        assert len(lab_feature_b) == 6
+        assert len(lab_feature_b) == 7
         assert "identifier" in lab_feature_b
         assert lab_feature_b["name"] == "molecule_b"
         assert "ontology_resource" not in lab_feature_b
         assert lab_feature_b["datatype"] == DataTypes.INTEGER
         assert lab_feature_b["unit"] == "g"  # unit is gram
+        assert lab_feature_b["entity_type"] == f"{Profile.CLINICAL}{TableNames.FEATURE}"
 
         # check that there are no duplicates in SamFeature instances
         # for this, we get the set of their names (in the field "text")
@@ -326,7 +305,7 @@ class TestTransform(unittest.TestCase):
         lab_features_names_set = set(lab_features_names_list)
         assert len(lab_features_names_list) == len(lab_features_names_set)
 
-        ## CHECK RECORDS
+        # CHECK RECORDS
         assert len(transform.records) == 16  # in total, 16 ClinicalRecord instances are created, between 2 and 5 per Patient
 
         # assert that ClinicalRecord instances have been correctly created for a given data row
@@ -334,11 +313,23 @@ class TestTransform(unittest.TestCase):
         patient_id = transform.patient_ids_mapping["999999994"]
         assert patient_id == "h1:994"
         records = get_records_for_patient(records=transform.records, patient_id=patient_id)
+        log.info(records)
+        hospitals = transform.database.find_operation(table_name=TableNames.HOSPITAL, filter_dict={}, projection={})
+        log.info("existing hospitals")
+        for h in hospitals:
+            log.info(h)
+        log.info("---")
+        patients = transform.database.find_operation(table_name=TableNames.PATIENT, filter_dict={}, projection={})
+        log.info("existing patients")
+        for p in patients:
+            log.info(p)
+        log.info("---")
         assert len(records) == 2
         assert records[0]["value"] == -0.003  # the value as been converted to a float
         assert records[0]["has_subject"] == str(patient_id)  # this has not been converted to an integer
-        assert records[0]["registered_by"] == "Hospital:1"
-        assert records[0]["instantiates"] == "ClinicalFeature:2"  # LabRecord 2 is about molecule_a
+        assert records[0]["registered_by"] == 1  # Hospital:1
+        assert records[0]["instantiates"] == 2  # LabRecord 2 is about molecule_a
+        assert records[0]["entity_type"] == f"{Profile.CLINICAL}{TableNames.RECORD}"  #
         pattern_date = re.compile("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2,3}Z")
         assert pattern_date.match(records[0]["timestamp"]["$date"])  # check the date is in datetime (CEST) form
 
@@ -374,10 +365,10 @@ class TestTransform(unittest.TestCase):
         # we cannot simply order by identifier value because they are strings, not int
         # thus will need a bit more of processing to sort by the integer represented within the string
         # sorted_patients = sorted(transform.patients, key=lambda d: d.to_json()["identifier"]["value"])
-        sorted_patients = sorted(transform.patients, key=lambda p: p.get_identifier_as_int())
+        sorted_patients = sorted(transform.patients)
         for i in range(0, len(sorted_patients)):
             # patients have their own anonymized ids
-            assert sorted_patients[i].to_json()["identifier"] == PatientAnonymizedIdentifier(id_value=str(i+1), hospital_name=HospitalNames.TEST_H1).value
+            assert sorted_patients[i].to_json()["identifier"] == Identifier(id_value=i + 1).value
 
         # get back to the original file
         with open(self.execution.anonymized_patient_ids_filepath, "w") as f:
@@ -392,16 +383,17 @@ class TestTransform(unittest.TestCase):
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_FILLED_PIDS_PATH)
         # this creates Patient resources (based on the data file) and insert them in a (JSON) temporary file
+        transform.load_patient_id_mapping()
         transform.create_patients()
 
         assert len(transform.patients) == 10
         # we cannot simply order by identifier value because they are strings, not int
         # thus will need a bit more of processing to sort by the integer represented within the string
         # sorted_patients = sorted(transform.patients, key=lambda d: d.to_json()["identifier"]["value"])
-        sorted_patients = sorted(transform.patients, key=lambda p: p.get_identifier_as_int())
+        sorted_patients = sorted(transform.patients)
         for i in range(0, len(sorted_patients)):
             # patients have their own anonymized ids
-            assert sorted_patients[i].to_json()["identifier"] == PatientAnonymizedIdentifier(id_value=str(990+i), hospital_name=HospitalNames.TEST_H1).value
+            assert sorted_patients[i].to_json()["identifier"] == Identifier(id_value=990 + i).value
 
     def test_create_ontology_resource_from_row(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,

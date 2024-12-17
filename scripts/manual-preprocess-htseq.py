@@ -1,8 +1,4 @@
 import pandas as pd
-from pandas import DataFrame, Series
-from utils.api_utils import send_query_to_api, parse_xml_response, parse_json_response, parse_html_response
-from enums.AccessTypes import AccessTypes
-import gget
 
 
 def get_sample_number(x):

@@ -1,4 +1,5 @@
 from datatypes.OntologyResource import OntologyResource
+from enums.Profile import Profile
 from enums.TableNames import TableNames
 from enums.Visibility import Visibility
 from entities.Feature import Feature
@@ -6,8 +7,7 @@ from database.Counter import Counter
 
 
 class MedicineFeature(Feature):
-    def __init__(self, id_value: str, name: str, ontology_resource: OntologyResource, permitted_datatype: str, unit: str, counter: Counter,
-                 hospital_name: str, categories: list[OntologyResource], visibility: Visibility):
-        super().__init__(id_value=id_value, name=name, ontology_resource=ontology_resource, column_type=permitted_datatype, unit=unit,
-                         resource_type=TableNames.MEDICINE_FEATURE, counter=counter, hospital_name=hospital_name,
-                         categories=categories, visibility=visibility)
+    def __init__(self, name: str, ontology_resource: OntologyResource, permitted_datatype: str, unit: str, counter: Counter,
+                 categories: list[OntologyResource], visibility: Visibility, dataset_gid: str):
+        super().__init__(name=name, ontology_resource=ontology_resource, column_type=permitted_datatype, unit=unit,
+                         profile=Profile.MEDICINE, counter=counter, categories=categories, visibility=visibility, dataset_gid=dataset_gid)

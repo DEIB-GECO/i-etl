@@ -1,46 +1,48 @@
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
-from enums.TableNames import TableNames
 
-NO_ID = "-1"
+NO_ID = -1
 
 DELIMITER_RESOURCE_ID = ":"
 
+PATIENT_ID = "patient_id"
+SAMPLE_ID = "base_id"
+
 ID_COLUMNS = {
     HospitalNames.IT_BUZZI_UC1: {
-        TableNames.PATIENT: MetadataColumns.normalize_name("id"),
-        TableNames.CLINICAL_RECORD: MetadataColumns.normalize_name("SampleBarcode")
+        PATIENT_ID: MetadataColumns.normalize_name("id"),
+        SAMPLE_ID: MetadataColumns.normalize_name("SampleBarcode")
     },
     HospitalNames.RS_IMGGE: {
-        TableNames.PATIENT: MetadataColumns.normalize_name("record_id"),
-        TableNames.CLINICAL_RECORD: ""
+        PATIENT_ID: MetadataColumns.normalize_name("record_id"),
+        SAMPLE_ID: ""
     },
     HospitalNames.ES_HSJD: {
-        TableNames.PATIENT: MetadataColumns.normalize_name("Patient ID"),
-        TableNames.CLINICAL_RECORD: ""
+        PATIENT_ID: MetadataColumns.normalize_name("Patient ID"),
+        SAMPLE_ID: ""
     },
     HospitalNames.TEST_H1: {
-        TableNames.PATIENT: MetadataColumns.normalize_name("id"),
-        TableNames.CLINICAL_RECORD: MetadataColumns.normalize_name("sid"),
+        PATIENT_ID: MetadataColumns.normalize_name("id"),
+        SAMPLE_ID: MetadataColumns.normalize_name("sid"),
     },
     HospitalNames.TEST_H2: {
-        TableNames.PATIENT: MetadataColumns.normalize_name("id"),
-        TableNames.CLINICAL_RECORD: ""
+        PATIENT_ID: MetadataColumns.normalize_name("id"),
+        SAMPLE_ID: ""
     },
     HospitalNames.TEST_H3: {
-        TableNames.PATIENT: MetadataColumns.normalize_name("id"),
-        TableNames.CLINICAL_RECORD: ""
+        PATIENT_ID: MetadataColumns.normalize_name("id"),
+        SAMPLE_ID: ""
     },
     HospitalNames.EXPES_EDA: {
-        TableNames.PATIENT: MetadataColumns.normalize_name("id"),
-        TableNames.CLINICAL_RECORD: ""
+        PATIENT_ID: MetadataColumns.normalize_name("id"),
+        SAMPLE_ID: ""
     },
     HospitalNames.EXPES_COVID: {
-        TableNames.PATIENT: MetadataColumns.normalize_name("id"),
-        TableNames.CLINICAL_RECORD: MetadataColumns.normalize_name("sid")
+        PATIENT_ID: MetadataColumns.normalize_name("id"),
+        SAMPLE_ID: MetadataColumns.normalize_name("sid")
     },
     HospitalNames.EXPES_KIDNEY: {
-        TableNames.PATIENT: MetadataColumns.normalize_name("individual_id"),
-        TableNames.CLINICAL_RECORD: MetadataColumns.normalize_name("sample_id")
+        PATIENT_ID: MetadataColumns.normalize_name("individual_id"),
+        SAMPLE_ID: MetadataColumns.normalize_name("sample_id")
     }
 }

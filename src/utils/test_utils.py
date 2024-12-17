@@ -66,7 +66,6 @@ def wrong_number_of_docs(number: int):
 
 def get_feature_by_text(features: list, feature_text: str) -> dict:
     """
-    :param features: list of LabFeature instances
     """
     json_features = [feature.to_json() for feature in features]
     for json_feature in json_features:

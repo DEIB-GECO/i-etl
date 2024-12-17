@@ -20,23 +20,6 @@ class Profile(EnumAsClass):
     METADATA = "metadata"
 
     @classmethod
-    def get_record_table_name_from_profile(cls, profile: str) -> str:
-        if profile == Profile.PHENOTYPIC:
-            return TableNames.PHENOTYPIC_RECORD
-        elif profile == Profile.CLINICAL:
-            return TableNames.CLINICAL_RECORD
-        elif profile == Profile.DIAGNOSIS:
-            return TableNames.DIAGNOSIS_RECORD
-        elif profile == Profile.GENOMIC:
-            return TableNames.GENOMIC_RECORD
-        elif profile == Profile.MEDICINE:
-            return TableNames.MEDICINE_RECORD
-        elif profile == Profile.IMAGING:
-            return TableNames.IMAGING_RECORD
-        else:
-            raise KeyError(f"Unrecognised profile {profile}.")
-
-    @classmethod
     def normalize(cls, file_type: str) -> str:
         return file_type.lower().strip()
 

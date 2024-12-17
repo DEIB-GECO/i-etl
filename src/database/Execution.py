@@ -12,7 +12,6 @@ from constants.structure import WORKING_DIR, DB_CONNECTION, DOCKER_FOLDER_METADA
     DOCKER_FOLDER_TEST
 from enums.HospitalNames import HospitalNames
 from enums.ParameterKeys import ParameterKeys
-from enums.UpsertPolicy import UpsertPolicy
 from utils import setup_logger
 from utils.cast_utils import cast_str_to_int
 from utils.setup_logger import log
@@ -30,6 +29,7 @@ class Execution:
         # parameters related to the project structure and the input/output files
         self.metadata_filepath = None  # user input
         self.current_filepath = None  # set in the loop on files in ETL
+        self.current_dataset_identifier = None  # set in the loop on file sin ETL
         self.current_file_number = 1  # set in the ETL
         self.diagnosis_regexes_filepath = None  # user input
         self.anonymized_patient_ids_filepath = None  # user input
@@ -39,7 +39,6 @@ class Execution:
         # parameters related to the database
         self.db_connection = None  # user input
         self.db_drop = False  # user input
-        self.db_upsert_policy = UpsertPolicy.DO_NOTHING  # user input
         self.columns_to_remove = []  # user input
 
         # parameters related to the UC hospital
@@ -67,7 +66,6 @@ class Execution:
         log.debug(f"creating new DB with name {self.db_name}")
         self.hospital_name = self.check_parameter(key=ParameterKeys.HOSPITAL_NAME, accepted_values=HospitalNames.values(), default_value=self.hospital_name)
         self.use_en_locale = self.check_parameter(key=ParameterKeys.USE_EN_LOCALE, accepted_values=["True", "False", True, False], default_value=self.use_en_locale)
-        self.db_upsert_policy = self.check_parameter(key=ParameterKeys.DB_UPSERT_POLICY, accepted_values=UpsertPolicy.values(), default_value=self.db_upsert_policy)
         self.db_drop = self.check_parameter(key=ParameterKeys.DB_DROP, accepted_values=["True", "False", True, False], default_value=self.db_drop)
         self.columns_to_remove = self.check_parameter(key=ParameterKeys.COLUMNS_TO_REMOVE_KEY, accepted_values=None, default_value=self.columns_to_remove)
         self.nb_rows = self.check_parameter(key=ParameterKeys.DATA_GEN_NB_ROWS, accepted_values=None, default_value=self.nb_rows)

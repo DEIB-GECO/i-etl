@@ -1,11 +1,9 @@
 import datetime
 import json
 import os
-from urllib.request import Request, urlopen
+import pickle
 
 import bson
-import orjson
-import pickle
 import pandas as pd
 import ujson
 from bson.json_util import loads
@@ -209,7 +207,7 @@ def main_efficiency_json():
                  base_id=None,
                  counter=counter,
                  hospital_name="test",
-                 dataset_name="abc.csv") for i in range(0, 1000)]
+                 dataset="abc.csv") for i in range(0, 1000)]
 
     start_time = datetime.datetime.now()
     _ = pickle.dumps(objects, protocol=pickle.HIGHEST_PROTOCOL)

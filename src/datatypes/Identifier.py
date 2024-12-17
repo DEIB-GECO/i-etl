@@ -2,11 +2,8 @@ import jsonpickle
 
 
 class Identifier:
-    def __init__(self, value: str):
-        self.value = value
-
-    def get_int_id(self):
-        raise NotImplemented("This method should be overridden in child classes.")
+    def __init__(self, id_value: int):
+        self.value = id_value
 
     def __getstate__(self):
         # we override this method to only return the actual Identifier value, and not a dict { "value": X }

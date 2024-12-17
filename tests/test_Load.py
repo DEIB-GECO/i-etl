@@ -4,6 +4,7 @@ import unittest
 from datetime import datetime
 
 from database.Database import Database
+from database.Dataset import Dataset
 from database.Execution import Execution
 from enums.ParameterKeys import ParameterKeys
 from enums.Profile import Profile
@@ -20,8 +21,8 @@ from utils.test_utils import set_env_variables_from_dict
 
 
 # personalized setup called at the beginning of each test
-def my_setup(profile: Profile, create_indexes: bool) -> Load:
-    # 1. as usual, create a Load object (to setup the current working directory)
+def my_setup(profile: str, create_indexes: bool) -> Load:
+    # 1. as usual, create a Load object (to set up the current working directory)
     args = {
         ParameterKeys.DB_NAME: TEST_DB_NAME,
         ParameterKeys.DB_DROP: "True"
@@ -29,43 +30,46 @@ def my_setup(profile: Profile, create_indexes: bool) -> Load:
     }
     set_env_variables_from_dict(env_vars=args)
     TestLoad.execution.internals_set_up()
-    TestLoad.execution.file_set_up(setup_files=False)  # no need to setup the files, we get data and metadata as input
+    TestLoad.execution.file_set_up(setup_files=False)  # no need to set up the files, we get data and metadata as input
     database = Database(TestLoad.execution)
     load = Load(database=database, execution=TestLoad.execution, create_indexes=create_indexes, dataset_number=1,
                 profile=profile,
                 quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False))
 
     # 2. create few "fake" files in the current working directory in order to test insertion and index creation
-    TestLoad.execution.current_filepath = os.path.join(DOCKER_FOLDER_DATA, "my_test_dataset.csv")
+    TestLoad.execution.current_dataset_identifier = Dataset.compute_global_identifier()
     phen_features = [
         {
-            "identifier": f"{TableNames.PHENOTYPIC_FEATURE}:1",
+            "identifier": f"{profile}{TableNames.FEATURE}:1",
             "ontology_resource": {
                 "system": Ontologies.LOINC["url"],
                 "code": "123-456",
                 "label": "age (Age in weeks)"
             },
-            "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())
+            "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now()),
+            "entity_type": f"{profile}{TableNames.FEATURE}"
         }, {
-            "identifier": f"{TableNames.PHENOTYPIC_FEATURE}:2",
+            "identifier": f"{profile}{TableNames.FEATURE}:2",
             "ontology_resource": {
                 "system": Ontologies.LOINC["url"],
                 "code": "123-457",
                 "label": "twin (Whether the baby has a twin)"
             },
-            "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())
+            "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now()),
+            "entity_type": f"{profile}{TableNames.FEATURE}"
         }
     ]
 
     phen_records = [
         {
-            "identifier": f"{TableNames.PHENOTYPIC_RECORD}:1",
+            "identifier": f"{TableNames.RECORD}:1",
             "value": 12,
             "has_subject": "test:1",
             "registered_by": f"{TableNames.HOSPITAL}:1",
-            "instantiates": f"{TableNames.PHENOTYPIC_FEATURE}:1",
-            "dataset": f"{TestLoad.execution.current_filepath}",
-            "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now())
+            "instantiates": f"{profile}{TableNames.FEATURE}:1",
+            "dataset": f"{TestLoad.execution.current_dataset_identifier}",
+            "timestamp": Operators.from_datetime_to_isodate(current_datetime=datetime.now()),
+            "entity_type": f"{profile}{TableNames.RECORD}"
         }
     ]
 
@@ -78,17 +82,17 @@ def my_setup(profile: Profile, create_indexes: bool) -> Load:
     hospital = {"identifier": f"{TableNames.HOSPITAL}:1", "name": HospitalNames.TEST_H1}
 
     # 3. write them in temporary JSON files
-    path_phen_features = os.path.join(TestLoad.execution.working_dir_current, f"1{TableNames.PHENOTYPIC_FEATURE}1.json")
-    path_phen_records = os.path.join(TestLoad.execution.working_dir_current, f"1{TableNames.PHENOTYPIC_RECORD}1.json")
-    path_patients = os.path.join(TestLoad.execution.working_dir_current, f"1{TableNames.PATIENT}1.json")
-    path_hospital = os.path.join(TestLoad.execution.working_dir_current, f"1{TableNames.HOSPITAL}1.json")
+    path_phen_features = os.path.join(TestLoad.execution.working_dir_current, f"1{Profile.PHENOTYPIC}{TableNames.FEATURE}1.json")
+    path_phen_records = os.path.join(TestLoad.execution.working_dir_current, f"1{Profile.PHENOTYPIC}{TableNames.RECORD}1.json")
+    path_patients = os.path.join(TestLoad.execution.working_dir_current, f"1{TableNames.PATIENT}{TableNames.PATIENT}1.json")
+    path_hospital = os.path.join(TestLoad.execution.working_dir_current, f"1{TableNames.HOSPITAL}{TableNames.HOSPITAL}1.json")
     # insert the data that is inserted during the Transform step
     with open(path_phen_features, 'w') as f:
         json.dump(phen_features, f)
-    load.database.db[TableNames.PHENOTYPIC_FEATURE].insert_many(phen_features)
+    load.database.insert_many_tuples(table_name=TableNames.FEATURE, tuples=phen_features)
     with open(path_hospital, 'w') as f:
         json.dump(hospital, f)
-    load.database.db[TableNames.HOSPITAL].insert_one(hospital)
+    load.database.insert_one_tuple(table_name=TableNames.HOSPITAL, one_tuple=hospital)
     # for other files, it will be inserted with the function load_remaining_data()
     with open(path_phen_records, 'w') as f:
         json.dump(phen_records, f)
@@ -105,25 +109,24 @@ class TestLoad(unittest.TestCase):
         pass
 
     def test_load_remaining_data(self):
-        load = my_setup(profile=Profile.PHENOTYPIC, create_indexes=True)
-        load.load_remaining_data()
+        load = my_setup(profile=Profile.PHENOTYPIC, create_indexes=False)
+        load.load_records()
 
-        assert load.database.db[TableNames.PHENOTYPIC_FEATURE].count_documents(filter={}) == 2
-        assert load.database.db[TableNames.PHENOTYPIC_RECORD].count_documents(filter={}) == 1
+        assert load.database.db[TableNames.FEATURE].count_documents(filter={}) == 2
+        assert load.database.db[TableNames.RECORD].count_documents(filter={}) == 1
         assert load.database.db[TableNames.HOSPITAL].count_documents(filter={}) == 1
-        assert load.database.db[TableNames.CLINICAL_RECORD].count_documents(filter={}) == 0
-        assert load.database.db[TableNames.CLINICAL_FEATURE].count_documents(filter={}) == 0
-        assert load.database.db[TableNames.GENOMIC_RECORD].count_documents(filter={}) == 0
-        assert load.database.db[TableNames.GENOMIC_FEATURE].count_documents(filter={}) == 0
 
     def test_create_db_indexes(self):
         load = my_setup(profile=Profile.PHENOTYPIC, create_indexes=True)
+        load.load_records()  # load also records (features, patients and hospital have been loaded in my_setup)
         load.create_db_indexes()
 
         # 1. for each table , we check that there are three indexes:
         #    - one on _id (mandatory, made by MongoDB)
         #    - one on identifier.value
         #    - one on timestamp
+        log.info("create indexes")
+        log.info(TableNames.values(db=load.database))
         for table_name in TableNames.values(db=load.database):
             index_cursor = load.database.db[table_name].list_indexes()
             log.debug(f"table {table_name}, index_cursor: {index_cursor}")
@@ -133,38 +136,62 @@ class TestLoad(unittest.TestCase):
             # SON([('v', 2), ('key', SON([('identifier.value', 1)])), ('name', 'identifier.value_1'), ('unique', True)])
             # SON([('v', 2), ('key', SON([('timestamp', 1)])), ('name', 'timestamp_1')])
             for index in index_cursor:
+                log.info(index)
                 index_key = index["key"]
-                if "_id" in index_key or "identifier" in index_key or "timestamp" in index_key:
-                    # to check whether we have exactly the three indexes we expect
-                    count_indexes = count_indexes + 1
-                    # assert that only identifier.value is unique, timestamp is not (there may be several instances created at the same time)
+                if "_id" in index_key or "identifier" in index_key or "timestamp" in index_key or "entity_type" in index_key:
+                    # to check whether we have exactly the four indexes we expect
+                    count_indexes += 1
+                    # assert that only identifier is unique,
+                    # timestamp is not (there may be several instances created at the same time)
+                    # resource type is not either (we have several instances of the same type)
                     if "identifier" in index_key:
                         assert index["unique"] is True
                     else:
                         assert "unique" not in index
                 else:
-                    if table_name in TableNames.features(db=load.database):
+                    if table_name == TableNames.FEATURE:
                         # there is also a double index (ontology_resource.system and ontology_resource.code)
                         if "ontology_resource.system" in index_key and "ontology_resource.code" in index_key:
-                            count_indexes = count_indexes + 1
+                            count_indexes += 1
                             assert "unique" not in index
                         else:
                             assert False, f"{table_name} expects a compound index on two fields."
-                    elif table_name in TableNames.records(db=load.database):
-                        # there are also two more indexes (instantiate.reference, subject.reference)
-                        if "instantiates" in index_key:
-                            count_indexes = count_indexes + 1
-                            assert "unique" not in index
-                        elif "has_subject" in index_key:
-                            count_indexes = count_indexes + 1
-                            assert "unique" not in index
+                    elif table_name == TableNames.RECORD:
+                        if "instantiates" in index_key and "registered_by" in index_key and  "has_subject" in index_key and "dataset" in index_key:
+                            # this is the index created for upserts
+                            count_indexes += 1
+                            assert index["unique"] is True
                         else:
-                            assert False, f"{table_name} has an unknown index named {index_key}."
+                            if "instantiates" in index_key:
+                                count_indexes += 1
+                                assert "unique" not in index
+                            elif "has_subject" in index_key:
+                                count_indexes += 1
+                                assert "unique" not in index
+                            elif "dataset" in index_key:
+                                count_indexes += 1
+                                assert "unique" not in index
+                            elif "registered_by" in index_key:
+                                count_indexes += 1
+                                assert "unique" not in index
+                            else:
+                                assert False, f"{table_name} has an unknown index named {index_key}."
+                    elif table_name == TableNames.DATASET:
+                        if "_id" in index_key or "global_identifier" in index_key:
+                            count_indexes += 1
+                            if "global_identifier" in index_key:
+                                assert index["unique"] is True
+                            else:
+                                assert "unique" not in index
                     else:
                         assert False, f"{table_name} should have no index."
-            if table_name in TableNames.features(db=load.database):
-                assert count_indexes == 4
-            elif table_name in TableNames.records(db=load.database):
-                assert count_indexes == 5
+            if table_name == TableNames.FEATURE:
+                assert count_indexes == 5  # (_id, identifier, timestamp, entity_type, <onto.name, onto.code>)
+            elif table_name == TableNames.RECORD:
+                assert count_indexes == 8  # (_id, identifier, timestamp, entity_type, instantiates, has_subject, dataset, registered_by, <instantiates, has_subject, dataset, registered_by>)
+            elif table_name == TableNames.DATASET:
+                assert count_indexes == 2  # (_id, global_identifier)
+            elif table_name == TableNames.HOSPITAL:
+                assert count_indexes == 4  # (_id, identifier, timestamp, entity_type)
             else:
                 assert count_indexes == 3

@@ -1,16 +1,21 @@
-import json
 import os
-import ujson
 
 import pandas as pd
-from pandas import DataFrame
+import ujson
 
 from constants.structure import GROUND_DATA_FOLDER_FOR_GENERATION, GROUND_METADATA_FOLDER_FOR_GENERATION
+from enums.TableNames import TableNames
 from utils.setup_logger import log
 
 
-def write_in_file(resource_list: list, current_working_dir: str, table_name: str, dataset_number: int, file_counter: int) -> None:
-    filename = get_json_resource_file(current_working_dir=current_working_dir, table_name=table_name, dataset_number=dataset_number, file_counter=file_counter)
+def write_in_file(resource_list: list, current_working_dir: str, profile: str, is_feature: bool, dataset_number: int, file_counter: int) -> None:
+    if profile in [TableNames.PATIENT, TableNames.HOSPITAL, TableNames.TEST]:
+        table_name = profile
+    elif is_feature:
+        table_name = TableNames.FEATURE
+    else:
+        table_name = TableNames.RECORD
+    filename = get_json_resource_file(current_working_dir=current_working_dir, profile=profile, table_name=table_name, dataset_number=dataset_number, file_counter=file_counter)
     if len(resource_list) > 0:
         with open(filename, "w") as data_file:
             try:
@@ -22,13 +27,13 @@ def write_in_file(resource_list: list, current_working_dir: str, table_name: str
         log.info(f"No data when writing file {filename}.")
 
 
-def get_json_resource_file(current_working_dir: str, dataset_number: int, table_name: str, file_counter: int) -> str:
-    return os.path.join(current_working_dir, f"{str(dataset_number)}{table_name}{str(file_counter)}.json")
+def get_json_resource_file(current_working_dir: str, dataset_number: int, profile: str, table_name: str, file_counter: int) -> str:
+    return os.path.join(current_working_dir, f"{str(dataset_number)}{profile}{table_name}{str(file_counter)}.json")
 
 
 def read_tabular_file_as_string(filepath: str) -> pd.DataFrame:
     # na_values is the list containing values to be recognized as NA.
-    # By default: " ", "#N/A", "#N/A N/A", "#NA", "-1.#IND", "-1.#QNAN", "-NaN", "-nan", "1.#IND", "1.#QNAN", "<NA>", "N/A", "NA", "NULL", "NaN", "None", "n/a", "nan", "null".
+    # By default, there are " ", "#N/A", "#N/A N/A", "#NA", "-1.#IND", "-1.#QNAN", "-NaN", "-nan", "1.#IND", "1.#QNAN", "<NA>", "N/A", "NA", "NULL", "NaN", "None", "n/a", "nan", "null".
     # I extend it with "no information", "No information"
     na_values = ["no information", "No information", "No Information", "-", "0", "0.0", "-0", "-0.0"]
     if filepath.endswith(".csv"):

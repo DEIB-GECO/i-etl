@@ -47,3 +47,15 @@ class DataTypes(EnumAsClass):
                 return DataTypes.STRING
         else:
             return data_type
+
+    @classmethod
+    def numeric(cls) -> list:
+        return [DataTypes.INTEGER, DataTypes.FLOAT]
+
+    @classmethod
+    def categorical(cls) -> list:
+        return [DataTypes.STRING, DataTypes.BOOLEAN, DataTypes.CATEGORY]
+
+    @classmethod
+    def dates(cls) -> list:
+        return [DataTypes.DATE, DataTypes.DATETIME]

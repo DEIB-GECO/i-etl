@@ -1,6 +1,4 @@
-import copy
 import os
-import re
 
 import bson
 import pymongo
@@ -11,8 +9,6 @@ from pymongo.cursor import Cursor
 
 from database.Execution import Execution
 from enums.TableNames import TableNames
-from enums.UpsertPolicy import UpsertPolicy
-from constants.idColumns import DELIMITER_RESOURCE_ID
 from query.Operators import Operators
 from utils.setup_logger import log
 
@@ -108,14 +104,14 @@ class Database:
         _ = self.db[table_name].insert_many(tuples, ordered=False)
 
     def create_update_stmt(self, the_tuple: dict):
-        if self.execution.db_upsert_policy == UpsertPolicy.DO_NOTHING:
-            # insert the document if it does not exist
-            # otherwise, do nothing
-            return {"$setOnInsert": the_tuple}
-        else:
-            # insert the document if it does not exist
-            # otherwise, replace it
-            return {"$set": the_tuple}
+        # if self.execution.db_upsert_policy == UpsertPolicy.DO_NOTHING:
+        #     # insert the document if it does not exist
+        #     # otherwise, do nothing
+        #     return {"$setOnInsert": the_tuple}
+        # else:
+        # insert the document if it does not exist
+        # otherwise, replace it
+        return {"$set": the_tuple}
 
     def upsert_one_tuple(self, table_name: str, unique_variables: list[str], one_tuple: dict) -> None:
         # filter_dict should only contain the fields on which we want a Resource to be unique,
@@ -154,9 +150,9 @@ class Database:
         # in the tests I use a delta to compare datetime
         self.db[table_name].bulk_write(operations, ordered=False)
 
-    def retrieve_mapping(self, table_name: str, key_fields: str, value_fields: str):
+    def retrieve_mapping(self, table_name: str, key_fields: str, value_fields: str, filter_dict: dict):
         # TODO Nelly: add a distinct to the find
-        cursor = self.find_operation(table_name=table_name, filter_dict={}, projection={key_fields: 1, value_fields: 1})
+        cursor = self.find_operation(table_name=table_name, filter_dict=filter_dict, projection={key_fields: 1, value_fields: 1})
         mapping = {}
         for result in cursor:
             projected_key = result
@@ -170,11 +166,11 @@ class Database:
             mapping[projected_key] = projected_value
         return mapping
 
-    def load_json_in_table(self, table_name: str, unique_variables: list[str], dataset_number: int) -> None:
-        log.info(f"Load data in {table_name}")
+    def load_json_in_table(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int) -> None:
+        log.info(f"Load {profile} data in {table_name}")
         first_file = True
         for filename in os.listdir(self.execution.working_dir_current):
-            if filename.startswith(f"{str(dataset_number)}{table_name}"):
+            if filename.startswith(f"{str(dataset_number)}{profile}{table_name}"):
                 with open(os.path.join(self.execution.working_dir_current, filename), "r") as json_datafile:
                     if first_file:
                         # first, create an index on the unique variables to speed up the upsert (which checks whether each document already exists)
@@ -215,9 +211,10 @@ class Database:
         return self.db[table_name].count_documents(filter_dict)
 
     def inverse_inner_join(self, name_table_1: str, name_table_2: str, field_table_1: str, field_table_2: str, lookup_name: str) -> CommandCursor:
-        operations = []
-        operations.append(Operators.lookup(join_table_name=name_table_2, field_table_1=field_table_1, field_table_2=field_table_2, lookup_field_name=lookup_name))
-        operations.append(Operators.match(field=lookup_name, value={"$eq": []}, is_regex=False))  # we get only pairs that could not match
+        operations = [
+            Operators.lookup(join_table_name=name_table_2, field_table_1=field_table_1, field_table_2=field_table_2, lookup_field_name=lookup_name),
+            Operators.match(field=lookup_name, value={"$eq": []}, is_regex=False)
+        ]
         return self.db[name_table_1].aggregate(operations)
 
     def list_existing_indexes(self, table_name: str) -> list:
@@ -247,59 +244,71 @@ class Database:
         log.info(f"create index (non-unique) in {table_name} on columns {columns}")
         self.db[table_name].create_index(columns, unique=False)
 
-    def get_min_or_max_value(self, table_name: str, field: str, sort_order: int, from_string: bool) -> int | float:
+    def create_on_demand_view(self, table_name: str, view_name: str, pipeline: list) -> None:
+        self.drop_table(table_name=view_name)
+        self.db.create_collection(view_name, viewOn=table_name, pipeline=pipeline)
+
+    def refresh_on_demand_view(self, table_name: str, view_name: str, pipeline: list) -> None:
+        # there is no explicit mechanism to refresh a materialized (on-demand) view
+        # one need to recompute it
+        self.create_on_demand_view(table_name=table_name, view_name=view_name, pipeline=pipeline)
+
+    def get_min_or_max_value(self, table_name: str, field: str, sort_order: int) -> int | float:
         operations = []
         last_field = field.split(".")[-1]
+        log.info(f"In {table_name}, looking at field {field}, with last field {last_field}, with order {sort_order}")
 
-        if from_string:
-            # we need to parse the string to long
-            operations.append(Operators.project(field=field, projected_value={"split_var": {"$split": [f"${field}", DELIMITER_RESOURCE_ID]}}))
-            operations.append(Operators.unwind(field="split_var"))
-            operations.append(Operators.match(field="split_var", value="^[0-9]+$", is_regex=True))  # only numbers
-            operations.append(Operators.group_by(group_key={"var": "$split_var"}, groups=[{"name": "min_max", "operator": "$max", "field": {"$toLong": "$split_var"}}]))
-            operations.append(Operators.sort(field="min_max", sort_order=sort_order))
+        # if from_string:
+        #     # we need to parse the string to long
+        #     operations.append(Operators.project(field=field, projected_value={"split_var": {"$split": [f"${field}", DELIMITER_RESOURCE_ID]}}))
+        #     operations.append(Operators.unwind(field="split_var"))
+        #     operations.append(Operators.match(field="split_var", value="^[0-9]+$", is_regex=True))  # only numbers
+        #     operations.append(Operators.group_by(group_key={"var": "$identifier"}, groups=[{"name": "min_max", "operator": "$max", "field": {"$toLong": "$split_var"}}]))
+        #     operations.append(Operators.sort(field="min_max", sort_order=sort_order))
+        #     operations.append(Operators.limit(1))
+        #
+        #     # better_default > db["ExaminationRecord"].aggregate([
+        #     #     {"$project": {"identifier.value": {"$split": ["$identifier.value", "/"]}}},
+        #     #     {"$unwind": "$identifier.value"},
+        #     #     {"$match": {"identifier.value": / [0 - 9] + /}},
+        #     # {"$group": {"_id": "identifier.value", "Max": {"$max": {"$toLong": "$identifier.value"}}}}
+        #     # ])
+        # else:
+        if "." in field:
+            # this field is a nested one, we only keep the deepest one,
+            # e.g. for { "identifier": {"value": 1}} we keep { "value": 1}
+            operations.append(Operators.project(field=field, projected_value=last_field))
+            operations.append(Operators.sort(field=last_field, sort_order=sort_order))
             operations.append(Operators.limit(1))
-
-            # better_default > db["ExaminationRecord"].aggregate([
-            #     {"$project": {"identifier.value": {"$split": ["$identifier.value", "/"]}}},
-            #     {"$unwind": "$identifier.value"},
-            #     {"$match": {"identifier.value": / [0 - 9] + /}},
-            # {"$group": {"_id": "identifier.value", "Max": {"$max": {"$toLong": "$identifier.value"}}}}
-            # ])
         else:
-            if "." in field:
-                # this field is a nested one, we only keep the deepest one,
-                # e.g. for { "identifier": {"value": 1}} we keep { "value": 1}
-                operations.append(Operators.project(field=field, projected_value=last_field))
-                operations.append(Operators.sort(field=last_field, sort_order=sort_order))
-                operations.append(Operators.limit(1))
-            else:
-                operations.append(Operators.project(field=field, projected_value=None))
-                operations.append(Operators.sort(field=field, sort_order=sort_order))
-                operations.append(Operators.limit(1))
-
+            operations.append(Operators.project(field=field, projected_value=None))
+            operations.append(Operators.sort(field=field, sort_order=sort_order))
+            operations.append(Operators.limit(1))
+        log.info(operations)
         cursor = self.db[table_name].aggregate(operations)
         for result in cursor:
+            log.info(result)
             # There should be only one result, so we can return directly the min or max value
-            if from_string:
-                return result["min_max"]
+            # if from_string:
+            #     return result["min_max"]
+            # else:
+            if "." in field:
+                return result[last_field]
             else:
-                if "." in field:
-                    return result[last_field]
-                else:
-                    return result[field]
+                return result[field]
         return -1
 
-    def get_max_value(self, table_name: str, field: str, from_string: bool) -> int | float:
-        return self.get_min_or_max_value(table_name=table_name, field=field, sort_order=-1, from_string=from_string)
+    def get_max_value(self, table_name: str, field: str) -> int | float:
+        return self.get_min_or_max_value(table_name=table_name, field=field, sort_order=-1)
 
-    def get_min_value(self, table_name: str, field: str, from_string: bool) -> int | float:
-        return self.get_min_or_max_value(table_name=table_name, field=field, sort_order=1, from_string=from_string)
+    def get_min_value(self, table_name: str, field: str) -> int | float:
+        return self.get_min_or_max_value(table_name=table_name, field=field, sort_order=1)
 
     def get_max_resource_counter_id(self) -> int:
         max_value = -1
-        for table_name in TableNames.values(db=self):
-            current_max_identifier = self.get_max_value(table_name=table_name, field="identifier", from_string=True)
+        log.info(TableNames.data_tables())
+        for table_name in TableNames.data_tables():
+            current_max_identifier = self.get_max_value(table_name=table_name, field="identifier")
             log.info(f"max id in {table_name} is {current_max_identifier}")
             if current_max_identifier is not None:
                 try:

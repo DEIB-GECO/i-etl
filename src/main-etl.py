@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 
 from database.Database import Database
 from database.Execution import Execution
-from preprocessing.PreprocessingTask import PreprocessingTask
 
 sys.path.append('.')  # add the current project to the python path to be runnable in cmd-line
 

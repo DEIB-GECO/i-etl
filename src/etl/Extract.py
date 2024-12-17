@@ -4,7 +4,7 @@ import os
 
 from pandas import DataFrame
 
-from constants.idColumns import ID_COLUMNS
+from constants.idColumns import ID_COLUMNS, PATIENT_ID, SAMPLE_ID
 from database.Database import Database
 from database.Execution import Execution
 from datatypes.OntologyResource import OntologyResource
@@ -134,9 +134,9 @@ class Extract(Task):
         # they will be cast to the right type (int, float, datetime) in the Transform step
         # issue 113: we do not normalize identifiers assigned by hospitals to avoid discrepancies
         columns_no_normalization = []
-        columns_no_normalization.append(ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT])
-        if ID_COLUMNS[self.execution.hospital_name][TableNames.CLINICAL_RECORD] != "":
-            columns_no_normalization.append(ID_COLUMNS[self.execution.hospital_name][TableNames.CLINICAL_RECORD])
+        columns_no_normalization.append(ID_COLUMNS[self.execution.hospital_name][PATIENT_ID])
+        if ID_COLUMNS[self.execution.hospital_name][SAMPLE_ID] != "":
+            columns_no_normalization.append(ID_COLUMNS[self.execution.hospital_name][SAMPLE_ID])
 
         for column in self.data:
             if column not in columns_no_normalization:
@@ -156,7 +156,7 @@ class Extract(Task):
         self.data = self.data.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x))
 
     def filter_data_file(self) -> None:
-        # Normalize column names ("sex", "dateOfBirth", "Ethnicity", etc) to match column names described in the metadata
+        # Normalize column names ("sex", "dateOfBirth", "Ethnicity", etc.) to match column names described in the metadata
         self.data = self.data.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x))
 
         # removes the data columns that are NOT described in the metadata or that are explicitly marked as not to be loaded
@@ -169,7 +169,7 @@ class Extract(Task):
             # we remove the column if it is not described in the metadata
             is_not_described_in_current_metadata = data_column not in columns_described_in_metadata
             column_has_to_be_removed = data_column in self.execution.columns_to_remove
-            column_is_an_id = data_column in [ID_COLUMNS[self.execution.hospital_name][TableNames.PATIENT], ID_COLUMNS[self.execution.hospital_name][TableNames.CLINICAL_RECORD]]
+            column_is_an_id = data_column in [ID_COLUMNS[self.execution.hospital_name][PATIENT_ID], ID_COLUMNS[self.execution.hospital_name][SAMPLE_ID]]
             if is_not_described_in_current_metadata or (column_has_to_be_removed and not column_is_an_id):
                 # we drop this column
                 log.info(f"drop column {data_column}")
@@ -192,16 +192,15 @@ class Extract(Task):
         # this will avoid to send again API queries to re-build already-built OntologyResource
         # we get all the categorical values across all tables to not miss any of them
         existing_categorical_codeable_concepts = {}
-        for feature_table_name in TableNames.features(db=self.database):
-            # the set of categorical values are defined in Features only, thus we can restrict the find to only those:
-            # categorical_values_for_table_name = {'_id': ObjectId('66b9b890583ee775ef4edcb9'), 'categorical_values': [{...}, {...}, ...]}
-            categorical_values_for_table_name = self.database.find_operation(table_name=feature_table_name, filter_dict={"categories": {"$exists": 1}}, projection={"categories": 1})
-            for one_tuple in categorical_values_for_table_name:
-                # existing_categorical_value_for_table_name = [{...}, {...}, ...]}
-                existing_categorical_values_for_table_name = one_tuple["categories"]
-                for encoded_categorical_value in existing_categorical_values_for_table_name:
-                    existing_or = OntologyResource.from_json(encoded_categorical_value, quality_stats=self.quality_stats)
-                    existing_categorical_codeable_concepts[existing_or.label] = existing_or
+        # the set of categorical values are defined in Features only, thus we can restrict the find to only those:
+        # categorical_values_for_table_name = {'_id': ObjectId('66b9b890583ee775ef4edcb9'), 'categorical_values': [{...}, {...}, ...]}
+        categorical_values_for_table_name = self.database.find_operation(table_name=TableNames.FEATURE, filter_dict={"categories": {"$exists": 1}}, projection={"categories": 1})
+        for one_tuple in categorical_values_for_table_name:
+            # existing_categorical_value_for_table_name = [{...}, {...}, ...]}
+            existing_categorical_values_for_table_name = one_tuple["categories"]
+            for encoded_categorical_value in existing_categorical_values_for_table_name:
+                existing_or = OntologyResource.from_json(encoded_categorical_value, quality_stats=self.quality_stats)
+                existing_categorical_codeable_concepts[existing_or.label] = existing_or
 
         # 2. then, we associate each column to its set of categorical values
         # if we already compute the cc of that value (e.g., several column have categorical values Yes/No/NA),

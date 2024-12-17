@@ -16,5 +16,5 @@ if __name__ == '__main__':
     execution.internals_set_up()
     execution.file_set_up(setup_files=False)
     database = Database(execution=execution)
-    catalogue_update = CatalogueUpdate(db=database)
-    catalogue_update.compute_data_for_catalogue()
+    catalogue_update = CatalogueUpdate(database=database)
+    catalogue_update.run()

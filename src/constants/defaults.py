@@ -15,3 +15,5 @@ SNOMED_OPERATORS_LIST = ["|", "(", ")", "{", "}", ",", ":", "=", "+"]
 SNOMED_OPERATORS_STR = "".join(SNOMED_OPERATORS_LIST)
 
 DEFAULT_ONTOLOGY_RESOURCE_LABEL = ""
+
+DATASET_GLOBAL_IDENTIFIER_PREFIX = "http://better-health-project.eu/datasets/"
