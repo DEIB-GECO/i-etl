@@ -34,6 +34,7 @@ class ProfileComputation:
         date_features.extend(map_feature_datatype[DataTypes.DATE] if DataTypes.DATE in map_feature_datatype else [])
         date_features.extend(map_feature_datatype[DataTypes.DATETIME] if DataTypes.DATETIME in map_feature_datatype else [])
         log.info(date_features)
+        all_features = numeric_features + categorical_features + date_features
 
         # NUMERIC FEATURES
 
@@ -100,6 +101,25 @@ class ProfileComputation:
         log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
+        # SHARED PROFILE FEATURES
+
+        # uniqueness
+        operators = ProfileComputation.uniqueness_query(all_features)
+        operators.append(Operators.merge(table_name=TableNames.FEATURE_PROFILE, on_attribute="_id", when_matched="merge", when_not_matched="insert"))
+        log.info(operators)
+        self.database.db[TableNames.RECORD].aggregate(operators)
+
+        # entropy
+        operators = ProfileComputation.entropy_query(all_features)
+        operators.append(Operators.merge(table_name=TableNames.FEATURE_PROFILE, on_attribute="_id", when_matched="merge", when_not_matched="insert"))
+        log.info(operators)
+        self.database.db[TableNames.RECORD].aggregate(operators)
+
+        # density
+        operators = ProfileComputation.density_query(all_features)
+        operators.append(Operators.merge(table_name=TableNames.FEATURE_PROFILE, on_attribute="_id", when_matched="merge", when_not_matched="insert"))
+        log.info(operators)
+        self.database.db[TableNames.RECORD].aggregate(operators)
 
     @classmethod
     def min_max_mean_median_std_query(cls, features_ids: list, compute_min: bool, compute_max: bool, compute_mean: bool, compute_median: bool, compute_std: bool) -> list:
@@ -377,3 +397,91 @@ class ProfileComputation:
                 "mode": {"$arrayElemAt": ["$values", 0]}
             })
         ]
+
+    @classmethod
+    def uniqueness_query(cls, features_ids: list) -> list:
+        # Percentage of distinct values with respect to the total amount of non-null values
+        return [
+            Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
+            Operators.group_by(group_key={"instantiates": '$instantiates', "value": "$value"}, groups=[
+                {"name": "frequency", "operator": "$sum", "field": 1}]),
+            Operators.group_by(group_key={"_id": "$_id.instantiates"}, groups=[
+                {"name": "count", "operator": "$sum", "field": "$frequency"},
+                {"name": "distinct_count", "operator": "$sum", "field": 1}
+                ]
+            ),
+            Operators.project(field=None, projected_value={
+                "_id": "$_id.id",
+                "uniqueness": {"$divide": ["$distinct_count", "$count"]}
+            })
+        ]
+
+    @classmethod
+    def entropy_query(cls, features_ids: list) -> list:
+        # Measure of uncertainty and disorder within the values of the column.
+        # A large entropy means that the values are highly heterogeneous.
+        return [
+            Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
+            Operators.group_by(group_key={"instantiates": '$instantiates', "value": "$value"}, groups=[
+                {"name": "frequency", "operator": "$sum", "field": 1}]),
+            Operators.group_by(group_key={"_id":"$_id.instantiates"}, groups=[
+                {"name": "total", "operator": "$sum", "field": "$frequency"},
+                {"name": "frequencies", "operator": "$push", "field": "$frequency"}
+            ]),
+            Operators.unwind("$frequencies"),
+            Operators.project(field=None, projected_value={
+                "_id": "$_id._id",
+                "prob": {"$divide":{"$frequencies.frequency", "$total"}}
+            }),
+            Operators.project(field=None, projected_value={
+                "_id": "$_id",
+                "entropy_value": {"$multiply":{"$prob", {"$log":["$prob", 2]}}}
+            }),
+            Operators.group_by(group_key={"_id": "$_id"}, groups=[
+                {"name": "entropy", "operator": "$sum", "field": "$entropy_value"}
+            ]),
+            Operators.project(field=None, projected_value={
+                "_id": "$_id._id",
+                "entropy": "$entropy"
+            })
+        ]
+
+    @classmethod
+    def density_query(cls, features_ids: list) -> list:
+        # a measure of appropriate numerosity and intensity between different real-world entities available in the data
+        return [
+            Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
+            Operators.group_by(group_key={"instantiates": '$instantiates', "value": "$value"}, groups=[
+                {"name": "frequency", "operator": "$sum", "field": 1}]),
+            Operators.group_by(group_key={"_id": "$_id.instantiates"}, groups=[
+                {"name": "total", "operator": "$sum", "field": "$frequency"},
+                {"name": "distinct_count", "operator": "$sum", "field": 1},
+                {"name": "frequencies", "operator": "$push", "field": "$frequency"}
+            ]),
+            Operators.unwind("$frequencies"),
+            Operators.project(field=None, projected_value={
+                "_id": "$_id._id",
+                "prob": {"$divide": {"$frequencies.frequency", "$total"}},
+                "distinct_count": "$distinct_count"
+            }),
+            Operators.group_by(group_key={"_id":"$_id"}, groups=[
+                {"name": "avg_dens_value", "operator": "$avg", "field": "$prob"},
+                {"name": "probs", "operator": "$push", "field": "$prob"},
+                {"name": "distinct_count", "operator": "$first", "field":"$distinct_count"}
+            ]),
+            Operators.unwind("$probs"),
+            Operators.project(field=None, projected_value={
+                "_id": "$_id._id",
+                "density_value": {"$abs":{"$subtract":{"$probs.prob", "$avg_dens_value"}}},
+                "distinct_count": "$distinct_count"
+            }),
+            Operators.group_by(group_key={"_id": "$_id"}, groups=[
+                {"name": "densities_sum", "operator": "$sum", "field": "$density_value"},
+                {"name": "distinct_count", "operator": "$first", "field": "$distinct_count"}
+            ]),
+            Operators.project(field=None, projected_value={
+                "_id": "$_id._id",
+                "density": {"$divide":{"$densities_sum", "$distinct_count"}}
+            })
+        ]
+
