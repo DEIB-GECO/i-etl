@@ -5,7 +5,7 @@ from enums.AggregationTypes import AggregationTypes
 from enums.CatalogueEntries import CatalogueEntries
 from enums.DataTypes import DataTypes
 from enums.TableNames import TableNames
-from query.Operators import Operators
+from database.Operators import Operators
 from utils.setup_logger import log
 
 

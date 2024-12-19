@@ -9,7 +9,7 @@ from pymongo.cursor import Cursor
 
 from database.Execution import Execution
 from enums.TableNames import TableNames
-from query.Operators import Operators
+from database.Operators import Operators
 from utils.setup_logger import log
 
 

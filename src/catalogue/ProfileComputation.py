@@ -1,7 +1,7 @@
 from database.Database import Database
 from enums.DataTypes import DataTypes
 from enums.TableNames import TableNames
-from query.Operators import Operators
+from database.Operators import Operators
 from utils.setup_logger import log
 
 
@@ -411,7 +411,7 @@ class ProfileComputation:
                 ]
             ),
             Operators.project(field=None, projected_value={
-                "_id": "$_id.id",
+                "_id": "$_id._id",
                 "uniqueness": {"$divide": ["$distinct_count", "$count"]}
             })
         ]
@@ -428,21 +428,21 @@ class ProfileComputation:
                 {"name": "total", "operator": "$sum", "field": "$frequency"},
                 {"name": "frequencies", "operator": "$push", "field": "$frequency"}
             ]),
-            Operators.unwind("$frequencies"),
+            Operators.unwind("frequencies"),
             Operators.project(field=None, projected_value={
                 "_id": "$_id._id",
-                "prob": {"$divide":{"$frequencies.frequency", "$total"}}
+                "prob": {"$divide": ["$frequencies", "$total"]}
             }),
             Operators.project(field=None, projected_value={
                 "_id": "$_id",
-                "entropy_value": {"$multiply":{"$prob", {"$log":["$prob", 2]}}}
+                "entropy_value": {"$multiply": ["$prob", {"$log":["$prob", 2]}]}
             }),
             Operators.group_by(group_key={"_id": "$_id"}, groups=[
                 {"name": "entropy", "operator": "$sum", "field": "$entropy_value"}
             ]),
             Operators.project(field=None, projected_value={
                 "_id": "$_id._id",
-                "entropy": "$entropy"
+                "entropy": {"$abs": "$entropy"}
             })
         ]
 
@@ -458,10 +458,10 @@ class ProfileComputation:
                 {"name": "distinct_count", "operator": "$sum", "field": 1},
                 {"name": "frequencies", "operator": "$push", "field": "$frequency"}
             ]),
-            Operators.unwind("$frequencies"),
+            Operators.unwind("frequencies"),
             Operators.project(field=None, projected_value={
                 "_id": "$_id._id",
-                "prob": {"$divide": {"$frequencies.frequency", "$total"}},
+                "prob": {"$divide": ["$frequencies", "$total"]},
                 "distinct_count": "$distinct_count"
             }),
             Operators.group_by(group_key={"_id":"$_id"}, groups=[
@@ -469,10 +469,10 @@ class ProfileComputation:
                 {"name": "probs", "operator": "$push", "field": "$prob"},
                 {"name": "distinct_count", "operator": "$first", "field":"$distinct_count"}
             ]),
-            Operators.unwind("$probs"),
+            Operators.unwind("probs"),
             Operators.project(field=None, projected_value={
                 "_id": "$_id._id",
-                "density_value": {"$abs":{"$subtract":{"$probs.prob", "$avg_dens_value"}}},
+                "density_value": {"$abs": {"$subtract": ["$probs", "$avg_dens_value"]}},
                 "distinct_count": "$distinct_count"
             }),
             Operators.group_by(group_key={"_id": "$_id"}, groups=[
@@ -481,7 +481,7 @@ class ProfileComputation:
             ]),
             Operators.project(field=None, projected_value={
                 "_id": "$_id._id",
-                "density": {"$divide":{"$densities_sum", "$distinct_count"}}
+                "density": {"$divide": ["$densities_sum", "$distinct_count"]}
             })
         ]
 

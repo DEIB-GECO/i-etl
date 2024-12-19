@@ -3,7 +3,7 @@ from datetime import datetime
 import jsonpickle
 
 from database.Database import Database
-from query.Operators import Operators
+from database.Operators import Operators
 from utils.assertion_utils import is_not_nan
 
 

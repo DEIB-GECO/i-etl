@@ -12,8 +12,8 @@ from etl.Load import Load
 from enums.HospitalNames import HospitalNames
 from enums.Ontologies import Ontologies
 from enums.TableNames import TableNames
-from constants.structure import TEST_DB_NAME, DOCKER_FOLDER_DATA
-from query.Operators import Operators
+from constants.structure import TEST_DB_NAME
+from database.Operators import Operators
 from statistics.QualityStatistics import QualityStatistics
 from statistics.TimeStatistics import TimeStatistics
 from utils.setup_logger import log

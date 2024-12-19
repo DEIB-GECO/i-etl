@@ -5,7 +5,7 @@ import jsonpickle
 from constants.idColumns import NO_ID
 from database.Counter import Counter
 from datatypes.Identifier import Identifier
-from query.Operators import Operators
+from database.Operators import Operators
 from utils.assertion_utils import is_not_nan
 
 

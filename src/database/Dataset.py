@@ -10,9 +10,8 @@ from database.Database import Database
 from database.DatasetProfile import DatasetProfile
 from entities.Resource import Resource
 from enums.TableNames import TableNames
-from query.Operators import Operators
+from database.Operators import Operators
 from utils.assertion_utils import is_not_nan
-from utils.setup_logger import log
 
 
 class Dataset(Resource):
