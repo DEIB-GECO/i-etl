@@ -67,8 +67,7 @@ def wrong_number_of_docs(number: int):
 def get_feature_by_text(features: list, feature_text: str) -> dict:
     """
     """
-    json_features = [feature.to_json() for feature in features]
-    for json_feature in json_features:
+    for json_feature in features:
         if "name" in json_feature and json_feature["name"] == feature_text:
             return json_feature
     return {}
@@ -79,8 +78,7 @@ def get_records_for_patient(records: list, patient_id: str) -> list[dict]:
     :param records: list of LabRecord resources
     """
     matching_records = []
-    json_records_list = [record.to_json() for record in records]
-    for json_record in json_records_list:
+    for json_record in records:
         if json_record["has_subject"] == patient_id:
             matching_records.append(json_record)
     # also sort them by PhenFeature reference id
@@ -98,14 +96,13 @@ def get_field_value_for_patient(records: list, features: list, patient_id: str, 
     # log.info(f"looking for the value of column {column_name} for patient {patient_id}")
 
     feature = None
-    for feature in features:
-        if feature.to_json()["name"] == column_name:
-            feature = feature.to_json()
+    for one_feature in features:
+        if one_feature["name"] == column_name:
+            feature = one_feature
             break
     if feature is not None:
         for record in records:
-            json_lab_record = record.to_json()
             # log.info(f"checking {json_lab_record['has_subject']} vs. {patient_id} and {json_lab_record['instantiates']} vs. {feature['identifier']}")
-            if json_lab_record["has_subject"] == patient_id and json_lab_record["instantiates"] == feature["identifier"]:
-                return json_lab_record["value"]
+            if record["has_subject"] == patient_id and record["instantiates"] == feature["identifier"]:
+                return record["value"]
     return None

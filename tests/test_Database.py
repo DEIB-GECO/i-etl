@@ -296,7 +296,7 @@ class TestDatabase(unittest.TestCase):
         my_original_tuple_age_2 = copy.deepcopy(my_tuples_age_2)
         database.upsert_one_batch_of_tuples(table_name=TableNames.TEST, unique_variables=["name", "age"], the_batch=my_tuples_age_2)
         docs = [doc for doc in database.db[TableNames.TEST].find({}).sort({"name": 1, "age": 1})]
-        expected_docs = [my_original_tuples_age[1], my_original_tuples[1], my_original_tuple_age_2[0], my_original_tuple_age_2[1]]
+        expected_docs = [my_original_tuple_age_2[1], my_original_tuples[1], my_original_tuple_age_2[0], my_original_tuple_age_2[1]]
         assert len(docs) == len(expected_docs), wrong_number_of_docs(len(expected_docs))
         for i in range(len(expected_docs)):
             compare_tuples(original_tuple=expected_docs[i], inserted_tuple=docs[i])
@@ -404,7 +404,7 @@ class TestDatabase(unittest.TestCase):
 
         database.load_json_in_table(profile=TableNames.TEST, table_name=TableNames.TEST, unique_variables=["name", "age"], dataset_number=1)
 
-        docs = [doc for doc in database.db[TableNames.TEST].find({}).sort({"name": 1, "age": 1})]
+        docs = [doc for doc in database.db[TableNames.TEST].find({}, {"_id": 0}).sort({"name": 1, "age": 1})]
         expected_docs = [my_original_tuples[1], my_original_tuples[0], my_original_tuples[3], my_original_tuples[4]]
         assert len(docs) == len(expected_docs), wrong_number_of_docs(len(expected_docs))
         for i in range(len(expected_docs)):

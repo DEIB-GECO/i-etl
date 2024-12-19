@@ -111,6 +111,7 @@ class Database:
         # else:
         # insert the document if it does not exist
         # otherwise, replace it
+        #     return {"$set": the_tuple}
         return {"$set": the_tuple}
 
     def upsert_one_tuple(self, table_name: str, unique_variables: list[str], one_tuple: dict) -> None:
