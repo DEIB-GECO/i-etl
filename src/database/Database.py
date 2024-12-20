@@ -130,7 +130,7 @@ class Database:
         update_stmt = self.create_update_stmt(the_tuple=one_tuple)
         self.db[table_name].find_one_and_update(filter=filter_dict, update=update_stmt, upsert=True)
 
-    def upsert_one_batch_of_tuples(self, table_name: str, unique_variables: list[str], the_batch: list[dict]) -> None:
+    def upsert_one_batch_of_tuples(self, table_name: str, unique_variables: list[str], the_batch: list[dict], ordered: bool) -> None:
         """
 
         :param unique_variables:
@@ -149,7 +149,7 @@ class Database:
         # July 18th, 2024: bulk_write modifies the hospital lists in Transform (even if I use deep copies everywhere)
         # It changes (only?) the timestamp value with +1/100, e.g., 2024-07-18T14:34:32Z becomes 2024-07-18T14:34:33Z
         # in the tests I use a delta to compare datetime
-        self.db[table_name].bulk_write(operations, ordered=False)
+        self.db[table_name].bulk_write(operations, ordered=ordered)
 
     def retrieve_mapping(self, table_name: str, key_fields: str, value_fields: str, filter_dict: dict):
         # TODO Nelly: add a distinct to the find
@@ -168,6 +168,12 @@ class Database:
         return mapping
 
     def load_json_in_table(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int) -> None:
+        self.load_json_in_table_general(profile=profile, table_name=table_name, unique_variables=unique_variables, dataset_number=dataset_number, ordered=False)
+
+    def load_json_in_table_for_tests(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int) -> None:
+        self.load_json_in_table_general(profile=profile, table_name=table_name, unique_variables=unique_variables, dataset_number=dataset_number, ordered=True)
+
+    def load_json_in_table_general(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int, ordered: bool) -> None:
         log.info(f"Load {profile} data in {table_name}")
         first_file = True
         for filename in os.listdir(self.execution.working_dir_current):
@@ -180,7 +186,7 @@ class Database:
                         first_file = False
                     tuples = bson.json_util.loads(json_datafile.read())
                     log.debug(f"Table {table_name}, file {filename}, loading {len(tuples)} tuples with unique variables being {unique_variables}")
-                    self.upsert_one_batch_of_tuples(table_name=table_name, unique_variables=unique_variables, the_batch=tuples)
+                    self.upsert_one_batch_of_tuples(table_name=table_name, unique_variables=unique_variables, the_batch=tuples, ordered=ordered)
 
     def find_operation(self, table_name: str, filter_dict: dict, projection: dict) -> Cursor:
         """

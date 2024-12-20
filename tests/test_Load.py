@@ -190,8 +190,8 @@ class TestLoad(unittest.TestCase):
             elif table_name == TableNames.RECORD:
                 assert count_indexes == 8  # (_id, identifier, timestamp, entity_type, instantiates, has_subject, dataset, registered_by, <instantiates, has_subject, dataset, registered_by>)
             elif table_name == TableNames.DATASET:
-                assert count_indexes == 2  # (_id, global_identifier)
+                assert count_indexes == 5  # (_id, identifier, timestamp, entity_type, global_identifier)
             elif table_name == TableNames.HOSPITAL:
                 assert count_indexes == 4  # (_id, identifier, timestamp, entity_type)
             else:
-                assert count_indexes == 3
+                assert count_indexes == 4  # (_id, identifier, timestamp, entity_type)

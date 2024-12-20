@@ -17,6 +17,7 @@ from enums.HospitalNames import HospitalNames
 from enums.ParameterKeys import ParameterKeys
 from enums.TableNames import TableNames
 from utils.file_utils import write_in_file
+from utils.setup_logger import log
 from utils.test_utils import wrong_number_of_docs, compare_tuples, set_env_variables_from_dict
 
 
@@ -228,17 +229,16 @@ class TestDatabase(unittest.TestCase):
         # 1. upsert an initial batch of 2 tuples
         my_batch = [{"name": "Nelly", "age": 26}, {"name": "Julien", "age": 30, "city": "Lyon"}]
         my_original_batch = copy.deepcopy(my_batch)
-        database.upsert_one_batch_of_tuples(table_name=TableNames.TEST, unique_variables=["name"], the_batch=my_batch)
+        database.upsert_one_batch_of_tuples(table_name=TableNames.TEST, unique_variables=["name"], the_batch=my_batch, ordered=True)
         docs = [doc for doc in database.db[TableNames.TEST].find({})]
         assert len(docs) == 2, wrong_number_of_docs(2)
         for i in range(len(my_original_batch)):
             compare_tuples(original_tuple=my_original_batch[i], inserted_tuple=docs[i])
 
         # 2. upsert a batch with one similar tuple, and one different
-        # with upsert policy being DO_NOTHING
         my_batch_2 = [{"name": "Nelly", "age": 27}, {"name": "Pietro", "city": "Milano"}]
-        database.upsert_one_batch_of_tuples(table_name=TableNames.TEST, unique_variables=["name"], the_batch=my_batch_2)
-        expected_docs = [my_original_batch[1], my_original_batch[0], my_batch_2[1]]  # ordered by name
+        database.upsert_one_batch_of_tuples(table_name=TableNames.TEST, unique_variables=["name"], the_batch=my_batch_2, ordered=True)
+        expected_docs = [my_original_batch[1], my_batch_2[0], my_batch_2[1]]  # ordered by name
         docs = [doc for doc in database.db[TableNames.TEST].find({}).sort({"name": 1})]
         assert len(docs) == len(expected_docs), wrong_number_of_docs(len(expected_docs))
         for i in range(len(expected_docs)):
@@ -254,7 +254,7 @@ class TestDatabase(unittest.TestCase):
         TestDatabase.execution.file_set_up(setup_files=False)
         database = Database(TestDatabase.execution)
         my_batch_3 = [{"name": "Nelly", "age": 27}, {"name": "Anna", "citizenship": "Italian"}]
-        database.upsert_one_batch_of_tuples(table_name=TableNames.TEST, unique_variables=["name"], the_batch=my_batch_3)
+        database.upsert_one_batch_of_tuples(table_name=TableNames.TEST, unique_variables=["name"], the_batch=my_batch_3, ordered=True)
         expected_docs = [my_batch_3[1], my_original_batch[1], my_batch_3[0], my_batch_2[1]]  # ordered by name
         docs = [doc for doc in database.db[TableNames.TEST].find({}).sort({"name": 1})]
         assert len(docs) == len(expected_docs), wrong_number_of_docs(len(expected_docs))
@@ -265,7 +265,7 @@ class TestDatabase(unittest.TestCase):
         database = Database(execution=TestDatabase.execution)
         my_tuples = [{"name": "Nelly", "age": 26}, {"name": "Julien", "age": 30}]
         my_original_tuples = copy.deepcopy(my_tuples)
-        database.upsert_one_batch_of_tuples(table_name=TableNames.TEST, unique_variables=["name", "age"], the_batch=my_tuples)
+        database.upsert_one_batch_of_tuples(table_name=TableNames.TEST, unique_variables=["name", "age"], the_batch=my_tuples, ordered=True)
 
         # 1. first, we check that the initial upserted tuple has been correctly inserted
         docs = [doc for doc in database.db[TableNames.TEST].find({})]
@@ -276,7 +276,7 @@ class TestDatabase(unittest.TestCase):
         # 2. We upsert the exact same batch of tuples:
         # there should be no duplicate
         my_original_tuples_2 = copy.deepcopy(my_original_tuples)
-        database.upsert_one_batch_of_tuples(table_name=TableNames.TEST, unique_variables=["name", "age"], the_batch=my_original_tuples)
+        database.upsert_one_batch_of_tuples(table_name=TableNames.TEST, unique_variables=["name", "age"], the_batch=my_original_tuples, ordered=True)
         docs = [doc for doc in database.db[TableNames.TEST].find({})]
         assert len(docs) == len(my_original_tuples_2), wrong_number_of_docs(len(my_original_tuples_2))
         for i in range(len(my_original_tuples_2)):
@@ -294,16 +294,16 @@ class TestDatabase(unittest.TestCase):
         database = Database(execution=TestDatabase.execution)
         my_tuples_age_2 = [{"name": "Nelly", "age": 26, "city": "Paris"}, {"name": "Pietro", "age": -1, "city": "Milano"}]
         my_original_tuple_age_2 = copy.deepcopy(my_tuples_age_2)
-        database.upsert_one_batch_of_tuples(table_name=TableNames.TEST, unique_variables=["name", "age"], the_batch=my_tuples_age_2)
+        database.upsert_one_batch_of_tuples(table_name=TableNames.TEST, unique_variables=["name", "age"], the_batch=my_tuples_age_2, ordered=True)
         docs = [doc for doc in database.db[TableNames.TEST].find({}).sort({"name": 1, "age": 1})]
-        expected_docs = [my_original_tuple_age_2[1], my_original_tuples[1], my_original_tuple_age_2[0], my_original_tuple_age_2[1]]
+        expected_docs = [my_original_tuples[1], my_original_tuple_age_2[0], my_original_tuple_age_2[1]]
         assert len(docs) == len(expected_docs), wrong_number_of_docs(len(expected_docs))
         for i in range(len(expected_docs)):
             compare_tuples(original_tuple=expected_docs[i], inserted_tuple=docs[i])
 
     def test_retrieve_resource_identifiers_1(self):
         database = Database(TestDatabase.execution)
-        my_id = Identifier(id_value="123")
+        my_id = Identifier(id_value=123)
         my_tuple = {"identifier": my_id.to_json(), "name": "Nelly"}
         database.db[TableNames.TEST].insert_one(my_tuple)
         the_doc = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="name", value_fields="identifier", filter_dict={})
@@ -312,7 +312,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_retrieve_resource_identifiers_10(self):
         database = Database(TestDatabase.execution)
-        my_tuples = [{"identifier": Identifier(id_value=str(i)).to_json(), "value": i + random.randint(0, 100)} for i in range(0, 10)]
+        my_tuples = [{"identifier": Identifier(id_value=i).to_json(), "value": i + random.randint(0, 100)} for i in range(0, 10)]
         my_original_tuples = copy.deepcopy(my_tuples)
         database.db[TableNames.TEST].insert_many(my_tuples)
         docs = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="value", value_fields="identifier", filter_dict={})
@@ -325,7 +325,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_retrieve_resource_identifiers_wrong_key(self):
         database = Database(TestDatabase.execution)
-        my_id = Identifier(id_value="123")
+        my_id = Identifier(id_value=123)
         my_tuple = {"identifier": my_id.to_json(), "name": "Nelly"}
         database.db[TableNames.TEST].insert_one(my_tuple)
         with pytest.raises(KeyError):
@@ -402,10 +402,10 @@ class TestDatabase(unittest.TestCase):
         with open(filepath, 'w') as f:
             json.dump(my_tuples, f)
 
-        database.load_json_in_table(profile=TableNames.TEST, table_name=TableNames.TEST, unique_variables=["name", "age"], dataset_number=1)
+        database.load_json_in_table_for_tests(profile=TableNames.TEST, table_name=TableNames.TEST, unique_variables=["name", "age"], dataset_number=1)
 
-        docs = [doc for doc in database.db[TableNames.TEST].find({}, {"_id": 0}).sort({"name": 1, "age": 1})]
-        expected_docs = [my_original_tuples[1], my_original_tuples[0], my_original_tuples[3], my_original_tuples[4]]
+        docs = [doc for doc in database.db[TableNames.TEST].find({}).sort({"name": 1, "age": 1})]
+        expected_docs = [my_original_tuples[2], my_original_tuples[0], my_original_tuples[3], my_original_tuples[4]]
         assert len(docs) == len(expected_docs), wrong_number_of_docs(len(expected_docs))
         for i in range(len(expected_docs)):
             compare_tuples(original_tuple=expected_docs[i], inserted_tuple=docs[i])

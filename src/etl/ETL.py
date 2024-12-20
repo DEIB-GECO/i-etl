@@ -144,7 +144,7 @@ class ETL:
 
         # before ending, save the datasets in the DB
         log.info([dataset.to_json() for dataset in self.datasets])
-        self.database.upsert_one_batch_of_tuples(table_name=TableNames.DATASET, unique_variables=["docker_path"], the_batch=[dataset.to_json() for dataset in self.datasets])
+        self.database.upsert_one_batch_of_tuples(table_name=TableNames.DATASET, unique_variables=["docker_path"], the_batch=[dataset.to_json() for dataset in self.datasets], ordered=False)
         # next, compute DB stats and give all (time, quality and db) stats to the report
         time_stats.stop_total_execution_timer()
         db_stats = DatabaseStatistics(record_stats=True)
