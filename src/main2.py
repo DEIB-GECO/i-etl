@@ -254,6 +254,27 @@ def main_efficiency_json():
     print(f"{datetime.datetime.now() - start_time} with json pickle")
 
 
+def get_sample_number(x):
+    extracted_number = x[str(x).rfind("_") + 1:len(str(x))]
+    try:
+        return int(extracted_number)
+    except:
+        return 0
+
+
+def main_groupby_pandas():
+    df = pd.read_csv("/Users/nelly/Documents/boulot/postdoc-polimi/BETTER-fairificator/datasets/expes/covid-kidney/w1_metadata.csv")
+    print(df)
+    print(df.columns)
+    # df_barcode_to_patient = read_tabular_file_as_string("/Users/nelly/Documents/boulot/postdoc-polimi/BETTER-fairificator/datasets/expes/covid-kidney/mapping_patient_sample.csv")
+    # df_barcode_to_patient = df_barcode_to_patient[["sample_id", "individual_id"]]
+    # df_barcode_to_patient = df_barcode_to_patient.drop_duplicates()
+    df["sample_number"] = df["sample_id"].apply(get_sample_number)
+    print(df)
+    df["sample_max"] = df.groupby(["individual_id"])["sample_number"].transform("max")  # not .transform(max)
+    print(df)
+
+
 if __name__ == '__main__':
     # main_load_json_from_file_as_bson()
     
@@ -270,6 +291,8 @@ if __name__ == '__main__':
 
     # main_efficiency_json()
 
-    main_build_upsert()
+    # main_build_upsert()
+
+    main_groupby_pandas()
 
     print("Done.")

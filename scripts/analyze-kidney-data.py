@@ -20,7 +20,7 @@ if __name__ == '__main__':
              "radiology_evidence_covid", "time_from_first_symptoms", "time_from_first_positive_swab"], axis=1)
     # after selecting columns of interest, we compute the latest sample id of the patient and keep associated data
     w1_metadata["sample_number"] = w1_metadata["sample_id"].apply(get_sample_number)
-    w1_metadata["sample_max"] = w1_metadata.groupby(["individual_id"])["sample_number"].transform(max)
+    w1_metadata["sample_max"] = w1_metadata.groupby(["individual_id"])["sample_number"].transform("max")
     w1_metadata = w1_metadata[w1_metadata["sample_number"] == w1_metadata["sample_max"]]
     w1_metadata = w1_metadata.drop(["sample_id", "sample_number", "sample_max"], axis="columns")
     w1_metadata = w1_metadata.reset_index()
@@ -30,7 +30,7 @@ if __name__ == '__main__':
          "radiology_evidence_covid", "time_from_first_symptoms", "time_from_first_positive_swab"], axis=1)
     # after selecting columns of interest, we compute the latest sample id of the patient and keep associated data
     w2_metadata["sample_number"] = w2_metadata["sample_id"].apply(get_sample_number)
-    w2_metadata["sample_max"] = w2_metadata.groupby(["individual_id"])["sample_number"].transform(max)
+    w2_metadata["sample_max"] = w2_metadata.groupby(["individual_id"])["sample_number"].transform("max")
     w2_metadata = w2_metadata[w2_metadata["sample_number"] == w2_metadata["sample_max"]]
     w2_metadata = w2_metadata.drop(["sample_id", "sample_number", "sample_max"], axis="columns")
     w2_metadata = w2_metadata.reset_index()

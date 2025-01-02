@@ -5,6 +5,7 @@ from database.Execution import Execution
 from enums.Profile import Profile
 from preprocessing.Preprocess import Preprocess
 from utils.file_utils import read_tabular_file_as_string
+from utils.setup_logger import log
 
 
 def get_sample_number(x):
@@ -20,6 +21,9 @@ class PreprocessKidneyCovid(Preprocess):
         super().__init__(execution=execution, data=data, profile=profile)
 
     def run(self):
+        log.info(self.profile)
+        log.info(self.data)
+        log.info(self.data.columns)
         if self.profile == Profile.CLINICAL or self.profile == Profile.GENOMIC:
             df_barcode_to_patient = read_tabular_file_as_string(self.execution.diagnosis_regexes_filepath)
             df_barcode_to_patient = df_barcode_to_patient[["sample_id", "individual_id"]]
@@ -36,7 +40,7 @@ class PreprocessKidneyCovid(Preprocess):
                 self.data = self.data[["individual_id", "sample_id", "cause_eskd", "WHO_severity", "fatal_disease"]]
             # after selecting columns of interest, we compute the latest sample id of the patient and keep associated data
             self.data["sample_number"] = self.data["sample_id"].apply(get_sample_number)
-            self.data["sample_max"] = self.data.groupby(["individual_id"])["sample_number"].transform(max)
+            self.data["sample_max"] = self.data.groupby(["individual_id"])["sample_number"].transform("max")
             self.data = self.data[self.data["sample_number"] == self.data["sample_max"]]
             self.data = self.data.drop(["sample_id", "sample_number", "sample_max"], axis="columns")
             self.data = self.data.reset_index()

@@ -23,7 +23,7 @@ if __name__ == '__main__':
     htseq = htseq.rename({"index": "sample_id"}, axis="columns")
     htseq = pd.merge(htseq, df_barcode_patient, on="sample_id", how="left")
     htseq["sample_number"] = htseq["sample_id"].apply(get_sample_number)
-    htseq["sample_max"] = htseq.groupby(["individual_id"])["sample_number"].transform(max)
+    htseq["sample_max"] = htseq.groupby(["individual_id"])["sample_number"].transform("max")
     print(htseq)
     htseq_patient = htseq[htseq["sample_number"] == htseq["sample_max"]]
     htseq_patient = htseq_patient.reset_index()
