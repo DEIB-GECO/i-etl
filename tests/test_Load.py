@@ -125,7 +125,6 @@ class TestLoad(unittest.TestCase):
         #    - one on _id (mandatory, made by MongoDB)
         #    - one on identifier.value
         #    - one on timestamp
-        log.info("create indexes")
         log.info(TableNames.values(db=load.database))
         for table_name in TableNames.values(db=load.database):
             index_cursor = load.database.db[table_name].list_indexes()
@@ -136,50 +135,54 @@ class TestLoad(unittest.TestCase):
             # SON([('v', 2), ('key', SON([('identifier.value', 1)])), ('name', 'identifier.value_1'), ('unique', True)])
             # SON([('v', 2), ('key', SON([('timestamp', 1)])), ('name', 'timestamp_1')])
             for index in index_cursor:
+                index_keys = index["key"]
                 log.info(index)
-                index_key = index["key"]
-                if "_id" in index_key or "identifier" in index_key or "timestamp" in index_key or "entity_type" in index_key:
+                log.info(index_keys)
+                if len(index_keys) == 1 and ("_id" in index_keys or "identifier" in index_keys or "timestamp" in index_keys or "entity_type" in index_keys):
                     # to check whether we have exactly the four indexes we expect
                     count_indexes += 1
                     # assert that only identifier is unique,
                     # timestamp is not (there may be several instances created at the same time)
                     # resource type is not either (we have several instances of the same type)
-                    if "identifier" in index_key:
+                    if "identifier" in index_keys:
                         assert index["unique"] is True
                     else:
                         assert "unique" not in index
                 else:
                     if table_name == TableNames.FEATURE:
                         # there is also a double index (ontology_resource.system and ontology_resource.code)
-                        if "ontology_resource.system" in index_key and "ontology_resource.code" in index_key:
+                        if len(index_keys) == 2 and "ontology_resource.system" in index_keys and "ontology_resource.code" in index_keys:
                             count_indexes += 1
                             assert "unique" not in index
                         else:
                             assert False, f"{table_name} expects a compound index on two fields."
                     elif table_name == TableNames.RECORD:
-                        if "instantiates" in index_key and "registered_by" in index_key and  "has_subject" in index_key and "dataset" in index_key:
+                        if len(index_keys) == 5 and ("instantiates" in index_keys and "registered_by" in index_keys and  "has_subject" in index_keys
+                                and "entity_type" in index_keys and "base_id" in index_keys):
                             # this is the index created for upserts
                             count_indexes += 1
                             assert index["unique"] is True
-                        else:
-                            if "instantiates" in index_key:
+                        elif len(index_keys) == 1:
+                            if "instantiates" in index_keys:
                                 count_indexes += 1
                                 assert "unique" not in index
-                            elif "has_subject" in index_key:
+                            elif "has_subject" in index_keys:
                                 count_indexes += 1
                                 assert "unique" not in index
-                            elif "dataset" in index_key:
+                            elif "dataset" in index_keys:
                                 count_indexes += 1
                                 assert "unique" not in index
-                            elif "registered_by" in index_key:
+                            elif "registered_by" in index_keys:
                                 count_indexes += 1
                                 assert "unique" not in index
                             else:
-                                assert False, f"{table_name} has an unknown index named {index_key}."
+                                assert False, f"{table_name} has an unknown index named {index_keys}."
+                        else:
+                            assert False, f"{table_name} has an unknown index named {index_keys}."
                     elif table_name == TableNames.DATASET:
-                        if "_id" in index_key or "global_identifier" in index_key:
+                        if len(index_keys) == 1 and ("_id" in index_keys or "global_identifier" in index_keys):
                             count_indexes += 1
-                            if "global_identifier" in index_key:
+                            if "global_identifier" in index_keys:
                                 assert index["unique"] is True
                             else:
                                 assert "unique" not in index
@@ -188,7 +191,7 @@ class TestLoad(unittest.TestCase):
             if table_name == TableNames.FEATURE:
                 assert count_indexes == 5  # (_id, identifier, timestamp, entity_type, <onto.name, onto.code>)
             elif table_name == TableNames.RECORD:
-                assert count_indexes == 8  # (_id, identifier, timestamp, entity_type, instantiates, has_subject, dataset, registered_by, <instantiates, has_subject, dataset, registered_by>)
+                assert count_indexes == 8  # (_id, identifier, timestamp, entity_type, instantiates, has_subject, dataset, registered_by, <instantiates, has_subject, dataset, registered_by, entity type, base_id>)
             elif table_name == TableNames.DATASET:
                 assert count_indexes == 5  # (_id, identifier, timestamp, entity_type, global_identifier)
             elif table_name == TableNames.HOSPITAL:

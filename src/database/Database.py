@@ -142,10 +142,12 @@ class Database:
         # and send one bulk operation per batch. This allows to save time by not doing a db call per upsert.
         # we use the bulk operation to send sets of BATCH_SIZE operations, each operation doing an upsert
         # this allows to have only one call to the database for each bulk operation (instead of one per upsert operation)
+        log.info(unique_variables)
         operations = [pymongo.UpdateOne(
-            filter={unique_variable: one_tuple[unique_variable] for unique_variable in unique_variables},
+            filter={unique_variable: one_tuple[unique_variable] for unique_variable in unique_variables if unique_variable in one_tuple},
             update=self.create_update_stmt(the_tuple=one_tuple), upsert=True)
             for one_tuple in the_batch]
+        # log.info(operations)
         # July 18th, 2024: bulk_write modifies the hospital lists in Transform (even if I use deep copies everywhere)
         # It changes (only?) the timestamp value with +1/100, e.g., 2024-07-18T14:34:32Z becomes 2024-07-18T14:34:33Z
         # in the tests I use a delta to compare datetime
@@ -168,13 +170,14 @@ class Database:
         return mapping
 
     def load_json_in_table(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int) -> None:
+        log.info(unique_variables)
         self.load_json_in_table_general(profile=profile, table_name=table_name, unique_variables=unique_variables, dataset_number=dataset_number, ordered=False)
 
     def load_json_in_table_for_tests(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int) -> None:
         self.load_json_in_table_general(profile=profile, table_name=table_name, unique_variables=unique_variables, dataset_number=dataset_number, ordered=True)
 
     def load_json_in_table_general(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int, ordered: bool) -> None:
-        log.info(f"Load {profile} data in {table_name}")
+        log.info(f"Load {profile} data in {table_name} with unique variables {unique_variables}")
         first_file = True
         for filename in os.listdir(self.execution.working_dir_current):
             if filename.startswith(f"{str(dataset_number)}{profile}{table_name}"):
@@ -182,6 +185,7 @@ class Database:
                     if first_file:
                         # first, create an index on the unique variables to speed up the upsert (which checks whether each document already exists)
                         # we do this only if we have data for that kind of data
+                        log.info(f"For profile {profile}, creating unique index {unique_variables}")
                         self.create_unique_index(table_name=table_name, columns={elem: 1 for elem in unique_variables})
                         first_file = False
                     tuples = bson.json_util.loads(json_datafile.read())
@@ -217,9 +221,9 @@ class Database:
         """
         return self.db[table_name].count_documents(filter_dict)
 
-    def inverse_inner_join(self, name_table_1: str, name_table_2: str, field_table_1: str, field_table_2: str, lookup_name: str) -> CommandCursor:
+    def inverse_inner_join(self, name_table_1: str, name_table_2: str, foreign_field: str, local_field: str, lookup_name: str) -> CommandCursor:
         operations = [
-            Operators.lookup(join_table_name=name_table_2, field_table_1=field_table_1, field_table_2=field_table_2, lookup_field_name=lookup_name),
+            Operators.lookup(join_table_name=name_table_2, foreign_field=foreign_field, local_field=local_field, lookup_field_name=lookup_name),
             Operators.match(field=lookup_name, value={"$eq": []}, is_regex=False)
         ]
         return self.db[name_table_1].aggregate(operations)
@@ -237,7 +241,7 @@ class Database:
         only one column should be unique. The parameter should be of the form { "colA": 1, ... }.
         :return: Nothing.
         """
-        log.info(f"create index (unique) in {table_name} on columns {columns}")
+        log.info(f"create unique index in {table_name} on columns {columns}")
         self.db[table_name].create_index(columns, unique=True)
 
     def create_non_unique_index(self, table_name: str, columns: dict) -> None:
@@ -248,7 +252,7 @@ class Database:
         only one column should be unique. The parameter should be of the form { "colA": 1, ... }.
         :return: Nothing.
         """
-        log.info(f"create index (non-unique) in {table_name} on columns {columns}")
+        log.info(f"create non-unique index in {table_name} on columns {columns}")
         self.db[table_name].create_index(columns, unique=False)
 
     def create_on_demand_view(self, table_name: str, view_name: str, pipeline: list) -> None:

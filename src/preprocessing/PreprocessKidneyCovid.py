@@ -23,6 +23,7 @@ class PreprocessKidneyCovid(Preprocess):
         if self.profile == Profile.CLINICAL or self.profile == Profile.GENOMIC:
             df_barcode_to_patient = read_tabular_file_as_string(self.execution.diagnosis_regexes_filepath)
             df_barcode_to_patient = df_barcode_to_patient[["sample_id", "individual_id"]]
+            df_barcode_to_patient = df_barcode_to_patient.drop_duplicates()
 
         if self.profile in [Profile.PHENOTYPIC, Profile.IMAGING, Profile.DIAGNOSIS]:
             # for metadata_w1.csv

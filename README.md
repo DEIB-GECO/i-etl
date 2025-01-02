@@ -37,7 +37,7 @@ In that folder, run `X=Y docker compose up -d` to launch the FAIRification, such
 2. The database name: `DB_NAME`
 3. The MongoDB folder path: `SERVER_FOLDER_MONGODB`
 4. _If you want to keep the execution log: `SERVER_FOLDER_LOG_ETL`_
-5. _If your data uses USA-styled dates and numbers: `USE_EN_LOCALE=True`_
+5. _Set the locale to be used to read numeric values and dates: `USE_LOCALE`_
    
 
 ### Scenario 1: run the ETL with real data
@@ -121,7 +121,7 @@ Then, on can access it using that port (for instance, `mongosh --port 27018`).
 | Parameter name           | Description                                                                         | Values                                                           |
 |:-------------------------|-------------------------------------------------------------------------------------|------------------------------------------------------------------|
 | `SERVER_FOLDER_LOG_ETL`* | The absolute (server) path to the folder in which the ETL will write its log files. | `/dev/null` or a folder path                                     |
-| `USE_EN_LOCALE`*         | Whether to use the en_US locale instead of the one of the country.                  | `False`, `True`                                                  |
+| `USE_LOCALE`*            | The locale to be used for reading numerics and dates.                               | `en_GB`, `en_US`, `fr_FR`, `it_IT`, etc.                         |
 | `COLUMNS_TO_REMOVE`*     | The set of column names to not include in the final database.                       | `[]` (empty list), or a list with strings being the column names | 
 
 

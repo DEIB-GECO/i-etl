@@ -28,10 +28,14 @@ class Load(Task):
 
     def load_records(self) -> None:
         log.info(f"load {self.profile} records")
-        unique_variables = ["registered_by", "has_subject", "instantiates", "dataset"]
+        # we need to have registered_by, has_subject and instantiates for sure
+        # we also need entity_type because we cannot have two indexes, one for non-clinical (reg, subj, inst) and one for clinical (reg, subj, inst, bid)
+        # we also need base_id for the same reason, the value will be null for non-clinical records and clinical records without sample information
+        unique_variables = ["registered_by", "has_subject", "instantiates", "entity_type", "base_id"]
         if self.profile == Profile.DIAGNOSIS:
             # we allow patients to have several diagnoses
             unique_variables.append("value")
+        log.info(unique_variables)
         self.database.load_json_in_table(profile=self.profile, table_name=TableNames.RECORD, unique_variables=unique_variables, dataset_number=self.dataset_number)
 
     def create_db_indexes(self) -> None:
@@ -59,6 +63,11 @@ class Load(Task):
         self.database.create_non_unique_index(table_name=TableNames.RECORD, columns={"has_subject": 1})
         self.database.create_non_unique_index(table_name=TableNames.RECORD, columns={"dataset": 1})
         count += 3
+        # we cannot create an index on the base id because some records have it (the clinical ones)
+        # while others do not have (imaging, phenotypic, etc.)
+        # if have_base_id:
+        #     self.database.create_non_unique_index(table_name=TableNames.RECORD, columns={"base_id": 1})
+        #     count += 1
 
         # for Dataset entity only, we create an index on the global identifier
         self.database.create_unique_index(table_name=TableNames.DATASET, columns={"global_identifier": 1})

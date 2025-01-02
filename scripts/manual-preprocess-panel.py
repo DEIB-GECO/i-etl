@@ -5,6 +5,7 @@ if __name__ == '__main__':
     panel = pd.read_csv("../datasets/expes/covid-kidney/htseq_counts.csv", index_col=False)
     df_barcode_to_patient = pd.read_csv("../datasets/expes/covid-kidney/mapping_patient_sample.csv")
     df_barcode_to_patient = df_barcode_to_patient[["sample_id", "individual_id"]]
+    df_barcode_to_patient = df_barcode_to_patient.drop_duplicates()
     all_sample_ids = list(panel.columns)
     all_sample_ids.remove("gencode_id")
 

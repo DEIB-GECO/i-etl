@@ -61,13 +61,13 @@ class DatabaseStatistics(Statistics):
             self.cc_with_no_text_per_table[table_name] = {"elements": no_text_cc, "size": len(no_text_cc)}
 
     def compute_unknown_patient_refs_per_record_table(self, database: Database) -> None:
-        unknown_patient_refs = [jsonify_tuple(res) for res in database.inverse_inner_join(name_table_1=TableNames.RECORD, name_table_2=TableNames.PATIENT, field_table_1="identifier", field_table_2="has_subject", lookup_name="KnownRefs")]
+        unknown_patient_refs = [jsonify_tuple(res) for res in database.inverse_inner_join(name_table_1=TableNames.RECORD, name_table_2=TableNames.PATIENT, foreign_field="identifier", local_field="has_subject", lookup_name="KnownRefs")]
         self.unknown_patient_refs_per_table[TableNames.RECORD] = {"elements": unknown_patient_refs, "size": len(unknown_patient_refs)}
 
     def compute_unknown_hospital_refs_per_record_table(self, database: Database) -> None:
-        unknown_hospital_refs = [jsonify_tuple(res) for res in database.inverse_inner_join(name_table_1=TableNames.RECORD, name_table_2=TableNames.HOSPITAL, field_table_1="identifier", field_table_2="registered_by", lookup_name="KnownRefs")]
+        unknown_hospital_refs = [jsonify_tuple(res) for res in database.inverse_inner_join(name_table_1=TableNames.RECORD, name_table_2=TableNames.HOSPITAL, foreign_field="identifier", local_field="registered_by", lookup_name="KnownRefs")]
         self.unknown_hospital_refs_per_table[TableNames.RECORD] = {"elements": unknown_hospital_refs, "size": len(unknown_hospital_refs)}
 
     def compute_unknown_feat_refs_in_records(self, database: Database) -> None:
-        unknown_refs = [jsonify_tuple(res) for res in database.inverse_inner_join(name_table_1=TableNames.RECORD, name_table_2=TableNames.FEATURE, field_table_1="identifier", field_table_2="instantiates", lookup_name="KnownRefs")]
+        unknown_refs = [jsonify_tuple(res) for res in database.inverse_inner_join(name_table_1=TableNames.RECORD, name_table_2=TableNames.FEATURE, foreign_field="identifier", local_field="instantiates", lookup_name="KnownRefs")]
         self.unknown_feat_refs_in_records = {"elements": unknown_refs, "size": len(unknown_refs)}

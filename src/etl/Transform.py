@@ -69,6 +69,8 @@ class Transform(Task):
         # to keep track of anonymized vs. hospital patient ids
         # this is empty if no file as been provided by the user, otherwise it contains some mappings <patient ID, anonymized ID>
         self.patient_ids_mapping = {}
+        # to keep track of the total number of values that could exist (whether they are Nan or a real value)
+        self.mapping_column_all_count = {}
 
         # to record objects that will be further inserted in the database
         self.features = []
@@ -173,10 +175,10 @@ class Transform(Task):
                         raise NotImplementedError("To be implemented")
 
                     if onto_resource is not None:
-                        log.info(f"adding a new {self.profile} instance about {onto_resource.label}: {new_feature}")
+                        log.info(f"adding a new {self.profile} feature about {onto_resource.label}: {new_feature}")
                     else:
                         # no associated ontology code or failed to retrieve the code with API
-                        log.info(f"adding a new {self.profile} instance about {column_name}: {new_feature}")
+                        log.info(f"adding a new {self.profile} feature about {column_name}: {new_feature}")
 
                     self.features.append(new_feature)  # this cannot be null, otherwise we would have raise the above exception
                     self.process_batch_of_features(last=False)
@@ -217,6 +219,7 @@ class Transform(Task):
         # b. Create Record instance, and write them in temporary (JSON) files
         columns = self.data.columns
         for row in self.data.itertuples(index=False):
+            # log.info(row)
             # create Record instances by associating observations to a patient, a record and a hospital
             for column_name in columns:
                 value = row[columns.get_loc(column_name)]
@@ -225,8 +228,13 @@ class Transform(Task):
                     # if there is no value for that Feature, no need to create a Record instance
                     # log.error(f"skipping value {value} in column {column_name} because it is None, or empty or nan")
                     self.quality_stats.count_empty_cell_for_column(column_name=column_name)
+                    if column_name in mapping_column_to_feature_id:
+                        feature_id = Identifier(id_value=mapping_column_to_feature_id[column_name])
+                        if feature_id.value not in self.mapping_column_all_count:
+                            self.mapping_column_all_count[feature_id.value] = 1
+                        else:
+                            self.mapping_column_all_count[feature_id.value] = self.mapping_column_all_count[feature_id.value] + 1
                 else:
-                    # log.info(row)
                     if column_name in mapping_column_to_feature_id:
                         # we know a code for this column, so we can register the value of that Feature in a new Record
                         feature_id = Identifier(id_value=mapping_column_to_feature_id[column_name])
@@ -247,7 +255,7 @@ class Transform(Task):
                                                           hospital_name=self.execution.hospital_name,
                                                           dataset=dataset)
                         elif self.profile == Profile.CLINICAL:
-                            if ID_COLUMNS[self.execution.hospital_name][SAMPLE_ID] in row:
+                            if ID_COLUMNS[self.execution.hospital_name][SAMPLE_ID] in columns:
                                 # this dataset contains a sample bar code (or equivalent)
                                 base_id = row[columns.get_loc(ID_COLUMNS[self.execution.hospital_name][SAMPLE_ID])]
                             else:
@@ -292,6 +300,11 @@ class Transform(Task):
                             raise NotImplementedError("Not implemented yet.")
                         self.records.append(new_record)
                         self.process_batch_of_records(last=False)
+                        # to compute the percentage of missing values in features' profiles
+                        if feature_id.value not in self.mapping_column_all_count:
+                            self.mapping_column_all_count[feature_id.value] = 1
+                        else:
+                            self.mapping_column_all_count[feature_id.value] = self.mapping_column_all_count[feature_id.value] + 1
                     else:
                         # this represents the case when a column has not been converted to a Feature resource
                         # this may happen for ID column for instance, or in BUZZI many clinical columns are not described in the metadata, thus skipped here
@@ -299,6 +312,12 @@ class Transform(Task):
                         pass
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
         self.process_batch_of_records(last=True)
+        # and save the total counts for each column (to compute the percentage of missing values in the profiles)
+        all_counts = []  # a list of <"identifier": identifier, "all_counts": all_counts> instead of <identifier: all_counts>
+        for k in self.mapping_column_all_count:
+            all_counts.append({"identifier": k, "count_all_values": self.mapping_column_all_count[k], "dataset": self.dataset_instance.global_identifier})
+        log.info(all_counts)
+        self.database.insert_many_tuples(table_name=TableNames.COUNTS_FEATURES, tuples=all_counts)
 
     ##############################################################
     # OTHER ENTITIES

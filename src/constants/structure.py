@@ -3,7 +3,7 @@ import os
 WORKING_DIR = "working-dir"
 DEFAULT_DB_NAME = "better_default"
 # these constants have to exactly match the volume paths described in compose.yaml
-DOCKER_FOLDER = "/home/better-deployed"
+DOCKER_FOLDER = "/home/fairificator-deployed"
 DOCKER_FOLDER_DATA = os.path.join(DOCKER_FOLDER, "real-data")
 DOCKER_FOLDER_GENERATED_DATA = os.path.join(DOCKER_FOLDER, "synthetic-data")
 DOCKER_FOLDER_METADATA = os.path.join(DOCKER_FOLDER, "metadata")

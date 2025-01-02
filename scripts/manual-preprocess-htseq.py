@@ -12,6 +12,7 @@ def get_sample_number(x):
 if __name__ == '__main__':
     df_barcode_patient = pd.read_csv("../datasets/expes/covid-kidney/mapping_patient_sample.csv")
     df_barcode_patient = df_barcode_patient[["sample_id", "individual_id"]]
+    df_barcode_patient = df_barcode_patient.drop_duplicates()
     print(df_barcode_patient)
 
     htseq = pd.read_csv("../datasets/expes/covid-kidney/htseq_counts_original.csv", index_col=False)

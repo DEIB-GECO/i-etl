@@ -7,7 +7,7 @@ from constants.defaults import DATASET_GLOBAL_IDENTIFIER_PREFIX
 from constants.idColumns import NO_ID
 from database.Counter import Counter
 from database.Database import Database
-from database.DatasetProfile import DatasetProfile
+from catalogue.DatasetProfile import DatasetProfile
 from entities.Resource import Resource
 from enums.TableNames import TableNames
 from database.Operators import Operators

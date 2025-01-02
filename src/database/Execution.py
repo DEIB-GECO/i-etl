@@ -33,7 +33,7 @@ class Execution:
         self.current_file_number = 1  # set in the ETL
         self.diagnosis_regexes_filepath = None  # user input
         self.anonymized_patient_ids_filepath = None  # user input
-        self.use_en_locale = False  # user input
+        self.use_locale = "en_GB"  # user input
         self.record_carrier_patients = False  # user input
 
         # parameters related to the database
@@ -65,7 +65,7 @@ class Execution:
         self.db_name = self.check_parameter(key=ParameterKeys.DB_NAME, accepted_values=None, default_value=self.db_name)
         log.debug(f"creating new DB with name {self.db_name}")
         self.hospital_name = self.check_parameter(key=ParameterKeys.HOSPITAL_NAME, accepted_values=HospitalNames.values(), default_value=self.hospital_name)
-        self.use_en_locale = self.check_parameter(key=ParameterKeys.USE_EN_LOCALE, accepted_values=["True", "False", True, False], default_value=self.use_en_locale)
+        self.use_locale = self.check_parameter(key=ParameterKeys.USE_LOCALE, accepted_values=None, default_value=self.use_locale)
         self.db_drop = self.check_parameter(key=ParameterKeys.DB_DROP, accepted_values=["True", "False", True, False], default_value=self.db_drop)
         self.columns_to_remove = self.check_parameter(key=ParameterKeys.COLUMNS_TO_REMOVE_KEY, accepted_values=None, default_value=self.columns_to_remove)
         self.nb_rows = self.check_parameter(key=ParameterKeys.DATA_GEN_NB_ROWS, accepted_values=None, default_value=self.nb_rows)

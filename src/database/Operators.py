@@ -91,27 +91,38 @@ class Operators(EnumAsClass):
                 }
 
     @classmethod
-    def lookup(cls, join_table_name: str, field_table_1: str, field_table_2: str, lookup_field_name: str) -> dict:
+    def lookup(cls, join_table_name: str, foreign_field: str, local_field: str, lookup_field_name: str) -> dict:
         # this is a SQL join between two tables
         return {
             "$lookup": {
                 "from": join_table_name,  # the "second" table of the join
-                "localField": field_table_2,  # the field of the "second" table to join
-                "foreignField": field_table_1,  # the field of the "first" table to join
+                "localField": local_field,  # the field of the "second" table to join
+                "foreignField": foreign_field,  # the field of the "first" table to join
                 "as": lookup_field_name,  # the name of the (new array) field added containing either the joined resource (of the second table) or an empty array if no join could be made for the tuple
             }
         }
 
     @classmethod
-    def cartesian_product(cls, join_table_name: str, field_b: str, lookup_field_name: str, filter_dict: dict) -> dict:
-        if len(filter_dict) == 0:
-            pipeline = [{"$project": {field_b: 1, "_id": 0}}]
-        else:
-            pipeline = [filter_dict, {"$project": {field_b: 1, "_id": 0}}]
+    def lookup_with_condition(cls, join_table_name: str, let_variables: dict, pipeline: list, lookup_field_name: str) -> dict:
         return {
             "$lookup": {
                 "from": join_table_name,
+                "let": let_variables,
                 "pipeline": pipeline,
+                "as": lookup_field_name
+            }
+        }
+
+    @classmethod
+    def cartesian_product(cls, join_table_name: str, lookup_field_name: str, filter_dict: dict) -> dict:
+        # if len(filter_dict) == 0:
+        #     pipeline = [{"$project": {field_b: 1, "_id": 0}}]
+        # else:
+        #     pipeline = [filter_dict, {"$project": {field_b: 1, "_id": 0}}]
+        return {
+            "$lookup": {
+                "from": join_table_name,
+                "pipeline": [filter_dict] if len(filter_dict) > 0 else [],
                 "as": lookup_field_name
             }
         }
@@ -150,7 +161,7 @@ class Operators(EnumAsClass):
         }
 
     @classmethod
-    def group_by(cls, group_key: dict | str | None, groups: list) -> dict:
+    def group_by(cls, group_key: dict | list | str | None, groups: list) -> dict:
         # this is the SQL GROUP BY operator
         """
         Compute group by (on one or many fields, with one or many operators)
@@ -200,11 +211,33 @@ class Operators(EnumAsClass):
         }
 
     @classmethod
+    def add_fields(cls, key: str, value: str|dict) -> dict:
+        return {
+            "$addFields": {
+                key: value
+            }
+        }
+
+    @classmethod
+    def set_variables(cls, variables: list) -> dict:
+        return {
+            "$set": {
+                elem["name"]: elem["operation"] for elem in variables
+            }
+        }
+
+    @classmethod
+    def unset_variables(cls, variables: list) -> dict:
+        return {
+            "$unset": variables
+        }
+
+    @classmethod
     def from_datetime_to_isodate(cls, current_datetime: datetime) -> dict:
         return {"$date": current_datetime.strftime(THE_DATETIME_FORMAT)}
 
     @classmethod
-    def merge(cls, table_name: str, on_attribute: str, when_matched: str, when_not_matched: str) -> dict:
+    def merge(cls, table_name: str, on_attribute: str|list, when_matched: str, when_not_matched: str) -> dict:
         # append new tuples, e.g., from an aggregation pipeline, to an existing collection
         # when matched: replace|keepExisting|merge|fail|pipeline
         # when not matched: insert|discard|fail
@@ -221,4 +254,15 @@ class Operators(EnumAsClass):
     def write_to_table(cls, table_name: str) -> dict:
         return {
             "$out": table_name
+        }
+
+    @classmethod
+    def filter_array(cls, input_array_name: str, element: str, cond: dict, limit: int) -> dict:
+        return {
+            "$filter": {
+                "input": input_array_name,
+                "as": element,
+                "cond": cond,  # use element in cond to filter elements
+                "limit": limit
+            }
         }
