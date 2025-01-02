@@ -43,7 +43,7 @@ class PreprocessKidneyCovid(Preprocess):
             self.data["sample_max"] = self.data.groupby(["individual_id"])["sample_number"].transform("max")
             self.data = self.data[self.data["sample_number"] == self.data["sample_max"]]
             self.data = self.data.drop(["sample_id", "sample_number", "sample_max"], axis="columns")
-            self.data = self.data.reset_index()
+            self.data = self.data.reset_index(drop=True)  # do not the column "index", simply re-number rows
 
         elif self.profile == Profile.CLINICAL:
             # for general_panel.csv
