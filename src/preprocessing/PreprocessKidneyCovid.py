@@ -39,7 +39,8 @@ class PreprocessKidneyCovid(Preprocess):
             elif self.profile == Profile.DIAGNOSIS:
                 self.data = self.data[["individual_id", "sample_id", "cause_eskd", "WHO_severity", "fatal_disease"]]
             # after selecting columns of interest, we compute the latest sample id of the patient and keep associated data
-            self.data["sample_number"] = self.data["sample_id"].apply(get_sample_number)
+            sample_numbers = self.data["sample_id"].apply(get_sample_number)
+            self.data = self.data.assign(sample_number=sample_numbers.values)  # assign values to column 'sample_number'
             self.data["sample_max"] = self.data.groupby(["individual_id"])["sample_number"].transform("max")
             self.data = self.data[self.data["sample_number"] == self.data["sample_max"]]
             self.data = self.data.drop(["sample_id", "sample_number", "sample_max"], axis="columns")
