@@ -92,7 +92,7 @@ class Database:
         self.client.close()
 
     def insert_one_tuple(self, table_name: str, one_tuple: dict) -> None:
-        log.info(f"In table {table_name}, insert {one_tuple}")
+        # log.info(f"In table {table_name}, insert {one_tuple}")
         self.db[table_name].insert_one(one_tuple)
 
     def insert_many_tuples(self, table_name: str, tuples: list[dict] | tuple) -> None:
@@ -102,6 +102,9 @@ class Database:
         :param tuples: A list of dicts being the tuples to insert.
         """
         _ = self.db[table_name].insert_many(tuples, ordered=False)
+
+    def update_one_tuple(self, table_name: str, filter_dict: dict, update: dict) -> None:
+        _ = self.db[table_name].update_one(filter=filter_dict, update=self.create_update_stmt(the_tuple=update))
 
     def create_update_stmt(self, the_tuple: dict):
         # if self.execution.db_upsert_policy == UpsertPolicy.DO_NOTHING:

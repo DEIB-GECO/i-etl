@@ -1,4 +1,3 @@
-import json
 import re
 from datetime import datetime
 from typing import Any
@@ -18,10 +17,8 @@ from entities.ClinicalFeature import ClinicalFeature
 from entities.ClinicalRecord import ClinicalRecord
 from entities.DiagnosisFeature import DiagnosisFeature
 from entities.DiagnosisRecord import DiagnosisRecord
-from entities.Feature import Feature
 from entities.GenomicFeature import GenomicFeature
 from entities.GenomicRecord import GenomicRecord
-from entities.Hospital import Hospital
 from entities.ImagingFeature import ImagingFeature
 from entities.ImagingRecord import ImagingRecord
 from entities.MedicineFeature import MedicineFeature
@@ -102,8 +99,13 @@ class Transform(Task):
 
     def create_features(self) -> None:
         # 1. get existing features in memory
-        result = self.database.find_operation(table_name=self.profile, filter_dict={"type": self.profile}, projection={"ontology_resource.label": 1})
-        db_existing_features = {res["name"]: Feature.from_json(json.dumps(res)) for res in result}
+        log.info(f"{self.profile}Feature")
+        result = self.database.find_operation(table_name=TableNames.FEATURE, filter_dict={"entity_type": f"{self.profile}Feature"}, projection={"name": 1, "identifier": 1, "datasets": 1})
+        db_existing_features = {}
+        for res in result:
+            log.info(res)
+            log.info(type(res))
+            db_existing_features[res["name"]] = {"identifier": res["identifier"], "datasets": res["datasets"]}
         log.info(db_existing_features)
 
         # 2. create non-existing features in-memory, then insert them
@@ -113,10 +115,12 @@ class Transform(Task):
             column_name = row[columns.get_loc(MetadataColumns.COLUMN_NAME)]
             # columns to remove have already been removed in the Extract part from the metadata
             # here, we need to ensure that we create Features only for still-existing columns and not for ID column
+            # log.info(column_name)
+            # log.info(db_existing_features)
+            # log.info(column_name in db_existing_features)
             if column_name not in (ID_COLUMNS[self.execution.hospital_name][PATIENT_ID], ID_COLUMNS[self.execution.hospital_name][SAMPLE_ID]):
                 if column_name not in db_existing_features:
                     # we create a new Feature from scratch
-                    new_feature = None
                     onto_resource = self.create_ontology_resource_from_row(column_name=column_name)
                     data_type = row[columns.get_loc(MetadataColumns.ETL_TYPE)]  # this has been normalized while loading + we take ETL_type to get the narrowest type (in which we cast values)
                     visibility = row[columns.get_loc(MetadataColumns.VISIBILITY)]  # this has been normalized while loading
@@ -185,11 +189,12 @@ class Transform(Task):
                 else:
                     # the Feature already exists, so no need to add it to the database again.
                     # however, we need to update the set of datasets in which it appears
-                    log.error(f"The phen feature about {column_name} already exists. Not added, but updated.")
-                    updated_feature = db_existing_features[column_name]
-                    if updated_feature.datasets is not None and self.dataset_instance.global_identifier not in updated_feature.datasets:
-                        updated_feature.datasets.append(self.dataset_instance.global_identifier)
-                        self.features.append(updated_feature)
+                    log.error(f"The feature about {column_name} already exists. Not added, but updated.")
+                    datasets = db_existing_features[column_name]["datasets"]
+                    log.info(datasets)
+                    if self.dataset_instance.global_identifier not in datasets:
+                        datasets.append(self.dataset_instance.global_identifier)
+                        self.database.update_one_tuple(table_name=TableNames.FEATURE, filter_dict={"identifier": db_existing_features[column_name]["identifier"]}, update={"datasets": datasets})
             else:
                 log.debug(f"I am skipping column {column_name} because it has been dropped or is an ID column.")
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
