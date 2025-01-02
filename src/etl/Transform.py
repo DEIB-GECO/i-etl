@@ -409,11 +409,11 @@ class Transform(Task):
         rows = self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name]
         if len(rows) == 1:
             row = rows.iloc[0]
-            onto_name = row[self.metadata.columns.get_loc(MetadataColumns.ONTO_NAME)]
+            onto_name = row.iloc[self.metadata.columns.get_loc(MetadataColumns.ONTO_NAME)]
             if is_not_nan(onto_name):
                 onto_resource = OntologyResource(
                     ontology=Ontologies.get_enum_from_name(onto_name),
-                    full_code=row[self.metadata.columns.get_loc(MetadataColumns.ONTO_CODE)],
+                    full_code=row.iloc[self.metadata.columns.get_loc(MetadataColumns.ONTO_CODE)],
                     quality_stats=self.quality_stats,
                     label=None)
                 return onto_resource
