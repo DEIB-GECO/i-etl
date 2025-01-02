@@ -202,7 +202,12 @@ class FeatureProfileComputation:
             Operators.project(field=None, projected_value={
                 "kurtosis": {
                     "$cond": {
-                        "if": {"$eq": ["$n", 0]},
+                        "if": {"$or": [
+                            {"$eq": ["$n", 0]},
+                            {"$eq": [{"$sum": ["$n", -1]}, 0]},
+                            {"$eq": [{"$sum": ["$n", -2]}, 0]},
+                            {"$eq": [{"$sum": ["$n", -3]}, 0]}
+                        ]},
                         "then": 0,
                         "else": {
                             "$subtract": [
@@ -223,7 +228,11 @@ class FeatureProfileComputation:
                 },
                 "skewness": {
                     "$cond": {
-                        "if": {"$eq": ["$n", 0]},
+                        "if": {"$or": [
+                            {"$eq": ["$n", 0]},
+                            {"$eq": [{"$sum": ["$n", -1]}, 0]},
+                            {"$eq": [{"$sum": ["$n", -2]}, 0]}
+                        ]},
                         "then": 0,
                         "else": {
                             "$multiply": [

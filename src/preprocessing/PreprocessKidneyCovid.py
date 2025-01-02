@@ -21,9 +21,6 @@ class PreprocessKidneyCovid(Preprocess):
         super().__init__(execution=execution, data=data, profile=profile)
 
     def run(self):
-        log.info(self.profile)
-        log.info(self.data)
-        log.info(self.data.columns)
         if self.profile == Profile.CLINICAL or self.profile == Profile.GENOMIC:
             df_barcode_to_patient = read_tabular_file_as_string(self.execution.diagnosis_regexes_filepath)
             df_barcode_to_patient = df_barcode_to_patient[["sample_id", "individual_id"]]
