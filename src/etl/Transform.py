@@ -5,8 +5,7 @@ from typing import Any
 import ujson
 from pandas import DataFrame
 
-from constants.defaults import BATCH_SIZE, PATTERN_VALUE_UNIT
-from constants.idColumns import NO_ID, ID_COLUMNS, PATIENT_ID, SAMPLE_ID
+from constants.defaults import BATCH_SIZE, PATTERN_VALUE_UNIT, NO_ID
 from database.Counter import Counter
 from database.Database import Database
 from database.Dataset import Dataset
@@ -118,7 +117,7 @@ class Transform(Task):
             # log.info(column_name)
             # log.info(db_existing_features)
             # log.info(column_name in db_existing_features)
-            if column_name not in (ID_COLUMNS[self.execution.hospital_name][PATIENT_ID], ID_COLUMNS[self.execution.hospital_name][SAMPLE_ID]):
+            if column_name not in [self.execution.patient_id_column_name, self.execution.sample_id_column_name]:
                 if column_name not in db_existing_features:
                     # we create a new Feature from scratch
                     onto_resource = self.create_ontology_resource_from_row(column_name=column_name)
@@ -245,7 +244,7 @@ class Transform(Task):
                         feature_id = Identifier(id_value=mapping_column_to_feature_id[column_name])
                         hospital_id = Identifier(id_value=mapping_hospital_to_hospital_id[self.execution.hospital_name])
                         # get the anonymized patient id using the mapping <initial id, anonymized id>
-                        patient_id = Identifier(id_value=self.patient_ids_mapping[row[columns.get_loc(ID_COLUMNS[self.execution.hospital_name][PATIENT_ID])]])
+                        patient_id = Identifier(id_value=self.patient_ids_mapping[row[columns.get_loc(self.execution.patient_id_column_name)]])
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
                         anonymized_value, is_anonymized = self.anonymize_value(column_name=column_name,
                                                                                fairified_value=fairified_value)
@@ -257,26 +256,23 @@ class Transform(Task):
                                                           patient_id=patient_id, hospital_id=hospital_id,
                                                           value=fairified_value,
                                                           counter=self.counter,
-                                                          hospital_name=self.execution.hospital_name,
                                                           dataset=dataset)
                         elif self.profile == Profile.CLINICAL:
-                            if ID_COLUMNS[self.execution.hospital_name][SAMPLE_ID] in columns:
+                            if self.execution.sample_id_column_name in columns:
                                 # this dataset contains a sample bar code (or equivalent)
-                                base_id = row[columns.get_loc(ID_COLUMNS[self.execution.hospital_name][SAMPLE_ID])]
+                                base_id = row[columns.get_loc(self.execution.sample_id_column_name)]
                             else:
                                 base_id = None
                             new_record = ClinicalRecord(feature_id=feature_id, patient_id=patient_id,
                                                         hospital_id=hospital_id, value=fairified_value,
                                                         base_id=base_id,
-                                                        counter=self.counter, hospital_name=self.execution.hospital_name,
-                                                        dataset=dataset)
+                                                        counter=self.counter, dataset=dataset)
                             # log.info(f"new clinical record: {new_record}")
                         elif self.profile == Profile.DIAGNOSIS:
                             new_record = DiagnosisRecord(feature_id=feature_id,
                                                          patient_id=patient_id, hospital_id=hospital_id,
                                                          value=fairified_value,
                                                          counter=self.counter,
-                                                         hospital_name=self.execution.hospital_name,
                                                          dataset=dataset)
                         elif self.profile == Profile.GENOMIC:
                             new_record = GenomicRecord(feature_id=feature_id,
@@ -284,7 +280,6 @@ class Transform(Task):
                                                        vcf=None,
                                                        value=fairified_value,
                                                        counter=self.counter,
-                                                       hospital_name=self.execution.hospital_name,
                                                        dataset=dataset)
                         elif self.profile == Profile.IMAGING:
                             new_record = ImagingRecord(feature_id=feature_id,
@@ -292,14 +287,12 @@ class Transform(Task):
                                                        scan=None,
                                                        value=fairified_value,
                                                        counter=self.counter,
-                                                       hospital_name=self.execution.hospital_name,
                                                        dataset=dataset)
                         elif self.profile == Profile.MEDICINE:
                             new_record = MedicineRecord(feature_id=feature_id,
                                                         patient_id=patient_id, hospital_id=hospital_id,
                                                         value=fairified_value,
                                                         counter=self.counter,
-                                                        hospital_name=self.execution.hospital_name,
                                                         dataset=dataset)
                         else:
                             raise NotImplementedError("Not implemented yet.")
@@ -331,10 +324,10 @@ class Transform(Task):
     def create_patients(self) -> None:
         log.info(f"create patient instances in memory")
         columns = self.data.columns
-        if ID_COLUMNS[self.execution.hospital_name][PATIENT_ID] in self.data.columns:
-            log.info(f"creating patients using column {ID_COLUMNS[self.execution.hospital_name][PATIENT_ID]}")
+        if self.execution.patient_id_column_name in self.data.columns:
+            log.info(f"creating patients using column {self.execution.patient_id_column_name}")
             for row in self.data.itertuples(index=False):
-                row_patient_id = row[columns.get_loc(ID_COLUMNS[self.execution.hospital_name][PATIENT_ID])]
+                row_patient_id = row[columns.get_loc(self.execution.patient_id_column_name)]
                 if row_patient_id not in self.patient_ids_mapping:
                     # the (anonymized) patient does not exist yet, we will create it
                     new_patient = Patient(id_value=NO_ID, counter=self.counter, hospital_name=self.execution.hospital_name)
@@ -369,7 +362,7 @@ class Transform(Task):
             self.database.load_json_in_table(profile=TableNames.PATIENT, table_name=TableNames.PATIENT, unique_variables=["identifier"], dataset_number=self.dataset_number)
         else:
             # no patient ID in this dataset
-            log.error(f"The column {ID_COLUMNS[self.execution.hospital_name][PATIENT_ID]} has been declared as the patient id but has not been found in the data.")
+            log.error(f"The column {self.execution.patient_id_column_name} has been declared as the patient id but has not been found in the data.")
 
     ##############################################################
     # UTILITIES
@@ -460,7 +453,7 @@ class Transform(Task):
                 self.quality_stats.add_unknown_boolean_value(column_name=column_name, boolean_value=value)
                 return_value = the_normalized_value
         elif etl_type == DataTypes.INTEGER or etl_type == DataTypes.FLOAT:
-            if column_name == ID_COLUMNS[self.execution.hospital_name][PATIENT_ID]:
+            if column_name == self.execution.patient_id_column_name:
                 # do not cast int-like string identifiers as integers because this may add too much normalization
                 return_value = str(value)
             else:

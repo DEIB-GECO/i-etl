@@ -1,12 +1,9 @@
-import os
-
 import pandas as pd
 from pandas import DataFrame
 
 from database.Execution import Execution
-from enums.Profile import Profile
 from enums.MetadataColumns import MetadataColumns
-from utils.setup_logger import log
+from enums.Profile import Profile
 
 
 class Preprocess:

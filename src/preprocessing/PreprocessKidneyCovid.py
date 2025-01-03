@@ -5,7 +5,6 @@ from database.Execution import Execution
 from enums.Profile import Profile
 from preprocessing.Preprocess import Preprocess
 from utils.file_utils import read_tabular_file_as_string
-from utils.setup_logger import log
 
 
 def get_sample_number(x):

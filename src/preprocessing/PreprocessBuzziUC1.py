@@ -6,9 +6,8 @@ from pandas import DataFrame
 from database.Execution import Execution
 from enums.AccessTypes import AccessTypes
 from enums.DiagnosisColumns import DiagnosisColumns
-from enums.Profile import Profile
 from enums.MetadataColumns import MetadataColumns
-from enums.ParameterKeys import ParameterKeys
+from enums.Profile import Profile
 from preprocessing.Preprocess import Preprocess
 from utils.api_utils import send_query_to_api, parse_json_response
 from utils.assertion_utils import is_not_nan

@@ -1,9 +1,8 @@
-from datatypes.OntologyResource import OntologyResource
-from enums.Profile import Profile
-from enums.TableNames import TableNames
-from enums.Visibility import Visibility
-from entities.Feature import Feature
 from database.Counter import Counter
+from datatypes.OntologyResource import OntologyResource
+from entities.Feature import Feature
+from enums.Profile import Profile
+from enums.Visibility import Visibility
 
 
 class GenomicFeature(Feature):

@@ -1,6 +1,5 @@
 from enums.EnumAsClass import EnumAsClass
 from utils.assertion_utils import is_not_nan
-from utils.setup_logger import log
 
 from utils.str_utils import process_spaces
 

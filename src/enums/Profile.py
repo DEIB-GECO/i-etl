@@ -4,8 +4,6 @@ from constants.structure import DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS, DOCKER_FOL
     DOCKER_FOLDER_DATA
 from enums.EnumAsClass import EnumAsClass
 from enums.ParameterKeys import ParameterKeys
-from enums.TableNames import TableNames
-from utils.setup_logger import log
 
 
 class Profile(EnumAsClass):

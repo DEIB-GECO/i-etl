@@ -4,7 +4,6 @@ import os
 
 from pandas import DataFrame
 
-from constants.idColumns import ID_COLUMNS, PATIENT_ID, SAMPLE_ID
 from database.Database import Database
 from database.Execution import Execution
 from datatypes.OntologyResource import OntologyResource
@@ -134,9 +133,9 @@ class Extract(Task):
         # they will be cast to the right type (int, float, datetime) in the Transform step
         # issue 113: we do not normalize identifiers assigned by hospitals to avoid discrepancies
         columns_no_normalization = []
-        columns_no_normalization.append(ID_COLUMNS[self.execution.hospital_name][PATIENT_ID])
-        if ID_COLUMNS[self.execution.hospital_name][SAMPLE_ID] != "":
-            columns_no_normalization.append(ID_COLUMNS[self.execution.hospital_name][SAMPLE_ID])
+        columns_no_normalization.append(self.execution.patient_id_column_name)
+        if self.execution.sample_id_column_name != "":
+            columns_no_normalization.append(self.execution.sample_id_column_name)
 
         for column in self.data:
             if column not in columns_no_normalization:
@@ -154,6 +153,7 @@ class Extract(Task):
 
         # normalize column names
         self.data = self.data.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x))
+        log.info(self.data)
 
     def filter_data_file(self) -> None:
         # Normalize column names ("sex", "dateOfBirth", "Ethnicity", etc.) to match column names described in the metadata
@@ -163,13 +163,13 @@ class Extract(Task):
         # if a column is described in the metadata but is not present in the data or this column is empty we keep it
         # because people took the time to describe it.
         data_columns = list(set(self.data.columns))  # get the distinct list of columns
-        log.info(data_columns[0:5])
+        log.info(data_columns)
         columns_described_in_metadata = list(self.metadata[MetadataColumns.COLUMN_NAME])
         for data_column in data_columns:
             # we remove the column if it is not described in the metadata
             is_not_described_in_current_metadata = data_column not in columns_described_in_metadata
             column_has_to_be_removed = data_column in self.execution.columns_to_remove
-            column_is_an_id = data_column in [ID_COLUMNS[self.execution.hospital_name][PATIENT_ID], ID_COLUMNS[self.execution.hospital_name][SAMPLE_ID]]
+            column_is_an_id = data_column in [self.execution.patient_id_column_name, self.execution.sample_id_column_name]
             if is_not_described_in_current_metadata or (column_has_to_be_removed and not column_is_an_id):
                 # we drop this column
                 log.info(f"drop column {data_column}")

@@ -1,5 +1,3 @@
-import os
-
 from pandas import DataFrame
 
 from database.Execution import Execution
@@ -8,7 +6,6 @@ from enums.Profile import Profile
 from preprocessing.PreprocessBuzziUC1 import PreprocessBuzziUC1
 from preprocessing.PreprocessCovid import PreprocessCovid
 from preprocessing.PreprocessKidneyCovid import PreprocessKidneyCovid
-from utils.setup_logger import log
 
 
 class PreprocessingTask:

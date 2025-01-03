@@ -1,17 +1,16 @@
 from typing import Any
 
-from constants.idColumns import NO_ID
+from constants.defaults import NO_ID
+from database.Counter import Counter
 from datatypes.Identifier import Identifier
 from entities.Resource import Resource
-from database.Counter import Counter
 from enums.TableNames import TableNames
-from utils.setup_logger import log
 
 
 class Record(Resource):
     def __init__(self, feature_id: Identifier, patient_id: Identifier,
                  hospital_id: Identifier, value: Any, profile: str, counter: Counter,
-                 hospital_name: str, dataset: str):
+                 dataset: str):
         """
 
         """

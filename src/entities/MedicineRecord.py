@@ -6,7 +6,6 @@ from enums.Profile import Profile
 
 class MedicineRecord(Record):
     def __init__(self, value, feature_id: Identifier, patient_id: Identifier,
-                 hospital_id: Identifier, counter: Counter, hospital_name: str, dataset: str):
+                 hospital_id: Identifier, counter: Counter, dataset: str):
         super().__init__(feature_id=feature_id, patient_id=patient_id, hospital_id=hospital_id,
-                         profile=Profile.MEDICINE, value=value, counter=counter,
-                         hospital_name=hospital_name, dataset=dataset)
+                         profile=Profile.MEDICINE, value=value, counter=counter, dataset=dataset)

@@ -5,11 +5,12 @@ import platform
 from datetime import datetime
 
 import pymongo
+
+from enums.MetadataColumns import MetadataColumns
 from enums.Profile import Profile
 
 from constants.structure import WORKING_DIR, DB_CONNECTION, DOCKER_FOLDER_METADATA, \
-    DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS, \
-    DOCKER_FOLDER_TEST
+    DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS, DOCKER_FOLDER_TEST
 from enums.HospitalNames import HospitalNames
 from enums.ParameterKeys import ParameterKeys
 from utils import setup_logger
@@ -56,6 +57,8 @@ class Execution:
 
         # parameters related to the ETL pipeline
         self.columns_to_remove = []
+        self.patient_id_column_name = "id"
+        self.sample_id_column_name = ""
 
     def internals_set_up(self) -> None:
         log.info("in set_up")
@@ -70,6 +73,8 @@ class Execution:
         self.columns_to_remove = self.check_parameter(key=ParameterKeys.COLUMNS_TO_REMOVE_KEY, accepted_values=None, default_value=self.columns_to_remove)
         self.nb_rows = self.check_parameter(key=ParameterKeys.DATA_GEN_NB_ROWS, accepted_values=None, default_value=self.nb_rows)
         self.record_carrier_patients = self.check_parameter(key=ParameterKeys.RECORD_CARRIER_PATIENT, accepted_values=["True", "False", True, False], default_value=self.record_carrier_patients)
+        self.patient_id_column_name = MetadataColumns.normalize_name(self.check_parameter(key=ParameterKeys.PATIENT_ID_COLUMN, accepted_values=None, default_value=self.patient_id_column_name))
+        self.sample_id_column_name = MetadataColumns.normalize_name(self.check_parameter(key=ParameterKeys.SAMPLE_ID_COLUMN, accepted_values=None, default_value=self.patient_id_column_name))
 
         # create working files for the ETL
         self.create_current_working_dir()

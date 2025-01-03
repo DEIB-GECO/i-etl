@@ -1,4 +1,4 @@
-from constants.idColumns import NO_ID
+from constants.defaults import NO_ID
 from database.Counter import Counter
 from datatypes.Identifier import Identifier
 from entities.Patient import Patient

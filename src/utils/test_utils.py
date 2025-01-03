@@ -2,11 +2,7 @@ import os
 from datetime import timedelta, datetime
 from typing import Any
 
-import dotenv
-from dotenv import load_dotenv
-
 from utils.assertion_utils import THE_DATETIME_FORMAT
-from utils.setup_logger import log
 
 
 # for setting up the tests with specific (env) parameters

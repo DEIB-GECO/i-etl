@@ -7,7 +7,6 @@ import bson
 import pandas as pd
 import pymongo
 import ujson
-from bson.json_util import loads
 from pymongo.mongo_client import MongoClient
 
 from database.Counter import Counter

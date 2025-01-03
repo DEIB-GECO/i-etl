@@ -1,10 +1,8 @@
 from datetime import datetime
 
-import jsonpickle
-
 from database.Database import Database
 from database.Execution import Execution
-from utils.setup_logger import log
+import jsonpickle
 
 
 class Statistics:

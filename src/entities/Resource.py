@@ -2,7 +2,7 @@ from datetime import datetime
 
 import jsonpickle
 
-from constants.idColumns import NO_ID
+from constants.defaults import NO_ID
 from database.Counter import Counter
 from datatypes.Identifier import Identifier
 from database.Operators import Operators

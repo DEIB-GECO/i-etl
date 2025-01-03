@@ -1,11 +1,9 @@
-import json
-
-from constants.idColumns import NO_ID
+from constants.defaults import NO_ID
+from database.Counter import Counter
 from datatypes.OntologyResource import OntologyResource
+from entities.Resource import Resource
 from enums.TableNames import TableNames
 from enums.Visibility import Visibility
-from entities.Resource import Resource
-from database.Counter import Counter
 
 
 class Feature(Resource):

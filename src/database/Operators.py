@@ -3,7 +3,6 @@ from typing import Any
 
 from enums.EnumAsClass import EnumAsClass
 from utils.assertion_utils import THE_DATETIME_FORMAT
-from utils.setup_logger import log
 
 
 class Operators(EnumAsClass):

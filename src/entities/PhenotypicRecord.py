@@ -1,19 +1,17 @@
 from typing import Any
 
-from datatypes.Identifier import Identifier
-from enums.Profile import Profile
-from enums.TableNames import TableNames
-from entities.Record import Record
 from database.Counter import Counter
+from datatypes.Identifier import Identifier
+from entities.Record import Record
+from enums.Profile import Profile
 
 
 class PhenotypicRecord(Record):
     def __init__(self, feature_id: Identifier, patient_id: Identifier,
                  hospital_id: Identifier, value: Any,
-                 counter: Counter, hospital_name: str, dataset: str):
+                 counter: Counter, dataset: str):
         """
         A new PhenotypicRecord instance.
-        :param id_value: A string being the BETTER ID of the PhenotypicRecord instance.
         :param feature_id: A PhenotypicFeature instance being the PhenotypicFeature that record is referring to.
         :param patient_id: A Patient instance being the patient on which the record has been measured.
         :param hospital_id: A Hospital instance being the hospital in which the record has been measured.
@@ -21,5 +19,4 @@ class PhenotypicRecord(Record):
         """
         # set up the resource ID
         super().__init__(feature_id=feature_id, patient_id=patient_id, hospital_id=hospital_id,
-                         value=value, profile=Profile.PHENOTYPIC,
-                         counter=counter, hospital_name=hospital_name, dataset=dataset)
+                         value=value, profile=Profile.PHENOTYPIC, counter=counter, dataset=dataset)

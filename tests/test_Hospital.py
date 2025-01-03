@@ -2,7 +2,6 @@ from datatypes.Identifier import Identifier
 from enums.HospitalNames import HospitalNames
 from entities.Hospital import Hospital
 from enums.TableNames import TableNames
-from constants.idColumns import NO_ID
 from database.Counter import Counter
 
 

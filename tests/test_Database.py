@@ -6,7 +6,7 @@ import unittest
 
 import pytest
 
-from constants.idColumns import NO_ID
+from constants.defaults import NO_ID
 from constants.structure import TEST_DB_NAME
 from database.Counter import Counter
 from database.Database import Database

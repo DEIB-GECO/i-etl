@@ -1,6 +1,5 @@
 from datatypes.OntologyResource import OntologyResource
 from enums.Profile import Profile
-from enums.TableNames import TableNames
 from enums.Visibility import Visibility
 from entities.Feature import Feature
 from database.Counter import Counter
