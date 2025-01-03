@@ -7,7 +7,7 @@ from enums.Visibility import Visibility
 
 
 class Feature(Resource):
-    def __init__(self, name: str, ontology_resource: OntologyResource, column_type: str, unit: str, counter: Counter,
+    def __init__(self, name: str, ontology_resource: OntologyResource, column_type: str, unit: str, description: str, counter: Counter,
                  profile: str, categories: list[OntologyResource], visibility: Visibility, dataset_gid: str):
         # set up the resource ID
         super().__init__(id_value=NO_ID, entity_type=f"{profile}{TableNames.FEATURE}", counter=counter)
@@ -17,6 +17,7 @@ class Feature(Resource):
         self.ontology_resource = ontology_resource
         self.data_type = column_type  # no need to check whether the column type is recognisable, we already normalized it while loading the metadata
         self.unit = unit
+        self.description = description
         if categories is not None and len(categories) > 0:
             self.categories = categories  # this is the list of categorical values fot that column
         else:

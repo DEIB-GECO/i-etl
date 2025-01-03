@@ -124,6 +124,7 @@ class Transform(Task):
                     data_type = row[columns.get_loc(MetadataColumns.ETL_TYPE)]  # this has been normalized while loading + we take ETL_type to get the narrowest type (in which we cast values)
                     visibility = row[columns.get_loc(MetadataColumns.VISIBILITY)]  # this has been normalized while loading
                     unit = self.mapping_column_to_unit[column_name] if column_name in self.mapping_column_to_unit else None  # else covers: there is no dataType for this column; there is no datatype in that type of entity
+                    description = row[columns.get_loc(MetadataColumns.SIGNIFICATION_EN)]
                     categorical_values = None
                     if column_name in self.mapping_column_to_categorical_value:
                         if data_type in [DataTypes.CATEGORY, DataTypes.REGEX]:
@@ -138,42 +139,48 @@ class Transform(Task):
                                                         counter=self.counter,
                                                         categories=categorical_values,
                                                         visibility=visibility,
-                                                        dataset_gid=self.dataset_instance.global_identifier)
+                                                        dataset_gid=self.dataset_instance.global_identifier,
+                                                        description=description)
                     elif self.profile == Profile.CLINICAL:
                         new_feature = ClinicalFeature(name=column_name, ontology_resource=onto_resource,
                                                       permitted_datatype=data_type, unit=unit,
                                                       counter=self.counter,
                                                       categories=categorical_values,
                                                       visibility=visibility,
-                                                      dataset_gid=self.dataset_instance.global_identifier)
+                                                      dataset_gid=self.dataset_instance.global_identifier,
+                                                      description=description)
                     elif self.profile == Profile.DIAGNOSIS:
                         new_feature = DiagnosisFeature(name=column_name,
                                                        ontology_resource=onto_resource,
                                                        permitted_datatype=data_type,
                                                        unit=unit, counter=self.counter,
                                                        categories=categorical_values, visibility=visibility,
-                                                       dataset_gid=self.dataset_instance.global_identifier)
+                                                       dataset_gid=self.dataset_instance.global_identifier,
+                                                       description=description)
                     elif self.profile == Profile.GENOMIC:
                         new_feature = GenomicFeature(name=column_name,
                                                      ontology_resource=onto_resource,
                                                      permitted_datatype=data_type,
                                                      unit=unit, counter=self.counter,
                                                      categories=categorical_values, visibility=visibility,
-                                                     dataset_gid=self.dataset_instance.global_identifier)
+                                                     dataset_gid=self.dataset_instance.global_identifier,
+                                                     description=description)
                     elif self.profile == Profile.IMAGING:
                         new_feature = ImagingFeature(name=column_name,
                                                      ontology_resource=onto_resource,
                                                      permitted_datatype=data_type,
                                                      unit=unit, counter=self.counter,
                                                      categories=categorical_values, visibility=visibility,
-                                                     dataset_gid=self.dataset_instance.global_identifier)
+                                                     dataset_gid=self.dataset_instance.global_identifier,
+                                                     description=description)
                     elif self.profile == Profile.MEDICINE:
                         new_feature = MedicineFeature(name=column_name,
                                                       ontology_resource=onto_resource,
                                                       permitted_datatype=data_type,
                                                       unit=unit, counter=self.counter,
                                                       categories=categorical_values, visibility=visibility,
-                                                      dataset_gid=self.dataset_instance.global_identifier)
+                                                      dataset_gid=self.dataset_instance.global_identifier,
+                                                      description=description)
                     else:
                         raise NotImplementedError("To be implemented")
 
