@@ -1,10 +1,7 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
-
 etl:
   script:
     - cp .env.ci .env
     - export CONTEXT_MODE=TEST
     - export MY_ENV_FILE=.env.ci
-    - sudo docker build . --tag fairificator 
+    - docker build . --tag fairificator 
     - docker compose --env-file ${MY_ENV_FILE} up --abort-on-container-exit 
