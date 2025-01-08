@@ -9,5 +9,5 @@ etl:
     - ls -al /builds/padme-development/external/better/data-cataloging/etl
     - ls -al /builds/padme-development/external/better/data-cataloging/etl/datasets
     #- cp .env.ci .env
-    #- docker build . --tag fairificator 
-    #- docker compose --env-file $MY_ENV_FILE up --abort-on-container-exit 
+    - docker build . --tag fairificator 
+    - docker compose --env-file $MY_ENV_FILE up --abort-on-container-exit 
