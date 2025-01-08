@@ -35,6 +35,7 @@ class Extract(Task):
         self.mapping_column_to_categorical_value = {}  # <column name, list of normalized accepted values>
         self.mapping_column_to_vartype = {}  # <column name, var type ("vartype" column)>
         self.mapping_column_to_unit = {}  # <column name, unit provided in the metadata>
+        self.mapping_column_to_domain = {}  # <column name, <min: x, max: y> or <accepted_values: [...]>>
 
     def run(self) -> None:
 
@@ -54,9 +55,10 @@ class Extract(Task):
             self.filter_data_file()
             self.normalize_data_file()
 
-            # compute mappings (categories and unit)
+            # compute mappings (categories, units and domains)
             self.compute_mapping_categorical_value_to_onto_resource()
             self.compute_column_to_unit()
+            self.compute_column_to_domain()
 
     def filter_metadata_file(self) -> None:
         # Normalize the header, e.g., "Significato it" becomes "significato_it"
@@ -290,3 +292,15 @@ class Extract(Task):
             log.debug(dict(itertools.islice(self.mapping_column_to_unit.items(), 10)))
         else:
             log.debug(self.mapping_column_to_unit)
+
+    def compute_column_to_domain(self) -> None:
+        self.mapping_column_to_domain = {}
+
+        for row in self.metadata.itertuples(index=False):
+            domain = row[self.metadata.columns.get_loc(MetadataColumns.DOMAIN)]
+            try:
+                domain = json.loads(domain)
+                self.mapping_column_to_domain[row[self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)]] = domain
+            except:
+                self.mapping_column_to_domain[row[self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)]] = None
+        log.debug(self.mapping_column_to_domain)

@@ -26,6 +26,7 @@ from entities.Patient import Patient
 from entities.PhenotypicFeature import PhenotypicFeature
 from entities.PhenotypicRecord import PhenotypicRecord
 from enums.DataTypes import DataTypes
+from enums.Domain import Domain
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from enums.Profile import Profile
@@ -45,7 +46,7 @@ class Transform(Task):
     def __init__(self, database: Database, execution: Execution, data: DataFrame, metadata: DataFrame,
                  mapping_categorical_value_to_onto_resource: dict,
                  mapping_column_to_categorical_value: dict,
-                 mapping_column_to_unit: dict,
+                 mapping_column_to_unit: dict, mapping_column_to_domain: dict,
                  profile: str, dataset_number: int, file_counter: int, dataset_instance: Dataset, load_patients: bool,
                  quality_stats: QualityStatistics, time_stats: TimeStatistics):
         super().__init__(database=database, execution=execution, quality_stats=quality_stats, time_stats=time_stats)
@@ -62,6 +63,7 @@ class Transform(Task):
         self.mapping_column_to_unit = mapping_column_to_unit
         self.mapping_categorical_value_to_onto_resource = mapping_categorical_value_to_onto_resource
         self.mapping_column_to_categorical_value = mapping_column_to_categorical_value
+        self.mapping_column_to_domain = mapping_column_to_domain
         # to keep track of anonymized vs. hospital patient ids
         # this is empty if no file as been provided by the user, otherwise it contains some mappings <patient ID, anonymized ID>
         self.patient_ids_mapping = {}
@@ -126,12 +128,19 @@ class Transform(Task):
                     unit = self.mapping_column_to_unit[column_name] if column_name in self.mapping_column_to_unit else None  # else covers: there is no dataType for this column; there is no datatype in that type of entity
                     description = row[columns.get_loc(MetadataColumns.SIGNIFICATION_EN)]
                     categorical_values = None
-                    if column_name in self.mapping_column_to_categorical_value:
-                        if data_type in [DataTypes.CATEGORY, DataTypes.REGEX]:
-                            # for categorical values, we first need to take the list of (normalized) values that are available for the current column, and then take their CC
-                            # this avoids to add categorical values for boolean features (where Yes and No and encoded with ontology resource), we do not add them
-                            normalized_categorical_values = self.mapping_column_to_categorical_value[column_name]
-                            categorical_values = [self.mapping_categorical_value_to_onto_resource[normalized_categorical_value] for normalized_categorical_value in normalized_categorical_values]
+                    domain = {}
+                    if data_type in [DataTypes.CATEGORY, DataTypes.REGEX] and column_name in self.mapping_column_to_categorical_value:
+                        # for categorical values, we first need to take the list of (normalized) values that are available for the current column, and then take their CC
+                        # this avoids to add categorical values for boolean features (where Yes and No and encoded with ontology resource), we do not add them
+                        normalized_categorical_values = self.mapping_column_to_categorical_value[column_name]
+                        categorical_values = [self.mapping_categorical_value_to_onto_resource[normalized_categorical_value] for normalized_categorical_value in normalized_categorical_values]
+                        domain[Domain.ACCEPTED_VALUES] = normalized_categorical_values
+                    elif data_type in [DataTypes.DATE, DataTypes.DATETIME] or data_type in DataTypes.numeric():
+                        if column_name in self.mapping_column_to_domain and self.mapping_column_to_domain[column_name] is not None:
+                            if Domain.MIN in self.mapping_column_to_domain[column_name]:
+                                domain[Domain.MIN] = self.mapping_column_to_domain[column_name][Domain.MIN]
+                            if Domain.MAX in self.mapping_column_to_domain[column_name]:
+                                domain[Domain.MAX] = self.mapping_column_to_domain[column_name][Domain.MAX]
                     if self.profile == Profile.PHENOTYPIC:
                         new_feature = PhenotypicFeature(name=column_name,
                                                         ontology_resource=onto_resource,
@@ -140,7 +149,8 @@ class Transform(Task):
                                                         categories=categorical_values,
                                                         visibility=visibility,
                                                         dataset_gid=self.dataset_instance.global_identifier,
-                                                        description=description)
+                                                        description=description,
+                                                        domain=domain)
                     elif self.profile == Profile.CLINICAL:
                         new_feature = ClinicalFeature(name=column_name, ontology_resource=onto_resource,
                                                       permitted_datatype=data_type, unit=unit,
@@ -148,7 +158,8 @@ class Transform(Task):
                                                       categories=categorical_values,
                                                       visibility=visibility,
                                                       dataset_gid=self.dataset_instance.global_identifier,
-                                                      description=description)
+                                                      description=description,
+                                                      domain=domain)
                     elif self.profile == Profile.DIAGNOSIS:
                         new_feature = DiagnosisFeature(name=column_name,
                                                        ontology_resource=onto_resource,
@@ -156,7 +167,8 @@ class Transform(Task):
                                                        unit=unit, counter=self.counter,
                                                        categories=categorical_values, visibility=visibility,
                                                        dataset_gid=self.dataset_instance.global_identifier,
-                                                       description=description)
+                                                       description=description,
+                                                       domain=domain)
                     elif self.profile == Profile.GENOMIC:
                         new_feature = GenomicFeature(name=column_name,
                                                      ontology_resource=onto_resource,
@@ -164,7 +176,8 @@ class Transform(Task):
                                                      unit=unit, counter=self.counter,
                                                      categories=categorical_values, visibility=visibility,
                                                      dataset_gid=self.dataset_instance.global_identifier,
-                                                     description=description)
+                                                     description=description,
+                                                     domain=domain)
                     elif self.profile == Profile.IMAGING:
                         new_feature = ImagingFeature(name=column_name,
                                                      ontology_resource=onto_resource,
@@ -172,7 +185,8 @@ class Transform(Task):
                                                      unit=unit, counter=self.counter,
                                                      categories=categorical_values, visibility=visibility,
                                                      dataset_gid=self.dataset_instance.global_identifier,
-                                                     description=description)
+                                                     description=description,
+                                                     domain=domain)
                     elif self.profile == Profile.MEDICINE:
                         new_feature = MedicineFeature(name=column_name,
                                                       ontology_resource=onto_resource,
@@ -180,7 +194,8 @@ class Transform(Task):
                                                       unit=unit, counter=self.counter,
                                                       categories=categorical_values, visibility=visibility,
                                                       dataset_gid=self.dataset_instance.global_identifier,
-                                                      description=description)
+                                                      description=description,
+                                                      domain=domain)
                     else:
                         raise NotImplementedError("To be implemented")
 

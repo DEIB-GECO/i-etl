@@ -19,6 +19,7 @@ class MetadataColumns(EnumAsClass):
     VISIBILITY = "visibility"
     ETL_TYPE = "etl_type"
     VAR_UNIT = "dimension"
+    DOMAIN = "domain"
     JSON_VALUES = "json_values"
 
     @classmethod

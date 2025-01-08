@@ -8,7 +8,8 @@ from enums.Visibility import Visibility
 
 class Feature(Resource):
     def __init__(self, name: str, ontology_resource: OntologyResource, column_type: str, unit: str, description: str, counter: Counter,
-                 profile: str, categories: list[OntologyResource], visibility: Visibility, dataset_gid: str):
+                 profile: str, categories: list[OntologyResource], visibility: Visibility, dataset_gid: str,
+                 domain: dict):
         # set up the resource ID
         super().__init__(id_value=NO_ID, entity_type=f"{profile}{TableNames.FEATURE}", counter=counter)
 
@@ -24,3 +25,4 @@ class Feature(Resource):
             self.categories = None  # this avoids to store empty arrays when there is no categorical values for a certain Feature
         self.visibility = visibility
         self.datasets = [dataset_gid]
+        self.domain = domain

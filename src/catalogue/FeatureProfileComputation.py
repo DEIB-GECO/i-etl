@@ -571,7 +571,7 @@ class FeatureProfileComputation:
                 {"name": "count_db_values", "operator": "$sum", "field": 1}
             ]),
             Operators.lookup(join_table_name=TableNames.COUNTS_FEATURES, foreign_field="identifier", local_field="_id.instantiates", lookup_field_name="feature_id"),
-            Operators.project(field=None, projected_value={"missing_percentage": {"$divide": ["$count_db_values", {"$arrayElemAt": ['$feature_id.count_all_values', 0]}]}})
+            Operators.project(field=None, projected_value={"missing_percentage": {"$subtract": [1, {"$divide": ["$count_db_values", {"$arrayElemAt": ['$feature_id.count_all_values', 0]}]}]}})
         ]
 
     @classmethod

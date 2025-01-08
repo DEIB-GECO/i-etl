@@ -8,7 +8,7 @@ from enums.Visibility import Visibility
 class DiagnosisFeature(Feature):
     def __init__(self, name: str, ontology_resource: OntologyResource, permitted_datatype: str,
                  unit: str | None, description: str, counter: Counter,
-                 categories: list[OntologyResource] | None, visibility: Visibility, dataset_gid: str):
+                 categories: list[OntologyResource] | None, visibility: Visibility, dataset_gid: str, domain: dict):
         """
         Create a new Disease instance.
         This is different from a DiseaseRecord:
@@ -19,4 +19,4 @@ class DiagnosisFeature(Feature):
         # set up the resource ID
         super().__init__(name=name, profile=Profile.DIAGNOSIS, ontology_resource=ontology_resource,
                          column_type=permitted_datatype, unit=unit, counter=counter, description=description,
-                         categories=categories, visibility=visibility, dataset_gid=dataset_gid)
+                         categories=categories, visibility=visibility, dataset_gid=dataset_gid, domain=domain)
