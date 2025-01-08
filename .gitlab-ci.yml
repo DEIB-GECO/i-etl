@@ -5,6 +5,10 @@ variables:
 etl:
   script:
     cat .env.ci
+    pwd
+    ls -al /home/runner/work/
+    ls -al /home/runner/work/BETTER-fairificator
+    ls -al /home/runner/work/BETTER-fairificator/BETTER-fairificator/
     #- cp .env.ci .env
     #- docker build . --tag fairificator 
     #- docker compose --env-file $MY_ENV_FILE up --abort-on-container-exit 
