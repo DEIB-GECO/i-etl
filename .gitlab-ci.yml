@@ -4,7 +4,7 @@ variables:
 
 etl:
   script:
-    echo "bla"
+    cat .env.ci
     #- cp .env.ci .env
     #- docker build . --tag fairificator 
     #- docker compose --env-file $MY_ENV_FILE up --abort-on-container-exit 
