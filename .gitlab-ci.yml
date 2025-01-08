@@ -1,13 +1,10 @@
-variables:
-  MY_ENV_FILE: .env.ci
-  CONTEXT_MODE: "TEST"
-
 etl:
   script:
-    - cat .env.ci
     - pwd
     - ls -al /builds/padme-development/external/better/data-cataloging/etl
     - ls -al /builds/padme-development/external/better/data-cataloging/etl/datasets
-    #- cp .env.ci .env
+    - cp .env.ci .env
+    - cat .env
+    - export CONTEXT_MODE="TEST"
     - docker build . --tag fairificator 
-    - docker compose --env-file $MY_ENV_FILE up --abort-on-container-exit 
+    - docker compose up --abort-on-container-exit 
