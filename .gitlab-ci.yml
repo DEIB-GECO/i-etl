@@ -1,7 +1,9 @@
+variables:
+  MY_ENV_FILE: .env.ci
+  CONTEXT_MODE: "TEST"
+
 etl:
   script:
     - cp .env.ci .env
-    - export CONTEXT_MODE=TEST
-    - export MY_ENV_FILE=.env.ci
     - docker build . --tag fairificator 
-    - docker compose --env-file ${MY_ENV_FILE} up --abort-on-container-exit 
+    - docker compose --env-file $MY_ENV_FILE up --abort-on-container-exit 
