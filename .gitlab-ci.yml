@@ -6,5 +6,5 @@ etl:
     - cp .env.ci .env
     - cat .env
     - export CONTEXT_MODE="TEST"
-    - docker build . --tag fairificator 
+    - docker build . --tag etl
     - docker-compose up
