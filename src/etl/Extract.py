@@ -2,6 +2,8 @@ import itertools
 import json
 import os
 
+import numpy as np
+import pandas as pd
 from pandas import DataFrame
 
 from database.Database import Database
@@ -18,7 +20,6 @@ from etl.Task import Task
 from preprocessing.PreprocessingTask import PreprocessingTask
 from statistics.QualityStatistics import QualityStatistics
 from statistics.TimeStatistics import TimeStatistics
-from utils.assertion_utils import is_not_nan
 from utils.file_utils import read_tabular_file_as_string
 from utils.setup_logger import log
 
@@ -112,13 +113,14 @@ class Extract(Task):
                 etl_type = row[self.metadata.columns.get_loc(MetadataColumns.ETL_TYPE)]
                 onto_name = row[self.metadata.columns.get_loc(MetadataColumns.ONTO_NAME)]
                 onto_code = row[self.metadata.columns.get_loc(MetadataColumns.ONTO_CODE)]
-                if not is_not_nan(onto_code):
+                if onto_code == "":
                     self.quality_stats.add_column_with_no_ontology(column_name=column_name)
-                if not is_not_nan(etl_type):
+                if etl_type == "":
                     self.quality_stats.add_column_with_no_etl_type(column_name=column_name)
-                if is_not_nan(etl_type) and etl_type not in DataTypes.values():
-                    self.quality_stats.add_column_unknown_etl_type(column_name=column_name, etl_type=etl_type)
-                if is_not_nan(onto_name) and Ontologies.get_enum_from_name(onto_name) is None:
+                else:
+                    if etl_type not in DataTypes.values():
+                        self.quality_stats.add_column_unknown_etl_type(column_name=column_name, etl_type=etl_type)
+                if onto_name != "" and len(Ontologies.get_enum_from_name(onto_name)) == 0:
                     self.quality_stats.add_column_unknown_ontology(column_name=column_name, ontology_name=onto_name)
         else:
             # metadata is None because nothing remains from the filtering
@@ -155,7 +157,6 @@ class Extract(Task):
 
         # normalize column names
         self.data = self.data.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x))
-        log.info(self.data)
 
     def filter_data_file(self) -> None:
         # Normalize column names ("sex", "dateOfBirth", "Ethnicity", etc.) to match column names described in the metadata
@@ -191,11 +192,11 @@ class Extract(Task):
         self.mapping_categorical_value_to_onto_resource = {}
         self.mapping_column_to_categorical_value = {}
         # 1. first, we retrieve the existing categorical values already transformed as OntologyResource
-        # this will avoid to send again API queries to re-build already-built OntologyResource
-        # we get all the categorical values across all tables to not miss any of them
+        # this will avoid to send again API queries to re-build already-built OntologyResource,
+        # e.g., when starting from an existing DB (drop=False)
         existing_categorical_codeable_concepts = {}
         # the set of categorical values are defined in Features only, thus we can restrict the find to only those:
-        # categorical_values_for_table_name = {'_id': ObjectId('66b9b890583ee775ef4edcb9'), 'categorical_values': [{...}, {...}, ...]}
+        # categorical_values_for_table_name = {'_id': ObjectId('...'), 'categorical_values': [{...}, {...}, ...]}
         categorical_values_for_table_name = self.database.find_operation(table_name=TableNames.FEATURE, filter_dict={"categories": {"$exists": 1}}, projection={"categories": 1})
         for one_tuple in categorical_values_for_table_name:
             # existing_categorical_value_for_table_name = [{...}, {...}, ...]}
@@ -211,7 +212,7 @@ class Extract(Task):
             column_name = row[self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)]
             candidate_json_values = row[self.metadata.columns.get_loc(MetadataColumns.JSON_VALUES)]
             column_type = row[self.metadata.columns.get_loc(MetadataColumns.ETL_TYPE)]
-            if is_not_nan(candidate_json_values):
+            if candidate_json_values != "":
                 # we get the possible categorical values for the column, e.g., F, or M, or NA for sex
                 try:
                     json_categorical_values = json.loads(candidate_json_values)
@@ -232,12 +233,14 @@ class Extract(Task):
                             # json_categorical_value is of the form: {'value': 'X', 'explanation': 'some definition', 'onto_system_Y': 'onto_code_Z' }
                             for key, val in json_categorical_value.items():
                                 # for any key value pair that is not about the value or the explanation
-                                # (i.e., loinc and snomed_ct columns), we create an OntologyResource, which we add to the CodeableConcept
+                                # (i.e., loinc and snomedct columns), we create an OntologyResource, which we add to the CodeableConcept
                                 # we need to do a loop because there may be several ontology terms for a single mapping
                                 if key != "value" and key != "explanation":
-                                    ontology = Ontologies.get_enum_from_name(ontology_name=key)
+                                    # here, we do normalize the ontology name to be able to get the corresponding enum
+                                    # however, we do not normalize the code, because it needs extra attention (due to spaces in post-coordinated codes, etc)
+                                    ontology = Ontologies.get_enum_from_name(ontology_name=Ontologies.normalize_name(key))
                                     onto_resource = OntologyResource(ontology=ontology, full_code=val, label=None, quality_stats=self.quality_stats)
-                                    if onto_resource.system is not None and onto_resource.code is not None:
+                                    if onto_resource.system != "" and onto_resource.code != "":
                                         or_has_been_built = True
                                         self.mapping_categorical_value_to_onto_resource[normalized_categorical_value] = onto_resource
                                     else:
@@ -273,6 +276,7 @@ class Extract(Task):
             else:
                 # if this was supposed to be categorical (thus having values), we count it in the reporting
                 # otherwise, this is not a categorical column (thus, everything is fine)
+                log.info(f"no JSON categories for column {column_name}")
                 if column_type == DataTypes.CATEGORY:
                     self.quality_stats.add_categorical_column_with_no_json(column_name=column_name)
         # log.debug(f"{self.mapping_categorical_value_to_onto_resource}")
@@ -283,7 +287,7 @@ class Extract(Task):
 
         for row in self.metadata.itertuples(index=False):
             unit = row[self.metadata.columns.get_loc(MetadataColumns.VAR_UNIT)]
-            if unit is not None and is_not_nan(unit):
+            if unit != "":
                 self.mapping_column_to_unit[row[self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)]] = unit
             else:
                 self.mapping_column_to_unit[row[self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)]] = None

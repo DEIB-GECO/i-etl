@@ -1,5 +1,9 @@
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
 from enums.EnumAsClass import EnumAsClass
-from utils.assertion_utils import is_not_nan
 from utils.setup_logger import log
 from utils.str_utils import process_spaces
 
@@ -19,25 +23,27 @@ class DataTypes(EnumAsClass):
 
     @classmethod
     def normalize(cls, data_type: str) -> str:
-        if is_not_nan(data_type):
+        if data_type == "":
+            return ""
+        else:
             data_type = process_spaces(input_string=data_type)
             data_type = data_type.lower()
 
-            if data_type == "int" or data_type == "integer":
+            if data_type in ["int", "integer"]:
                 return DataTypes.INTEGER
-            elif data_type == "str" or data_type == "string":
+            elif data_type in ["str", "string"]:
                 return DataTypes.STRING
-            elif data_type == "category" or data_type == "categorical":
+            elif data_type in ["category", "categorical"]:
                 return DataTypes.CATEGORY
-            elif data_type == "float" or data_type == "numeric":
+            elif data_type in ["float", "numeric"]:
                 return DataTypes.FLOAT
-            elif data_type == "bool" or data_type == "boolean":
+            elif data_type in ["bool", "boolean"]:
                 return DataTypes.BOOLEAN
             elif data_type == "image file":
                 return DataTypes.IMAGE
             elif data_type == "date":
                 return DataTypes.DATE
-            elif data_type == "datetime" or data_type == "datetime64":
+            elif data_type in ["datetime", "datetime64"]:
                 return DataTypes.DATETIME
             elif data_type == "regex":
                 return DataTypes.REGEX
@@ -45,8 +51,6 @@ class DataTypes(EnumAsClass):
                 log.error(f"{data_type} is not a recognized data type; we will use string type by default.")
                 DataTypes.METADATA_NB_UNRECOGNIZED_ETL_TYPE += 1
                 return DataTypes.STRING
-        else:
-            return data_type
 
     @classmethod
     def numeric(cls) -> list:

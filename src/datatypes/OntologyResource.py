@@ -8,21 +8,19 @@ from enums.AccessTypes import AccessTypes
 from enums.Ontologies import Ontologies
 from statistics.QualityStatistics import QualityStatistics
 from utils.api_utils import send_query_to_api, parse_xml_response, parse_json_response, parse_html_response
-from utils.assertion_utils import is_not_nan
 from utils.setup_logger import log
 from utils.str_utils import remove_specific_tokens, process_spaces, remove_operators_in_strings
 
 
 class OntologyResource:
-    def __init__(self, ontology: Ontologies, full_code: str, label: str | None, quality_stats: QualityStatistics | None):
+    def __init__(self, ontology: dict, full_code: str, label: str | None, quality_stats: QualityStatistics | None):
         quality_stats = quality_stats if quality_stats is not None else QualityStatistics(record_stats=False)
         self.system = None
         self.code = None
         self.label = None
-        if not is_not_nan(value=full_code) or not is_not_nan(value=ontology):
+        if len(ontology) == 0 or len(full_code) == 0:
             # no ontology code has been provided for that variable name, let's skip it
             log.error("Could not create an OntologyResource with no ontology system and/or code.")
-            pass
         else:
             # this corresponds to the first (and only) ontology system;
             # if there are many, we record only the first but make API calls with all
@@ -46,19 +44,16 @@ class OntologyResource:
 
     def compute_elements(self, full_code: str) -> list:
         elements = []
-        if full_code is None:
-            pass
-        else:
-            regex_elements = re.split(r"(?=["+SNOMED_OPERATORS_STR+"])|(?<=["+SNOMED_OPERATORS_STR+"])", full_code)
-            # now self.elements may still contain spaces
-            # therefore, we remove them manually afterward
-            for element in regex_elements:
-                if element == "" or element is None or element == " ":
-                    # the regex sometimes returns empty or None elements, we skip them
-                    # it may also identify spaces around operators, we skip them too
-                    pass
-                else:
-                    elements.append(element)
+        regex_elements = re.split(r"(?=["+SNOMED_OPERATORS_STR+"])|(?<=["+SNOMED_OPERATORS_STR+"])", full_code)
+        # now self.elements may still contain spaces
+        # therefore, we remove them manually afterward
+        for element in regex_elements:
+            if element == "" or element is None or element == " ":
+                # the regex sometimes returns empty or None elements, we skip them
+                # it may also identify spaces around operators, we skip them too
+                pass
+            else:
+                elements.append(element)
         return elements
 
     def compute_code(self, code_elements: list) -> None:

@@ -2,7 +2,8 @@ import os
 from datetime import timedelta, datetime
 from typing import Any
 
-from utils.assertion_utils import THE_DATETIME_FORMAT
+from database.Operators import THE_DATETIME_FORMAT
+from utils.setup_logger import log
 
 
 # for setting up the tests with specific (env) parameters
@@ -100,5 +101,6 @@ def get_field_value_for_patient(records: list, features: list, patient_id: str, 
         for record in records:
             # log.info(f"checking {json_lab_record['has_subject']} vs. {patient_id} and {json_lab_record['instantiates']} vs. {feature['identifier']}")
             if record["has_subject"] == patient_id and record["instantiates"] == feature["identifier"]:
+                log.info(f"for patient {patient_id} and column {column_name}, record is {record}")
                 return record["value"]
     return None

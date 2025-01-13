@@ -2,6 +2,8 @@ import re
 from datetime import datetime
 from typing import Any
 
+import numpy as np
+import pandas as pd
 import ujson
 from pandas import DataFrame
 
@@ -35,10 +37,11 @@ from enums.Visibility import Visibility
 from etl.Task import Task
 from statistics.QualityStatistics import QualityStatistics
 from statistics.TimeStatistics import TimeStatistics
-from utils.assertion_utils import is_not_nan
 from utils.cast_utils import cast_str_to_boolean, cast_str_to_datetime, cast_str_to_float, cast_str_to_int
 from utils.file_utils import write_in_file
 from utils.setup_logger import log
+
+from src.constants.defaults import NAN_VALUES, DEFAULT_NAN_VALUE
 
 
 class Transform(Task):
@@ -104,8 +107,6 @@ class Transform(Task):
         result = self.database.find_operation(table_name=TableNames.FEATURE, filter_dict={"entity_type": f"{self.profile}Feature"}, projection={"name": 1, "identifier": 1, "datasets": 1})
         db_existing_features = {}
         for res in result:
-            log.info(res)
-            log.info(type(res))
             db_existing_features[res["name"]] = {"identifier": res["identifier"], "datasets": res["datasets"]}
         log.info(db_existing_features)
 
@@ -116,9 +117,6 @@ class Transform(Task):
             column_name = row[columns.get_loc(MetadataColumns.COLUMN_NAME)]
             # columns to remove have already been removed in the Extract part from the metadata
             # here, we need to ensure that we create Features only for still-existing columns and not for ID column
-            # log.info(column_name)
-            # log.info(db_existing_features)
-            # log.info(column_name in db_existing_features)
             if column_name not in [self.execution.patient_id_column_name, self.execution.sample_id_column_name]:
                 if column_name not in db_existing_features:
                     # we create a new Feature from scratch
@@ -212,7 +210,6 @@ class Transform(Task):
                     # however, we need to update the set of datasets in which it appears
                     log.error(f"The feature about {column_name} already exists. Not added, but updated.")
                     datasets = db_existing_features[column_name]["datasets"]
-                    log.info(datasets)
                     if self.dataset_instance.global_identifier not in datasets:
                         datasets.append(self.dataset_instance.global_identifier)
                         self.database.update_one_tuple(table_name=TableNames.FEATURE, filter_dict={"identifier": db_existing_features[column_name]["identifier"]}, update={"datasets": datasets})
@@ -250,7 +247,7 @@ class Transform(Task):
             for column_name in columns:
                 value = row[columns.get_loc(column_name)]
                 # log.debug(f"for row {row}) and column {column_name} (type: {type(column_name)}), value is {value}")
-                if value is None or value == "" or not is_not_nan(value):
+                if value == "":
                     # if there is no value for that Feature, no need to create a Record instance
                     # log.error(f"skipping value {value} in column {column_name} because it is None, or empty or nan")
                     self.quality_stats.count_empty_cell_for_column(column_name=column_name)
@@ -271,7 +268,7 @@ class Transform(Task):
                         anonymized_value, is_anonymized = self.anonymize_value(column_name=column_name,
                                                                                fairified_value=fairified_value)
                         if is_anonymized:
-                            fairified_value = anonymized_value  # we coule anonymize this value, this is the one to insert in the DB
+                            fairified_value = anonymized_value  # we could anonymize this value, this is the one to insert in the DB
                         dataset = self.execution.current_dataset_identifier
                         if self.profile == Profile.PHENOTYPIC:
                             new_record = PhenotypicRecord(feature_id=feature_id,
@@ -392,8 +389,6 @@ class Transform(Task):
 
     def process_batch_of_features(self, last: bool) -> None:
         if len(self.features) >= BATCH_SIZE or last:
-            log.info("write Feature batch")
-            log.info(self.features)
             write_in_file(resource_list=self.features,
                           current_working_dir=self.execution.working_dir_current,
                           profile=self.profile,
@@ -429,106 +424,114 @@ class Transform(Task):
         rows = self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name]
         if len(rows) == 1:
             row = rows.iloc[0]
-            onto_name = row.iloc[self.metadata.columns.get_loc(MetadataColumns.ONTO_NAME)]
-            if is_not_nan(onto_name):
-                onto_resource = OntologyResource(
-                    ontology=Ontologies.get_enum_from_name(onto_name),
-                    full_code=row.iloc[self.metadata.columns.get_loc(MetadataColumns.ONTO_CODE)],
-                    quality_stats=self.quality_stats,
-                    label=None)
-                return onto_resource
+            onto_code = row.iloc[self.metadata.columns.get_loc(MetadataColumns.ONTO_CODE)]
+            if len(onto_code) > 0:
+                onto_name = Ontologies.get_enum_from_name(row.iloc[self.metadata.columns.get_loc(MetadataColumns.ONTO_NAME)])
+                if type(onto_name) is dict:
+                    return OntologyResource(
+                            ontology=onto_name,
+                            full_code=onto_code,
+                            quality_stats=self.quality_stats,
+                            label=None)
+                else:
+                    log.error(
+                        f"In the metadata, {MetadataColumns.ONTO_NAME} is empty or unrecognised for the column '{column_name}'.")
+                    return None
             else:
-                log.error("Did not find the column '%s' in the metadata", column_name)
+                log.error(f"In the metadata, {MetadataColumns.ONTO_CODE} is empty for the column '{column_name}'.")
                 return None
         elif len(rows) == 0:
-            log.error("Did not find the column '%s' in the metadata", column_name)
+            log.error(f"Did not find the column {column_name} in the metadata")
             return None
         else:
-            log.error("Found several times the column '%s' in the metadata", column_name)
+            log.error(f"Found several times the column {column_name} in the metadata")
             return None
 
     def fairify_value(self, column_name: str, value: Any) -> str | float | datetime | OntologyResource:
-        current_column_info = DataFrame(self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name])
-        etl_type = current_column_info[MetadataColumns.ETL_TYPE].iloc[0]  # we need to take the value itself, otherwise we end up with a series of 1 element (the ETL type)
-        the_normalized_value = MetadataColumns.normalize_value(column_value=value)  # we compute only once the cast value and return it whenever we cannot FAIRify deeply the value
-        return_value = None  # to ease logging, we also save the return value in a variable and return it at the very end
-        expected_unit = self.mapping_column_to_unit[column_name] if column_name in self.mapping_column_to_unit else None  # there was some unit specified in the metadata or extracted from the data
-
-        # log.debug(f"ETL type is {etl_type}, expected unit is {expected_unit}")
-        if etl_type == DataTypes.STRING:
-            return value  # the value is already normalized, we can return it as is
-        elif etl_type == DataTypes.CATEGORY:
-            # we look for the CC associated to that categorical value
-            # we need to check that (a) the column expects this categorical value and (b) this categorical has an associated CC
-            if column_name in self.mapping_column_to_categorical_value and value in self.mapping_column_to_categorical_value[column_name] and value in self.mapping_categorical_value_to_onto_resource:
-                return_value = self.mapping_categorical_value_to_onto_resource[value]
-            else:
-                # no categorical value for that value, we return the normalized value
-                self.quality_stats.add_unknown_categorical_value(column_name=column_name, categorical_value=value)
-                return_value = the_normalized_value
-        elif etl_type == DataTypes.DATETIME or etl_type == DataTypes.DATE:
-            return_value = cast_str_to_datetime(str_value=value)
-        elif etl_type == DataTypes.BOOLEAN:
-            value = "1" if value == "1.0" else "0" if value == "0.0" else value
-            return_value = cast_str_to_boolean(str_value=value)
-            if return_value is None:
-                self.quality_stats.add_unknown_boolean_value(column_name=column_name, boolean_value=value)
-                return_value = the_normalized_value
-        elif etl_type == DataTypes.INTEGER or etl_type == DataTypes.FLOAT:
-            if column_name == self.execution.patient_id_column_name:
-                # do not cast int-like string identifiers as integers because this may add too much normalization
-                return_value = str(value)
-            else:
-                # this is really a numeric value that we want to cast
-                m = re.search(PATTERN_VALUE_UNIT, value)
-                if m is not None:
-                    # there is a unit in the data value
-                    # m.group(0) is the text itself, m.group(1) is the int/float value, m.group(2) is the unit
-                    the_value = m.group(1)
-                    unit = m.group(2)
-                    if unit == expected_unit:
-                        if etl_type == DataTypes.INTEGER:
-                            return_value = cast_str_to_int(str_value=the_value)
-                        elif etl_type == DataTypes.FLOAT:
-                            return_value = cast_str_to_float(str_value=the_value)
-                    else:
-                        # the feature unit does not correspond, we return the normalized (string) value
-                        self.quality_stats.add_numerical_value_with_unmatched_unit(column_name=column_name,
-                                                                                        expected_unit=expected_unit,
-                                                                                        current_unit=unit,
-                                                                                        value=value)
-                        return_value = the_normalized_value
-                else:
-                    # this value does not contain a unit or is not of the form "value unit"
-                    # thus, we cast it depending on the ETL type
-                    if etl_type == DataTypes.INTEGER:
-                        return_value = cast_str_to_int(str_value=value)
-                    elif etl_type == DataTypes.FLOAT:
-                        return_value = cast_str_to_float(str_value=value)
-                    else:
-                        return_value = the_normalized_value
+        if pd.isnull(value):
+            # this is an explicit NaN value, we keep it as such (and do not convert it to None) in oder to insert it in mongodb
+            return DEFAULT_NAN_VALUE
         else:
-            # Unhandled ETL type: this cannot happen because all ETL types have been checked during the Extract step
-            return_value = the_normalized_value
+            return_value = None  # to ease logging, we also save the return value in a variable and return it at the very end
+            current_column_info = DataFrame(self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name])
+            etl_type = current_column_info[MetadataColumns.ETL_TYPE].iloc[0]  # we need to take the value itself, otherwise we end up with a series of 1 element (the ETL type)
+            expected_unit = self.mapping_column_to_unit[column_name] if column_name in self.mapping_column_to_unit else None  # there was some unit specified in the metadata or extracted from the data
 
-        # in case, casting the value returned None, we set the normalized value back
-        # otherwise, we keep the cast value
-        return_value = the_normalized_value if return_value is None else return_value
-        # count how many fairified values do not (still) match the expected ETL type
-        if ((etl_type == DataTypes.BOOLEAN and not isinstance(return_value, bool))
-                or (etl_type == DataTypes.FLOAT and not isinstance(return_value, float))
-                or (etl_type == DataTypes.INTEGER and not isinstance(return_value, int))
-                or (etl_type == DataTypes.DATE and not isinstance(return_value, datetime))
-                or (etl_type == DataTypes.DATETIME and not isinstance(return_value, datetime))
-                or (etl_type == DataTypes.STRING and not isinstance(return_value, str))
-                or (etl_type == DataTypes.CATEGORY and not isinstance(return_value, OntologyResource))):
-            self.quality_stats.add_column_with_unmatched_typeof_etl_types(column_name=column_name,
-                                                                          typeof_type=type(return_value).__name__,
-                                                                          etl_type=etl_type)
+            # log.debug(f"ETL type is {etl_type}, expected unit is {expected_unit}")
+            if etl_type == DataTypes.STRING:
+                return value  # the value is already normalized, we can return it as is
+            elif etl_type == DataTypes.CATEGORY:
+                # we look for the CC associated to that categorical value
+                # we need to check that (a) the column expects this categorical value and (b) this categorical has an associated CC
+                if column_name in self.mapping_column_to_categorical_value and value in self.mapping_column_to_categorical_value[column_name] and value in self.mapping_categorical_value_to_onto_resource:
+                    return_value = self.mapping_categorical_value_to_onto_resource[value]
+                else:
+                    # no categorical value for that value, we return the normalized value
+                    self.quality_stats.add_unknown_categorical_value(column_name=column_name, categorical_value=value)
+                    return_value = value
+            elif etl_type == DataTypes.DATETIME or etl_type == DataTypes.DATE:
+                return_value = cast_str_to_datetime(str_value=value)
+            elif etl_type == DataTypes.BOOLEAN:
+                value = "1" if value == "1.0" else "0" if value == "0.0" else value
+                return_value = cast_str_to_boolean(str_value=value)
+                if return_value is None:
+                    self.quality_stats.add_unknown_boolean_value(column_name=column_name, boolean_value=value)
+                    return_value = value
+            elif etl_type == DataTypes.INTEGER or etl_type == DataTypes.FLOAT:
+                if column_name == self.execution.patient_id_column_name:
+                    # do not cast int-like string identifiers as integers because this may add too much normalization
+                    return_value = str(value)
+                else:
+                    # this is really a numeric value that we want to cast
+                    m = re.search(PATTERN_VALUE_UNIT, value)
+                    if m is not None:
+                        # there is a unit in the data value
+                        # m.group(0) is the text itself, m.group(1) is the int/float value, m.group(2) is the unit
+                        the_value = m.group(1)
+                        unit = m.group(2)
+                        if unit == expected_unit:
+                            if etl_type == DataTypes.INTEGER:
+                                return_value = cast_str_to_int(str_value=the_value)
+                            elif etl_type == DataTypes.FLOAT:
+                                return_value = cast_str_to_float(str_value=the_value)
+                        else:
+                            # the feature unit does not correspond, we return the normalized (string) value
+                            self.quality_stats.add_numerical_value_with_unmatched_unit(column_name=column_name,
+                                                                                            expected_unit=expected_unit,
+                                                                                            current_unit=unit,
+                                                                                            value=value)
+                            return_value = value
+                    else:
+                        # this value does not contain a unit or is not of the form "value unit"
+                        # thus, we cast it depending on the ETL type
+                        if etl_type == DataTypes.INTEGER:
+                            return_value = cast_str_to_int(str_value=value)
+                        elif etl_type == DataTypes.FLOAT:
+                            return_value = cast_str_to_float(str_value=value)
+                        else:
+                            return_value = value
+            else:
+                # Unhandled ETL type: this cannot happen because all ETL types have been checked during the Extract step
+                return_value = value
 
-        # we use type(..).__name__ to get the class name, e.g., "str" or "bool", instead of "<class 'float'>"
-        # log.info(f"Column '{column_name}': fairify {type(value).__name__} value '{value}' (unit: {expected_unit}) into {type(return_value).__name__}: {return_value}")
-        return return_value
+            # in case, casting the value returned None, we set the normalized value back
+            # otherwise, we keep the cast value
+            return_value = value if return_value is None else return_value
+            # count how many fairified values do not (still) match the expected ETL type
+            if ((etl_type == DataTypes.BOOLEAN and not isinstance(return_value, bool))
+                    or (etl_type == DataTypes.FLOAT and not isinstance(return_value, float))
+                    or (etl_type == DataTypes.INTEGER and not isinstance(return_value, int))
+                    or (etl_type == DataTypes.DATE and not isinstance(return_value, datetime))
+                    or (etl_type == DataTypes.DATETIME and not isinstance(return_value, datetime))
+                    or (etl_type == DataTypes.STRING and not isinstance(return_value, str))
+                    or (etl_type == DataTypes.CATEGORY and not isinstance(return_value, OntologyResource))):
+                self.quality_stats.add_column_with_unmatched_typeof_etl_types(column_name=column_name,
+                                                                              typeof_type=type(return_value).__name__,
+                                                                              etl_type=etl_type)
+
+            # we use type(..).__name__ to get the class name, e.g., "str" or "bool", instead of "<class 'float'>"
+            # log.info(f"Column '{column_name}': fairify {type(value).__name__} value '{value}' (unit: {expected_unit}) into {type(return_value).__name__}: {return_value}")
+            return return_value
 
     def anonymize_value(self, column_name: str, fairified_value: Any) -> tuple:
         """

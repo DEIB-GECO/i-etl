@@ -3,7 +3,7 @@ import os
 import re
 import unittest
 
-import numpy as np
+import pandas as pd
 import pytest
 
 from constants.defaults import DEFAULT_ONTOLOGY_RESOURCE_LABEL
@@ -27,7 +27,6 @@ from enums.Visibility import Visibility
 from etl.Transform import Transform
 from statistics.QualityStatistics import QualityStatistics
 from statistics.TimeStatistics import TimeStatistics
-from utils.assertion_utils import is_not_nan
 from utils.cast_utils import cast_str_to_datetime
 from utils.file_utils import get_json_resource_file
 from utils.file_utils import read_tabular_file_as_string
@@ -41,6 +40,7 @@ def my_setup(hospital_name: str, profile: str, extracted_metadata_path: str, ext
              extracted_mapping_categorical_values_path: str,
              extracted_column_to_categorical_path: str,
              extracted_column_unit_path: str,
+             extracted_domain_path: str,
              extracted_patient_ids_mapping_path: str) -> Transform:
     args = {
         ParameterKeys.DB_NAME: TEST_DB_NAME,
@@ -58,19 +58,29 @@ def my_setup(hospital_name: str, profile: str, extracted_metadata_path: str, ext
     # - and mapped_values as a JSON file that I obtained from the same Extract object
     metadata = read_tabular_file_as_string(os.path.join(DOCKER_FOLDER_TEST, extracted_metadata_path))
     data = read_tabular_file_as_string(os.path.join(DOCKER_FOLDER_TEST, extracted_data_paths))
+    # for data only, we need to do a second pass on the data to replace explicit NaN values by np.nan
+    # something Extract is doing, but here we need to do it because we simply read the expected CSV file,
+    # thus NaN values are read as strings and need to be transformed
+    for column in data:
+        data.loc[:, column] = data[column].apply(lambda x: MetadataColumns.normalize_value(column_value=x))
+
     with open(os.path.join(DOCKER_FOLDER_TEST, extracted_mapping_categorical_values_path), "r") as f:
         mapping_categorical_values = json.load(f)
     with open(os.path.join(DOCKER_FOLDER_TEST, extracted_column_to_categorical_path), "r") as f:
         mapping_column_to_categorical_value = json.load(f)
     with open(os.path.join(DOCKER_FOLDER_TEST, extracted_column_unit_path), "r") as f:
         column_to_unit = json.load(f)
+    with open(os.path.join(DOCKER_FOLDER_TEST, extracted_domain_path), "r") as f:
+        mapping_column_to_domain = json.load(f)
 
     dataset_instance = Dataset(database=database, docker_path=None, version_notes=None, license=None, counter=Counter())
     transform = Transform(database=database, execution=TestTransform.execution, data=data, metadata=metadata,
                           profile=profile, dataset_number=get_dataset_number_from_profile(profile), file_counter=1,
                           mapping_categorical_value_to_onto_resource=mapping_categorical_values,
                           mapping_column_to_categorical_value=mapping_column_to_categorical_value,
-                          mapping_column_to_unit=column_to_unit, load_patients=True,
+                          mapping_column_to_unit=column_to_unit,
+                          mapping_column_to_domain=mapping_column_to_domain,
+                          load_patients=True,
                           quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False),
                           dataset_instance=dataset_instance)
 
@@ -151,11 +161,8 @@ class TestTransform(unittest.TestCase):
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_PHENOTYPIC_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
+                             extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
-        log.info(transform.database.check_table_exists(TableNames.RECORD))
-        log.info(transform.database.check_table_exists(TableNames.FEATURE))
-        log.info(transform.database.check_table_exists(TableNames.PATIENT))
-        log.info(transform.database.check_table_exists(TableNames.HOSPITAL))
         counter = Counter()
         counter.set_with_database(database=transform.database)
 
@@ -185,6 +192,7 @@ class TestTransform(unittest.TestCase):
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_PHENOTYPIC_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
+                             extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
         transform.create_patients()
         transform.counter.set_with_database(database=transform.database)
@@ -202,7 +210,7 @@ class TestTransform(unittest.TestCase):
         # (which contains at least the column name, and maybe a description)
         # PhenFeature about sex
         lab_feature_a = get_feature_by_text(features, "sex")
-        assert len(lab_feature_a) == 9  # inherited fields (identifier, entity_type, timestamp), proper fields (name, ontology_resource, data_type, unit, visibility, datasets)
+        assert len(lab_feature_a) == 11  # inherited fields (identifier, entity_type, timestamp), proper fields (name, ontology_resource, data_type, unit, visibility, datasets, description, domain)
         assert "identifier" in lab_feature_a
         assert lab_feature_a["name"] == "sex"
         assert lab_feature_a["ontology_resource"] == {
@@ -214,16 +222,24 @@ class TestTransform(unittest.TestCase):
         assert lab_feature_a["data_type"] == DataTypes.CATEGORY
         assert "unit" not in lab_feature_a
         assert lab_feature_a["entity_type"] == f"{Profile.PHENOTYPIC}{TableNames.FEATURE}"
+        assert lab_feature_a["domain"] is not None
+        assert "accepted_values" in lab_feature_a["domain"]
+        assert len(lab_feature_a["domain"]["accepted_values"]) == 2
+        assert "m" in lab_feature_a["domain"]["accepted_values"]
+        assert "f" in lab_feature_a["domain"]["accepted_values"]
 
         # PhenFeature about date_of_birth
         lab_feature_b = get_feature_by_text(features, "date_of_birth")
-        assert len(lab_feature_b) == 7  # no ontology resource and no unit
+        assert len(lab_feature_b) == 8  # no ontology_resource, no unit, no domain
         assert "identifier" in lab_feature_b
+        assert "timestamp" in lab_feature_b
         assert lab_feature_b["name"] == "date_of_birth"
         assert "ontology_resource" not in lab_feature_b
         assert lab_feature_b["data_type"] == DataTypes.DATETIME
         assert "unit" not in lab_feature_b
         assert lab_feature_b["entity_type"] == f"{Profile.PHENOTYPIC}{TableNames.FEATURE}"
+        assert lab_feature_b["description"] == "The date of birth"
+        assert lab_feature_b["visibility"] == Visibility.ANONYMIZED
 
         # check that there are no duplicates in PhenFeature instances
         # for this, we get the set of their names (in the field "text")
@@ -236,7 +252,7 @@ class TestTransform(unittest.TestCase):
 
         # CHECK RECORDS
         records = get_transform_records(profile=Profile.PHENOTYPIC, file_counter=3)
-        assert len(records) == 17  # in total, 17 PhenRecord instances are created, between 2 and 5 per Patient
+        assert len(records) == 18  # in total, 18 PhenRecord instances are created, between 2 and 5 per Patient, the only explicit NaN value is indeed created
         # assert that PhenRecord instances have been correctly created for a given data row
         # we take the seventh row
         patient_id = transform.patient_ids_mapping["999999994"]
@@ -255,12 +271,12 @@ class TestTransform(unittest.TestCase):
         assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999998"], column_name="ethnicity") == "white"
         assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999997"], column_name="ethnicity") == "white"
         assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999996"], column_name="ethnicity") == "caucasian"
-        assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999995"], column_name="ethnicity") is None
+        assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999995"], column_name="ethnicity") is None  # no value so None
         assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999994"], column_name="ethnicity") == "black"
         assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999993"], column_name="ethnicity") == "caucasian"
         assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999992"], column_name="ethnicity") == "italian"
-        assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999991"], column_name="ethnicity") is None
-        assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999990"], column_name="ethnicity") is None
+        assert pd.isnull(get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999991"], column_name="ethnicity"))  # explicit NaN value
+        assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999990"], column_name="ethnicity") is None  # no value so None
 
     def test_clinical_data(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,
@@ -269,6 +285,7 @@ class TestTransform(unittest.TestCase):
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
+                             extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_FILLED_PIDS_PATH)
         transform.load_patient_id_mapping()
         transform.create_patients()
@@ -281,7 +298,6 @@ class TestTransform(unittest.TestCase):
         # we cannot use transform.features, because the array is cleared after all features are saved
         # we need to read from the JSON file written during the Transform step
         features = get_transform_features(profile=Profile.CLINICAL, file_counter=2)
-        log.info(features)
         assert len(features) == 6 - 2  # sid and id do not count as SamFeatures
         # assert the third and fourth SamFeature instances:
         # lab_feature_a has one associated code
@@ -290,7 +306,7 @@ class TestTransform(unittest.TestCase):
         # (which contains at least the column name, and maybe a description)
         # SamFeature about molecule_a
         lab_feature_a = get_feature_by_text(features, "molecule_a")
-        assert len(lab_feature_a) == 9  # inherited fields (identifier, entity_type, timestamp), proper fields (original_name, ontology_resource, permitted_datatype, unit, visibility, datasets)
+        assert len(lab_feature_a) == 11  # inherited fields (identifier, entity_type, timestamp), proper fields (name, ontology_resource, data_type, unit, visibility, datasets, description, domain)
         assert "identifier" in lab_feature_a
         assert lab_feature_a["name"] == "molecule_a"
         assert lab_feature_a["ontology_resource"] == {
@@ -303,17 +319,21 @@ class TestTransform(unittest.TestCase):
         assert lab_feature_a["unit"] == "mg/L"
         assert lab_feature_a["visibility"] == Visibility.PUBLIC
         assert lab_feature_a["entity_type"] == f"{Profile.CLINICAL}{TableNames.FEATURE}"
+        assert lab_feature_a["description"] == "The molecule Alpha"
+        assert lab_feature_a["domain"] == {"min": 0}
         # timestamp is not tested
 
         # LabFeature about molecule_b
         lab_feature_b = get_feature_by_text(features, "molecule_b")
-        assert len(lab_feature_b) == 8
+        assert len(lab_feature_b) == 9
         assert "identifier" in lab_feature_b
         assert lab_feature_b["name"] == "molecule_b"
         assert "ontology_resource" not in lab_feature_b
         assert lab_feature_b["data_type"] == DataTypes.INTEGER
         assert lab_feature_b["unit"] == "g"  # unit is gram
         assert lab_feature_b["entity_type"] == f"{Profile.CLINICAL}{TableNames.FEATURE}"
+        assert lab_feature_b["description"] == "The molecule Beta"
+        assert "domain" not in lab_feature_b
 
         # check that there are no duplicates in SamFeature instances
         # for this, we get the set of their names (in the field "text")
@@ -326,24 +346,13 @@ class TestTransform(unittest.TestCase):
 
         # CHECK RECORDS
         records = get_transform_records(profile=Profile.CLINICAL, file_counter=3)
-        assert len(records) == 16  # in total, 16 ClinicalRecord instances are created, between 2 and 5 per Patient
+        assert len(records) == 23  # in total, 16 ClinicalRecord instances are created, between 2 and 5 per Patient
 
         # assert that ClinicalRecord instances have been correctly created for a given data row
         # we take the seventh row
         patient_id = transform.patient_ids_mapping["999999994"]
         assert patient_id == 994
         records_patient = get_records_for_patient(records=records, patient_id=patient_id)
-        log.info(records_patient)
-        hospitals = transform.database.find_operation(table_name=TableNames.HOSPITAL, filter_dict={}, projection={})
-        log.info("existing hospitals")
-        for h in hospitals:
-            log.info(h)
-        log.info("---")
-        patients = transform.database.find_operation(table_name=TableNames.PATIENT, filter_dict={}, projection={})
-        log.info("existing patients")
-        for p in patients:
-            log.info(p)
-        log.info("---")
         assert len(records_patient) == 2
         assert records_patient[0]["value"] == -0.003  # the value as been converted to a float
         assert records_patient[0]["has_subject"] == patient_id
@@ -363,9 +372,11 @@ class TestTransform(unittest.TestCase):
         assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999997"], column_name="molecule_b") == "231 grams"  # this has not been converted as this does not match the expected unit
         assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999996"], column_name="molecule_b") == 21  # this has been cast as int because it matches the expected unit
         assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999995"], column_name="molecule_b") == 100  # this has been cast as int even though there was no unit
-        assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999994"], column_name="molecule_b") is None  # no value
-        assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999993"], column_name="molecule_b") is None  # null value
+        assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999994"], column_name="molecule_b") is None  # no value, thus no Record (thus None)
+        assert pd.isnull(get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999993"], column_name="molecule_b"))  # null value converted to NaN
         assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999992"], column_name="molecule_b") == "116 kg"  # this has not been converted as this does not match the expected unit
+        assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999991"], column_name="molecule_b") is None  # no value, thus no Record
+        assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999990"], column_name="molecule_b") is None  # no value, thus no Record
     # TODO Nelly: check there are no duplicates for SamFeature instances
 
     def test_create_patients_without_pid(self):
@@ -375,6 +386,7 @@ class TestTransform(unittest.TestCase):
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_PHENOTYPIC_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
+                             extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
         # this creates Patient resources (based on the data file) and insert them in a (JSON) temporary file
         transform.create_patients()
@@ -399,6 +411,7 @@ class TestTransform(unittest.TestCase):
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_PHENOTYPIC_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
+                             extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_FILLED_PIDS_PATH)
         # this creates Patient resources (based on the data file) and insert them in a (JSON) temporary file
         transform.load_patient_id_mapping()
@@ -421,6 +434,7 @@ class TestTransform(unittest.TestCase):
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
+                             extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
         # no associated ontology code
         onto_resource = transform.create_ontology_resource_from_row(column_name="molecule_b")
@@ -437,6 +451,7 @@ class TestTransform(unittest.TestCase):
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
+                             extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
         # no associated ontology code (patient id line)
         first_row = transform.metadata.iloc[0]
@@ -465,6 +480,7 @@ class TestTransform(unittest.TestCase):
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_PHENOTYPIC_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
+                             extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
 
         assert transform.fairify_value(column_name="id", value=transform.data.iloc[0][0]) == "999999999"
@@ -472,7 +488,7 @@ class TestTransform(unittest.TestCase):
         fairified_value = transform.fairify_value(column_name="sex", value=transform.data.iloc[0][1])
         assert fairified_value == onto_resource.to_json()
         assert transform.fairify_value(column_name="ethnicity", value=transform.data.iloc[0][2]) == "white"
-        assert not is_not_nan(transform.fairify_value(column_name="date_of_birth", value=transform.data.iloc[0][3]))  # no date here, we verify this is NaN
+        assert transform.fairify_value(column_name="date_of_birth", value=transform.data.iloc[0][3]) == ""  # no date here, we verify this returns empty string
         assert transform.fairify_value(column_name="date_of_birth", value=transform.data.iloc[5][3]) == cast_str_to_datetime(str_value="2021-12-22 11:58:38.881")
 
     def test_fairify_clin_value(self):
@@ -482,6 +498,7 @@ class TestTransform(unittest.TestCase):
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
+                             extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
 
         assert transform.fairify_value(column_name="sid", value=transform.data.iloc[0][0]) == "s1"
@@ -490,9 +507,8 @@ class TestTransform(unittest.TestCase):
         assert transform.fairify_value(column_name="molecule_b", value=transform.data.iloc[0][3]) == 100
         assert transform.fairify_value(column_name="molecule_g", value=transform.data.iloc[0][4]) is True
         assert transform.fairify_value(column_name="molecule_g", value=transform.data.iloc[4][4]) is False
-        # not variable == np.nan (https://stackoverflow.com/questions/44367557/why-does-assert-np-nan-np-nan-cause-an-error)
-        assert np.isnan(transform.fairify_value(column_name="molecule_g", value=transform.data.iloc[6][4]))
-        assert np.isnan(transform.fairify_value(column_name="molecule_g", value=transform.data.iloc[7][4]))
+        assert pd.isnull(transform.fairify_value(column_name="molecule_g", value=transform.data.iloc[6][4]))
+        assert pd.isnull(transform.fairify_value(column_name="molecule_g", value=transform.data.iloc[7][4]))
 
     def test_load_empty_patient_id_mapping(self):
         extract = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,
@@ -501,6 +517,7 @@ class TestTransform(unittest.TestCase):
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
+                           extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH)
         extract.load_patient_id_mapping()
 
@@ -519,6 +536,7 @@ class TestTransform(unittest.TestCase):
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
+                             extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.ORIG_FILLED_PIDS_PATH)
         transform.load_patient_id_mapping()
 

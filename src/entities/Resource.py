@@ -6,7 +6,8 @@ from constants.defaults import NO_ID
 from database.Counter import Counter
 from datatypes.Identifier import Identifier
 from database.Operators import Operators
-from utils.assertion_utils import is_not_nan
+
+from src.utils.setup_logger import log
 
 
 class Resource:
@@ -32,10 +33,12 @@ class Resource:
     def __getstate__(self):
         # we need to check whether each field is a NaN value because we do not want to add fields for NaN values
         state = self.__dict__.copy()
+        # log.info(state)
         # trick: we need to work on the copy of the keys to not directly work on them
         # otherwise, Concurrent modification error
         for key in list(state.keys()):
-            if state[key] is None or not is_not_nan(state[key]):
+            if state[key] is None:  # we keep explicit NaN values
+                # log.info(f"delete value '{state[key]}' for key '{key}'")
                 del state[key]
             else:
                 # we may also need to convert datetime within MongoDB-style dates

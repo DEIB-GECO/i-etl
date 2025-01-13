@@ -13,6 +13,7 @@ from database.Counter import Counter
 from datatypes.Identifier import Identifier
 from datatypes.OntologyResource import OntologyResource
 from entities.ClinicalRecord import ClinicalRecord
+from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from etl.Extract import Extract
 from statistics.QualityStatistics import QualityStatistics
@@ -235,14 +236,13 @@ def main_efficiency_json():
         print(f"{datetime.datetime.now()-start_time} with ujson to load")
 
     counter = Counter()
-    objects = [ClinicalRecord(id_value=str(i), feature_id=Identifier(value=str(i)),
-                 patient_id=Identifier(value=str(i)),
-                 hospital_id=Identifier(value=str(i)),
-                 value=str(i),
-                 base_id=None,
-                 counter=counter,
-                 hospital_name="test",
-                 dataset="abc.csv") for i in range(0, 1000)]
+    objects = [ClinicalRecord(feature_id=Identifier(i),
+                              patient_id=Identifier(i),
+                              hospital_id=Identifier(i),
+                              value=str(i),
+                              base_id=None,
+                              counter=counter,
+                              dataset="abc.csv") for i in range(0, 1000)]
 
     start_time = datetime.datetime.now()
     _ = pickle.dumps(objects, protocol=pickle.HIGHEST_PROTOCOL)
@@ -274,6 +274,26 @@ def main_groupby_pandas():
     print(df)
 
 
+def main_na_pandas():
+    na_values = ["no information", "No information", "No Information", "-", "0", "0.0", "-0", "-0.0"]
+    df = pd.read_csv(
+        "/Users/nelly/Documents/boulot/postdoc-polimi/etl/datasets/test/orig-data-clin.csv",
+        index_col=False, dtype=str, na_values=[], keep_default_na=False)
+    print(df)
+    print(df.columns)
+
+    print(df)
+    for column in df:
+        df.loc[:, column] = df[column].apply(lambda x: MetadataColumns.normalize_value(column_value=x))
+    print(df)
+
+    for row in df.itertuples(index=False):
+        print(row)
+        for column_name in df.columns:
+            value = row[df.columns.get_loc(column_name)]
+            print(f"      '{value}' (type={type(value)}, None={value is None}, Null={pd.isnull(value)}, empty={value==""})")
+
+
 if __name__ == '__main__':
     # main_load_json_from_file_as_bson()
     
@@ -292,6 +312,8 @@ if __name__ == '__main__':
 
     # main_build_upsert()
 
-    main_groupby_pandas()
+    # main_groupby_pandas()
+
+    main_na_pandas()
 
     print("Done.")

@@ -10,7 +10,6 @@ from enums.MetadataColumns import MetadataColumns
 from enums.Profile import Profile
 from preprocessing.Preprocess import Preprocess
 from utils.api_utils import send_query_to_api, parse_json_response
-from utils.assertion_utils import is_not_nan
 from utils.file_utils import read_tabular_file_as_string
 from utils.setup_logger import log
 
@@ -44,21 +43,24 @@ class PreprocessBuzziUC1(Preprocess):
                 if acronym not in self.mapping_diagnoses_infos:
                     self.mapping_diagnoses_infos[acronym] = {}
                 # gene column
-                if is_not_nan(row[transformation_df.columns.get_loc(DiagnosisColumns.GENE_NAME)]) and "," not in row[transformation_df.columns.get_loc(DiagnosisColumns.GENE_NAME)]:
-                    self.mapping_diagnoses_infos[acronym][DiagnosisColumns.GENE_NAME] = row[transformation_df.columns.get_loc(DiagnosisColumns.GENE_NAME)]
+                gene_name = row[transformation_df.columns.get_loc(DiagnosisColumns.GENE_NAME)]
+                if gene_name is not None and len(gene_name) > 0 and "," not in gene_name:
+                    self.mapping_diagnoses_infos[acronym][DiagnosisColumns.GENE_NAME] = gene_name
                 else:
                     # there is no gene for that disease or this is a multigenic disease,
                     # we do not record this
                     self.mapping_diagnoses_infos[acronym][DiagnosisColumns.GENE_NAME] = None
                 # diagnosis name column
-                if is_not_nan(row[DiagnosisColumns.DIAGNOSIS_NAME]):
-                    self.mapping_diagnoses_infos[acronym][DiagnosisColumns.DIAGNOSIS_NAME] = row[DiagnosisColumns.DIAGNOSIS_NAME]
+                diagnosis = row[DiagnosisColumns.DIAGNOSIS_NAME]
+                if diagnosis is not None and len(diagnosis) > 0:
+                    self.mapping_diagnoses_infos[acronym][DiagnosisColumns.DIAGNOSIS_NAME] = diagnosis
                 else:
                     self.mapping_diagnoses_infos[acronym][DiagnosisColumns.DIAGNOSIS_NAME] = None
                 # orphanet code column
-                if is_not_nan(row[DiagnosisColumns.ORPHANET_CODE]):
+                orpha_code = row[DiagnosisColumns.ORPHANET_CODE]
+                if orpha_code is not None and len(orpha_code) > 0:
                     code = row[DiagnosisColumns.ORPHANET_CODE].replace("ORPHA:", "")
-                    self.mapping_diagnoses_infos[acronym][DiagnosisColumns.ORPHANET_CODE] = row[DiagnosisColumns.ORPHANET_CODE]
+                    self.mapping_diagnoses_infos[acronym][DiagnosisColumns.ORPHANET_CODE] = orpha_code
                     self.mapping_diagnoses_infos[acronym][DiagnosisColumns.INHERITANCE] = PreprocessBuzziUC1.get_inheritance(diagnosis_code=code)
                     self.mapping_diagnoses_infos[acronym][DiagnosisColumns.CHR_NUMBER] = PreprocessBuzziUC1.get_chromosome(diagnosis_code=code)
                 else:
@@ -79,11 +81,11 @@ class PreprocessBuzziUC1(Preprocess):
             count_skipped = 0
             for row in self.data.itertuples(index=False):
                 pid = row[self.data.columns.get_loc("patient ID")]
-                if is_not_nan(row[self.data.columns.get_loc("affetto")]):
+                if row[self.data.columns.get_loc("affetto")] is not None:
                     count_affected += 1
                     # the patient is affected by this disease, so we record this
                     self.record_diagnosis_for_patient(pid=pid, row=row, column="affetto")
-                if is_not_nan(row[self.data.columns.get_loc("carrier")]):
+                if row[self.data.columns.get_loc("carrier")] is not None:
                     count_carrier += 1
                     # the patient is a carrier of the disease
                     # if we decide to record it, we record everything...
