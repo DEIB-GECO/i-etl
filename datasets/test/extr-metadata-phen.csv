@@ -1,5 +1,5 @@
 "ontology","ontology_code","ontology_comment","snomed_vartype","test h1","TEST H2","test_H3","dataset","profile","name","Significato_it","description","visibility","vartype","etl_type","dimension","details","JSON_values","Multiplicity","Doubts"
 ,,,,1,0,0,"extr-data-phen.csv","PHENOTYPIC","id","The Patient ID","The Patient ID","PUBLIC","integer","int",,,,,
-"snomedct","123:789","Bla 4",,1,0,0,"extr-data-phen.csv","PHENOTYPIC","sex","The sex at birth","The sex at birth","PUBLIC","category","category",,"The sex of patient at birth","[{""value"": ""M"", ""snomed_ct"": ""248153007""}, {""value"": ""F"", ""snomed_ct"": ""248152002""}]",,
+"snomedct","123:789","Bla 4",,1,0,0,"extr-data-phen.csv","PHENOTYPIC","sex","The sex at birth","The sex at birth","PUBLIC","category","category",,"The sex of patient at birth","[{""value"": ""M"", ""snomedct"": ""248153007""}, {""value"": ""F"", ""snomedct"": ""248152002""}]",,
 "loinc","46463-6","Bla 5",,1,0,0,"extr-data-phen.csv","PHENOTYPIC","ethnicity","The ethnicity","The ethnicity","PUBLIC","str","str",,,,,
 ,,,,1,0,0,"extr-data-phen.csv","PHENOTYPIC","date_of_birth","The date of birth","The date of birth","ANONYMIZED","datetime","datetime",,,,,

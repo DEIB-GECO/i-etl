@@ -34,5 +34,7 @@ class TheTestFiles(EnumAsClass):
     EXTR_GENOMICS_CATEGORICAL_PATH = "extr-data-gen-categorical.json"
     EXTR_PHENOTYPIC_UNITS_PATH = "extr-data-phen-column-to-unit.json"
     EXTR_CLINICAL_UNITS_PATH = "extr-data-clin-column-to-unit.json"
+    EXTR_PHENOTYPIC_DOMAIN_PATH = "extr-data-phen-column-to-domain.json"
+    EXTR_CLINICAL_DOMAIN_PATH = "extr-data-clin-column-to-domain.json"
     EXTR_EMPTY_PIDS_PATH = "extr-empty-pids.json"
     EXTR_FILLED_PIDS_PATH = "extr-filled-pids.json"

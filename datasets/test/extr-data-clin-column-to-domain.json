@@ -1,0 +1,8 @@
+{
+  "id": null,
+  "molecule_a": {"min":  0},
+  "molecule_b": null,
+  "molecule_g": null,
+  "molecule_z": null,
+  "molecule_y": {"min":  0, "max": 5}
+}

@@ -1,0 +1,5 @@
+ontology,ontology_code,profile,dataset,name,description,visibility,ETL_type,dimension,domain,JSON_values
+snomd,,PHENOTYPIC,test.csv,pid,Unique identifier for individuals,PUBLIC,string,,,
+loinc,,PHENOTYPIC,test.csv,a,Molecule a,PUBLIC,int,,,
+,123,PHENOTYPIC,test.csv,b,Molecule b,PUBLIC,int,,,
+loinc,456,PHENOTYPIC,test.csv,c,Molecule c,PUBLIC,int,,,

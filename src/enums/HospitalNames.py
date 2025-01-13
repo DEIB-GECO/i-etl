@@ -1,7 +1,8 @@
+from typing import Any
+
 import inflection
 
 from enums.EnumAsClass import EnumAsClass
-from utils.assertion_utils import is_not_nan
 from utils.str_utils import process_spaces
 
 
@@ -33,10 +34,10 @@ class HospitalNames(EnumAsClass):
             return hospital_name
 
     @classmethod
-    def normalize(cls, hospital_name: str) -> str:
-        if is_not_nan(hospital_name):
+    def normalize(cls, hospital_name: str) -> "":
+        if hospital_name is not None:
             hospital_name = process_spaces(hospital_name)
             hospital_name = hospital_name.replace(" ", "_")  # add missing _ in hospital name if needed
             return inflection.underscore(hospital_name).lower()
         else:
-            return hospital_name
+            return ""

@@ -32,15 +32,14 @@ def get_json_resource_file(current_working_dir: str, dataset_number: int, profil
 
 
 def read_tabular_file_as_string(filepath: str) -> pd.DataFrame:
-    # na_values is the list containing values to be recognized as NA.
-    # By default, there are " ", "#N/A", "#N/A N/A", "#NA", "-1.#IND", "-1.#QNAN", "-NaN", "-nan", "1.#IND", "1.#QNAN", "<NA>", "N/A", "NA", "NULL", "NaN", "None", "n/a", "nan", "null".
-    # I extend it with "no information", "No information"
-    na_values = ["no information", "No information", "No Information", "-", "0", "0.0", "-0", "-0.0"]
     if filepath.endswith(".csv"):
-        return pd.read_csv(filepath, index_col=False, dtype=str, na_values=na_values, keep_default_na=True)
+        # leave empty cells as '' cells (they will be skipped during the Transform iteration on data values)
+        # keep cells with explicit NaN values as they are (they will be converted into NaN during the Transform iteration on data values)
+        # following issue #269
+        return pd.read_csv(filepath, index_col=False, dtype=str, na_values=[], keep_default_na=False)
     elif filepath.endswith(".xls") or filepath.endswith(".xlsx"):
         # for Excel files, there may be several sheets, so we load all data in a single dataframe
-        all_sheets = pd.read_excel(filepath, sheet_name=None, index_col=False, dtype=str, na_values=na_values, keep_default_na=True)
+        all_sheets = pd.read_excel(filepath, sheet_name=None, index_col=False, dtype=str, na_values=[], keep_default_na=False)
         all_sub_df = []
         for key, value in all_sheets.items():
             if key != "Legend":  # skip the sheet describing the columns

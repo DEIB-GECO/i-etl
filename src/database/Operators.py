@@ -2,7 +2,8 @@ from datetime import datetime
 from typing import Any
 
 from enums.EnumAsClass import EnumAsClass
-from utils.assertion_utils import THE_DATETIME_FORMAT
+
+THE_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
 class Operators(EnumAsClass):

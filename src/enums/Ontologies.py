@@ -1,5 +1,10 @@
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
 from enums.EnumAsClass import EnumAsClass
-from utils.assertion_utils import is_not_nan
+from utils.setup_logger import log
 
 from utils.str_utils import process_spaces
 
@@ -18,16 +23,14 @@ class Ontologies(EnumAsClass):
     HGNC = {"name": "hgnc", "url": "https://rest.ensembl.org/"}
 
     @classmethod
-    def get_enum_from_name(cls, ontology_name: str):
-        ontology = cls.normalize_name(ontology_name=ontology_name)
-
-        if not is_not_nan(ontology):
-            return None
-
-        for existing_ontology in Ontologies.values():
-            if existing_ontology["name"] == ontology:
-                return existing_ontology  # return the ontology enum
-        return None
+    def get_enum_from_name(cls, ontology_name: str) -> dict:
+        if ontology_name == "":
+            return {}
+        else:
+            for existing_ontology in Ontologies.values():
+                if existing_ontology["name"] == ontology_name:
+                    return existing_ontology  # return the ontology enum
+            return {}
 
     @classmethod
     def get_enum_from_url(cls, ontology_url: str):
@@ -46,23 +49,21 @@ class Ontologies(EnumAsClass):
 
     @classmethod
     def normalize_name(cls, ontology_name: str) -> str:
-        if is_not_nan(ontology_name):
-            ontology_name = process_spaces(input_string=ontology_name)
-            return ontology_name.lower().replace(" ", "").replace("_", "")
+        if ontology_name == "":
+            return ""
         else:
-            return ontology_name
+            return process_spaces(input_string=ontology_name).lower().replace(" ", "").replace("_", "")
 
     @classmethod
     def normalize_code(cls, ontology_code: str) -> str:
-        if is_not_nan(ontology_code):
-            ontology_code = process_spaces(input_string=ontology_code)
-            return ontology_code.lower().replace(" ", "")
+        if ontology_code == "":
+            return ""
         else:
-            return ontology_code
+            return process_spaces(input_string=ontology_code).lower().replace(" ", "")
 
     @classmethod
-    def remove_prefix(cls, code: str) -> str:
-        if is_not_nan(code):
-            return code.replace("ORPHA:", "").replace("orpha:", "").replace("GO:", "").replace("go:", "")
+    def remove_prefix(cls, code: str) -> Any:
+        if code == "":
+            return ""
         else:
-            return code  # return NaN or None
+            return code.replace("ORPHA:", "").replace("orpha:", "").replace("GO:", "").replace("go:", "")

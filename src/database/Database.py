@@ -270,7 +270,6 @@ class Database:
     def get_min_or_max_value(self, table_name: str, field: str, sort_order: int) -> int | float:
         operations = []
         last_field = field.split(".")[-1]
-        log.info(f"In {table_name}, looking at field {field}, with last field {last_field}, with order {sort_order}")
 
         # if from_string:
         #     # we need to parse the string to long
@@ -298,10 +297,8 @@ class Database:
             operations.append(Operators.project(field=field, projected_value=None))
             operations.append(Operators.sort(field=field, sort_order=sort_order))
             operations.append(Operators.limit(1))
-        log.info(operations)
         cursor = self.db[table_name].aggregate(operations)
         for result in cursor:
-            log.info(result)
             # There should be only one result, so we can return directly the min or max value
             # if from_string:
             #     return result["min_max"]

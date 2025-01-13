@@ -10,7 +10,6 @@ from catalogue.DatasetProfile import DatasetProfile
 from entities.Resource import Resource
 from enums.TableNames import TableNames
 from database.Operators import Operators
-from utils.assertion_utils import is_not_nan
 from utils.setup_logger import log
 
 
@@ -54,7 +53,7 @@ class Dataset(Resource):
         # trick: we need to work on the copy of the keys to not directly work on them
         # otherwise, Concurrent modification error
         for key in list(state.keys()):
-            if state[key] is None or not is_not_nan(state[key]) or type(state[key]) is Database:
+            if state[key] is None or type(state[key]) is Database:
                 del state[key]
             else:
                 # we may also need to convert datetime within MongoDB-style dates

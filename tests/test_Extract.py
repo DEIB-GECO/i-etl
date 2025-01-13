@@ -2,7 +2,9 @@ import json
 import os
 import unittest
 
+import numpy as np
 import pandas as pd
+import pytest
 
 from constants.structure import TEST_DB_NAME, DOCKER_FOLDER_TEST
 from database.Database import Database
@@ -17,7 +19,8 @@ from enums.TheTestFiles import TheTestFiles
 from etl.Extract import Extract
 from statistics.QualityStatistics import QualityStatistics
 from statistics.TimeStatistics import TimeStatistics
-from utils.assertion_utils import is_not_nan
+from utils.file_utils import read_tabular_file_as_string
+from utils.setup_logger import log
 from utils.test_utils import set_env_variables_from_dict
 
 
@@ -37,7 +40,7 @@ def my_setup(metadata_path: str, data_paths: str, data_type: str, pids_path: str
     # in the dev mode, the current_filepath variable is set during the ETL
     # for tests, we need to manually set it because we have no ETL instance
     TestExtract.execution.current_filepath = os.path.join(DOCKER_FOLDER_TEST, data_paths)
-    metadata = pd.read_csv(os.path.join(DOCKER_FOLDER_TEST, metadata_path))
+    metadata = read_tabular_file_as_string(filepath=os.path.join(DOCKER_FOLDER_TEST, metadata_path))
     database = Database(TestExtract.execution)
     extract = Extract(metadata=metadata, profile=str(data_type), database=database, execution=TestExtract.execution, quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False))
     extract.filter_metadata_file()
@@ -61,17 +64,18 @@ class TestExtract(unittest.TestCase):
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 20, "The expected number of columns is 20."
+        assert len(extract.metadata.columns) == 21, "The expected number of columns is 21."
         assert len(extract.metadata) == 6, "The expected number of lines is 6."
 
         # b. checking the "sid" line completely
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_NAME][1])
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_CODE][1])
+        assert extract.metadata[MetadataColumns.ONTO_NAME][1] == ""
+        assert extract.metadata[MetadataColumns.ONTO_CODE][1] == ""
         assert extract.metadata[MetadataColumns.COLUMN_NAME][1] == "sid"  # all lower case
         assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][1] == "The Sample ID"  # kept as it is in the metadata for more clarity
         assert extract.metadata[MetadataColumns.ETL_TYPE][1] == DataTypes.STRING
-        assert not is_not_nan(extract.metadata[MetadataColumns.JSON_VALUES][1])
+        assert extract.metadata[MetadataColumns.JSON_VALUES][1] == ""
         assert extract.metadata[MetadataColumns.VISIBILITY][1] == "PUBLIC"
+        assert extract.metadata[MetadataColumns.DOMAIN][1] == ""
 
         # g. more general checks
         # DATASET: this should be the dataset name, and there should be no other datasets in that column
@@ -88,7 +92,7 @@ class TestExtract(unittest.TestCase):
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 20, "The expected number of columns is 20."
+        assert len(extract.metadata.columns) == 21, "The expected number of columns is 21."
         assert len(extract.metadata) == 4, "The expected number of lines is 4."
 
         # b. checking the "sex" line completely
@@ -97,26 +101,27 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.COLUMN_NAME][1] == "sex"  # all lower case
         assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][1] == "The sex at birth"  # kept as it is in the metadata for more clarity
         # pandas dataframe does not allow json objects, so we have to store them as JSON-like string
-        expected_json_values = [{"value": "M", "snomed_ct": "248153007"}, {"value": "F", "snomed_ct": "248152002"}]
-        # "[{""value"": ""M"", ""snomed_ct"": ""248153007""}, {""value"": ""F"", ""snomed_ct"": ""248152002""}]"
+        expected_json_values = [{"value": "M", "snomedct": "248153007"}, {"value": "F", "snomedct": "248152002"}]
+        # "[{""value"": ""M"", ""snomedct"": ""248153007""}, {""value"": ""F"", ""snomedct"": ""248152002""}]"
         assert extract.metadata[MetadataColumns.JSON_VALUES][1] == json.dumps(expected_json_values)
         assert extract.metadata[MetadataColumns.VISIBILITY][1] == "PUBLIC"
+        assert extract.metadata[MetadataColumns.DOMAIN][1] == ""
 
         # c. test the first (Patient ID) line, because there are no ontologies for this one
         assert extract.metadata[MetadataColumns.COLUMN_NAME][0] == "id"  # normalized column name
         assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][0] == "The Patient ID"  # non-normalized description
 
         # d. test normalization of ontology names
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_NAME][0])
+        assert extract.metadata[MetadataColumns.ONTO_NAME][0] == ""
         assert extract.metadata[MetadataColumns.ONTO_NAME][1] == "snomedct"
         assert extract.metadata[MetadataColumns.ONTO_NAME][2] == "loinc"
-        assert extract.metadata[MetadataColumns.ONTO_NAME][3] == "snomedct"
+        assert extract.metadata[MetadataColumns.ONTO_NAME][3] == ""
 
         # assert that codes are not normalized yet (they will be normalized within OntoResource)
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_CODE][0])
+        assert extract.metadata[MetadataColumns.ONTO_CODE][0] == ""
         assert extract.metadata[MetadataColumns.ONTO_CODE][1] == "123: 789"
         assert extract.metadata[MetadataColumns.ONTO_CODE][2] == " 46463-6 "
-        assert extract.metadata[MetadataColumns.ONTO_CODE][3] == "456:7z9"
+        assert extract.metadata[MetadataColumns.ONTO_CODE][3] == ""
 
         # e. check ETL type normalization
         assert extract.metadata[MetadataColumns.ETL_TYPE][0] == DataTypes.INTEGER  # patient id
@@ -139,7 +144,7 @@ class TestExtract(unittest.TestCase):
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 20, "The expected number of columns is 20."
+        assert len(extract.metadata.columns) == 21, "The expected number of columns is 21."
         assert len(extract.metadata) == 3, "The expected number of lines is 3."
 
         # b. checking the first line completely
@@ -157,14 +162,15 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.COLUMN_NAME][0] == "id"  # normalized column name
         assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][0] == "The Patient ID"  # non-normalized description
 
-        # d. test normalization of ontology codes
+        # d. test normalization of ontology names
         assert extract.metadata[MetadataColumns.ONTO_NAME][1] == "omim"
         assert extract.metadata[MetadataColumns.ONTO_NAME][2] == "omim"
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_NAME][0])
+        assert extract.metadata[MetadataColumns.ONTO_NAME][0] == ""
 
+        # d. test normalization of ontology codes (later normalized)
         assert extract.metadata[MetadataColumns.ONTO_CODE][1] == "1569 - 456"  # this will be normalized later with OntologyResource
         assert extract.metadata[MetadataColumns.ONTO_CODE][2] == "1245/   983 "
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_CODE][0])
+        assert extract.metadata[MetadataColumns.ONTO_CODE][0] == ""
 
         # e. more general checks
         # DATASET: this should be the dataset name, and there should be no other datasets in that column
@@ -181,7 +187,7 @@ class TestExtract(unittest.TestCase):
 
         # a. general size checks
         assert extract.metadata is not None, "Metadata is None, while it should not."
-        assert len(extract.metadata.columns) == 20, "The expected number of columns is 20."
+        assert len(extract.metadata.columns) == 21, "The expected number of columns is 21."
         assert len(extract.metadata) == 3, "The expected number of lines is 3."
 
         # b. checking the first line completely
@@ -190,7 +196,7 @@ class TestExtract(unittest.TestCase):
         assert extract.metadata[MetadataColumns.COLUMN_NAME][2] == "is_inherited"  # all lower case, with an underscore
         assert extract.metadata[MetadataColumns.SIGNIFICATION_EN][2] == "Whether the gene is inherited"  # kept as it is in the metadata for more clarity
         assert extract.metadata[MetadataColumns.ETL_TYPE][2] == "bool"  # all lower case
-        assert not is_not_nan(extract.metadata[MetadataColumns.JSON_VALUES][2])
+        assert extract.metadata[MetadataColumns.JSON_VALUES][2] == ""
 
         # c. test the first (Patient ID) line, because there are no ontologies for this one
         assert extract.metadata[MetadataColumns.COLUMN_NAME][0] == "id"  # normalized column name
@@ -199,11 +205,11 @@ class TestExtract(unittest.TestCase):
         # d. test normalization of ontology codes
         assert extract.metadata[MetadataColumns.ONTO_NAME][1] == "loinc"
         assert extract.metadata[MetadataColumns.ONTO_NAME][2] == "loinc"
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_NAME][0])
+        assert extract.metadata[MetadataColumns.ONTO_NAME][0] == ""
 
         assert extract.metadata[MetadataColumns.ONTO_CODE][1] == "326597056"
         assert extract.metadata[MetadataColumns.ONTO_CODE][2] == "3265970"
-        assert not is_not_nan(extract.metadata[MetadataColumns.ONTO_CODE][0])
+        assert extract.metadata[MetadataColumns.ONTO_CODE][0] == ""
 
         # e. more general checks
         # DATASET: this should be the dataset name, and there should be no other datasets in that column
@@ -217,7 +223,6 @@ class TestExtract(unittest.TestCase):
                            data_type=Profile.CLINICAL,
                            pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
-
         # a. general size checks
         assert extract.data is not None, "Data is None, while it should not."
         assert len(extract.data.columns) == 5, "The expected number of columns is 5."  # because molecule_y is in the metadata but not the data
@@ -255,7 +260,7 @@ class TestExtract(unittest.TestCase):
         assert extract.data["id"][0] == "999999999", "The expected id is '999999999'."
         assert extract.data["sex"][0] == "f"
         assert extract.data["ethnicity"][0] == "white"
-        assert not is_not_nan(extract.data["date_of_birth"][0]) is True
+        assert extract.data["date_of_birth"][0] == ""
 
     def test_load_data_file_H3_D1(self):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
@@ -280,17 +285,17 @@ class TestExtract(unittest.TestCase):
         assert extract.data["gene"][3] == "abd-123"
         assert extract.data["is_inherited"][3] == "true"
         assert extract.data["gene"][4] == "ade-183"
-        assert not is_not_nan(extract.data["is_inherited"][4])  # the "n/a" value is indeed converted to a NaN
+        assert pd.isnull(extract.data["is_inherited"][4])  # the "n/a" value is indeed converted to a NaN
         assert extract.data["gene"][5] == "sdr-125"
         assert extract.data["is_inherited"][5] == "false"
         assert extract.data["gene"][6] == "dec-123"
         assert extract.data["is_inherited"][6] == "false"
         assert extract.data["gene"][7] == "gft-568"
-        assert not is_not_nan(extract.data["is_inherited"][7])  # the "NaN" value is indeed converted to a NaN
+        assert pd.isnull(extract.data["is_inherited"][7])  # the "NaN" value is indeed converted to a NaN
         assert extract.data["gene"][8] == "plo-719"
-        assert not is_not_nan(extract.data["is_inherited"][8])
-        assert not is_not_nan(extract.data["gene"][9])
-        assert not is_not_nan(extract.data["is_inherited"][9])
+        assert extract.data["is_inherited"][8] == ""
+        assert extract.data["gene"][9] == ""
+        assert extract.data["is_inherited"][9] == ""
 
     def test_compute_sam_mapped_values(self):
         extract = my_setup(metadata_path=TheTestFiles.EXTR_METADATA_CLINICAL_PATH,
@@ -322,8 +327,8 @@ class TestExtract(unittest.TestCase):
         assert cc_1["system"] == Ontologies.SNOMEDCT["url"]  # normalized (ontology) key
         assert cc_1["code"] == "373066001"  # normalized ontology code
         # checking "na" mapping
-        assert "na" in extract.mapping_categorical_value_to_onto_resource  # normalized categorical value
-        cc_na = extract.mapping_categorical_value_to_onto_resource["na"].to_json()
+        assert np.nan in extract.mapping_categorical_value_to_onto_resource  # normalized categorical value; np.nan is the key name
+        cc_na = extract.mapping_categorical_value_to_onto_resource[np.nan].to_json()
         assert len(cc_na) == 3  # system, code, and label keys
         assert "system" in cc_na
         assert "code" in cc_na
@@ -424,3 +429,57 @@ class TestExtract(unittest.TestCase):
         assert extract.mapping_column_to_unit["ethnicity"] is None
         assert "date_of_birth" in extract.mapping_column_to_unit
         assert extract.mapping_column_to_unit["date_of_birth"] is None
+
+    def test_compute_phen_column_to_domain(self):
+        extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
+                           data_paths=TheTestFiles.ORIG_PHENOTYPIC_PATH,
+                           data_type=Profile.PHENOTYPIC,
+                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
+                           hospital_name=HospitalNames.TEST_H1)
+        extract.compute_column_to_domain()
+
+        # {'id': None, 'sex': [], 'ethnicity': [], 'date_of_birth': []}
+        assert len(extract.mapping_column_to_domain.keys()) == 4
+        assert "id" in extract.mapping_column_to_domain
+        assert extract.mapping_column_to_domain["id"] is None
+        assert "sex" in extract.mapping_column_to_domain
+        assert extract.mapping_column_to_domain["sex"] is None
+        assert "ethnicity" in extract.mapping_column_to_domain
+        assert extract.mapping_column_to_domain["ethnicity"] is None
+        assert "date_of_birth" in extract.mapping_column_to_domain
+        assert extract.mapping_column_to_domain["date_of_birth"] is None
+
+    def test_compute_clin_column_to_domain(self):
+        extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
+                           data_paths=TheTestFiles.ORIG_CLINICAL_PATH,
+                           data_type=Profile.CLINICAL,
+                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
+                           hospital_name=HospitalNames.TEST_H1)
+        extract.compute_column_to_domain()
+
+        # {'id': None,
+        #  'sid': None,
+        #  'molecule_a': {""min"": 0},
+        #  'molecule_b': None,
+        #  'molecule_g': None,
+        #  'molecule_y': {""min"": 0, ""max"": 5}
+        # }
+        assert len(extract.mapping_column_to_domain.keys()) == 6
+        assert "id" in extract.mapping_column_to_domain
+        assert extract.mapping_column_to_domain["id"] is None
+        assert "sid" in extract.mapping_column_to_domain
+        assert extract.mapping_column_to_domain["sid"] is None
+        assert "molecule_a" in extract.mapping_column_to_domain
+        assert len(extract.mapping_column_to_domain["molecule_a"]) == 1
+        assert "min" in extract.mapping_column_to_domain["molecule_a"]
+        assert extract.mapping_column_to_domain["molecule_a"]["min"] == 0
+        assert "molecule_b" in extract.mapping_column_to_domain
+        assert extract.mapping_column_to_domain["molecule_b"] is None
+        assert "molecule_g" in extract.mapping_column_to_domain
+        assert extract.mapping_column_to_domain["molecule_g"] is None
+        assert "molecule_y" in extract.mapping_column_to_domain
+        assert len(extract.mapping_column_to_domain["molecule_y"]) == 2
+        assert "min" in extract.mapping_column_to_domain["molecule_y"]
+        assert extract.mapping_column_to_domain["molecule_y"]["min"] == 0
+        assert "max" in extract.mapping_column_to_domain["molecule_y"]
+        assert extract.mapping_column_to_domain["molecule_y"]["max"] == 5

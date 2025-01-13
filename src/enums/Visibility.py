@@ -1,5 +1,9 @@
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
 from enums.EnumAsClass import EnumAsClass
-from utils.assertion_utils import is_not_nan
 from utils.setup_logger import log
 
 
@@ -21,12 +25,13 @@ class Visibility(EnumAsClass):
 
     @classmethod
     def normalize(cls, visibility: str) -> str:
-        if is_not_nan(visibility):
-            if visibility not in Visibility.values():
-                log.error(f"{visibility} is not a recognized visibility; we will use private visibility by default.")
+        if visibility == "":
+            return ""
+        else:
+            visibility_u = visibility.upper()
+            if visibility_u not in Visibility.values():
+                log.error(f"{visibility_u} is not a recognized visibility; we will use 'PRIVATE' visibility by default.")
                 Visibility.METADATA_NB_UNRECOGNIZED_VISIBILITY += 1
                 return Visibility.PRIVATE
             else:
                 return Visibility.get_enum_from_name(visibility)
-        else:
-            return visibility

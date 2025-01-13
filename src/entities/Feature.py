@@ -5,6 +5,8 @@ from entities.Resource import Resource
 from enums.TableNames import TableNames
 from enums.Visibility import Visibility
 
+from src.utils.setup_logger import log
+
 
 class Feature(Resource):
     def __init__(self, name: str, ontology_resource: OntologyResource, column_type: str, unit: str, description: str, counter: Counter,
@@ -25,4 +27,8 @@ class Feature(Resource):
             self.categories = None  # this avoids to store empty arrays when there is no categorical values for a certain Feature
         self.visibility = visibility
         self.datasets = [dataset_gid]
-        self.domain = domain
+        log.info(domain)
+        if len(domain) > 0:
+            self.domain = domain
+        else:
+            self.domain = None

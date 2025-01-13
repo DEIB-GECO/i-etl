@@ -1,5 +1,6 @@
 import re
 
+import numpy as np
 import requests
 
 API_SESSION = requests.Session()
@@ -21,3 +22,6 @@ DATASET_GLOBAL_IDENTIFIER_PREFIX = "http://better-health-project.eu/datasets/"
 NO_ID = -1
 
 DELIMITER_RESOURCE_ID = ":"
+
+NAN_VALUES = ["no information", "-", "nan", "na", "none", "n/a", "null", "np.nan", np.nan]
+DEFAULT_NAN_VALUE = np.nan
