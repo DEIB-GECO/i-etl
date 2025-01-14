@@ -2,8 +2,6 @@ import itertools
 import json
 import os
 
-import numpy as np
-import pandas as pd
 from pandas import DataFrame
 
 from database.Database import Database
@@ -15,6 +13,7 @@ from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from enums.Profile import Profile
 from enums.TableNames import TableNames
+from enums.TimerKeys import TimerKeys
 from enums.Visibility import Visibility
 from etl.Task import Task
 from preprocessing.PreprocessingTask import PreprocessingTask
@@ -26,8 +25,10 @@ from utils.setup_logger import log
 
 class Extract(Task):
 
-    def __init__(self, metadata: DataFrame, profile: str, database: Database, execution: Execution, quality_stats: QualityStatistics, time_stats: TimeStatistics):
-        super().__init__(database=database, execution=execution, quality_stats=quality_stats, time_stats=time_stats)
+    def __init__(self, metadata: DataFrame, profile: str,
+                 database: Database, execution: Execution,
+                 quality_stats: QualityStatistics, time_stats: TimeStatistics, dataset_key: str):
+        super().__init__(database=database, execution=execution, quality_stats=quality_stats, time_stats=time_stats, dataset_key=dataset_key)
         self.data = None
         self.metadata = metadata
         self.profile = Profile.normalize(profile)
@@ -202,7 +203,7 @@ class Extract(Task):
             # existing_categorical_value_for_table_name = [{...}, {...}, ...]}
             existing_categorical_values_for_table_name = one_tuple["categories"]
             for encoded_categorical_value in existing_categorical_values_for_table_name:
-                existing_or = OntologyResource.from_json(encoded_categorical_value, quality_stats=self.quality_stats)
+                existing_or = OntologyResource.from_json(encoded_categorical_value, quality_stats=self.quality_stats, time_stats=self.time_stats, dataset_key=self.dataset_key)
                 existing_categorical_codeable_concepts[existing_or.label] = existing_or
 
         # 2. then, we associate each column to its set of categorical values
@@ -239,7 +240,10 @@ class Extract(Task):
                                     # here, we do normalize the ontology name to be able to get the corresponding enum
                                     # however, we do not normalize the code, because it needs extra attention (due to spaces in post-coordinated codes, etc)
                                     ontology = Ontologies.get_enum_from_name(ontology_name=Ontologies.normalize_name(key))
-                                    onto_resource = OntologyResource(ontology=ontology, full_code=val, label=None, quality_stats=self.quality_stats)
+                                    self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.OR_CREATION_TIME)
+                                    log.info("ici")
+                                    onto_resource = OntologyResource(ontology=ontology, full_code=val, label=None, quality_stats=self.quality_stats, time_stats=self.time_stats, dataset_key=self.dataset_key)
+                                    self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.OR_CREATION_TIME)
                                     if onto_resource.system != "" and onto_resource.code != "":
                                         or_has_been_built = True
                                         self.mapping_categorical_value_to_onto_resource[normalized_categorical_value] = onto_resource

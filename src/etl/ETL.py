@@ -13,6 +13,7 @@ from entities.Hospital import Hospital
 from enums.MetadataColumns import MetadataColumns
 from enums.Profile import Profile
 from enums.TableNames import TableNames
+from enums.TimerKeys import TimerKeys
 from etl.Extract import Extract
 from etl.Load import Load
 from etl.Reporting import Reporting
@@ -44,7 +45,7 @@ class ETL:
 
     def run(self) -> None:
         time_stats = TimeStatistics(record_stats=True)
-        time_stats.start_total_execution_timer()
+        time_stats.start(dataset=None, key=TimerKeys.TOTAL_TIME)
         compute_indexes = False
         dataset_number = 0
         file_counter = 0
@@ -100,15 +101,15 @@ class ETL:
                             compute_indexes = True
 
                         # EXTRACT
-                        time_stats.start_total_extract_timer()
-                        self.extract = Extract(metadata=metadata, profile=profile, database=self.database, execution=self.execution, quality_stats=quality_stats, time_stats=time_stats)
+                        time_stats.start(dataset=current_dataset_instance.global_identifier, key=TimerKeys.EXTRACT_TIME)
+                        self.extract = Extract(metadata=metadata, profile=profile, database=self.database, execution=self.execution, quality_stats=quality_stats, time_stats=time_stats, dataset_key=current_dataset_instance.global_identifier)
                         self.extract.run()
-                        time_stats.stop_total_extract_timer()
+                        time_stats.increment(dataset=current_dataset_instance.global_identifier, key=TimerKeys.EXTRACT_TIME)
 
                         if self.extract.metadata is not None:
                             log.info(f"running transform on dataset {self.execution.current_filepath} with profile {profile}")
                             # TRANSFORM
-                            time_stats.start_total_transform_timer()
+                            time_stats.start(dataset=current_dataset_instance.global_identifier, key=TimerKeys.TRANSFORM_TIME)
                             self.transform = Transform(database=self.database, execution=self.execution, data=self.extract.data,
                                                        metadata=self.extract.metadata,
                                                        mapping_categorical_value_to_onto_resource=self.extract.mapping_categorical_value_to_onto_resource,
@@ -116,36 +117,45 @@ class ETL:
                                                        mapping_column_to_unit=self.extract.mapping_column_to_unit,
                                                        mapping_column_to_domain=self.extract.mapping_column_to_domain,
                                                        profile=profile, load_patients=count_profiles == 1,
-                                                       dataset_number=dataset_number, file_counter=file_counter, dataset_instance=current_dataset_instance,
+                                                       dataset_number=dataset_number, file_counter=file_counter, dataset_key=current_dataset_instance,
                                                        quality_stats=quality_stats, time_stats=time_stats)
                             self.transform.run()
-                            time_stats.stop_total_transform_timer()
+                            time_stats.increment(dataset=current_dataset_instance.global_identifier, key=TimerKeys.TRANSFORM_TIME)
                             file_counter = self.transform.file_counter
 
                             # LOAD
-                            time_stats.start_total_load_timer()
+                            time_stats.start(dataset=current_dataset_instance.global_identifier, key=TimerKeys.LOAD_TIME)
                             log.info(f"{one_filename} -> {compute_indexes}")
                             # create indexes only if this is the last file (otherwise, we would create useless intermediate indexes)
                             self.load = Load(database=self.database, execution=self.execution, create_indexes=compute_indexes,
                                              dataset_number=dataset_number, profile=profile,
-                                             quality_stats=quality_stats, time_stats=time_stats)
+                                             quality_stats=quality_stats, time_stats=time_stats,
+                                             dataset_key=current_dataset_instance.global_identifier)
                             self.load.run()
-                            time_stats.stop_total_load_timer()
+                            time_stats.increment(dataset=current_dataset_instance.global_identifier, key=TimerKeys.LOAD_TIME)
                 self.execution.current_file_number += 1
 
         # save the datasets in the DB
         if self.database is not None and len(self.datasets) > 0:
             log.info([dataset.to_json() for dataset in self.datasets])
             self.database.upsert_one_batch_of_tuples(table_name=TableNames.DATASET, unique_variables=["docker_path"], the_batch=[dataset.to_json() for dataset in self.datasets], ordered=False)
+            # for Dataset entity only, we create an index on the global identifier
+            self.database.create_unique_index(table_name=TableNames.DATASET, columns={"global_identifier": 1})
         # compute their profiles
         self.profile_computation = FeatureProfileComputation(database=self.database)
         self.profile_computation.compute_features_profiles()
-        # finally, compute DB stats and give all (time, quality and db) stats to the report
-        time_stats.stop_total_execution_timer()
+        # compute DB stats
+        time_stats.increment(dataset=None, key=TimerKeys.TOTAL_TIME)
+        time_stats.start(dataset=None, key=TimerKeys.STATISTICS_TIME)
         db_stats = DatabaseStatistics(record_stats=True)
         db_stats.compute_stats(database=self.database)
-        self.reporting = Reporting(database=self.database, execution=self.execution, quality_stats=quality_stats, time_stats=time_stats, db_stats=db_stats)
+        time_stats.increment(dataset=None, key=TimerKeys.STATISTICS_TIME)
+        # compute the final report with all the stats
+        time_stats.start(dataset=None, key=TimerKeys.REPORT_TIME)
+        self.reporting = Reporting(database=self.database, execution=self.execution, quality_stats=quality_stats, time_stats=time_stats, db_stats=db_stats, dataset_key=None)
         self.reporting.run()
+        time_stats.increment(dataset=None, key=TimerKeys.REPORT_TIME)
+        time_stats.increment(dataset=None, key=TimerKeys.TOTAL_TIME)
 
     def create_hospital(self, counter: Counter, dataset_number: int, file_counter: int) -> int:
         log.info(f"create hospital instance in memory")

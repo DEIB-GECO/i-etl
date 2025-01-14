@@ -32,15 +32,15 @@ from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from enums.Profile import Profile
 from enums.TableNames import TableNames
+from enums.TimerKeys import TimerKeys
 from enums.Visibility import Visibility
 from etl.Task import Task
+from src.constants.defaults import DEFAULT_NAN_VALUE
 from statistics.QualityStatistics import QualityStatistics
 from statistics.TimeStatistics import TimeStatistics
 from utils.cast_utils import cast_str_to_boolean, cast_str_to_datetime, cast_str_to_float, cast_str_to_int
 from utils.file_utils import write_in_file
 from utils.setup_logger import log
-
-from src.constants.defaults import NAN_VALUES, DEFAULT_NAN_VALUE
 
 
 class Transform(Task):
@@ -49,15 +49,15 @@ class Transform(Task):
                  mapping_categorical_value_to_onto_resource: dict,
                  mapping_column_to_categorical_value: dict,
                  mapping_column_to_unit: dict, mapping_column_to_domain: dict,
-                 profile: str, dataset_number: int, file_counter: int, dataset_instance: Dataset, load_patients: bool,
+                 profile: str, dataset_number: int, file_counter: int, dataset_key: Dataset, load_patients: bool,
                  quality_stats: QualityStatistics, time_stats: TimeStatistics):
-        super().__init__(database=database, execution=execution, quality_stats=quality_stats, time_stats=time_stats)
+        super().__init__(database=database, execution=execution, quality_stats=quality_stats, time_stats=time_stats, dataset_key=dataset_key.global_identifier)
         self.counter = Counter()  # resource counter
         self.profile = profile
         self.load_patients = load_patients
         self.dataset_number = dataset_number  # file number (for each dataset)
         self.file_counter = file_counter  # file counter (for all the files created for a single dataset)
-        self.dataset_instance = dataset_instance
+        self.dataset_instance = dataset_key
 
         # get data, metadata and the mapped values computed in the Extract step
         self.data = data
@@ -425,11 +425,11 @@ class Transform(Task):
             if len(onto_code) > 0:
                 onto_name = Ontologies.get_enum_from_name(row.iloc[self.metadata.columns.get_loc(MetadataColumns.ONTO_NAME)])
                 if type(onto_name) is dict:
-                    return OntologyResource(
-                            ontology=onto_name,
-                            full_code=onto_code,
-                            quality_stats=self.quality_stats,
-                            label=None)
+                    self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.OR_CREATION_TIME)
+                    the_or = OntologyResource(ontology=onto_name, full_code=onto_code, label=None,
+                                              quality_stats=self.quality_stats, time_stats=self.time_stats, dataset_key=self.dataset_key)
+                    self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.OR_CREATION_TIME)
+                    return the_or
                 else:
                     log.error(
                         f"In the metadata, {MetadataColumns.ONTO_NAME} is empty or unrecognised for the column '{column_name}'.")
@@ -474,9 +474,8 @@ class Transform(Task):
                 ontology_code = split_value[1]  # the code will be later normalized during the CC construction
                 if value not in self.mapping_apivalue_to_onto_resource:
                     onto_resource = OntologyResource(
-                        ontology=Ontologies.get_enum_from_name(ontology_name=ontology_name),
-                        full_code=ontology_code,
-                        label=None, quality_stats=self.quality_stats)
+                        ontology=Ontologies.get_enum_from_name(ontology_name=ontology_name), full_code=ontology_code, label=None,
+                        quality_stats=self.quality_stats, time_stats=self.time_stats, dataset_key=self.dataset_key)
                     self.mapping_apivalue_to_onto_resource[value] = onto_resource
                     return_value = onto_resource
                 else:

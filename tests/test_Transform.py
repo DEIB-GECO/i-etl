@@ -82,7 +82,7 @@ def my_setup(hospital_name: str, profile: str, extracted_metadata_path: str, ext
                           mapping_column_to_domain=mapping_column_to_domain,
                           load_patients=True,
                           quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False),
-                          dataset_instance=dataset_instance)
+                          dataset_key=dataset_instance)
 
     # create a hospital instance, to be able to create records with references to the hospital
     transform.database.insert_one_tuple(table_name=TableNames.HOSPITAL, one_tuple=Hospital(name=HospitalNames.TEST_H1, counter=Counter()).to_json())
