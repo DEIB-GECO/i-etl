@@ -4,7 +4,7 @@ from utils.file_utils import read_tabular_file_as_string
 from utils.setup_logger import log
 
 if __name__ == '__main__':
-    root = "/Users/nelly/Documents/boulot/postdoc-polimi/BETTER-fairificator/datasets/data/BUZZI"
+    root = "/Users/nelly/Documents/boulot/postdoc-polimi/etl/datasets/data/BUZZI"
     diagnoses = read_tabular_file_as_string(os.path.join(root, "diagnoses-cleaned.xlsx"))
     regexes = read_tabular_file_as_string(os.path.join(root, "diagnosis-regexes.xlsx"))
     data = read_tabular_file_as_string(os.path.join(root, "screening.csv"))

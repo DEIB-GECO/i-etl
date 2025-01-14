@@ -35,7 +35,10 @@ class PreprocessBuzziUC1(Preprocess):
         if self.profile == Profile.DIAGNOSIS:
             # 1. associate each disease to its information: gene, orphanet code, zigosity, etc
             transformation_df = read_tabular_file_as_string(self.execution.diagnosis_regexes_filepath)
+            log.info(transformation_df)
             transformation_df.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x), inplace=True)  # normalize column names
+            transformation_df.rename(columns={"gene": DiagnosisColumns.GENE_NAME, "orpha_net": DiagnosisColumns.ORPHANET_CODE}, inplace=True)
+            log.info(transformation_df)
 
             for row in transformation_df.itertuples(index=False):
                 # acronym column
@@ -51,15 +54,15 @@ class PreprocessBuzziUC1(Preprocess):
                     # we do not record this
                     self.mapping_diagnoses_infos[acronym][DiagnosisColumns.GENE_NAME] = None
                 # diagnosis name column
-                diagnosis = row[DiagnosisColumns.DIAGNOSIS_NAME]
+                diagnosis = row[transformation_df.columns.get_loc(DiagnosisColumns.DIAGNOSIS_NAME)]
                 if diagnosis is not None and len(diagnosis) > 0:
                     self.mapping_diagnoses_infos[acronym][DiagnosisColumns.DIAGNOSIS_NAME] = diagnosis
                 else:
                     self.mapping_diagnoses_infos[acronym][DiagnosisColumns.DIAGNOSIS_NAME] = None
                 # orphanet code column
-                orpha_code = row[DiagnosisColumns.ORPHANET_CODE]
-                if orpha_code is not None and len(orpha_code) > 0:
-                    code = row[DiagnosisColumns.ORPHANET_CODE].replace("ORPHA:", "")
+                orpha_code = row[transformation_df.columns.get_loc(DiagnosisColumns.ORPHANET_CODE)]
+                if orpha_code != "":
+                    code = orpha_code.replace("ORPHA:", "")
                     self.mapping_diagnoses_infos[acronym][DiagnosisColumns.ORPHANET_CODE] = orpha_code
                     self.mapping_diagnoses_infos[acronym][DiagnosisColumns.INHERITANCE] = PreprocessBuzziUC1.get_inheritance(diagnosis_code=code)
                     self.mapping_diagnoses_infos[acronym][DiagnosisColumns.CHR_NUMBER] = PreprocessBuzziUC1.get_chromosome(diagnosis_code=code)
@@ -72,13 +75,16 @@ class PreprocessBuzziUC1(Preprocess):
 
             # 2. associate each sample barcode to the patient id
             prefix = Profile.get_prefix_for_path(filetype=Profile.PHENOTYPIC)
-            df = read_tabular_file_as_string(filepath=f"{os.path.join(prefix, "screening.csv")}")
+            df = read_tabular_file_as_string(filepath=f"{os.path.join(prefix, "screening.csv")}")  # cannot replace this by self.execution.current_filepath because it contains the diagnosis file data
+            log.info(df)
             self.mapping_barcode_pid = {row[df.columns.get_loc("SampleBarcode")]: row[df.columns.get_loc("id")] for row in df.itertuples(index=False)}
 
             # 3. for each patient, collect the acronym and whether he is affected or a carrier
             count_affected = 0
             count_carrier = 0
             count_skipped = 0
+            log.info(self.data.columns)
+            # log.info(self.data.to_string())
             for row in self.data.itertuples(index=False):
                 pid = row[self.data.columns.get_loc("patient ID")]
                 if row[self.data.columns.get_loc("affetto")] is not None:
@@ -117,6 +123,8 @@ class PreprocessBuzziUC1(Preprocess):
             self.data[DiagnosisColumns.INHERITANCE] = self.inheritance
             self.data[DiagnosisColumns.CHR_NUMBER] = self.chr_number
             self.data[DiagnosisColumns.ZIGOSITY] = self.zigosity
+            log.info(self.data)
+            log.info(self.data.iloc[0])
 
     def add_id(self, pid):
         if pid in self.mapping_barcode_pid:
@@ -130,7 +138,7 @@ class PreprocessBuzziUC1(Preprocess):
 
     def record_diagnosis_for_patient(self, pid, row, column: str):
         # column is "affetto" or "carrier"
-        row[column] = row[self.data.columns.get_loc(column)].replace("/", "+") if "/" in row[self.data.columns.get_loc(column)] else row[self.data.columns.get_loc(column)]
+        self.data.loc[:, column] = self.data[column].apply(lambda x: x.replace("/", "+") if "/" in x else x)
         for disease in row[self.data.columns.get_loc(column)].split("+"):
             self.add_id(pid=pid)
             acronym = disease.lower().strip()

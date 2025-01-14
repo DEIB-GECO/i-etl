@@ -1,9 +1,9 @@
 pid,a,b,c
-1,12,,
-2,,13,21
-3,14,"N/A",22
-,15,"n/a","-"
-5,16,"a value","N/a"
-6,"no Information",17,23
+1,,,
+2,,13,
+3,,N/A,22
+,15,n/a,-
+5,16,a value,N/a
+6,no Information,17,23
 7,18,NaN,24
-8,"NAN",19,"nAN"
+8,NAN,19,nAN
