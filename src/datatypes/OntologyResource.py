@@ -76,7 +76,7 @@ class OntologyResource:
                 if element != "|":
                     self.code += element
 
-    def compute_label(self, ontology: Ontologies, code_elements: list, quality_stats: QualityStatistics) -> None:
+    def compute_label(self, ontology: dict, code_elements: list, quality_stats: QualityStatistics) -> None:
         self.label = ""
         for i in range(len(code_elements)):
             element = code_elements[i]
@@ -100,7 +100,7 @@ class OntologyResource:
                     self.label += element
 
     @classmethod
-    def get_resource_label_from_api(cls, ontology: Ontologies, single_code: str, quality_stats: QualityStatistics) -> str:
+    def get_resource_label_from_api(cls, ontology: dict, single_code: str, quality_stats: QualityStatistics) -> str:
         # column_name is to be used when the label of the OntologyResource could not be computed with any of the APIs
         compute_from_api = True
         ontology_name = ontology["name"]

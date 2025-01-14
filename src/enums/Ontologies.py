@@ -17,7 +17,7 @@ class Ontologies(EnumAsClass):
     CLIR = {"name": "clir", "url": "https://clir.mayo.edu"}
     PUBCHEM = {"name": "pubchem", "url": "https://pubchem.ncbi.nlm.nih.gov"}
     GSSO = {"name": "gsso", "url": "http://purl.obolibrary.org/obo"}
-    ORPHANET = {"name": "orphanet", "url": "https://www.orpha.net/"}
+    ORPHANET = {"name": "orpha", "url": "https://www.orpha.net/"}
     GENE_ONTOLOGY = {"name": "geneontology", "url": "https://amigo.geneontology.org/amigo"}
     OMIM = {"name": "omim", "url": "https://omim.org"}
     HGNC = {"name": "hgnc", "url": "https://rest.ensembl.org/"}

@@ -2,7 +2,6 @@ import re
 from datetime import datetime
 from typing import Any
 
-import numpy as np
 import pandas as pd
 import ujson
 from pandas import DataFrame
@@ -67,6 +66,7 @@ class Transform(Task):
         self.mapping_categorical_value_to_onto_resource = mapping_categorical_value_to_onto_resource
         self.mapping_column_to_categorical_value = mapping_column_to_categorical_value
         self.mapping_column_to_domain = mapping_column_to_domain
+        self.mapping_apivalue_to_onto_resource = {}  # for API columns only; of the form: <"onto_name:onto_code": onto resource>
         # to keep track of anonymized vs. hospital patient ids
         # this is empty if no file as been provided by the user, otherwise it contains some mappings <patient ID, anonymized ID>
         self.patient_ids_mapping = {}
@@ -103,7 +103,7 @@ class Transform(Task):
 
     def create_features(self) -> None:
         # 1. get existing features in memory
-        log.info(f"{self.profile}Feature")
+        log.info(f"Retrieving {self.profile}Feature from database")
         result = self.database.find_operation(table_name=TableNames.FEATURE, filter_dict={"entity_type": f"{self.profile}Feature"}, projection={"name": 1, "identifier": 1, "datasets": 1})
         db_existing_features = {}
         for res in result:
@@ -111,7 +111,7 @@ class Transform(Task):
         log.info(db_existing_features)
 
         # 2. create non-existing features in-memory, then insert them
-        log.info(f"create Feature instances of type {self.profile} in memory")
+        log.info(f"Creating {self.profile}Feature instances in memory")
         columns = self.metadata.columns
         for row in self.metadata.itertuples(index=False):
             column_name = row[columns.get_loc(MetadataColumns.COLUMN_NAME)]
@@ -224,19 +224,17 @@ class Transform(Task):
     ##############################################################
 
     def create_records(self) -> None:
-        log.info(f"create {self.profile} instances in memory")
+        log.info(f"creating {self.profile}Record instances in memory")
 
         # a. load some data from the database to compute references
         mapping_hospital_to_hospital_id = self.database.retrieve_mapping(table_name=TableNames.HOSPITAL,
                                                                          key_fields="name", value_fields="identifier", filter_dict={})
-        log.info(self.database.check_table_exists(table_name=TableNames.HOSPITAL))
-        log.info(self.database.count_documents(table_name=TableNames.HOSPITAL, filter_dict={}))
         log.info(mapping_hospital_to_hospital_id)
         mapping_column_to_feature_id = self.database.retrieve_mapping(table_name=TableNames.FEATURE,
                                                                       key_fields="name",
                                                                       value_fields="identifier",
                                                                       filter_dict={"entity_type": f"{self.profile}{TableNames.FEATURE}"})
-        log.info(f"{len(mapping_column_to_feature_id)} have been retrieved from the database.")
+        log.info(f"{len(mapping_column_to_feature_id)} {self.profile}{TableNames.FEATURE}Features have been retrieved from the database.")
         log.info(mapping_column_to_feature_id)
 
         # b. Create Record instance, and write them in temporary (JSON) files
@@ -286,7 +284,6 @@ class Transform(Task):
                                                         hospital_id=hospital_id, value=fairified_value,
                                                         base_id=base_id,
                                                         counter=self.counter, dataset=dataset)
-                            # log.info(f"new clinical record: {new_record}")
                         elif self.profile == Profile.DIAGNOSIS:
                             new_record = DiagnosisRecord(feature_id=feature_id,
                                                          patient_id=patient_id, hospital_id=hospital_id,
@@ -341,7 +338,7 @@ class Transform(Task):
     ##############################################################
 
     def create_patients(self) -> None:
-        log.info(f"create patient instances in memory")
+        log.info(f"create Patient instances in memory")
         columns = self.data.columns
         if self.execution.patient_id_column_name in self.data.columns:
             log.info(f"creating patients using column {self.execution.patient_id_column_name}")
@@ -469,6 +466,21 @@ class Transform(Task):
                     # no categorical value for that value, we return the normalized value
                     self.quality_stats.add_unknown_categorical_value(column_name=column_name, categorical_value=value)
                     return_value = value
+            elif etl_type == DataTypes.API:
+                # there is no pre-defined list of the possible values, instead we create a CC based on the cell value,
+                # which is an ontology resource
+                split_value = value.split(":")  # we consider the ontology resource is of the form <ontology name>:<code>
+                ontology_name = Ontologies.normalize_name(ontology_name=split_value[0])
+                ontology_code = split_value[1]  # the code will be later normalized during the CC construction
+                if value not in self.mapping_apivalue_to_onto_resource:
+                    onto_resource = OntologyResource(
+                        ontology=Ontologies.get_enum_from_name(ontology_name=ontology_name),
+                        full_code=ontology_code,
+                        label=None, quality_stats=self.quality_stats)
+                    self.mapping_apivalue_to_onto_resource[value] = onto_resource
+                    return_value = onto_resource
+                else:
+                    return_value = self.mapping_apivalue_to_onto_resource[value]
             elif etl_type == DataTypes.DATETIME or etl_type == DataTypes.DATE:
                 return_value = cast_str_to_datetime(str_value=value)
             elif etl_type == DataTypes.BOOLEAN:

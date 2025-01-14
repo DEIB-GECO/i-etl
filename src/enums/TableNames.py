@@ -9,6 +9,8 @@ class TableNames(EnumAsClass):
     RECORD = "Record"
     TOP10_FEATURES = "TMP_Top10Features"
     PAIRS_FEATURES = "TMP_PairsFeatures"
+    COUNTS_PATIENTS = "TMP_CountsPatients"
+    COUNTS_SAMPLES = "TMP_CountsSamples"
     COUNTS_FEATURES = "TMP_CountsFeatures"
     FEATURE_PROFILE = "FeatureProfile"
     # PHENOTYPIC_FEATURE = "PhenotypicFeature"

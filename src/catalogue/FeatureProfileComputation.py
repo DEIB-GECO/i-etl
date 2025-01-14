@@ -1,7 +1,10 @@
+import copy
+
 import numpy as np
 
 from database.Database import Database
 from enums.DataTypes import DataTypes
+from enums.Profile import Profile
 from enums.TableNames import TableNames
 from database.Operators import Operators
 from utils.setup_logger import log
@@ -11,7 +14,27 @@ class FeatureProfileComputation:
     def __init__(self, database: Database):
         self.database = database
 
-    def compute_features_profiles(self) -> None:
+        # store, for each dataset, the total number of patients to compute the missing percentage
+        operations = [
+            Operators.match(field=None, value={"entity_type": {"$ne": f"{Profile.CLINICAL}{TableNames.RECORD}"}}, is_regex=False),
+            Operators.group_by(group_key={"dataset": "$dataset", "has_subject": "$has_subject"}, groups=[{"name": "nb_patients", "operator": "$sum", "field": 1}]),
+            Operators.group_by(group_key={"dataset": "$_id.dataset"}, groups=[{"name": "distinct_nb_patients", "operator": "$sum", "field": 1}]),
+            Operators.write_to_table(table_name=TableNames.COUNTS_PATIENTS)
+        ]
+        log.info(operations)
+        _ = self.database.db[TableNames.RECORD].aggregate(operations)
+
+        # store, for each clinical dataset, the total number of samples to compute the missing percentage for clinical data
+        operations = [
+            Operators.match(field=None, value={"entity_type": {"$eq": f"{Profile.CLINICAL}{TableNames.RECORD}"}}, is_regex=False),
+            Operators.group_by(group_key={"dataset": "$dataset", "base_id": "$base_id"}, groups=[{"name": "nb_samples", "operator": "$sum", "field": 1}]),
+            Operators.group_by(group_key={"dataset": "$_id.dataset"}, groups=[{"name": "distinct_nb_samples", "operator": "$sum", "field": 1}]),
+            Operators.write_to_table(table_name=TableNames.COUNTS_SAMPLES)
+        ]
+        log.info(operations)
+        _ = self.database.db[TableNames.RECORD].aggregate(operations)
+
+        # compute the list of Feature identifiers for each Profile data type (numeric, category, date)
         # the filter {"datasets": self.dataset_gid} means that the array "datasets" contains the element self.dataset_gid
         cursor = self.database.find_operation(table_name=TableNames.FEATURE, filter_dict={}, projection={"identifier": 1, "data_type": 1, "_id": 0})
         map_feature_datatype = {}
@@ -21,124 +44,152 @@ class FeatureProfileComputation:
             map_feature_datatype[element["data_type"]].append(element["identifier"])
         log.info(map_feature_datatype)
 
-        numeric_features = []
-        numeric_features.extend(map_feature_datatype[DataTypes.INTEGER] if DataTypes.INTEGER in map_feature_datatype else [])
-        numeric_features.extend(map_feature_datatype[DataTypes.FLOAT] if DataTypes.FLOAT in map_feature_datatype else [])
-        log.info(numeric_features)
-        categorical_features = []
-        categorical_features.extend(map_feature_datatype[DataTypes.STRING] if DataTypes.STRING in map_feature_datatype else [])
-        categorical_features.extend(map_feature_datatype[DataTypes.BOOLEAN] if DataTypes.BOOLEAN in map_feature_datatype else [])
-        categorical_features.extend(map_feature_datatype[DataTypes.CATEGORY] if DataTypes.CATEGORY in map_feature_datatype else [])
-        log.info(categorical_features)
-        date_features = []
-        date_features.extend(map_feature_datatype[DataTypes.DATE] if DataTypes.DATE in map_feature_datatype else [])
-        date_features.extend(map_feature_datatype[DataTypes.DATETIME] if DataTypes.DATETIME in map_feature_datatype else [])
-        log.info(date_features)
-        all_features = numeric_features + categorical_features + date_features
+        self.numeric_features = []
+        self.numeric_features.extend(map_feature_datatype[DataTypes.INTEGER] if DataTypes.INTEGER in map_feature_datatype else [])
+        self.numeric_features.extend(map_feature_datatype[DataTypes.FLOAT] if DataTypes.FLOAT in map_feature_datatype else [])
+        log.info(self.numeric_features)
+        self.categorical_features = []
+        self.categorical_features.extend(map_feature_datatype[DataTypes.STRING] if DataTypes.STRING in map_feature_datatype else [])
+        self.categorical_features.extend(map_feature_datatype[DataTypes.BOOLEAN] if DataTypes.BOOLEAN in map_feature_datatype else [])
+        self.categorical_features.extend(map_feature_datatype[DataTypes.CATEGORY] if DataTypes.CATEGORY in map_feature_datatype else [])
+        log.info(self.categorical_features)
+        self.date_features = []
+        self.date_features.extend(map_feature_datatype[DataTypes.DATE] if DataTypes.DATE in map_feature_datatype else [])
+        self.date_features.extend(map_feature_datatype[DataTypes.DATETIME] if DataTypes.DATETIME in map_feature_datatype else [])
+        log.info(self.date_features)
+        self.all_features = self.numeric_features + self.categorical_features + self.date_features
 
+    def compute_features_profiles(self) -> None:
         # clear FeatureProfile table and create a unique index on <dataset, instantiates>
         # because merge requires a unique index on the merge keys
         self.database.drop_table(TableNames.FEATURE_PROFILE)
         self.database.create_unique_index(TableNames.FEATURE_PROFILE, columns={"dataset": 1, "instantiates": 1})
 
         # NUMERIC FEATURES
+        match_numeric_values = [Operators.match(field=None, value=Operators.or_operator([
+                                    {"value": {"$type": "int"}},
+                                    {"value": {"$type": "double"}},
+                                    {"value": {"$type": "long"}},
+                                    {"value": {"$type": "decimal"}}]), is_regex=False),
+                                Operators.match(field=None, value={"value": {"$ne": np.nan}}, is_regex=False)]
 
         # 1. compute min, max, mean, median, std values for numerical features
-        operators = FeatureProfileComputation.min_max_mean_median_std_query(numeric_features, compute_min=True, compute_max=True, compute_mean=True, compute_median=True, compute_std=True)
-        operators = FeatureProfileComputation.finalize_query(operators, include_value=False)
+        operators = copy.deepcopy(match_numeric_values)
+        operators.extend(self.min_max_mean_median_std_query(features_ids=self.numeric_features, compute_min=True, compute_max=True, compute_mean=True, compute_median=True, compute_std=True))
+        operators.extend(self.finalize_query(include_value=False))
         log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         # 2. compute the Median Absolute Deviation
-        operators = FeatureProfileComputation.abs_med_dev_query(numeric_features)
-        operators = FeatureProfileComputation.finalize_query(operators, include_value=False)
+        operators = copy.deepcopy(match_numeric_values)
+        operators.extend(self.abs_med_dev_query(features_ids=self.numeric_features))
+        operators.extend(self.finalize_query(include_value=False))
         log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         # 3. compute skewness and kurtosis for numerical features
-        operators = FeatureProfileComputation.skewness_and_kurtosis_query(numeric_features)
-        operators = FeatureProfileComputation.finalize_query(operators, include_value=False)
+        operators = copy.deepcopy(match_numeric_values)
+        operators.extend(self.skewness_and_kurtosis_query(features_ids=self.numeric_features))
+        operators.extend(self.finalize_query(include_value=False))
         log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         # 4. compute IQR for numerical features
-        operators = FeatureProfileComputation.iqr_query(numeric_features)
-        operators = FeatureProfileComputation.finalize_query(operators, include_value=False)
+        operators = copy.deepcopy(match_numeric_values)
+        operators.extend(self.iqr_query(features_ids=self.numeric_features))
+        operators.extend(self.finalize_query(include_value=False))
         log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         # 5. compute Pearson correlation coefficients
-        operators = FeatureProfileComputation.pearson_correlation_query(numeric_features, self.database)
-        operators = FeatureProfileComputation.finalize_query(operators, include_value=False)
+        operators = copy.deepcopy(match_numeric_values)
+        operators.extend(self.pearson_correlation_query(features_ids=self.numeric_features, database=self.database))
+        operators.extend(self.finalize_query(include_value=False))
         log.info(operators)
         self.database.db[TableNames.PAIRS_FEATURES].aggregate(operators)
 
         # DATE FEATURES
+        match_date_values = [Operators.match(field=None, value=Operators.or_operator([
+                                {"value": {"$type": "date"}},
+                                {"value": {"$type": "timestamp"}}]), is_regex=False),
+                             Operators.match(field=None, value={"value": {"$ne": np.nan}}, is_regex=False)]
 
         # 1. compute min, max, mean, median, std values for numerical features
-        operators = FeatureProfileComputation.min_max_mean_median_std_query(date_features, compute_min=True, compute_max=True, compute_mean=False, compute_median=True, compute_std=False)
-        operators = FeatureProfileComputation.finalize_query(operators, include_value=False)
+        operators = copy.deepcopy(match_date_values)
+        operators.extend(self.min_max_mean_median_std_query(features_ids=self.date_features, compute_min=True, compute_max=True, compute_mean=False, compute_median=True, compute_std=False))
+        operators.extend(self.finalize_query(include_value=False))
         log.info(operators)
         # self.database.db[TableNames.RECORD].aggregate(operators)
 
         # 2. compute IQR for numerical features
-        operators = FeatureProfileComputation.iqr_query(date_features)
-        operators = FeatureProfileComputation.finalize_query(operators, include_value=False)
+        operators = copy.deepcopy(match_date_values)
+        operators.extend(self.iqr_query(features_ids=self.date_features))
+        operators.extend(self.finalize_query(include_value=False))
         log.info(operators)
         # self.database.db[TableNames.RECORD].aggregate(operators)
 
         # CATEGORICAL FEATURES
+        match_categorical_values = [Operators.match(field=None, value=Operators.or_operator([
+                                        {"value": {"$type": "object"}}]), is_regex=False),
+                                    Operators.match(field=None, value={"value": {"$ne": np.nan}}, is_regex=False)]
+
         # 1. compute imbalance for categorical features
-        operators = FeatureProfileComputation.imbalance_query(categorical_features)
-        operators = FeatureProfileComputation.finalize_query(operators, include_value=False)
+        operators = copy.deepcopy(match_categorical_values)
+        operators.extend(self.imbalance_query(features_ids=self.categorical_features))
+        operators.extend(self.finalize_query(include_value=False))
         log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         # 2. compute constancy for categorical features
-        operators = FeatureProfileComputation.constancy_query(categorical_features)
-        operators = FeatureProfileComputation.finalize_query(operators, include_value=False)
+        operators = copy.deepcopy(match_categorical_values)
+        operators.extend(self.constancy_query(features_ids=self.categorical_features))
+        operators.extend(self.finalize_query(include_value=False))
         log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         # 3. compute mode for categorical features
-        operators = FeatureProfileComputation.mode_query(categorical_features)
-        operators = FeatureProfileComputation.finalize_query(operators, include_value=False)
+        operators = copy.deepcopy(match_categorical_values)
+        operators.extend(self.mode_query(features_ids=self.categorical_features))
+        operators.extend(self.finalize_query(include_value=False))
         log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         # SHARED PROFILE FEATURES
-
         # uniqueness
-        operators = FeatureProfileComputation.uniqueness_query(all_features)
-        operators = FeatureProfileComputation.finalize_query(operators, include_value=False)
+        operators = self.uniqueness_query(features_ids=self.all_features)
+        operators.extend(self.finalize_query(include_value=False))
         log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         # entropy
-        operators = FeatureProfileComputation.entropy_query(all_features)
-        operators = FeatureProfileComputation.finalize_query(operators, include_value=False)
+        operators = self.entropy_query(features_ids=self.all_features)
+        operators.extend(self.finalize_query(include_value=False))
         log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         # density
-        operators = FeatureProfileComputation.density_query(all_features)
-        operators = FeatureProfileComputation.finalize_query(operators, include_value=False)
+        operators = self.density_query(features_ids=self.all_features)
+        operators.extend(self.finalize_query(include_value=False))
         log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         # values and counts
-        operators = FeatureProfileComputation.values_and_counts_query(features_ids=all_features)
-        operators = FeatureProfileComputation.finalize_query(operators, include_value=True)
+        operators = self.values_and_counts_query(features_ids=self.all_features)
+        operators.extend(self.finalize_query(include_value=True))
         log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
-        operators = FeatureProfileComputation.missing_percentage_query(features_ids=all_features)
-        operators = FeatureProfileComputation.finalize_query(operators, include_value=False)
+        operators = self.missing_percentage_query_non_clinical(features_ids=self.all_features)
+        operators.extend(self.finalize_query(include_value=False))
         log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
-    @classmethod
-    def min_max_mean_median_std_query(cls, features_ids: list, compute_min: bool, compute_max: bool, compute_mean: bool, compute_median: bool, compute_std: bool) -> list:
+        operators = self.missing_percentage_query_clinical(features_ids=self.all_features)
+        operators.extend(self.finalize_query(include_value=False))
+        log.info(operators)
+        self.database.db[TableNames.RECORD].aggregate(operators)
+
+    def min_max_mean_median_std_query(self, features_ids: list, compute_min: bool, compute_max: bool, compute_mean: bool, compute_median: bool, compute_std: bool) -> list:
         groups = []
         if compute_min:
             groups.append({"name": "min_value", "operator": "$min", "field": "$value"})
@@ -156,8 +207,7 @@ class FeatureProfileComputation:
             Operators.group_by(group_key={"dataset": "$dataset", "instantiates": "$instantiates"}, groups=groups),
         ]
 
-    @classmethod
-    def abs_med_dev_query(cls, features_ids: list) -> list:
+    def abs_med_dev_query(self, features_ids: list) -> list:
         # i.e., EMA=median(|Xi-Y|) where Xi is a value, Y is the median, and L is the absolute value (no minus sign)
         # [{'$group': {'_id': {'_id': null}, 'originalValues': {'$push': '$value'}, 'mymedian': {'$median': {"input": "$value", "method": "approximate"}}}}, {'$unwind': '$originalValues'}, {'$project': {"absVal": {'$abs': {'$subtract': ['$originalValues', '$mymedian']}}}}, {'$group': {'_id': {'_id': null}, 'ema': {'$median': {"input": "$absVal", "method": "approximate"}}}}]
         return [
@@ -175,8 +225,7 @@ class FeatureProfileComputation:
             ])
         ]
 
-    @classmethod
-    def skewness_and_kurtosis_query(cls, features_ids: list) -> list:
+    def skewness_and_kurtosis_query(self, features_ids: list) -> list:
         # kurtosis query
         # [ { "$group": { "_id": { "_id": null }, "originalValues": { "$push": "$value" }, "mymean": { "$avg": "$value" }, "mystdDev": { "$stdDevSamp": "$value" } } }, { "$unwind": "$originalValues" }, {"$project":{"thePowed":{"$pow":[{"$divide":[{"$subtract":["$originalValues","$mymean"]},"$mystdDev"]},4]}}},{"$group":{"_id":{"_id":null},"summed":{"$sum":"$thePowed"}, "summedValues": { "$push": "$thePowed" }}},{"$project":{"summed": 1, "summedValues": 1, "mysize": {"$size": "$summedValues"}}}, {"$project":{"kurtosis":{"$subtract":[{"$multiply":[{"$divide":[{"$multiply":["$mysize",{"$sum":["$mysize",1]}]},{"$multiply":[{"$sum":["$mysize",-1]},{"$sum":["$mysize",-2]},{"$sum":["$mysize",-3]}]}]},"$summed"]},{"$divide":[{"$multiply":[3,{"$pow":[{"$sum":["$mysize",-1]},2]}]},{"$multiply":[{"$sum":["$mysize",-2]},{"$sum":["$mysize",-3]}]}]}]}}}]
         # skewness query
@@ -252,8 +301,7 @@ class FeatureProfileComputation:
             })
         ]
 
-    @classmethod
-    def iqr_query(cls, features_ids: list) -> list:
+    def iqr_query(self, features_ids: list) -> list:
         return [
             Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
             Operators.match(field="value", value={"$ne": np.nan}, is_regex=False),
@@ -274,8 +322,7 @@ class FeatureProfileComputation:
             Operators.unset_variables(["thevalues", "q1", "q3"])
         ]
 
-    @classmethod
-    def pearson_correlation_query(cls, features_ids: list, database: Database) -> list:
+    def pearson_correlation_query(self, features_ids: list, database: Database) -> list:
         # drop existing temporary tables
         database.drop_table(TableNames.TOP10_FEATURES)
         database.drop_table(TableNames.PAIRS_FEATURES)
@@ -404,8 +451,7 @@ class FeatureProfileComputation:
             })
         ]
 
-    @classmethod
-    def imbalance_query(cls, features_ids: list) -> list:
+    def imbalance_query(self, features_ids: list) -> list:
         # Ratio between the number of appearances of the most frequent value and the least frequent value.
         return [
             Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
@@ -423,8 +469,7 @@ class FeatureProfileComputation:
             })
         ]
 
-    @classmethod
-    def constancy_query(cls, features_ids: list) -> list:
+    def constancy_query(self, features_ids: list) -> list:
         # Ratio between the number of appearances of the most frequent value and the number of non-null values.
         # However, we never have null values because we do not create Records for them
         # thus, the constancy is always 1 (for practical reasons, I divided the max freq by itself, to always obtain 1)
@@ -444,8 +489,7 @@ class FeatureProfileComputation:
             })
         ]
 
-    @classmethod
-    def mode_query(cls, features_ids: list) -> list:
+    def mode_query(self, features_ids: list) -> list:
         # the most frequent value
         return [
             Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
@@ -464,8 +508,7 @@ class FeatureProfileComputation:
             })
         ]
 
-    @classmethod
-    def uniqueness_query(cls, features_ids: list) -> list:
+    def uniqueness_query(self, features_ids: list) -> list:
         # Percentage of distinct values with respect to the total amount of non-null values
         return [
             Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
@@ -483,8 +526,7 @@ class FeatureProfileComputation:
             })
         ]
 
-    @classmethod
-    def entropy_query(cls, features_ids: list) -> list:
+    def entropy_query(self, features_ids: list) -> list:
         # Measure of uncertainty and disorder within the values of the column.
         # A large entropy means that the values are highly heterogeneous.
         return [
@@ -503,7 +545,7 @@ class FeatureProfileComputation:
             }),
             Operators.project(field=None, projected_value={
                 "_id": "$_id",
-                "entropy_value": {"$multiply": ["$prob", {"$log":["$prob", 2]}]}
+                "entropy_value": {"$multiply": ["$prob", {"$log": ["$prob", 2]}]}
             }),
             Operators.group_by(group_key={"instantiates": "$_id.instantiates", "dataset": "$_id.dataset"}, groups=[
                 {"name": "entropy", "operator": "$sum", "field": "$entropy_value"}
@@ -515,8 +557,7 @@ class FeatureProfileComputation:
             })
         ]
 
-    @classmethod
-    def density_query(cls, features_ids: list) -> list:
+    def density_query(self, features_ids: list) -> list:
         # a measure of appropriate numerosity and intensity between different real-world entities available in the data
         return [
             Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
@@ -557,8 +598,7 @@ class FeatureProfileComputation:
             })
         ]
 
-    @classmethod
-    def values_and_counts_query(cls, features_ids: list) -> list:
+    def values_and_counts_query(self, features_ids: list) -> list:
         return [
             Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
             Operators.group_by(group_key={"instantiates": "$instantiates", "dataset": "$dataset", "value": "$value"},
@@ -569,30 +609,40 @@ class FeatureProfileComputation:
             ])
         ]
 
-    @classmethod
-    def missing_percentage_query(cls, features_ids: list) -> list:
+    def missing_percentage_query_non_clinical(self, features_ids: list) -> list:
         return [
-            Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
+            # first compute the missing percentage of each feature by dividing the number of values and the number of patients
+            Operators.match(field=None, value={"$and": [{"instantiates": {"$in": features_ids}}, {"entity_type": {"$ne": f"{Profile.CLINICAL}{TableNames.RECORD}"}}]}, is_regex=False),
             Operators.group_by(group_key={"dataset": "$dataset", "instantiates": "$instantiates"}, groups=[
                 {"name": "count_db_values", "operator": "$sum", "field": 1}
             ]),
-            Operators.lookup(join_table_name=TableNames.COUNTS_FEATURES, foreign_field="identifier", local_field="_id.instantiates", lookup_field_name="feature_id"),
-            Operators.project(field=None, projected_value={"missing_percentage": {"$subtract": [1, {"$divide": ["$count_db_values", {"$arrayElemAt": ['$feature_id.count_all_values', 0]}]}]}})
+            Operators.lookup(join_table_name=TableNames.COUNTS_PATIENTS, foreign_field="_id.dataset", local_field="_id.dataset", lookup_field_name="joined"),
+            Operators.project(field=None, projected_value={"missing_percentage": {"$subtract": [1, {"$divide": ["$count_db_values", {"$arrayElemAt": ["$joined.distinct_nb_patients", 0]}]}]}})
         ]
 
-    @classmethod
-    def finalize_query(cls, operators: list, include_value: bool) -> list:
+    def missing_percentage_query_clinical(self, features_ids: list) -> list:
+        return [
+            # first compute the missing percentage of each feature by dividing the number of values and the number of patients
+            Operators.match(field=None, value={"$and": [{"instantiates": {"$in": features_ids}}, {"entity_type": {"$eq": f"{Profile.CLINICAL}{TableNames.RECORD}"}}]}, is_regex=False),
+            Operators.group_by(group_key={"dataset": "$dataset", "instantiates": "$instantiates"}, groups=[
+                {"name": "count_db_values", "operator": "$sum", "field": 1}
+            ]),
+            Operators.lookup(join_table_name=TableNames.COUNTS_SAMPLES, foreign_field="dataset", local_field="dataset", lookup_field_name="joined"),
+            Operators.project(field=None, projected_value={"missing_percentage": {"$subtract": [1, {"$divide": ["$count_db_values", {"$arrayElemAt": ["$joined.distinct_nb_samples", 0]}]}]}})
+        ]
+
+    def finalize_query(self, include_value: bool) -> list:
         # get dataset and instantiates from the group key and keep remaining fields, except the group key _id
         # project requires to specify all fields to keep, set and unset work only on those of interest and keep others
         if include_value:
-            operators.append({"$set": {"dataset": "$_id.dataset", "instantiates": "$_id.instantiates", "value": "$_id.value"}})
+            last_fields = [{"$set": {"dataset": "$_id.dataset", "instantiates": "$_id.instantiates", "value": "$_id.value"}}]
         else:
-            operators.append({"$set": {"dataset": "$_id.dataset", "instantiates": "$_id.instantiates"}})
-        operators.append({"$unset": ["_id"]})
+            last_fields = [{"$set": {"dataset": "$_id.dataset", "instantiates": "$_id.instantiates"}}]
+        last_fields.append({"$unset": ["_id"]})
         # merge the profile into the profile table
-        operators.append(
+        last_fields.append(
             Operators.merge(table_name=TableNames.FEATURE_PROFILE,
                             on_attribute=["dataset", "instantiates"],
                             when_matched="merge",
                             when_not_matched="insert"))
-        return operators
+        return last_fields
