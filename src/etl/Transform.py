@@ -117,8 +117,8 @@ class Transform(Task):
         for row in self.metadata.itertuples(index=False):
             column_name = row[columns.get_loc(MetadataColumns.COLUMN_NAME)]
             # columns to remove have already been removed in the Extract part from the metadata
-            # here, we need to ensure that we create Features only for still-existing columns and not for ID column
-            if column_name not in [self.execution.patient_id_column_name, self.execution.sample_id_column_name]:
+            # here, we need to ensure that we create Features only for still-existing columns and not for ID column and not for Diagnosis counter (clinical base_id)
+            if column_name not in [self.execution.patient_id_column_name, self.execution.sample_id_column_name, DiagnosisColumns.DISEASE_COUNTER]:
                 if column_name not in db_existing_features:
                     # we create a new Feature from scratch
                     onto_resource = self.create_ontology_resource_from_row(column_name=column_name)
@@ -291,10 +291,8 @@ class Transform(Task):
                                 # by several diseases
                                 # we also need to force the conversion to int, because we read the data as str
                                 # and such values do not go through the fairification method
-                                # because there may be None (for patients with unknown diseases), the column is read as float,
-                                # thus needs to be cast as float and int (because int("1.0") raises an error)
                                 try:
-                                    diagnosis_counter = int(float(row[columns.get_loc(DiagnosisColumns.DISEASE_COUNTER)]))
+                                    diagnosis_counter = int(row[columns.get_loc(DiagnosisColumns.DISEASE_COUNTER)])
                                 except:
                                     # the value is None because the patient diseases is unknown in the disease classification
                                     diagnosis_counter = None

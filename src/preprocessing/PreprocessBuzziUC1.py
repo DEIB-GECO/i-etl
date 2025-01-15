@@ -36,7 +36,6 @@ class PreprocessBuzziUC1(Preprocess):
         if self.profile == Profile.DIAGNOSIS:
             # 1. associate each disease to its information: gene, orphanet code, zigosity, etc
             transformation_df = read_tabular_file_as_string(self.execution.diagnosis_regexes_filepath)
-            log.info(transformation_df)
             transformation_df.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x), inplace=True)  # normalize column names
             transformation_df.rename(columns={"gene": DiagnosisColumns.GENE_NAME, "orpha_net": DiagnosisColumns.ORPHANET_CODE}, inplace=True)
             log.info(transformation_df)
@@ -73,11 +72,11 @@ class PreprocessBuzziUC1(Preprocess):
                     self.mapping_diagnoses_infos[acronym][DiagnosisColumns.CHR_NUMBER] = None
 
                 self.mapping_diagnoses_infos[acronym][DiagnosisColumns.ZIGOSITY] = None
+            log.info(f"{len(self.mapping_diagnoses_infos)} acronyms")
 
             # 2. associate each sample barcode to the patient id
             prefix = Profile.get_prefix_for_path(filetype=Profile.PHENOTYPIC)
             df = read_tabular_file_as_string(filepath=f"{os.path.join(prefix, "screening.csv")}")  # cannot replace this by self.execution.current_filepath because it contains the diagnosis file data
-            log.info(df)
             self.mapping_barcode_pid = {row[df.columns.get_loc("SampleBarcode")]: row[df.columns.get_loc("id")] for row in df.itertuples(index=False)}
 
             # 3. for each patient, collect the acronym and whether he is affected or a carrier
@@ -85,14 +84,13 @@ class PreprocessBuzziUC1(Preprocess):
             count_carrier = 0
             count_skipped = 0
             log.info(self.data.columns)
-            # log.info(self.data.to_string())
             for row in self.data.itertuples(index=False):
                 pid = row[self.data.columns.get_loc("patient ID")]
-                if row[self.data.columns.get_loc("affetto")] is not None:
+                if row[self.data.columns.get_loc("affetto")] != "":
                     count_affected += 1
                     # the patient is affected by this disease, so we record this
                     self.record_diagnosis_for_patient(pid=pid, row=row, column="affetto")
-                if row[self.data.columns.get_loc("carrier")] is not None:
+                if row[self.data.columns.get_loc("carrier")] != "":
                     count_carrier += 1
                     # the patient is a carrier of the disease
                     # if we decide to record it, we record everything...
@@ -101,7 +99,6 @@ class PreprocessBuzziUC1(Preprocess):
                     else:
                         # ...otherwise we do not record any information
                         count_skipped += 1
-                        pass
 
             log.info(f"count affected is {count_affected}, count carrier is {count_carrier}, count skipped is {count_skipped}, multi diagnosis is 11 = {count_affected+count_carrier+count_skipped+11}")
             log.info(f"{len(self.ids)} ids")
@@ -114,7 +111,6 @@ class PreprocessBuzziUC1(Preprocess):
             log.info(f"{len(self.chr_number)} chr number")
             log.info(f"{len(self.zigosity)} zigosity")
             log.info(f"{len(self.diagnosis_counters)} diagnosis counters")
-            log.info(self.diagnosis_counters)
 
             self.data = DataFrame()
             self.data[DiagnosisColumns.ID] = self.ids
@@ -129,7 +125,6 @@ class PreprocessBuzziUC1(Preprocess):
             self.data[DiagnosisColumns.DISEASE_COUNTER] = self.diagnosis_counters
             log.info(self.data)
             log.info(self.data.iloc[0])
-            log.info(self.data)
 
     def add_id(self, pid):
         if pid in self.mapping_barcode_pid:
@@ -148,6 +143,7 @@ class PreprocessBuzziUC1(Preprocess):
             self.add_id(pid=pid)
             acronym = disease.lower().strip()
             self.diagnosis_acronyms.append(acronym)
+            self.diagnosis_counters.append(int(counter+1))  # +1 because enumerates starts at 0
             if column == "affetto":
                 self.affected_booleans.append(True)
             else:
@@ -159,7 +155,6 @@ class PreprocessBuzziUC1(Preprocess):
                 self.inheritance.append(self.mapping_diagnoses_infos[acronym][DiagnosisColumns.INHERITANCE])
                 self.chr_number.append(self.mapping_diagnoses_infos[acronym][DiagnosisColumns.CHR_NUMBER])
                 self.zigosity.append(self.mapping_diagnoses_infos[acronym][DiagnosisColumns.ZIGOSITY])
-                self.diagnosis_counters.append(int(counter+1))  # +1 because enumerates starts at 0
             else:
                 self.diagnosis_names.append(None)
                 self.orphanet.append(None)
@@ -167,7 +162,6 @@ class PreprocessBuzziUC1(Preprocess):
                 self.inheritance.append(None)
                 self.chr_number.append(None)
                 self.zigosity.append(None)
-                self.diagnosis_counters.append(None)
 
     @classmethod
     def get_inheritance(cls, diagnosis_code: str) -> str | None:
