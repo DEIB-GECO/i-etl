@@ -24,6 +24,7 @@ class Reporting(Task):
         self.quality_stats = quality_stats
         self.db_stats = db_stats
         self.time_stats = time_stats
+        log.info(self.time_stats)
 
         # to get a user-friendly report
         self.report = {}
@@ -45,6 +46,7 @@ class Reporting(Task):
         # self.print_report()
 
         # 5. save each stat report in the database
+        self.database.drop_table(table_name=TableNames.STATS_TIME)
         self.database.insert_one_tuple(table_name=TableNames.STATS_DB, one_tuple=self.db_stats.to_json())
         self.database.insert_one_tuple(table_name=TableNames.STATS_TIME, one_tuple=self.time_stats.to_json())
         self.database.insert_one_tuple(table_name=TableNames.STATS_QUALITY, one_tuple=self.quality_stats.to_json())

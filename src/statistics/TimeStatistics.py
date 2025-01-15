@@ -18,14 +18,12 @@ class TimeStatistics(Statistics):
         if key not in self.stats[dataset]:
             self.stats[dataset][key] = {"start_time": 0.0, "cumulated_time": 0.0}
         self.stats[dataset][key]["start_time"] = time.time()
-        log.info(self.stats)
 
     def increment(self, dataset: str | None, key: str):
         if dataset is None:
             dataset = "ALL"
         if dataset in self.stats and key in self.stats[dataset]:
             self.stats[dataset][key]["cumulated_time"] += time.time() - self.stats[dataset][key]["start_time"]
-            log.info(self.stats)
         else:
             log.error(f"No existing timer for dataset {dataset} and key {key}")
 

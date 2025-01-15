@@ -111,7 +111,6 @@ class OntologyResource:
     @classmethod
     def get_resource_label_from_api(cls, ontology: dict, single_code: str, quality_stats: QualityStatistics, time_stats: TimeStatistics, dataset_key: str) -> str:
         # column_name is to be used when the label of the OntologyResource could not be computed with any of the APIs
-        log.info(f"compute label for {ontology}/{single_code}")
         compute_from_api = True
         ontology_name = ontology["name"]
         if compute_from_api:

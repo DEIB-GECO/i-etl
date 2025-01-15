@@ -87,16 +87,22 @@ class Transform(Task):
             # this is the first profile of the dataset, we load patients
             log.info("********** create patients")
             self.counter.set_with_database(database=self.database)
+            self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.CREATE_PATIENTS)
             self.create_patients()
+            self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.CREATE_PATIENTS)
         else:
             # this is another profile of the same dataset, we do not reload the same patients
             pass
 
         log.info(f"********** create {self.profile} features and records")
         self.counter.set_with_database(database=self.database)
+        self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.CREATE_FEATURES)
         self.create_features()
+        self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.CREATE_FEATURES)
         self.counter.set_with_database(database=self.database)
+        self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.CREATE_RECORDS)
         self.create_records()
+        self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.CREATE_RECORDS)
 
     ##############################################################
     # FEATURES
@@ -121,6 +127,7 @@ class Transform(Task):
             if column_name not in [self.execution.patient_id_column_name, self.execution.sample_id_column_name, DiagnosisColumns.DISEASE_COUNTER]:
                 if column_name not in db_existing_features:
                     # we create a new Feature from scratch
+                    self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.CREATE_FEATURE_INSTANCES)
                     onto_resource = self.create_ontology_resource_from_row(column_name=column_name)
                     data_type = row[columns.get_loc(MetadataColumns.ETL_TYPE)]  # this has been normalized while loading + we take ETL_type to get the narrowest type (in which we cast values)
                     visibility = row[columns.get_loc(MetadataColumns.VISIBILITY)]  # this has been normalized while loading
@@ -197,6 +204,7 @@ class Transform(Task):
                                                       domain=domain)
                     else:
                         raise NotImplementedError("To be implemented")
+                    self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.CREATE_FEATURE_INSTANCES)
 
                     if onto_resource is not None:
                         log.info(f"adding a new {self.profile} feature about {onto_resource.label}: {new_feature}")
@@ -205,7 +213,9 @@ class Transform(Task):
                         log.info(f"adding a new {self.profile} feature about {column_name}: {new_feature}")
 
                     self.features.append(new_feature)  # this cannot be null, otherwise we would have raise the above exception
+                    self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.PROCESS_FEATURE_BATCH)
                     self.process_batch_of_features(last=False)
+                    self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.PROCESS_FEATURE_BATCH)
                 else:
                     # the Feature already exists, so no need to add it to the database again.
                     # however, we need to update the set of datasets in which it appears
@@ -217,8 +227,12 @@ class Transform(Task):
             else:
                 log.debug(f"I am skipping column {column_name} because it has been dropped or is an ID column.")
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
+        self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.PROCESS_FEATURE_BATCH)
         self.process_batch_of_features(last=True)
-        self.database.load_json_in_table(profile=self.profile, table_name=TableNames.FEATURE, unique_variables=["name"], dataset_number=self.dataset_number)
+        self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.PROCESS_FEATURE_BATCH)
+        self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.WRITE_FEATURES_IN_DB)
+        self.database.load_json_in_table(profile=self.profile, table_name=TableNames.FEATURE, unique_variables=["name"], dataset_number=self.dataset_number, time_stats=self.time_stats, dataset=self.dataset_key)
+        self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.WRITE_FEATURES_IN_DB)
 
     ##############################################################
     # RECORDS
@@ -258,12 +272,15 @@ class Transform(Task):
                             self.mapping_column_all_count[feature_id.value] = self.mapping_column_all_count[feature_id.value] + 1
                 else:
                     if column_name in mapping_column_to_feature_id:
+                        self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.CREATE_RECORD_INSTANCES)
                         # we know a code for this column, so we can register the value of that Feature in a new Record
                         feature_id = Identifier(id_value=mapping_column_to_feature_id[column_name])
                         hospital_id = Identifier(id_value=mapping_hospital_to_hospital_id[self.execution.hospital_name])
                         # get the anonymized patient id using the mapping <initial id, anonymized id>
                         patient_id = Identifier(id_value=self.patient_ids_mapping[row[columns.get_loc(self.execution.patient_id_column_name)]])
+                        self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.VALUE_FAIRIFICATION)
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
+                        self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.VALUE_FAIRIFICATION)
                         anonymized_value, is_anonymized = self.anonymize_value(column_name=column_name,
                                                                                fairified_value=fairified_value)
                         if is_anonymized:
@@ -326,8 +343,11 @@ class Transform(Task):
                                                         dataset=dataset)
                         else:
                             raise NotImplementedError("Not implemented yet.")
+                        self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.CREATE_RECORD_INSTANCES)
                         self.records.append(new_record)
+                        self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.PROCESS_RECORD_BATCH)
                         self.process_batch_of_records(last=False)
+                        self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.PROCESS_RECORD_BATCH)
                         # to compute the percentage of missing values in features' profiles
                         if feature_id.value not in self.mapping_column_all_count:
                             self.mapping_column_all_count[feature_id.value] = 1
@@ -339,7 +359,9 @@ class Transform(Task):
                         # log.error(f"Skipping column {column_name} for row {index}")
                         pass
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
+        self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.PROCESS_RECORD_BATCH)
         self.process_batch_of_records(last=True)
+        self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.PROCESS_RECORD_BATCH)
         # and save the total counts for each column (to compute the percentage of missing values in the profiles)
         all_counts = []  # a list of <"identifier": identifier, "all_counts": all_counts> instead of <identifier: all_counts>
         for k in self.mapping_column_all_count:
@@ -389,7 +411,9 @@ class Transform(Task):
                 except Exception:
                     raise ValueError(
                         f"Could not dump the {len(self.patient_ids_mapping)} JSON resources in the file located at {self.execution.anonymized_patient_ids_filepath}.")
-            self.database.load_json_in_table(profile=TableNames.PATIENT, table_name=TableNames.PATIENT, unique_variables=["identifier"], dataset_number=self.dataset_number)
+            self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.WRITE_PATIENTS_IN_DB)
+            self.database.load_json_in_table(profile=TableNames.PATIENT, table_name=TableNames.PATIENT, unique_variables=["identifier"], dataset_number=self.dataset_number, time_stats=self.time_stats, dataset=self.dataset_key)
+            self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.WRITE_PATIENTS_IN_DB)
         else:
             # no patient ID in this dataset
             log.error(f"The column {self.execution.patient_id_column_name} has been declared as the patient id but has not been found in the data.")
@@ -487,9 +511,11 @@ class Transform(Task):
                 ontology_name = Ontologies.normalize_name(ontology_name=split_value[0])
                 ontology_code = split_value[1]  # the code will be later normalized during the CC construction
                 if value not in self.mapping_apivalue_to_onto_resource:
+                    self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.OR_CREATION_TIME)
                     onto_resource = OntologyResource(
                         ontology=Ontologies.get_enum_from_name(ontology_name=ontology_name), full_code=ontology_code, label=None,
                         quality_stats=self.quality_stats, time_stats=self.time_stats, dataset_key=self.dataset_key)
+                    self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.OR_CREATION_TIME)
                     self.mapping_apivalue_to_onto_resource[value] = onto_resource
                     return_value = onto_resource
                 else:

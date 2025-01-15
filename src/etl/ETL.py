@@ -57,7 +57,7 @@ class ETL:
         log.info("********** create hospital")
         counter = Counter()
         counter.set_with_database(database=self.database)
-        file_counter = self.create_hospital(counter=counter, dataset_number=dataset_number, file_counter=file_counter)
+        file_counter = self.create_hospital(counter=counter, dataset_number=dataset_number, file_counter=file_counter, time_stats=time_stats, dataset_key=None)
 
         all_metadata = read_tabular_file_as_string(self.execution.metadata_filepath)  # keep all metadata as str
         log.info(all_metadata)
@@ -136,16 +136,19 @@ class ETL:
                 self.execution.current_file_number += 1
 
         # save the datasets in the DB
+        time_stats.start(dataset=None, key=TimerKeys.INSERT_DATASETS)
         if self.database is not None and len(self.datasets) > 0:
             log.info([dataset.to_json() for dataset in self.datasets])
             self.database.upsert_one_batch_of_tuples(table_name=TableNames.DATASET, unique_variables=["docker_path"], the_batch=[dataset.to_json() for dataset in self.datasets], ordered=False)
             # for Dataset entity only, we create an index on the global identifier
             self.database.create_unique_index(table_name=TableNames.DATASET, columns={"global_identifier": 1})
+        time_stats.increment(dataset=None, key=TimerKeys.INSERT_DATASETS)
         # compute their profiles
+        time_stats.start(dataset=None, key=TimerKeys.PROFILE_COMPUTATION)
         self.profile_computation = FeatureProfileComputation(database=self.database)
         self.profile_computation.compute_features_profiles()
+        time_stats.increment(dataset=None, key=TimerKeys.PROFILE_COMPUTATION)
         # compute DB stats
-        time_stats.increment(dataset=None, key=TimerKeys.TOTAL_TIME)
         time_stats.start(dataset=None, key=TimerKeys.STATISTICS_TIME)
         db_stats = DatabaseStatistics(record_stats=True)
         db_stats.compute_stats(database=self.database)
@@ -157,7 +160,7 @@ class ETL:
         time_stats.increment(dataset=None, key=TimerKeys.REPORT_TIME)
         time_stats.increment(dataset=None, key=TimerKeys.TOTAL_TIME)
 
-    def create_hospital(self, counter: Counter, dataset_number: int, file_counter: int) -> int:
+    def create_hospital(self, counter: Counter, dataset_number: int, file_counter: int, time_stats: TimeStatistics, dataset_key: str) -> int:
         log.info(f"create hospital instance in memory")
         cursor = self.database.find_operation(table_name=TableNames.HOSPITAL, filter_dict={"name": self.execution.hospital_name}, projection={})
         hospital_exists = False
@@ -172,5 +175,5 @@ class ETL:
             write_in_file(resource_list=hospitals, current_working_dir=self.execution.working_dir_current,
                           profile=TableNames.HOSPITAL, is_feature=False, dataset_number=dataset_number, file_counter=file_counter)
             file_counter += 1
-            self.database.load_json_in_table(profile=TableNames.HOSPITAL, table_name=TableNames.HOSPITAL, unique_variables=["name"], dataset_number=dataset_number)
+            self.database.load_json_in_table(profile=TableNames.HOSPITAL, table_name=TableNames.HOSPITAL, unique_variables=["name"], dataset_number=dataset_number, time_stats=time_stats, dataset=dataset_key)
         return file_counter

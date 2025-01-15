@@ -44,23 +44,31 @@ class Extract(Task):
         # filter and normalize metadata
         # filter: keep metadata about the current triplet <dataset, profile, hospital>
         # normalize: the header and the values
+        self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.NORMALIZATION)
         self.filter_metadata_file()
         self.normalize_metadata_file()
+        self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.NORMALIZATION)
 
         # filter and normalize data
         # filter: remove data columns that are not described in the metadata
         # normalize: the header
         if self.metadata is not None:
             # preprocess input to have all the necessary data, as described in the metadata
+            self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.READ_TABULAR)
             self.load_tabular_data()
+            self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.READ_TABULAR)
+            self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.NORMALIZATION)
             self.pre_process_data_file()
             self.filter_data_file()
             self.normalize_data_file()
+            self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.NORMALIZATION)
 
             # compute mappings (categories, units and domains)
+            self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.COMPUTE_MAPPINGS)
             self.compute_mapping_categorical_value_to_onto_resource()
             self.compute_column_to_unit()
             self.compute_column_to_domain()
+            self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.COMPUTE_MAPPINGS)
 
     def filter_metadata_file(self) -> None:
         # Normalize the header, e.g., "Significato it" becomes "significato_it"
@@ -137,6 +145,7 @@ class Extract(Task):
         # Normalize the data values
         # they will be cast to the right type (int, float, datetime) in the Transform step
         # issue 113: we do not normalize identifiers assigned by hospitals to avoid discrepancies
+        self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.NORMALIZATION)
         columns_no_normalization = []
         columns_no_normalization.append(self.execution.patient_id_column_name)
         if self.execution.sample_id_column_name != "":
@@ -147,6 +156,7 @@ class Extract(Task):
                 self.data.loc[:, column] = self.data[column].apply(lambda x: MetadataColumns.normalize_value(column_value=x))
 
         log.info(f"{len(self.data.columns)} columns and {len(self.data)} lines in the data file.")
+        self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.NORMALIZATION)
 
     def pre_process_data_file(self) -> None:
         # preprocess data files, i.e., change the data DataFrame to fit the metadata
@@ -241,7 +251,6 @@ class Extract(Task):
                                     # however, we do not normalize the code, because it needs extra attention (due to spaces in post-coordinated codes, etc)
                                     ontology = Ontologies.get_enum_from_name(ontology_name=Ontologies.normalize_name(key))
                                     self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.OR_CREATION_TIME)
-                                    log.info("ici")
                                     onto_resource = OntologyResource(ontology=ontology, full_code=val, label=None, quality_stats=self.quality_stats, time_stats=self.time_stats, dataset_key=self.dataset_key)
                                     self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.OR_CREATION_TIME)
                                     if onto_resource.system != "" and onto_resource.code != "":

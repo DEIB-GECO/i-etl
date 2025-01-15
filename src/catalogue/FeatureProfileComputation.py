@@ -203,7 +203,6 @@ class FeatureProfileComputation:
             groups.append({"name": "std_value", "operator": "$stdDevPop", "field": "$value"})
         return [
             Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
-            Operators.match(field="value", value={"$ne": np.nan}, is_regex=False),
             Operators.group_by(group_key={"dataset": "$dataset", "instantiates": "$instantiates"}, groups=groups),
         ]
 
@@ -212,7 +211,6 @@ class FeatureProfileComputation:
         # [{'$group': {'_id': {'_id': null}, 'originalValues': {'$push': '$value'}, 'mymedian': {'$median': {"input": "$value", "method": "approximate"}}}}, {'$unwind': '$originalValues'}, {'$project': {"absVal": {'$abs': {'$subtract': ['$originalValues', '$mymedian']}}}}, {'$group': {'_id': {'_id': null}, 'ema': {'$median': {"input": "$absVal", "method": "approximate"}}}}]
         return [
             Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
-            Operators.match(field="value", value={"$ne": np.nan}, is_regex=False),
             Operators.group_by(group_key={"dataset": "$dataset", "instantiates": "$instantiates"}, groups=[
                 {"name": "originalValues", "operator": "$push", "field": "$value"},
                 {"name": "mymedian", "operator": "$median", "field": {"input": "$value", "method": "approximate"}},
@@ -234,7 +232,6 @@ class FeatureProfileComputation:
         # [ { "$group": { "_id": { "_id": null }, "originalValues": { "$push": "$value" }, "mymean": { "$avg": "$value" }, "mystdDev": { "$stdDevSamp": "$value" } } }, { "$unwind": "$originalValues" }, {"$project":{"theQuads":{"$pow":[{"$divide":[{"$subtract":["$originalValues","$mymean"]},"$mystdDev"]},4]}, "theSquares":{"$pow":[{"$divide":[{"$subtract":["$originalValues","$mymean"]},"$mystdDev"]},3]}}},{"$group":{"_id":{"_id":null},"sumQuads":{"$sum":"$theQuads"}, "sumSquares":{"$sum":"$theSquares"}, "summedValues": { "$push": "$theQuads" }}},{"$project":{"sumQuads": 1, "sumSquares": 1, "mysize": {"$size": "$summedValues"}}}, {"$project":{"kurtosis":{"$subtract":[{"$multiply":[{"$divide":[{"$multiply":["$mysize",{"$sum":["$mysize",1]}]},{"$multiply":[{"$sum":["$mysize",-1]},{"$sum":["$mysize",-2]},{"$sum":["$mysize",-3]}]}]},"$sumQuads"]},{"$divide":[{"$multiply":[3,{"$pow":[{"$sum":["$mysize",-1]},2]}]},{"$multiply":[{"$sum":["$mysize",-2]},{"$sum":["$mysize",-3]}]}]}]}, "skewness":{"$multiply": [{"$divide": ["$mysize", {"$multiply": [{"$sum": ["$mysize", -1]}, {"$sum": ["$mysize", -2]}]}]}, "$sumSquares"]}}}]
         return [
             Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
-            Operators.match(field="value", value={"$ne": np.nan}, is_regex=False),
             Operators.group_by(group_key={"dataset": "$dataset", "instantiates": "$instantiates"}, groups=[
                 {"name": "originalValues", "operator": "$push", "field": "$value"},
                 {"name": "mymean", "operator": "$avg", "field": "$value"},
@@ -322,7 +319,6 @@ class FeatureProfileComputation:
     def iqr_query(self, features_ids: list) -> list:
         return [
             Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
-            Operators.match(field="value", value={"$ne": np.nan}, is_regex=False),
             Operators.group_by(group_key={"dataset": "$dataset", "instantiates": "$instantiates"}, groups=[
                 {"name": "thevalues", "operator": "$push", "field": "$value"},
                 {"name": "themedian", "operator": "$median", "field": {"input": "$value", "method": "approximate"}}

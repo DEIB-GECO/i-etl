@@ -10,6 +10,7 @@ from pymongo.cursor import Cursor
 from database.Execution import Execution
 from enums.TableNames import TableNames
 from database.Operators import Operators
+from enums.TimerKeys import TimerKeys
 from utils.setup_logger import log
 
 
@@ -172,14 +173,15 @@ class Database:
             mapping[projected_key] = projected_value
         return mapping
 
-    def load_json_in_table(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int) -> None:
+    def load_json_in_table(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int, time_stats, dataset: str) -> None:
         log.info(unique_variables)
-        self.load_json_in_table_general(profile=profile, table_name=table_name, unique_variables=unique_variables, dataset_number=dataset_number, ordered=False)
+        log.info(dataset)
+        self.load_json_in_table_general(profile=profile, table_name=table_name, unique_variables=unique_variables, dataset_number=dataset_number, ordered=False, time_stats=time_stats, dataset=dataset)
 
     def load_json_in_table_for_tests(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int) -> None:
-        self.load_json_in_table_general(profile=profile, table_name=table_name, unique_variables=unique_variables, dataset_number=dataset_number, ordered=True)
+        self.load_json_in_table_general(profile=profile, table_name=table_name, unique_variables=unique_variables, dataset_number=dataset_number, ordered=True, time_stats=None, dataset=None)
 
-    def load_json_in_table_general(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int, ordered: bool) -> None:
+    def load_json_in_table_general(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int, ordered: bool, time_stats, dataset: str) -> None:
         log.info(f"Load {profile} data in {table_name} with unique variables {unique_variables}")
         first_file = True
         for filename in os.listdir(self.execution.working_dir_current):
@@ -191,9 +193,13 @@ class Database:
                         log.info(f"For profile {profile}, creating unique index {unique_variables}")
                         self.create_unique_index(table_name=table_name, columns={elem: 1 for elem in unique_variables})
                         first_file = False
+                    time_stats.start(dataset=dataset, key=TimerKeys.DB_BSON_SERIALIZATION_TIME)
                     tuples = bson.json_util.loads(json_datafile.read())
+                    time_stats.increment(dataset=dataset, key=TimerKeys.DB_BSON_SERIALIZATION_TIME)
                     log.debug(f"Table {table_name}, file {filename}, loading {len(tuples)} tuples with unique variables being {unique_variables}")
+                    time_stats.start(dataset=dataset, key=TimerKeys.UPSERT_TUPLES)
                     self.upsert_one_batch_of_tuples(table_name=table_name, unique_variables=unique_variables, the_batch=tuples, ordered=ordered)
+                    time_stats.increment(dataset=dataset, key=TimerKeys.UPSERT_TUPLES)
 
     def find_operation(self, table_name: str, filter_dict: dict, projection: dict) -> Cursor:
         """
