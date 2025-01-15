@@ -27,6 +27,7 @@ from entities.Patient import Patient
 from entities.PhenotypicFeature import PhenotypicFeature
 from entities.PhenotypicRecord import PhenotypicRecord
 from enums.DataTypes import DataTypes
+from enums.DiagnosisColumns import DiagnosisColumns
 from enums.Domain import Domain
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
@@ -276,7 +277,7 @@ class Transform(Task):
                                                           dataset=dataset)
                         elif self.profile == Profile.CLINICAL:
                             if self.execution.sample_id_column_name in columns:
-                                # this dataset contains a sample bar code (or equivalent)
+                                # this dataset contains a sample barcode (or equivalent)
                                 base_id = row[columns.get_loc(self.execution.sample_id_column_name)]
                             else:
                                 base_id = None
@@ -285,9 +286,24 @@ class Transform(Task):
                                                         base_id=base_id,
                                                         counter=self.counter, dataset=dataset)
                         elif self.profile == Profile.DIAGNOSIS:
+                            if DiagnosisColumns.DISEASE_COUNTER in columns:
+                                # this dataset contains a diagnosis counter because patients may be affected
+                                # by several diseases
+                                # we also need to force the conversion to int, because we read the data as str
+                                # and such values do not go through the fairification method
+                                # because there may be None (for patients with unknown diseases), the column is read as float,
+                                # thus needs to be cast as float and int (because int("1.0") raises an error)
+                                try:
+                                    diagnosis_counter = int(float(row[columns.get_loc(DiagnosisColumns.DISEASE_COUNTER)]))
+                                except:
+                                    # the value is None because the patient diseases is unknown in the disease classification
+                                    diagnosis_counter = None
+                            else:
+                                diagnosis_counter = None
+                            # log.info(f"creating a new DiagnosisRecord with counter being {diagnosis_counter}")
                             new_record = DiagnosisRecord(feature_id=feature_id,
                                                          patient_id=patient_id, hospital_id=hospital_id,
-                                                         value=fairified_value,
+                                                         value=fairified_value, diagnosis_counter=diagnosis_counter,
                                                          counter=self.counter,
                                                          dataset=dataset)
                         elif self.profile == Profile.GENOMIC:

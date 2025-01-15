@@ -17,9 +17,11 @@ from utils.str_utils import remove_specific_tokens, process_spaces, remove_opera
 class OntologyResource:
     def __init__(self, ontology: dict, full_code: str, label: str | None,
                  dataset_key: str, quality_stats: QualityStatistics | None, time_stats: TimeStatistics | None):
+        # every attribute that is there will be serialized in the Ontology Resource
+        # to avoid this, one needs to explicitly say which attributes are to be removed from the JSON serialization
+        # using the __get_state__ method
         self.quality_stats = quality_stats if quality_stats is not None else QualityStatistics(record_stats=False)
         self.time_stats = time_stats if time_stats is not None else TimeStatistics(record_stats=False)
-        self.dataset_key = dataset_key
         self.system = None
         self.code = None
         self.label = None
@@ -32,7 +34,7 @@ class OntologyResource:
             # this is because an Ontology can have a single system
             # TODO Nelly: maybe there is a better way?
             self.system = ontology["url"]
-            full_code = Ontologies.remove_prefix(code=full_code)
+            full_code = full_code.replace("ORPHA:", "").replace("orpha:", "").replace("GO:", "").replace("go:", "")
             full_code = process_spaces(input_string=full_code)
             full_code = re.sub(r" *([" + SNOMED_OPERATORS_STR + "]+) *", r"\1", full_code)  # remove spaces around operators; r"\1" means: replace with first captured group
             full_code = remove_operators_in_strings(input_string=full_code)  # for every label inside |, '' or "", we remove possible operators
@@ -41,9 +43,9 @@ class OntologyResource:
             if label is None:
                 # when we create a new OntologyResource from scratch, we need to compute the label with ontology API
                 # if the query to the API does not work, we can still use the column name as the label of the OntoResource
-                self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.OR_CREATION_TIME)
-                self.compute_label(ontology=ontology, code_elements=code_elements, quality_stats=quality_stats)
-                self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.OR_CREATION_TIME)
+                self.time_stats.start(dataset=dataset_key, key=TimerKeys.OR_CREATION_TIME)
+                self.compute_label(ontology=ontology, code_elements=code_elements, quality_stats=quality_stats, dataset_key=dataset_key)
+                self.time_stats.increment(dataset=dataset_key, key=TimerKeys.OR_CREATION_TIME)
             else:
                 # when we retrieve a OntologyResource from the db, we do NOT want to compute again its label
                 # we still get the existing label
@@ -83,7 +85,7 @@ class OntologyResource:
                 if element != "|":
                     self.code += element
 
-    def compute_label(self, ontology: dict, code_elements: list, quality_stats: QualityStatistics) -> None:
+    def compute_label(self, ontology: dict, code_elements: list, quality_stats: QualityStatistics, dataset_key: str) -> None:
         self.label = ""
         for i in range(len(code_elements)):
             element = code_elements[i]
@@ -94,7 +96,7 @@ class OntologyResource:
                     pass
                 else:
                     # this is a code, we get its label (name)
-                    resource_label = OntologyResource.get_resource_label_from_api(ontology=ontology, single_code=element, quality_stats=quality_stats, time_stats=self.time_stats, dataset_key=self.dataset_key)
+                    resource_label = OntologyResource.get_resource_label_from_api(ontology=ontology, single_code=element, quality_stats=quality_stats, time_stats=self.time_stats, dataset_key=dataset_key)
                     if resource_label is not None:
                         resource_label = process_spaces(input_string=resource_label)
                         resource_label = remove_specific_tokens(input_string=resource_label, tokens=["(property)", "- finding", "-finding", "(qualifier value)", "(observable entity)", "(social concept)", "(procedure)", "(assessment scale)", "- action", "-action", "- attribute", "-attribute"])  # useless and may break parsing (due to parenthesis and dash)
@@ -322,6 +324,18 @@ class OntologyResource:
         # we do not use the display  because this would lead to unequal instances
         # if provided descriptions differ from one hospital to another
         return self.system == other.system and self.code == other.code
+
+    def __getstate__(self):
+        # we need to check whether each field is a NaN value because we do not want to add fields for NaN values
+        state = self.__dict__.copy()
+        # log.info(state)
+        # trick: we need to work on the copy of the keys to not directly work on them
+        # otherwise, Concurrent modification error
+        for key in list(state.keys()):
+            if state[key] is None or type(state[key]) in [TimeStatistics, QualityStatistics]:  # we keep explicit NaN values
+                # log.info(f"delete value '{state[key]}' for key '{key}'")
+                del state[key]
+        return state
 
     def __str__(self) -> str:
         return jsonpickle.encode(self, unpicklable=False)

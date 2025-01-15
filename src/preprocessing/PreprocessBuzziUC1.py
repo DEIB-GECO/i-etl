@@ -27,6 +27,7 @@ class PreprocessBuzziUC1(Preprocess):
         self.inheritance = []
         self.chr_number = []
         self.zigosity = []
+        self.diagnosis_counters = []
         self.mapping_diagnoses_infos = {}
         self.mapping_barcode_pid = {}
 
@@ -112,6 +113,8 @@ class PreprocessBuzziUC1(Preprocess):
             log.info(f"{len(self.inheritance)} inheritance names")
             log.info(f"{len(self.chr_number)} chr number")
             log.info(f"{len(self.zigosity)} zigosity")
+            log.info(f"{len(self.diagnosis_counters)} diagnosis counters")
+            log.info(self.diagnosis_counters)
 
             self.data = DataFrame()
             self.data[DiagnosisColumns.ID] = self.ids
@@ -123,8 +126,10 @@ class PreprocessBuzziUC1(Preprocess):
             self.data[DiagnosisColumns.INHERITANCE] = self.inheritance
             self.data[DiagnosisColumns.CHR_NUMBER] = self.chr_number
             self.data[DiagnosisColumns.ZIGOSITY] = self.zigosity
+            self.data[DiagnosisColumns.DISEASE_COUNTER] = self.diagnosis_counters
             log.info(self.data)
             log.info(self.data.iloc[0])
+            log.info(self.data)
 
     def add_id(self, pid):
         if pid in self.mapping_barcode_pid:
@@ -139,7 +144,7 @@ class PreprocessBuzziUC1(Preprocess):
     def record_diagnosis_for_patient(self, pid, row, column: str):
         # column is "affetto" or "carrier"
         self.data.loc[:, column] = self.data[column].apply(lambda x: x.replace("/", "+") if "/" in x else x)
-        for disease in row[self.data.columns.get_loc(column)].split("+"):
+        for counter, disease in enumerate(row[self.data.columns.get_loc(column)].split("+")):
             self.add_id(pid=pid)
             acronym = disease.lower().strip()
             self.diagnosis_acronyms.append(acronym)
@@ -154,6 +159,7 @@ class PreprocessBuzziUC1(Preprocess):
                 self.inheritance.append(self.mapping_diagnoses_infos[acronym][DiagnosisColumns.INHERITANCE])
                 self.chr_number.append(self.mapping_diagnoses_infos[acronym][DiagnosisColumns.CHR_NUMBER])
                 self.zigosity.append(self.mapping_diagnoses_infos[acronym][DiagnosisColumns.ZIGOSITY])
+                self.diagnosis_counters.append(int(counter+1))  # +1 because enumerates starts at 0
             else:
                 self.diagnosis_names.append(None)
                 self.orphanet.append(None)
@@ -161,6 +167,7 @@ class PreprocessBuzziUC1(Preprocess):
                 self.inheritance.append(None)
                 self.chr_number.append(None)
                 self.zigosity.append(None)
+                self.diagnosis_counters.append(None)
 
     @classmethod
     def get_inheritance(cls, diagnosis_code: str) -> str | None:

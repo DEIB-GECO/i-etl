@@ -1,5 +1,6 @@
 from database.Database import Database
 from database.Execution import Execution
+from enums.DiagnosisColumns import DiagnosisColumns
 from enums.Profile import Profile
 from enums.TableNames import TableNames
 from etl.Task import Task
@@ -34,7 +35,7 @@ class Load(Task):
         unique_variables = ["registered_by", "has_subject", "instantiates", "entity_type", "base_id"]
         if self.profile == Profile.DIAGNOSIS:
             # we allow patients to have several diagnoses
-            unique_variables.append("value")
+            unique_variables.append(DiagnosisColumns.DISEASE_COUNTER)
         log.info(unique_variables)
         self.database.load_json_in_table(profile=self.profile, table_name=TableNames.RECORD, unique_variables=unique_variables, dataset_number=self.dataset_number)
 
