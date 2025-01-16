@@ -303,16 +303,15 @@ class TestDatabase(unittest.TestCase):
 
     def test_retrieve_resource_identifiers_1(self):
         database = Database(TestDatabase.execution)
-        my_id = Identifier(id_value=123)
-        my_tuple = {"identifier": my_id.to_json(), "name": "Nelly"}
+        my_tuple = {"identifier": 123, "name": "Nelly"}
         database.db[TableNames.TEST].insert_one(my_tuple)
         the_doc = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="name", value_fields="identifier", filter_dict={})
-        expected_doc = {"Nelly": my_id.to_json()}
+        expected_doc = {"Nelly": 123}
         assert the_doc == expected_doc
 
     def test_retrieve_resource_identifiers_10(self):
         database = Database(TestDatabase.execution)
-        my_tuples = [{"identifier": Identifier(id_value=i).to_json(), "value": i + random.randint(0, 100)} for i in range(0, 10)]
+        my_tuples = [{"identifier": i, "value": i + random.randint(0, 100)} for i in range(0, 10)]
         my_original_tuples = copy.deepcopy(my_tuples)
         database.db[TableNames.TEST].insert_many(my_tuples)
         docs = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="value", value_fields="identifier", filter_dict={})
@@ -325,24 +324,22 @@ class TestDatabase(unittest.TestCase):
 
     def test_retrieve_resource_identifiers_wrong_key(self):
         database = Database(TestDatabase.execution)
-        my_id = Identifier(id_value=123)
-        my_tuple = {"identifier": my_id.to_json(), "name": "Nelly"}
+        my_tuple = {"identifier": 123, "name": "Nelly"}
         database.db[TableNames.TEST].insert_one(my_tuple)
         with pytest.raises(KeyError):
             _ = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="name2", value_fields="identifier", filter_dict={})
 
     def test_retrieve_patient_identifiers_1(self):
         database = Database(TestDatabase.execution)
-        my_id = Identifier(id_value=123)
-        my_tuple = {"identifier": my_id.to_json(), "name": "Nelly"}
+        my_tuple = {"identifier": 123, "name": "Nelly"}
         database.db[TableNames.TEST].insert_one(my_tuple)
         the_doc = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="name", value_fields="identifier", filter_dict={})
-        expected_doc = {"Nelly": my_id.value}
+        expected_doc = {"Nelly": 123}
         assert the_doc == expected_doc
 
     def test_retrieve_patient_identifiers_10(self):
         database = Database(TestDatabase.execution)
-        my_tuples = [{"identifier": Identifier(id_value=i).to_json(), "value": i + random.randint(0, 100)} for i in range(0, 10)]
+        my_tuples = [{"identifier": i, "value": i + random.randint(0, 100)} for i in range(0, 10)]
         my_original_tuples = copy.deepcopy(my_tuples)
         database.db[TableNames.TEST].insert_many(my_tuples)
         docs = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="value", value_fields="identifier", filter_dict={})
@@ -355,8 +352,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_retrieve_patient_identifiers_wrong_key(self):
         database = Database(TestDatabase.execution)
-        my_id = Identifier(id_value=123)
-        my_tuple = {"identifier": my_id.to_json(), "name": "Nelly"}
+        my_tuple = {"identifier": 123, "name": "Nelly"}
         database.db[TableNames.TEST].insert_one(my_tuple)
         with pytest.raises(KeyError):
             _ = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="name2", value_fields="identifier", filter_dict={})
@@ -370,7 +366,7 @@ class TestDatabase(unittest.TestCase):
         ]
         my_tuples_as_json = [my_tuples[i].to_json() for i in range(len(my_tuples))]
 
-        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, profile=TableNames.TEST, is_feature=False, file_counter=1, dataset_number=1)
+        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, profile=TableNames.TEST, is_feature=False, file_counter=1, dataset_number=1, time_stats=None, dataset=None)
         filepath = os.path.join(TestDatabase.execution.working_dir_current, f"1{TableNames.TEST}{TableNames.TEST}1.json")
         assert os.path.exists(filepath) is True
         with open(filepath) as my_file:
@@ -381,7 +377,7 @@ class TestDatabase(unittest.TestCase):
     def test_write_in_file_no_resource(self):
         _ = Database(TestDatabase.execution)
         my_tuples = []
-        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, profile=TableNames.TEST, is_feature=False, file_counter=2, dataset_number=1)
+        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, profile=TableNames.TEST, is_feature=False, file_counter=2, dataset_number=1, time_stats=None, dataset=None)
         filepath = os.path.join(TestDatabase.execution.working_dir_current, f"1{TableNames.TEST}2.json")
         assert os.path.exists(filepath) is False  # no file should have been created since there is no data to write
 
@@ -546,10 +542,10 @@ class TestDatabase(unittest.TestCase):
     def test_get_min_or_max_resource_id(self):
         database = Database(TestDatabase.execution)
         my_tuples = [
-            {"value": Identifier(id_value=45).value},
-            {"value": Identifier(id_value=54).value},
-            {"value": Identifier(id_value=9).value},
-            {"value": Identifier(id_value=154).value}
+            {"value": 45},
+            {"value": 54},
+            {"value": 9},
+            {"value": 154}
         ]
         database.db[TableNames.TEST].insert_many(documents=my_tuples)
         min_value = database.get_min_or_max_value(table_name=TableNames.TEST, field="value", sort_order=1)
@@ -562,14 +558,14 @@ class TestDatabase(unittest.TestCase):
         # to be sure that both identifiers can be parsed accordingly and take the max value among them
         database = Database(TestDatabase.execution)
         my_resources_1 = [
-            {"identifier": Identifier(id_value=1).value, "name": "Anna"},
-            {"identifier": Identifier(id_value=4).value, "name": "Julien"},
-            {"identifier": Identifier(id_value=999).value, "name": "Nelly"},
+            {"identifier": 1, "name": "Anna"},
+            {"identifier": 4, "name": "Julien"},
+            {"identifier": 999, "name": "Nelly"},
         ]
         my_resources_2 = [
-            {"identifier": Identifier(id_value=2).value, "name": "Anna"},
-            {"identifier": Identifier(id_value=100).value, "name": "Nelly"},
-            {"identifier": Identifier(id_value=-1000).value, "name": "Pietro"},
+            {"identifier": 2, "name": "Anna"},
+            {"identifier": 100, "name": "Nelly"},
+            {"identifier": 1000, "name": "Pietro"},
         ]
         # as an exception, we insert into LABORATORY_RECORD, not in TableNames.TEST,
         # because the method is made to set up resource counter and is expected to work on the

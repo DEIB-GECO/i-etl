@@ -1,6 +1,6 @@
 import unittest
 
-from datatypes.OntologyResource import OntologyResource
+from entities.OntologyResource import OntologyResource
 from enums.Ontologies import Ontologies
 
 

@@ -1,18 +1,23 @@
+import dataclasses
 import datetime
 import json
 import os
 import pickle
 
 import bson
+import jsonpickle
 import pandas as pd
 import pymongo
 import ujson
 from pymongo.mongo_client import MongoClient
 
+from constants.defaults import NO_ID
 from database.Counter import Counter
-from datatypes.Identifier import Identifier
-from datatypes.OntologyResource import OntologyResource
+from database.Operators import Operators
 from entities.ClinicalRecord import ClinicalRecord
+from entities.OntologyResource import OntologyResource
+from entities.Record import Record
+from entities.Resource import Resource
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from etl.Extract import Extract
@@ -236,9 +241,9 @@ def main_efficiency_json():
         print(f"{datetime.datetime.now()-start_time} with ujson to load")
 
     counter = Counter()
-    objects = [ClinicalRecord(feature_id=Identifier(i),
-                              patient_id=Identifier(i),
-                              hospital_id=Identifier(i),
+    objects = [ClinicalRecord(feature_id=i,
+                              patient_id=i,
+                              hospital_id=i,
                               value=str(i),
                               base_id=None,
                               counter=counter,
@@ -293,6 +298,102 @@ def main_na_pandas():
             value = row[df.columns.get_loc(column_name)]
             print(f"      '{value}' (type={type(value)}, None={value is None}, Null={pd.isnull(value)}, empty={value==""})")
 
+@dataclasses.dataclass(kw_only=True)
+class PersonModel:
+    age: int = 20
+    first_name: str = "Brad"
+    last_name: str = "Pitt"
+
+    def to_json1(self, include_null=False) -> dict:
+        return dataclasses.asdict(
+            self,
+            dict_factory=lambda fields: {
+                key: value
+                for (key, value) in fields
+                if value is not None or include_null
+            },
+        )
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        for key in list(state.keys()):
+            if state[key] is None:  # we keep explicit NaN values
+                del state[key]
+        return state
+
+    def to_json2(self):
+        # encode creates a stringified JSON object of the class
+        # and decode transforms the stringified JSON to a "real" JSON object
+        return jsonpickle.decode(jsonpickle.encode(self, unpicklable=False))
+
+
+@dataclasses.dataclass(kw_only=True)
+class Animal:
+    personal_id: int
+    nb_feet: int
+    timestamp: datetime = dataclasses.field(init=False)
+
+    def __post_init__(self):
+        self.timestamp = Operators.from_datetime_to_isodate(datetime.datetime.now())
+        if self.personal_id == NO_ID:
+            self.personal_id = 999
+        self.id_value = None
+
+    def to_json(self):
+        return dataclasses.asdict(
+            self,
+            dict_factory=lambda fields: {
+                key: value
+                for (key, value) in fields
+                if value is not None
+            }
+        )
+
+
+@dataclasses.dataclass(kw_only=True)
+class Dog(Animal):
+    breed: str
+    test: str
+    profile: str = dataclasses.field(init=False)
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.test = None
+        self.profile = f"Dog"
+
+
+def main_jsonify():
+    # animal = Animal(personal_id=NO_ID, nb_feet=4)
+    # log.info(animal)
+    # log.info(animal.to_json())
+    # dog = Dog(personal_id=10, nb_feet=4, breed="Big dog", test="ici")
+    # log.info(dog)
+    # log.info(dog.to_json())
+
+    # brad = PersonModel()
+    # print(brad)  # PersonModel(age=20, first_name='Brad', last_name='Pitt')
+    # start_time = time.time()
+    # print(brad.to_json1())  # {'age': 20, 'firstName': 'Brad', 'lastName': 'Pitt'}
+    # print(f"time for to_json1(): {time.time() - start_time}")
+    # start_time = time.time()
+    # print(brad.to_json2())  # {'age': 20, 'firstName': 'Brad', 'lastName': 'Pitt'}
+    # print(f"time for to_json2(): {time.time() - start_time}")
+
+    c = Counter()
+    c.set(100)
+    record = Record(
+        has_subject=1,
+        instantiates=2,
+        registered_by=3,
+        value="blabla",
+        counter=c,
+        dataset="/the/dataset/url",
+        entity_type="Record",
+        identifier=NO_ID
+    )
+    log.info(record)
+    log.info(record.to_json())
+
 
 if __name__ == '__main__':
     # main_load_json_from_file_as_bson()
@@ -314,6 +415,8 @@ if __name__ == '__main__':
 
     # main_groupby_pandas()
 
-    main_na_pandas()
+    # main_na_pandas()
+
+    main_jsonify()
 
     print("Done.")

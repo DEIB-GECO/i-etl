@@ -5,22 +5,30 @@ import ujson
 
 from constants.structure import GROUND_DATA_FOLDER_FOR_GENERATION, GROUND_METADATA_FOLDER_FOR_GENERATION
 from enums.TableNames import TableNames
+from enums.TimerKeys import TimerKeys
 from utils.setup_logger import log
 
 
-def write_in_file(resource_list: list, current_working_dir: str, profile: str, is_feature: bool, dataset_number: int, file_counter: int) -> None:
+def write_in_file(resource_list: list, current_working_dir: str, profile: str, is_feature: bool, dataset_number: int, file_counter: int, time_stats, dataset) -> None:
     if profile in [TableNames.PATIENT, TableNames.HOSPITAL, TableNames.TEST]:
         table_name = profile
     elif is_feature:
         table_name = TableNames.FEATURE
     else:
         table_name = TableNames.RECORD
+    time_stats.start_timer(dataset=dataset, key=TimerKeys.GET_RESOURCE_JSON_FILE)
     filename = get_json_resource_file(current_working_dir=current_working_dir, profile=profile, table_name=table_name, dataset_number=dataset_number, file_counter=file_counter)
+    time_stats.increment_timer(dataset=dataset, key=TimerKeys.GET_RESOURCE_JSON_FILE)
     if len(resource_list) > 0:
         with open(filename, "w") as data_file:
             try:
                 log.debug(f"Dumping {len(resource_list)} instances in {filename}")
-                ujson.dump([resource.to_json() for resource in resource_list], data_file)
+                time_stats.start_timer(dataset=dataset, key=TimerKeys.JSONIFY_RECORDS)
+                the_json_resources = [resource.to_json() for resource in resource_list]
+                time_stats.increment_timer(dataset=dataset, key=TimerKeys.JSONIFY_RECORDS)
+                time_stats.start_timer(dataset=dataset, key=TimerKeys.USJON_DUMP)
+                ujson.dump(the_json_resources, data_file)
+                time_stats.increment_timer(dataset=dataset, key=TimerKeys.USJON_DUMP)
             except Exception:
                 raise ValueError(f"Could not dump the {len(resource_list)} JSON resources in the file located at {filename}.")
     else:

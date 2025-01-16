@@ -13,7 +13,7 @@ class TestHospital:
 
         assert hospital1 is not None
         assert hospital1.identifier is not None
-        assert hospital1.identifier.value == Identifier(id_value=1).value
+        assert hospital1.identifier == 1
 
     def test_to_json(self):
         counter = Counter()

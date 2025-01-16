@@ -13,7 +13,7 @@ from database.Database import Database
 from database.Dataset import Dataset
 from database.Execution import Execution
 from datatypes.Identifier import Identifier
-from datatypes.OntologyResource import OntologyResource
+from entities.OntologyResource import OntologyResource
 from entities.Hospital import Hospital
 from enums.DataTypes import DataTypes
 from enums.HospitalNames import HospitalNames
@@ -30,8 +30,7 @@ from statistics.TimeStatistics import TimeStatistics
 from utils.cast_utils import cast_str_to_datetime
 from utils.file_utils import get_json_resource_file
 from utils.file_utils import read_tabular_file_as_string
-from utils.setup_logger import log
-from utils.test_utils import compare_tuples, set_env_variables_from_dict, get_feature_by_text, \
+from utils.test_utils import set_env_variables_from_dict, get_feature_by_text, \
     get_field_value_for_patient, get_records_for_patient
 
 
@@ -172,14 +171,14 @@ class TestTransform(unittest.TestCase):
         # I manually insert some resources in the database
         database = Database(TestTransform.execution)
         my_tuples = [
-            {"identifier": Identifier(id_value=1).to_json()},
-            {"identifier": Identifier(id_value=2).to_json()},
-            {"identifier": Identifier(id_value=7).to_json()},
-            {"identifier": Identifier(id_value=3).to_json()},
-            {"identifier": Identifier(id_value=124).to_json()},
-            {"identifier": Identifier(id_value=9).to_json()},
-            {"identifier": Identifier(id_value=123).to_json()},
-            {"identifier": Identifier(id_value=6).to_json()}
+            {"identifier": 1},
+            {"identifier": 2},
+            {"identifier": 7},
+            {"identifier": 3},
+            {"identifier": 124},
+            {"identifier": 9},
+            {"identifier": 123},
+            {"identifier": 6}
         ]
         database.insert_many_tuples(table_name=TableNames.FEATURE, tuples=my_tuples)
         counter.set_with_database(database=transform.database)
@@ -398,7 +397,7 @@ class TestTransform(unittest.TestCase):
         sorted_patients = sorted(patients, key=lambda d: d["identifier"])
         for i in range(0, len(sorted_patients)):
             # patients have their own anonymized ids
-            assert sorted_patients[i]["identifier"] == Identifier(id_value=i + 1).value
+            assert sorted_patients[i]["identifier"] == i + 1
 
         # get back to the original file
         with open(self.execution.anonymized_patient_ids_filepath, "w") as f:
@@ -425,7 +424,7 @@ class TestTransform(unittest.TestCase):
         # sorted_patients = sorted(transform.patients)
         for i in range(0, len(sorted_patients)):
             # patients have their own anonymized ids
-            assert sorted_patients[i]["identifier"] == Identifier(id_value=990 + i).value
+            assert sorted_patients[i]["identifier"] == 990 + i
 
     def test_create_ontology_resource_from_row(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,

@@ -1,29 +1,26 @@
+import dataclasses
+
 from statistics.Statistics import Statistics
 
 
+@dataclasses.dataclass(kw_only=True)
 class QualityStatistics(Statistics):
-    def __init__(self, record_stats: bool):
-        super().__init__(record_stats)
-
-        # counts over the (pre-processed) metadata and data files
-        self.columns_no_ontology = []  # list of column names for which no ontology resource is provided
-        self.columns_no_etl_type = []  # list of column names for which no etl type is provided
-        self.columns_unmatched_typeof_etl_types = {}  # { column_name: { "typeof_type": ttype, "etl_type": etype }, ... }
-        self.columns_unknown_ontology = {}  # { column_name: [set of unknown ontology names], ... }
-        self.columns_unknown_etl_type = {}  # { column_name: unknown_etl_type, ... }
-        self.categorical_columns_without_json_values = []  # list of column names for which the ETL type is "category" and for which the column JSON_values is empty
-        self.categorical_columns_unparseable_json = {}  # { column_name: broken_json, ... }
-        self.diagnosis_no_orphanet_code = []  # list of diagnosis standard names for which no orphanet code is provided
-        self.data_columns_not_in_metadata = []  # list of data columns that are "removed" because not part of the metadata
-
-        # counts done during the ETL
-        self.empty_cells_per_column = {}  # { "column_name": X }
-        self.failed_api_calls = {}  # { "ontology/id_code": api_error, ... }
-        self.unknown_categorical_values = {}  # { column_name: [ set of unknown categorical values ], ... }
-        self.unknown_boolean_values = {}  # { column_name: [ set of unknown categorical boolean values ], ... }
-        self.numerical_values_unmatched_unit = {}  # { column_name: { value: { "expected_dim": exp_dim, "current_unit": curr_unit }, ... }, ... }
-        self.non_numeric_values_with_unit = {}  # { column_name: { value: curr_dim, ... }, ... }
-
+    columns_no_ontology: list = dataclasses.field(default_factory=list)  # list of column names for which no ontology resource is provided
+    columns_no_etl_type: list = dataclasses.field(default_factory=list)  # list of column names for which no etl type is provided
+    columns_unmatched_typeof_etl_types: dict = dataclasses.field(default_factory=dict)  # { column_name: { "typeof_type": ttype, "etl_type": etype }, ... }
+    columns_unknown_ontology: dict = dataclasses.field(default_factory=dict)  # { column_name: [set of unknown ontology names], ... }
+    columns_unknown_etl_type: dict = dataclasses.field(default_factory=dict)  # { column_name: unknown_etl_type, ... }
+    categorical_columns_without_json_values: list = dataclasses.field(default_factory=list)  # list of column names for which the ETL type is "category" and for which the column JSON_values is empty
+    categorical_columns_unparseable_json: dict = dataclasses.field(default_factory=dict)  # { column_name: broken_json, ... }
+    diagnosis_no_orphanet_code: list = dataclasses.field(default_factory=list)  # list of diagnosis standard names for which no orphanet code is provided
+    data_columns_not_in_metadata: list = dataclasses.field(default_factory=list)  # list of data columns that are "removed" because not part of the metadata
+    empty_cells_per_column: dict = dataclasses.field(default_factory=dict)  # { "column_name": X }
+    failed_api_calls: dict = dataclasses.field(default_factory=dict)  # { "ontology/id_code": api_error, ... }
+    unknown_categorical_values: dict = dataclasses.field(default_factory=dict)  # { column_name: [ set of unknown categorical values ], ... }
+    unknown_boolean_values: dict = dataclasses.field(default_factory=dict)  # { column_name: [ set of unknown categorical boolean values ], ... }
+    numerical_values_unmatched_unit: dict = dataclasses.field(default_factory=dict)  # { column_name: { value: { "expected_dim": exp_dim, "current_unit": curr_unit }, ... }, ... }
+    non_numeric_values_with_unit: dict = dataclasses.field(default_factory=dict)  # { column_name: { value: curr_dim, ... }, ... }
+    
     def add_column_with_no_ontology(self, column_name: str):
         if self.record_stats and column_name not in self.columns_no_ontology:
             self.columns_no_ontology.append(column_name)
@@ -73,9 +70,9 @@ class QualityStatistics(Statistics):
         else:
             self.empty_cells_per_column[column_name] += 1
 
-    def add_failed_api_call(self, ontology_name: str, id_code: str, api_error: str):
-        if self.record_stats and f"{ontology_name}/{id_code}" not in self.failed_api_calls:
-            self.failed_api_calls[f"{ontology_name}/{id_code}"] = api_error
+    def add_failed_api_call(self, system: str, code: str, api_error: str):
+        if self.record_stats and f"{system}/{code}" not in self.failed_api_calls:
+            self.failed_api_calls[f"{system}/{code}"] = api_error
 
     def add_unknown_categorical_value(self, column_name: str, categorical_value: str):
         if self.record_stats:

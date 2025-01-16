@@ -29,7 +29,7 @@ class Load(Task):
             self.create_db_indexes()
 
     def load_records(self) -> None:
-        self.time_stats.start(dataset=self.dataset_key, key=TimerKeys.WRITE_RECORDS_IN_DB)
+        self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.WRITE_RECORDS_IN_DB)
         log.info(f"load {self.profile} records")
         # we need to have registered_by, has_subject and instantiates for sure
         # we also need entity_type because we cannot have two indexes, one for non-clinical (reg, subj, inst) and one for clinical (reg, subj, inst, bid)
@@ -40,7 +40,7 @@ class Load(Task):
             unique_variables.append(DiagnosisColumns.DISEASE_COUNTER)
         log.info(unique_variables)
         self.database.load_json_in_table(profile=self.profile, table_name=TableNames.RECORD, unique_variables=unique_variables, dataset_number=self.dataset_number, time_stats=self.time_stats, dataset=self.dataset_key)
-        self.time_stats.increment(dataset=self.dataset_key, key=TimerKeys.WRITE_RECORDS_IN_DB)
+        self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.WRITE_RECORDS_IN_DB)
 
     def create_db_indexes(self) -> None:
         log.info(f"Creating indexes.")

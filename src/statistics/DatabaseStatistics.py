@@ -1,3 +1,5 @@
+import dataclasses
+
 from database.Database import Database
 from enums.TableNames import TableNames
 from statistics.Statistics import Statistics
@@ -5,18 +7,14 @@ from utils.mongodb_utils import jsonify_tuple
 
 
 class DatabaseStatistics(Statistics):
-    def __init__(self, record_stats: bool):
-        super().__init__(record_stats)
-
-        # counts over the database after the ETL has finished
-        self.counts_instances = {}
-        self.records_with_no_value = {}
-        self.records_with_no_value_per_instantiate = {}
-        self.cc_with_no_text_per_table = {}
-        self.cc_with_no_onto_resource_per_table = {}
-        self.unknown_patient_refs_per_table = {}
-        self.unknown_hospital_refs_per_table = {}
-        self.unknown_feat_refs_in_records = {}
+    counts_instances: dict = dataclasses.field(default_factory=dict)
+    records_with_no_value: dict = dataclasses.field(default_factory=dict)
+    records_with_no_value_per_instantiate: dict = dataclasses.field(default_factory=dict)
+    cc_with_no_text_per_table: dict = dataclasses.field(default_factory=dict)
+    cc_with_no_onto_resource_per_table: dict = dataclasses.field(default_factory=dict)
+    unknown_patient_refs_per_table: dict = dataclasses.field(default_factory=dict)
+    unknown_hospital_refs_per_table: dict = dataclasses.field(default_factory=dict)
+    unknown_feat_refs_in_records: dict = dataclasses.field(default_factory=dict)
 
     def compute_stats(self, database: Database):
         if self.record_stats:

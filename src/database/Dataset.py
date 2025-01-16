@@ -1,7 +1,7 @@
+import dataclasses
+import json
 import uuid
 from datetime import datetime
-
-import jsonpickle
 
 from constants.defaults import DATASET_GLOBAL_IDENTIFIER_PREFIX, NO_ID
 from database.Counter import Counter
@@ -13,11 +13,20 @@ from database.Operators import Operators
 from utils.setup_logger import log
 
 
+@dataclasses.dataclass(kw_only=True)
 class Dataset(Resource):
-    def __init__(self, database: Database, docker_path: str, version_notes: str, license: str, counter: Counter):
-        super().__init__(id_value=NO_ID, entity_type=TableNames.DATASET, counter=counter)
-        self.database = database
-        self.docker_path = docker_path
+    database: Database
+    docker_path: str
+    global_identifier: str = dataclasses.field(init=False)
+    version: str = dataclasses.field(init=False)
+    release_date: datetime.date = dataclasses.field(init=False)
+    last_update: datetime.date = dataclasses.field(init=False)
+    version_notes: str
+    license: str
+    profile: DatasetProfile = dataclasses.field(init=False)
+
+    def __post_init__(self):
+        super().__post_init__()
         log.info(self.docker_path)
         results = self.database.find_operation(table_name=TableNames.DATASET, filter_dict={"docker_path": self.docker_path}, projection={})
         from_database = False
@@ -38,8 +47,6 @@ class Dataset(Resource):
             self.version = "1"  # computed by incrementing the previous version (obtained from the db) - starts at 1
             self.release_date = datetime.now().date()
             self.last_update = datetime.now().date()
-            self.version_notes = version_notes
-            self.license = license
         log.info(self.global_identifier)
         self.profile = DatasetProfile(description="", theme="", filetype="", size=0, nb_tuples=0, completeness=0, uniqueness=0)
 
@@ -47,27 +54,12 @@ class Dataset(Resource):
     def compute_global_identifier(cls) -> str:
         return DATASET_GLOBAL_IDENTIFIER_PREFIX + str(uuid.uuid4())
 
-    def __getstate__(self):
-        # we need to check whether each field is a NaN value because we do not want to add fields for NaN values
-        state = self.__dict__.copy()
-        # trick: we need to work on the copy of the keys to not directly work on them
-        # otherwise, Concurrent modification error
-        for key in list(state.keys()):
-            if state[key] is None or type(state[key]) is Database:
-                del state[key]
-            else:
-                # we may also need to convert datetime within MongoDB-style dates
-                if isinstance(state[key], datetime):
-                    state[key] = Operators.from_datetime_to_isodate(state[key])
-        return state
-
     def to_json(self):
-        # encode creates a stringified JSON object of the class
-        # and decode transforms the stringified JSON to a "real" JSON object
-        return jsonpickle.decode(jsonpickle.encode(self, unpicklable=False))
-
-    def __str__(self) -> str:
-        return jsonpickle.encode(self, unpicklable=False)
-
-    def __repr__(self) -> str:
-        return jsonpickle.encode(self, unpicklable=False)
+        return dataclasses.asdict(
+            self,
+            dict_factory=lambda fields: {
+                key: Operators.from_datetime_to_isodate(value) if isinstance(value, datetime) else value
+                for (key, value) in fields
+                if value is not None and not isinstance(value, Database)
+            },
+        )

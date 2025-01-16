@@ -193,13 +193,13 @@ class Database:
                         log.info(f"For profile {profile}, creating unique index {unique_variables}")
                         self.create_unique_index(table_name=table_name, columns={elem: 1 for elem in unique_variables})
                         first_file = False
-                    time_stats.start(dataset=dataset, key=TimerKeys.DB_BSON_SERIALIZATION_TIME)
+                    time_stats.start_timer(dataset=dataset, key=TimerKeys.LOAD_JSON_IN_MONGO)
                     tuples = bson.json_util.loads(json_datafile.read())
-                    time_stats.increment(dataset=dataset, key=TimerKeys.DB_BSON_SERIALIZATION_TIME)
+                    time_stats.increment_timer(dataset=dataset, key=TimerKeys.LOAD_JSON_IN_MONGO)
                     log.debug(f"Table {table_name}, file {filename}, loading {len(tuples)} tuples with unique variables being {unique_variables}")
-                    time_stats.start(dataset=dataset, key=TimerKeys.UPSERT_TUPLES)
+                    time_stats.start_timer(dataset=dataset, key=TimerKeys.UPSERT_TUPLES)
                     self.upsert_one_batch_of_tuples(table_name=table_name, unique_variables=unique_variables, the_batch=tuples, ordered=ordered)
-                    time_stats.increment(dataset=dataset, key=TimerKeys.UPSERT_TUPLES)
+                    time_stats.increment_timer(dataset=dataset, key=TimerKeys.UPSERT_TUPLES)
 
     def find_operation(self, table_name: str, filter_dict: dict, projection: dict) -> Cursor:
         """
@@ -305,6 +305,8 @@ class Database:
             operations.append(Operators.limit(1))
         cursor = self.db[table_name].aggregate(operations)
         for result in cursor:
+            log.info(result)
+            log.info(field)
             # There should be only one result, so we can return directly the min or max value
             # if from_string:
             #     return result["min_max"]

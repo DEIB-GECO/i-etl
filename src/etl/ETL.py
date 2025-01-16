@@ -4,6 +4,7 @@ import os
 import pandas as pd
 
 from catalogue.FeatureProfileComputation import FeatureProfileComputation
+from constants.defaults import NO_ID
 from constants.structure import DOCKER_FOLDER_DATA
 from database.Counter import Counter
 from database.Database import Database
@@ -45,7 +46,7 @@ class ETL:
 
     def run(self) -> None:
         time_stats = TimeStatistics(record_stats=True)
-        time_stats.start(dataset=None, key=TimerKeys.TOTAL_TIME)
+        time_stats.start_timer(dataset=None, key=TimerKeys.TOTAL_TIME)
         compute_indexes = False
         dataset_number = 0
         file_counter = 0
@@ -72,7 +73,7 @@ class ETL:
 
                 # create a new Dataset instance
                 counter.set_with_database(database=self.database)
-                current_dataset_instance = Dataset(database=self.database, docker_path=self.execution.current_filepath, version_notes=None, license=None, counter=counter)
+                current_dataset_instance = Dataset(identifier=NO_ID, database=self.database, docker_path=self.execution.current_filepath, version_notes=None, license=None, counter=counter)
                 self.datasets.append(current_dataset_instance)
                 self.execution.current_dataset_identifier = current_dataset_instance.global_identifier
 
@@ -82,7 +83,7 @@ class ETL:
                     raise ValueError(f"The current dataset ({one_filename}) is not described in the provided metadata file.")
                 else:
                     log.info(f"--- Extract metadata for file '{self.execution.current_filepath}', with number {self.execution.current_file_number}")
-                    metadata = pd.DataFrame(all_metadata[all_metadata[MetadataColumns.DATASET_NAME] == one_filename])
+                    metadata = pd.DataFrame(all_metadata[all_metadata[MetadataColumns.DATASET_NAME].values == one_filename])
 
                     log.info(f"--- Starting to transform file '{self.execution.current_filepath}', with number {self.execution.current_file_number}")
                     # we have to iterate over all profiles associated to the dataset because we cannot do it in the Extract
@@ -101,15 +102,15 @@ class ETL:
                             compute_indexes = True
 
                         # EXTRACT
-                        time_stats.start(dataset=current_dataset_instance.global_identifier, key=TimerKeys.EXTRACT_TIME)
+                        time_stats.start_timer(dataset=current_dataset_instance.global_identifier, key=TimerKeys.EXTRACT_TIME)
                         self.extract = Extract(metadata=metadata, profile=profile, database=self.database, execution=self.execution, quality_stats=quality_stats, time_stats=time_stats, dataset_key=current_dataset_instance.global_identifier)
                         self.extract.run()
-                        time_stats.increment(dataset=current_dataset_instance.global_identifier, key=TimerKeys.EXTRACT_TIME)
+                        time_stats.increment_timer(dataset=current_dataset_instance.global_identifier, key=TimerKeys.EXTRACT_TIME)
 
                         if self.extract.metadata is not None:
                             log.info(f"running transform on dataset {self.execution.current_filepath} with profile {profile}")
                             # TRANSFORM
-                            time_stats.start(dataset=current_dataset_instance.global_identifier, key=TimerKeys.TRANSFORM_TIME)
+                            time_stats.start_timer(dataset=current_dataset_instance.global_identifier, key=TimerKeys.TRANSFORM_TIME)
                             self.transform = Transform(database=self.database, execution=self.execution, data=self.extract.data,
                                                        metadata=self.extract.metadata,
                                                        mapping_categorical_value_to_onto_resource=self.extract.mapping_categorical_value_to_onto_resource,
@@ -120,11 +121,11 @@ class ETL:
                                                        dataset_number=dataset_number, file_counter=file_counter, dataset_key=current_dataset_instance,
                                                        quality_stats=quality_stats, time_stats=time_stats)
                             self.transform.run()
-                            time_stats.increment(dataset=current_dataset_instance.global_identifier, key=TimerKeys.TRANSFORM_TIME)
+                            time_stats.increment_timer(dataset=current_dataset_instance.global_identifier, key=TimerKeys.TRANSFORM_TIME)
                             file_counter = self.transform.file_counter
 
                             # LOAD
-                            time_stats.start(dataset=current_dataset_instance.global_identifier, key=TimerKeys.LOAD_TIME)
+                            time_stats.start_timer(dataset=current_dataset_instance.global_identifier, key=TimerKeys.LOAD_TIME)
                             log.info(f"{one_filename} -> {compute_indexes}")
                             # create indexes only if this is the last file (otherwise, we would create useless intermediate indexes)
                             self.load = Load(database=self.database, execution=self.execution, create_indexes=compute_indexes,
@@ -132,33 +133,33 @@ class ETL:
                                              quality_stats=quality_stats, time_stats=time_stats,
                                              dataset_key=current_dataset_instance.global_identifier)
                             self.load.run()
-                            time_stats.increment(dataset=current_dataset_instance.global_identifier, key=TimerKeys.LOAD_TIME)
+                            time_stats.increment_timer(dataset=current_dataset_instance.global_identifier, key=TimerKeys.LOAD_TIME)
                 self.execution.current_file_number += 1
 
         # save the datasets in the DB
-        time_stats.start(dataset=None, key=TimerKeys.INSERT_DATASETS)
+        time_stats.start_timer(dataset=None, key=TimerKeys.INSERT_DATASETS)
         if self.database is not None and len(self.datasets) > 0:
             log.info([dataset.to_json() for dataset in self.datasets])
             self.database.upsert_one_batch_of_tuples(table_name=TableNames.DATASET, unique_variables=["docker_path"], the_batch=[dataset.to_json() for dataset in self.datasets], ordered=False)
             # for Dataset entity only, we create an index on the global identifier
             self.database.create_unique_index(table_name=TableNames.DATASET, columns={"global_identifier": 1})
-        time_stats.increment(dataset=None, key=TimerKeys.INSERT_DATASETS)
+        time_stats.increment_timer(dataset=None, key=TimerKeys.INSERT_DATASETS)
         # compute their profiles
-        time_stats.start(dataset=None, key=TimerKeys.PROFILE_COMPUTATION)
+        time_stats.start_timer(dataset=None, key=TimerKeys.PROFILE_COMPUTATION)
         self.profile_computation = FeatureProfileComputation(database=self.database)
         self.profile_computation.compute_features_profiles()
-        time_stats.increment(dataset=None, key=TimerKeys.PROFILE_COMPUTATION)
+        time_stats.increment_timer(dataset=None, key=TimerKeys.PROFILE_COMPUTATION)
         # compute DB stats
-        time_stats.start(dataset=None, key=TimerKeys.STATISTICS_TIME)
+        time_stats.start_timer(dataset=None, key=TimerKeys.STATISTICS_TIME)
         db_stats = DatabaseStatistics(record_stats=True)
         db_stats.compute_stats(database=self.database)
-        time_stats.increment(dataset=None, key=TimerKeys.STATISTICS_TIME)
+        time_stats.increment_timer(dataset=None, key=TimerKeys.STATISTICS_TIME)
         # compute the final report with all the stats
-        time_stats.start(dataset=None, key=TimerKeys.REPORT_TIME)
+        time_stats.start_timer(dataset=None, key=TimerKeys.REPORT_TIME)
         self.reporting = Reporting(database=self.database, execution=self.execution, quality_stats=quality_stats, time_stats=time_stats, db_stats=db_stats, dataset_key=None)
         self.reporting.run()
-        time_stats.increment(dataset=None, key=TimerKeys.REPORT_TIME)
-        time_stats.increment(dataset=None, key=TimerKeys.TOTAL_TIME)
+        time_stats.increment_timer(dataset=None, key=TimerKeys.REPORT_TIME)
+        time_stats.increment_timer(dataset=None, key=TimerKeys.TOTAL_TIME)
 
     def create_hospital(self, counter: Counter, dataset_number: int, file_counter: int, time_stats: TimeStatistics, dataset_key: str) -> int:
         log.info(f"create hospital instance in memory")
@@ -170,10 +171,12 @@ class ETL:
             hospital_exists = True
         if not hospital_exists:
             # the hospital does not exist because we have reset the database, we create a new one
-            new_hospital = Hospital(name=self.execution.hospital_name, counter=counter)
+            new_hospital = Hospital(identifier=NO_ID, name=self.execution.hospital_name, counter=counter)
+            log.info(new_hospital)
             hospitals = [new_hospital]
             write_in_file(resource_list=hospitals, current_working_dir=self.execution.working_dir_current,
-                          profile=TableNames.HOSPITAL, is_feature=False, dataset_number=dataset_number, file_counter=file_counter)
+                          profile=TableNames.HOSPITAL, is_feature=False, dataset_number=dataset_number, file_counter=file_counter,
+                          time_stats=time_stats, dataset=dataset_key)
             file_counter += 1
             self.database.load_json_in_table(profile=TableNames.HOSPITAL, table_name=TableNames.HOSPITAL, unique_variables=["name"], dataset_number=dataset_number, time_stats=time_stats, dataset=dataset_key)
         return file_counter
