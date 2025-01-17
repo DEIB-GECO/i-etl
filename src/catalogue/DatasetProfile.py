@@ -1,6 +1,7 @@
 import dataclasses
+import json
 
-from utils.setup_logger import log
+from constants.methods import factory
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -14,15 +15,8 @@ class DatasetProfile:
     uniqueness: float
 
     def to_json(self):
-        return dataclasses.asdict(self, dict_factory=factory)
+        return {"ds_profile": "the_ds_profile"}
+        # return dataclasses.asdict(self, dict_factory=factory)
 
-
-def factory(data):
-    log.info(data)
-    res = {
-        key: value
-        for (key, value) in data
-        if value is not None
-    }
-    log.info(res)
-    return res
+    def __str__(self):
+        return json.dumps(self.to_json())

@@ -1,4 +1,7 @@
+import dataclasses
+import json
 import os
+from typing import Any
 
 import bson
 import pymongo
@@ -7,6 +10,7 @@ from pymongo import MongoClient
 from pymongo.command_cursor import CommandCursor
 from pymongo.cursor import Cursor
 
+from constants.methods import factory
 from database.Execution import Execution
 from enums.TableNames import TableNames
 from database.Operators import Operators
@@ -14,6 +18,7 @@ from enums.TimerKeys import TimerKeys
 from utils.setup_logger import log
 
 
+@dataclasses.dataclass(kw_only=True)
 class Database:
     """
     The class Database represents the underlying MongoDB database: the connection, the database itself and
@@ -21,15 +26,17 @@ class Database:
     """
 
     SERVER_TIMEOUT = 5000
+    execution: Execution
+    # DO NOT DECLARE THOSE FIELDS HERE TO NOT ADD THEM TO ASDICT(),
+    # because they are not thread-safe, thus are not pickable, thus cannot be jsonified
+    # client: MongoClient = dataclasses.field(init=False, repr=False)
+    # db: Any = dataclasses.field(init=False, repr=False)
 
-    def __init__(self, execution: Execution):
+    def __post_init__(self):
         """
         Initiate a new connection to a MongoDB client, reachable based on the given connection string, and initialize
         class members.
         """
-        self.execution = execution
-        self.client = None
-        self.db = None
 
         # 1. connect to the Mongo client
         try:
@@ -41,6 +48,7 @@ class Database:
             # Instead, the constructor returns immediately and launches the connection process on background threads.
             # You can check if the server is available with a ping.
             self.client = MongoClient(host=self.execution.db_connection, serverSelectionTimeoutMS=Database.SERVER_TIMEOUT)  # timeout after 5 sec instead of 20 (the default)
+            log.info(type(self.client))
         except Exception:
             raise ConnectionError(f"Could not connect to the MongoDB client located at {self.execution.db_connection} and with a timeout of {Database.SERVER_TIMEOUT} ms.")
 
@@ -54,11 +62,13 @@ class Database:
         if self.execution.db_drop:
             self.drop_db()
             self.db = self.client[self.execution.db_name]
+            log.info(type(self.db))
             self.drop_table(table_name=TableNames.STATS_DB)
             self.drop_table(table_name=TableNames.STATS_TIME)
             self.drop_table(table_name=TableNames.STATS_QUALITY)
         else:
             self.db = self.client[self.execution.db_name]
+            log.info(type(self.db))
 
         log.debug(f"the connection string is: {self.execution.db_connection}")
         log.debug(f"the new MongoClient is: {self.client}")
@@ -350,3 +360,15 @@ class Database:
             if db['name'] == db_name:
                 return True
         return False
+
+    def to_json(self):
+        # for this class specifically, we cannot use the default factory
+        # because PyMongo objects are not serializable
+        return dataclasses.asdict(self, dict_factory=factory)
+        # return {
+        #     "execution": self.execution.to_json(),
+        #     "mongo_client": str(self.client)
+        # }
+
+    def __str__(self):
+        return json.dumps(self.to_json())

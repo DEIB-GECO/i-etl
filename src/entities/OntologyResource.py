@@ -1,9 +1,11 @@
 import dataclasses
+import json
 import re
 from datetime import datetime, date, time
 from urllib.parse import quote
 
 from constants.defaults import SNOMED_OPERATORS_LIST, DEFAULT_ONTOLOGY_RESOURCE_LABEL, SNOMED_OPERATORS_STR
+from constants.methods import factory
 from database.Counter import Counter
 from database.Database import Database
 from database.Operators import Operators
@@ -115,7 +117,6 @@ class OntologyResource:
     @classmethod
     def get_resource_label_from_api(cls, system: str, single_code: str, quality_stats: QualityStatistics, time_stats: TimeStatistics, dataset_key: str) -> str:
         # column_name is to be used when the label of the OntologyResource could not be computed with any of the APIs
-        log.info(f"{system} vs. {Ontologies.SNOMEDCT["url"]} vs. {Ontologies.LOINC["url"]}")
         compute_from_api = True
         if compute_from_api:
             try:
@@ -310,6 +311,9 @@ class OntologyResource:
     def to_json(self):
         return dataclasses.asdict(self, dict_factory=factory)
 
+    # def __str__(self):
+    #     return json.dumps(self.to_json())
+
     @classmethod
     def from_json(cls, json_or: dict, quality_stats: QualityStatistics, time_stats: TimeStatistics, dataset_key: str):  # returns an OntologyResource
         # fill a new OntologyResource instance with a JSON-encoded OntologyResource
@@ -327,12 +331,3 @@ class OntologyResource:
         return self.system == other.system and self.code == other.code
 
 
-def factory(data):
-    log.info(data)
-    res = {
-        key: Operators.from_datetime_to_isodate(value) if isinstance(value, (datetime, date, time)) else value
-        for (key, value) in data
-        if value is not None and not isinstance(value, (Database, Counter, QualityStatistics, TimeStatistics, DatabaseStatistics))
-    }
-    log.info(res)
-    return res

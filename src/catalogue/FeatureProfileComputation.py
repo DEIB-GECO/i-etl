@@ -1,7 +1,10 @@
 import copy
+import dataclasses
+import json
 
 import numpy as np
 
+from constants.methods import factory
 from database.Database import Database
 from enums.DataTypes import DataTypes
 from enums.Profile import Profile
@@ -10,10 +13,11 @@ from database.Operators import Operators
 from utils.setup_logger import log
 
 
+@dataclasses.dataclass(kw_only=True)
 class FeatureProfileComputation:
-    def __init__(self, database: Database):
-        self.database = database
+    database: Database
 
+    def __post_init__(self):
         # store, for each dataset, the total number of patients to compute the missing percentage
         operations = [
             Operators.match(field=None, value={"entity_type": {"$ne": f"{Profile.CLINICAL}{TableNames.RECORD}"}}, is_regex=False),
@@ -738,3 +742,9 @@ class FeatureProfileComputation:
                             when_matched="merge",
                             when_not_matched="insert"))
         return last_fields
+
+    def to_json(self):
+        return dataclasses.asdict(self, dict_factory=factory)
+
+    def __str__(self):
+        return json.dumps(self.to_json())

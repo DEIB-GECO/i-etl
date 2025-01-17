@@ -1,19 +1,25 @@
+import copy
 import dataclasses
 import datetime
 import json
 import os
 import pickle
+import threading
 
 import bson
 import jsonpickle
 import pandas as pd
 import pymongo
 import ujson
+from dotenv import load_dotenv
 from pymongo.mongo_client import MongoClient
 
 from constants.defaults import NO_ID
+from constants.methods import factory
 from database.Counter import Counter
+from database.Database import Database
 from database.Dataset import Dataset
+from database.Execution import Execution
 from database.Operators import Operators
 from entities.ClinicalRecord import ClinicalRecord
 from entities.OntologyResource import OntologyResource
@@ -300,101 +306,41 @@ def main_na_pandas():
             value = row[df.columns.get_loc(column_name)]
             print(f"      '{value}' (type={type(value)}, None={value is None}, Null={pd.isnull(value)}, empty={value==""})")
 
-@dataclasses.dataclass(kw_only=True)
-class PersonModel:
-    age: int = 20
-    first_name: str = "Brad"
-    last_name: str = "Pitt"
 
-    def to_json1(self, include_null=False) -> dict:
-        return dataclasses.asdict(
-            self,
-            dict_factory=lambda fields: {
-                key: value
-                for (key, value) in fields
-                if value is not None or include_null
-            },
-        )
-
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        for key in list(state.keys()):
-            if state[key] is None:  # we keep explicit NaN values
-                del state[key]
-        return state
-
-    def to_json2(self):
-        # encode creates a stringified JSON object of the class
-        # and decode transforms the stringified JSON to a "real" JSON object
-        return jsonpickle.decode(jsonpickle.encode(self, unpicklable=False))
-
-
-@dataclasses.dataclass(kw_only=True)
-class Animal:
-    personal_id: int
-    nb_feet: int
-    timestamp: datetime = dataclasses.field(init=False)
+@dataclasses.dataclass
+class MyParent:
+    parent_a: str
 
     def __post_init__(self):
-        self.timestamp = Operators.from_datetime_to_isodate(datetime.datetime.now())
-        if self.personal_id == NO_ID:
-            self.personal_id = 999
-        self.id_value = None
+        self.parent_a += "ZZZ"
 
     def to_json(self):
-        return dataclasses.asdict(
-            self,
-            dict_factory=lambda fields: {
-                key: value
-                for (key, value) in fields
-                if value is not None
-            }
-        )
+        return dataclasses.asdict(self, dict_factory=factory)
+
+    def __str__(self):
+        return json.dumps(self.to_json())
+
+@dataclasses.dataclass
+class MyChild(MyParent):
+    child_a: str
 
 
-@dataclasses.dataclass(kw_only=True)
-class Dog(Animal):
-    breed: str
-    test: str
-    profile: str = dataclasses.field(init=False)
-
-    def __post_init__(self):
-        super().__post_init__()
-        self.test = None
-        self.profile = f"Dog"
+@dataclasses.dataclass
+class MyGrandChild(MyChild):
+    grand_child_a: str
+    my_type: str = "COUCOU"
 
 
 def main_jsonify():
-    # animal = Animal(personal_id=NO_ID, nb_feet=4)
-    # log.info(animal)
-    # log.info(animal.to_json())
-    # dog = Dog(personal_id=10, nb_feet=4, breed="Big dog", test="ici")
-    # log.info(dog)
-    # log.info(dog.to_json())
-
-    # brad = PersonModel()
-    # print(brad)  # PersonModel(age=20, first_name='Brad', last_name='Pitt')
-    # start_time = time.time()
-    # print(brad.to_json1())  # {'age': 20, 'firstName': 'Brad', 'lastName': 'Pitt'}
-    # print(f"time for to_json1(): {time.time() - start_time}")
-    # start_time = time.time()
-    # print(brad.to_json2())  # {'age': 20, 'firstName': 'Brad', 'lastName': 'Pitt'}
-    # print(f"time for to_json2(): {time.time() - start_time}")
+    # my_first_parent = MyParent(parent_a="1")
+    # my_first_child = MyChild(parent_a="2", child_a="3")
+    # my_first_grandchild = MyGrandChild(parent_a="4", child_a="5", grand_child_a="6")
+    # log.info(my_first_parent)
+    # log.info(my_first_child)
+    # log.info(my_first_grandchild)
 
     c = Counter()
     c.set(100)
-    record = Record(
-        has_subject=1,
-        instantiates=2,
-        registered_by=3,
-        value=None,
-        counter=c,
-        dataset="/the/dataset/url",
-        identifier=NO_ID
-    )
-    log.info(record)
-    log.info(record.to_json())
-
     ph_record = PhenotypicRecord(
         has_subject=1,
         instantiates=2,
@@ -405,11 +351,6 @@ def main_jsonify():
         identifier=NO_ID
     )
     log.info(ph_record)
-    log.info(ph_record.to_json())
-
-    dataset = Dataset(identifier=NO_ID, counter=c, database=None, docker_path="bla", version_notes="An update", license=None)
-    log.info(dataset)
-    log.info(dataset.to_json())
 
 
 if __name__ == '__main__':

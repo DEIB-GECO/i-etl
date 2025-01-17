@@ -324,7 +324,6 @@ class Transform(Task):
                                     diagnosis_counter = None
                             else:
                                 diagnosis_counter = None
-                            # log.info(f"creating a new DiagnosisRecord with counter being {diagnosis_counter}")
                             new_record = DiagnosisRecord(identifier=NO_ID,
                                                          instantiates=feature_id,
                                                          has_subject=patient_id,
@@ -480,10 +479,10 @@ class Transform(Task):
             row = rows.iloc[0]
             onto_code = row.iloc[self.metadata.columns.get_loc(MetadataColumns.ONTO_CODE)]
             if len(onto_code) > 0:
-                onto_name = Ontologies.get_enum_from_name(row.iloc[self.metadata.columns.get_loc(MetadataColumns.ONTO_NAME)])
-                if type(onto_name) is dict:
+                onto_system = Ontologies.get_enum_from_name(row.iloc[self.metadata.columns.get_loc(MetadataColumns.ONTO_NAME)])
+                if type(onto_system) is dict and len(onto_system) > 0:
                     self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.OR_CREATION_TIME)
-                    the_or = OntologyResource(system=onto_name, code=onto_code, label=None,
+                    the_or = OntologyResource(system=onto_system, code=onto_code, label=None,
                                               quality_stats=self.quality_stats, time_stats=self.time_stats, dataset_key=self.dataset_key)
                     self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.OR_CREATION_TIME)
                     return the_or

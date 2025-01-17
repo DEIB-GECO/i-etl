@@ -12,7 +12,7 @@ from utils.setup_logger import log
 
 @dataclasses.dataclass(kw_only=True)
 class Dataset(Resource):
-    database: Database
+    database: Database = dataclasses.field(repr=False)
     docker_path: str
     global_identifier: str = dataclasses.field(init=False)
     version: str = dataclasses.field(init=False)

@@ -138,6 +138,9 @@ class ETL:
 
         # save the datasets in the DB
         time_stats.start_timer(dataset=None, key=TimerKeys.INSERT_DATASETS)
+        log.info(len(self.datasets))
+        log.info(self.datasets[0])
+        log.info(self.datasets)
         if self.database is not None and len(self.datasets) > 0:
             log.info([dataset.to_json() for dataset in self.datasets])
             self.database.upsert_one_batch_of_tuples(table_name=TableNames.DATASET, unique_variables=["docker_path"], the_batch=[dataset.to_json() for dataset in self.datasets], ordered=False)
@@ -146,6 +149,7 @@ class ETL:
         time_stats.increment_timer(dataset=None, key=TimerKeys.INSERT_DATASETS)
         # compute their profiles
         time_stats.start_timer(dataset=None, key=TimerKeys.PROFILE_COMPUTATION)
+        log.info("profile computation")
         self.profile_computation = FeatureProfileComputation(database=self.database)
         self.profile_computation.compute_features_profiles()
         time_stats.increment_timer(dataset=None, key=TimerKeys.PROFILE_COMPUTATION)
