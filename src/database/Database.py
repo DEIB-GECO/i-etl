@@ -233,7 +233,8 @@ class Database:
     def inverse_inner_join(self, name_table_1: str, name_table_2: str, foreign_field: str, local_field: str, lookup_name: str) -> CommandCursor:
         operations = [
             Operators.lookup(join_table_name=name_table_2, foreign_field=foreign_field, local_field=local_field, lookup_field_name=lookup_name),
-            Operators.match(field=lookup_name, value={"$eq": []}, is_regex=False)
+            Operators.match(field=lookup_name, value={"$eq": []}, is_regex=False),
+            Operators.set_variables([{"name": "_id", "operation": 0}])
         ]
         return self.db[name_table_1].aggregate(operations)
 
@@ -342,9 +343,6 @@ class Database:
                 # the table is not created yet (this happens when we start from a fresh new DB, thus we skip this)
                 pass
         return max_value
-
-    def __str__(self) -> str:
-        return f"Database {self.execution.db_name}"
 
     def db_exists(self, db_name: str) -> bool:
         list_dbs = self.client.list_databases()

@@ -1,7 +1,8 @@
 import dataclasses
 import time
 
-from statistics.Statistics import Statistics
+from database.Operators import Operators
+from statistics.Statistics import Statistics, factory
 from utils.setup_logger import log
 
 
@@ -36,13 +37,3 @@ class TimeStatistics(Statistics):
         else:
             self.stats[dataset][key] = {}
             self.stats[dataset][key]["count"] = value
-
-    def to_json(self):
-        return dataclasses.asdict(
-            self,
-            dict_factory=lambda fields: {
-                key: value
-                for (key, value) in fields
-                if value is not None
-            },
-        )

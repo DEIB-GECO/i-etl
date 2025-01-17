@@ -13,9 +13,11 @@ from pymongo.mongo_client import MongoClient
 
 from constants.defaults import NO_ID
 from database.Counter import Counter
+from database.Dataset import Dataset
 from database.Operators import Operators
 from entities.ClinicalRecord import ClinicalRecord
 from entities.OntologyResource import OntologyResource
+from entities.PhenotypicRecord import PhenotypicRecord
 from entities.Record import Record
 from entities.Resource import Resource
 from enums.MetadataColumns import MetadataColumns
@@ -385,14 +387,29 @@ def main_jsonify():
         has_subject=1,
         instantiates=2,
         registered_by=3,
-        value="blabla",
+        value=None,
         counter=c,
         dataset="/the/dataset/url",
-        entity_type="Record",
         identifier=NO_ID
     )
     log.info(record)
     log.info(record.to_json())
+
+    ph_record = PhenotypicRecord(
+        has_subject=1,
+        instantiates=2,
+        registered_by=3,
+        value=None,
+        counter=c,
+        dataset="/the/dataset/url",
+        identifier=NO_ID
+    )
+    log.info(ph_record)
+    log.info(ph_record.to_json())
+
+    dataset = Dataset(identifier=NO_ID, counter=c, database=None, docker_path="bla", version_notes="An update", license=None)
+    log.info(dataset)
+    log.info(dataset.to_json())
 
 
 if __name__ == '__main__':

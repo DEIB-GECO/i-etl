@@ -1,15 +1,16 @@
 import dataclasses
-import json
 import re
-from datetime import datetime
+from datetime import datetime, date, time
 from urllib.parse import quote
 
 from constants.defaults import SNOMED_OPERATORS_LIST, DEFAULT_ONTOLOGY_RESOURCE_LABEL, SNOMED_OPERATORS_STR
 from database.Counter import Counter
+from database.Database import Database
 from database.Operators import Operators
 from enums.AccessTypes import AccessTypes
 from enums.Ontologies import Ontologies
 from enums.TimerKeys import TimerKeys
+from statistics.DatabaseStatistics import DatabaseStatistics
 from statistics.QualityStatistics import QualityStatistics
 from statistics.TimeStatistics import TimeStatistics
 from utils.api_utils import send_query_to_api, parse_xml_response, parse_json_response, parse_html_response
@@ -114,10 +115,11 @@ class OntologyResource:
     @classmethod
     def get_resource_label_from_api(cls, system: str, single_code: str, quality_stats: QualityStatistics, time_stats: TimeStatistics, dataset_key: str) -> str:
         # column_name is to be used when the label of the OntologyResource could not be computed with any of the APIs
+        log.info(f"{system} vs. {Ontologies.SNOMEDCT["url"]} vs. {Ontologies.LOINC["url"]}")
         compute_from_api = True
         if compute_from_api:
             try:
-                if system == Ontologies.SNOMEDCT:
+                if system == Ontologies.SNOMEDCT["url"]:
                     url_resource = quote(f"http://purl.bioontology.org/ontology/SNOMEDCT/{single_code}", safe="")
                     url = f"http://data.bioontology.org/ontologies/SNOMEDCT/classes/{url_resource}"
                     time_stats.start_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
@@ -137,7 +139,7 @@ class OntologyResource:
                         error = f"Failed connection to SNOMED-CT API."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
-                elif system == Ontologies.LOINC:
+                elif system == Ontologies.LOINC["url"]:
                     url = f"https://loinc.regenstrief.org/searchapi/loincs?query={single_code}"
                     time_stats.start_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
                     response = send_query_to_api(url=url, secret="nbarret d7=47@xiz$g=-Ns", access_type=AccessTypes.AUTHENTICATION)
@@ -157,7 +159,7 @@ class OntologyResource:
                         error = f"Failed connection to SNOMED-CT API."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
-                elif system == Ontologies.PUBCHEM:
+                elif system == Ontologies.PUBCHEM["url"]:
                     url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{single_code}/description/JSON"
                     time_stats.start_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
                     response = send_query_to_api(url, secret=None, access_type=AccessTypes.USER_AGENT)
@@ -179,10 +181,10 @@ class OntologyResource:
                         error = f"Failed connection to PUBCHEM API."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
-                elif system == Ontologies.CLIR:
+                elif system == Ontologies.CLIR["url"]:
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error="No API access for the CLIR ontology.")
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
-                elif system == Ontologies.GSSO:
+                elif system == Ontologies.GSSO["url"]:
                     iri = f"http://purl.obolibrary.org/obo/{single_code.upper()}"  # we need to upper case the GSSO_, otherwise the API returns None
                     url = f"https://ontobee.org/ontology/GSSO?iri={iri}"
                     time_stats.start_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
@@ -218,7 +220,7 @@ class OntologyResource:
                         error = f"Failed connection to GSSO API."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
-                elif system == Ontologies.ORPHANET:
+                elif system == Ontologies.ORPHANET["url"]:
                     url = f"https://api.orphacode.org/EN/ClinicalEntity/orphacode/{single_code}/Name"
                     time_stats.start_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
                     response = send_query_to_api(url=url, secret="nbarret", access_type=AccessTypes.API_KEY_IN_HEADER)
@@ -237,7 +239,7 @@ class OntologyResource:
                         error = f"Failed connection to ORPHANET API."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
-                elif system == Ontologies.GENE_ONTOLOGY:
+                elif system == Ontologies.GENE_ONTOLOGY["url"]:
                     # as of 03/09/2024, this ontology is queried by accessing the webpage describing the resource
                     # it seems that there is an RDF query tool, but it is not sure that this can be queried as an API
                     # and there is no documentation on existing properties to query some codes
@@ -260,7 +262,7 @@ class OntologyResource:
                         error = f"Failed connection to GO API."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
-                elif system == Ontologies.OMIM:
+                elif system == Ontologies.OMIM["url"]:
                     # TODO NELLY: get OMIM API key (default one on OMIM website nfNEOscLNWWXdSmUoMLPPA is unauthorized)
                     url = f"https://api.omim.org/api/entry?mimNumber={single_code}&include=text&format=json"
                     time_stats.start_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
@@ -278,7 +280,7 @@ class OntologyResource:
                         error = f"Failed connection to OMIM API."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
-                elif system == Ontologies.HGNC:
+                elif system == Ontologies.HGNC["url"]:
                     url = f"https://rest.ensembl.org/xrefs/id/{single_code}?external_db=HGNC;content-type=application/json;all_levels=1"
                     time_stats.start_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
                     response = send_query_to_api(url=url, secret=None, access_type=AccessTypes.USER_AGENT)
@@ -306,14 +308,7 @@ class OntologyResource:
             return DEFAULT_ONTOLOGY_RESOURCE_LABEL
 
     def to_json(self):
-        return dataclasses.asdict(
-            self,
-            dict_factory=lambda fields: {
-                key: Operators.from_datetime_to_isodate(value) if isinstance(value, datetime) else value
-                for (key, value) in fields
-                if value is not None and not isinstance(value, Counter) and not isinstance(value, QualityStatistics) and not isinstance(value, TimeStatistics) and not isinstance(value, Database)
-            }
-        )
+        return dataclasses.asdict(self, dict_factory=factory)
 
     @classmethod
     def from_json(cls, json_or: dict, quality_stats: QualityStatistics, time_stats: TimeStatistics, dataset_key: str):  # returns an OntologyResource
@@ -330,3 +325,14 @@ class OntologyResource:
         # we do not use the display  because this would lead to unequal instances
         # if provided descriptions differ from one hospital to another
         return self.system == other.system and self.code == other.code
+
+
+def factory(data):
+    log.info(data)
+    res = {
+        key: Operators.from_datetime_to_isodate(value) if isinstance(value, (datetime, date, time)) else value
+        for (key, value) in data
+        if value is not None and not isinstance(value, (Database, Counter, QualityStatistics, TimeStatistics, DatabaseStatistics))
+    }
+    log.info(res)
+    return res
