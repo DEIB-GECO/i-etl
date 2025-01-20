@@ -4,7 +4,6 @@ import unittest
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from constants.structure import TEST_DB_NAME, DOCKER_FOLDER_TEST
 from database.Database import Database
@@ -18,9 +17,7 @@ from enums.Profile import Profile
 from enums.TheTestFiles import TheTestFiles
 from etl.Extract import Extract
 from statistics.QualityStatistics import QualityStatistics
-from statistics.TimeStatistics import TimeStatistics
 from utils.file_utils import read_tabular_file_as_string
-from utils.setup_logger import log
 from utils.test_utils import set_env_variables_from_dict
 
 
@@ -41,8 +38,8 @@ def my_setup(metadata_path: str, data_paths: str, data_type: str, pids_path: str
     # for tests, we need to manually set it because we have no ETL instance
     TestExtract.execution.current_filepath = os.path.join(DOCKER_FOLDER_TEST, data_paths)
     metadata = read_tabular_file_as_string(filepath=os.path.join(DOCKER_FOLDER_TEST, metadata_path))
-    database = Database(TestExtract.execution)
-    extract = Extract(metadata=metadata, profile=str(data_type), database=database, execution=TestExtract.execution, quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False))
+    database = Database(execution=TestExtract.execution)
+    extract = Extract(metadata=metadata, profile=str(data_type), database=database, execution=TestExtract.execution, quality_stats=QualityStatistics(record_stats=False))
     extract.filter_metadata_file()
     extract.normalize_metadata_file()
     extract.load_tabular_data()

@@ -1,11 +1,10 @@
-from database.Counter import Counter
-from datatypes.Identifier import Identifier
+import dataclasses
+
 from entities.Record import Record
 from enums.Profile import Profile
+from enums.TableNames import TableNames
 
 
+@dataclasses.dataclass(kw_only=True)
 class MedicineRecord(Record):
-    def __init__(self, value, feature_id: Identifier, patient_id: Identifier,
-                 hospital_id: Identifier, counter: Counter, dataset: str):
-        super().__init__(feature_id=feature_id, patient_id=patient_id, hospital_id=hospital_id,
-                         profile=Profile.MEDICINE, value=value, counter=counter, dataset=dataset)
+    entity_type: str = f"{Profile.MEDICINE}{TableNames.RECORD}"

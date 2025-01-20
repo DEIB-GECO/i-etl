@@ -33,6 +33,8 @@ class TheTestFiles(EnumAsClass):
     EXTR_CLINICAL_COL_CAT_PATH = "extr-data-clin-column-categorical.json"
     EXTR_GENOMICS_CATEGORICAL_PATH = "extr-data-gen-categorical.json"
     EXTR_PHENOTYPIC_UNITS_PATH = "extr-data-phen-column-to-unit.json"
+    EXTR_CLINICAL_TYPE_PATH = "extr-data-clin-column-to-type.json"
+    EXTR_PHENOTYPIC_TYPE_PATH = "extr-data-phen-column-to-type.json"
     EXTR_CLINICAL_UNITS_PATH = "extr-data-clin-column-to-unit.json"
     EXTR_PHENOTYPIC_DOMAIN_PATH = "extr-data-phen-column-to-domain.json"
     EXTR_CLINICAL_DOMAIN_PATH = "extr-data-clin-column-to-domain.json"

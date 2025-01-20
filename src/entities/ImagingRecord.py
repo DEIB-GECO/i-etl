@@ -1,15 +1,11 @@
-from typing import Any
+import dataclasses
 
-from datatypes.Identifier import Identifier
-from enums.Profile import Profile
 from entities.Record import Record
-from database.Counter import Counter
+from enums.Profile import Profile
+from enums.TableNames import TableNames
 
 
+@dataclasses.dataclass(kw_only=True)
 class ImagingRecord(Record):
-    def __init__(self, value: Any, scan: str, patient_id: Identifier, hospital_id: Identifier,
-                 feature_id: Identifier, counter: Counter, dataset: str):
-        super().__init__(feature_id=feature_id, patient_id=patient_id, hospital_id=hospital_id,
-                         value=value, profile=Profile.IMAGING, counter=counter, dataset=dataset)
-        # set up specific attributes for genomic records
-        self.scan = scan
+    scan: str
+    entity_type: str = f"{Profile.IMAGING}{TableNames.RECORD}"

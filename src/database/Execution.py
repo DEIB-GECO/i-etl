@@ -1,16 +1,20 @@
+import dataclasses
 import getpass
+import json
 import logging
 import os.path
 import platform
+from dataclasses import field
 from datetime import datetime
 
 import pymongo
 
+from constants.methods import factory
 from enums.MetadataColumns import MetadataColumns
 from enums.Profile import Profile
 
 from constants.structure import WORKING_DIR, DB_CONNECTION, DOCKER_FOLDER_METADATA, \
-    DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS, DOCKER_FOLDER_TEST
+    DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS, DOCKER_FOLDER_TEST, DEFAULT_DB_NAME
 from enums.HospitalNames import HospitalNames
 from enums.ParameterKeys import ParameterKeys
 from utils import setup_logger
@@ -18,47 +22,39 @@ from utils.cast_utils import cast_str_to_int
 from utils.setup_logger import log
 
 
+@dataclasses.dataclass(kw_only=True)
 class Execution:
-    def __init__(self):
-        self.execution_date = datetime.now().isoformat()
+    execution_date: datetime = datetime.now()
+    working_dir: str = field(init=False, default=os.path.join(os.getcwd(), WORKING_DIR))  # default in the code
+    working_dir_current: str = field(init=False, default=None)  # computed in create_current_working_dir()
 
-        # set up the working-dir structure based on the DB name
-        self.db_name = None
-        self.working_dir = os.path.join(os.getcwd(), WORKING_DIR)  # default in the code
-        self.working_dir_current = None  # computed in create_current_working_dir()
+    # parameters related to the project structure and the input/output files
+    metadata_filepath: str = field(init=False, default=None)  # user input
+    current_filepath: str = field(init=False, default=None)  # set in the loop on files in ETL
+    current_dataset_identifier: str = field(init=False, default=None)  # set in the loop on file sin ETL
+    current_file_number: int = field(init=False, default=1)  # set in the ETL
+    diagnosis_regexes_filepath: str = field(init=False, default=None)  # user input
+    anonymized_patient_ids_filepath: str = field(init=False, default=None)  # user input
+    use_locale: str = field(init=False, default="en_GB")  # user input
+    record_carrier_patients: bool = field(init=False, default=False)  # user input
 
-        # parameters related to the project structure and the input/output files
-        self.metadata_filepath = None  # user input
-        self.current_filepath = None  # set in the loop on files in ETL
-        self.current_dataset_identifier = None  # set in the loop on file sin ETL
-        self.current_file_number = 1  # set in the ETL
-        self.diagnosis_regexes_filepath = None  # user input
-        self.anonymized_patient_ids_filepath = None  # user input
-        self.use_locale = "en_GB"  # user input
-        self.record_carrier_patients = False  # user input
+    # parameters related to the database and the ETL
+    hospital_name: str = field(init=False, default=None)  # this will be given as input by users
+    db_connection: str = field(init=False, default="mongodb://localhost:27018/")  # user input
+    db_name: str = field(init=False, default=DEFAULT_DB_NAME)
+    db_drop: bool = field(init=False, default=False)  # user input
+    columns_to_remove: list = field(init=False, default_factory=list)  # user input
+    patient_id_column_name: str = field(init=False, default="id")
+    sample_id_column_name: str = field(init=False, default="")
 
-        # parameters related to the database
-        self.db_connection = None  # user input
-        self.db_drop = False  # user input
-        self.columns_to_remove = []  # user input
+    # parameters related to data generation
+    nb_rows: int = field(init=False, default=0)
 
-        # parameters related to the UC hospital
-        self.hospital_name = None  # this will be given as input by users
-
-        # parameters related to data generation
-        self.nb_rows = 0
-
-        # parameters related to the execution context (python, pymongo, etc.)
-        self.python_version = platform.python_version()
-        self.pymongo_version = pymongo.version
-        self.platform = platform.platform()
-        self.platform_version = platform.version()
-        self.user = getpass.getuser()
-
-        # parameters related to the ETL pipeline
-        self.columns_to_remove = []
-        self.patient_id_column_name = "id"
-        self.sample_id_column_name = ""
+    # parameters related to the execution context (python, pymongo, etc.)
+    python_version: str = platform.python_version()
+    pymongo_version: str = pymongo.version
+    platform: str = platform.platform()
+    user: str = getpass.getuser()
 
     def internals_set_up(self) -> None:
         log.info("in set_up")
@@ -160,7 +156,7 @@ class Execution:
             log.info(f"Creating a sub-folder for the current database at {working_dir_with_db}")
             os.makedirs(working_dir_with_db)
         # 3. check whether the execution folder exists, if not create it
-        execution_folder = os.path.join(working_dir_with_db, self.execution_date)
+        execution_folder = os.path.join(working_dir_with_db, self.execution_date.isoformat())
         if not os.path.exists(execution_folder):
             log.info(f"Creating a sub-sub-folder for the current execution at {execution_folder}")
             os.makedirs(execution_folder)
@@ -191,24 +187,8 @@ class Execution:
                 pass
 
     def to_json(self):
-        return {
-            # "identifier": self.identifier.to_json(),  # TODO Nelly: check how to number Execution instances
-            "user_parameters": {
-                "working_dir": self.working_dir,
-                "working_dir_current": self.working_dir_current,
-                "current_filepath": self.current_filepath,
-                ParameterKeys.METADATA_PATH: self.metadata_filepath,
-                ParameterKeys.ANONYMIZED_PATIENT_IDS: self.anonymized_patient_ids_filepath,
-                ParameterKeys.DB_NAME: self.db_name,
-                ParameterKeys.DB_DROP: self.db_drop,
-                ParameterKeys.HOSPITAL_NAME: self.hospital_name,
-            },
-            "execution_context": {
-                "python_version": self.python_version,
-                "pymongo_version": self.pymongo_version,
-                "execution_date": self.execution_date,
-                "platform": self.platform,
-                "platform_version": self.platform_version,
-                "user": self.user
-            }
-        }
+        return {"my_exec": "exec"}
+        # return dataclasses.asdict(self, dict_factory=factory)
+
+    def __str__(self):
+        return json.dumps(self.to_json())

@@ -1,16 +1,10 @@
-from datatypes.OntologyResource import OntologyResource
-from enums.Profile import Profile
-from enums.Visibility import Visibility
+import dataclasses
+
 from entities.Feature import Feature
-from database.Counter import Counter
+from enums.Profile import Profile
+from enums.TableNames import TableNames
 
 
+@dataclasses.dataclass(kw_only=True)
 class PhenotypicFeature(Feature):
-    def __init__(self, name: str, ontology_resource: OntologyResource, description: str,
-                 permitted_datatype: str, unit: str, counter: Counter,
-                 categories: list[OntologyResource], visibility: Visibility, dataset_gid: str, domain: dict):
-        # set up the resource ID
-        super().__init__(name=name, ontology_resource=ontology_resource, column_type=permitted_datatype, unit=unit,
-                         description=description, profile=Profile.PHENOTYPIC, counter=counter, categories=categories,
-                         visibility=visibility, dataset_gid=dataset_gid, domain=domain)
-
+    entity_type: str = f"{Profile.PHENOTYPIC}{TableNames.FEATURE}"

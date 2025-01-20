@@ -1,7 +1,10 @@
 import copy
+import dataclasses
+import json
 
 import numpy as np
 
+from constants.methods import factory
 from database.Database import Database
 from enums.DataTypes import DataTypes
 from enums.Profile import Profile
@@ -10,10 +13,11 @@ from database.Operators import Operators
 from utils.setup_logger import log
 
 
+@dataclasses.dataclass(kw_only=True)
 class FeatureProfileComputation:
-    def __init__(self, database: Database):
-        self.database = database
+    database: Database
 
+    def __post_init__(self):
         # store, for each dataset, the total number of patients to compute the missing percentage
         operations = [
             Operators.match(field=None, value={"entity_type": {"$ne": f"{Profile.CLINICAL}{TableNames.RECORD}"}}, is_regex=False),
@@ -203,7 +207,6 @@ class FeatureProfileComputation:
             groups.append({"name": "std_value", "operator": "$stdDevPop", "field": "$value"})
         return [
             Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
-            Operators.match(field="value", value={"$ne": np.nan}, is_regex=False),
             Operators.group_by(group_key={"dataset": "$dataset", "instantiates": "$instantiates"}, groups=groups),
         ]
 
@@ -212,7 +215,6 @@ class FeatureProfileComputation:
         # [{'$group': {'_id': {'_id': null}, 'originalValues': {'$push': '$value'}, 'mymedian': {'$median': {"input": "$value", "method": "approximate"}}}}, {'$unwind': '$originalValues'}, {'$project': {"absVal": {'$abs': {'$subtract': ['$originalValues', '$mymedian']}}}}, {'$group': {'_id': {'_id': null}, 'ema': {'$median': {"input": "$absVal", "method": "approximate"}}}}]
         return [
             Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
-            Operators.match(field="value", value={"$ne": np.nan}, is_regex=False),
             Operators.group_by(group_key={"dataset": "$dataset", "instantiates": "$instantiates"}, groups=[
                 {"name": "originalValues", "operator": "$push", "field": "$value"},
                 {"name": "mymedian", "operator": "$median", "field": {"input": "$value", "method": "approximate"}},
@@ -234,7 +236,6 @@ class FeatureProfileComputation:
         # [ { "$group": { "_id": { "_id": null }, "originalValues": { "$push": "$value" }, "mymean": { "$avg": "$value" }, "mystdDev": { "$stdDevSamp": "$value" } } }, { "$unwind": "$originalValues" }, {"$project":{"theQuads":{"$pow":[{"$divide":[{"$subtract":["$originalValues","$mymean"]},"$mystdDev"]},4]}, "theSquares":{"$pow":[{"$divide":[{"$subtract":["$originalValues","$mymean"]},"$mystdDev"]},3]}}},{"$group":{"_id":{"_id":null},"sumQuads":{"$sum":"$theQuads"}, "sumSquares":{"$sum":"$theSquares"}, "summedValues": { "$push": "$theQuads" }}},{"$project":{"sumQuads": 1, "sumSquares": 1, "mysize": {"$size": "$summedValues"}}}, {"$project":{"kurtosis":{"$subtract":[{"$multiply":[{"$divide":[{"$multiply":["$mysize",{"$sum":["$mysize",1]}]},{"$multiply":[{"$sum":["$mysize",-1]},{"$sum":["$mysize",-2]},{"$sum":["$mysize",-3]}]}]},"$sumQuads"]},{"$divide":[{"$multiply":[3,{"$pow":[{"$sum":["$mysize",-1]},2]}]},{"$multiply":[{"$sum":["$mysize",-2]},{"$sum":["$mysize",-3]}]}]}]}, "skewness":{"$multiply": [{"$divide": ["$mysize", {"$multiply": [{"$sum": ["$mysize", -1]}, {"$sum": ["$mysize", -2]}]}]}, "$sumSquares"]}}}]
         return [
             Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
-            Operators.match(field="value", value={"$ne": np.nan}, is_regex=False),
             Operators.group_by(group_key={"dataset": "$dataset", "instantiates": "$instantiates"}, groups=[
                 {"name": "originalValues", "operator": "$push", "field": "$value"},
                 {"name": "mymean", "operator": "$avg", "field": "$value"},
@@ -244,8 +245,24 @@ class FeatureProfileComputation:
             Operators.unwind("originalValues"),
             # to be able to apply $subtract to each element of the array -- this adds the $ in front of the variable name
             Operators.project(field=None, projected_value={
-                "theQuads": {"$pow": [{"$divide": [{"$subtract": ["$originalValues", "$mymean"]}, "$mystdDev"]}, 4]},
-                "theSquares": {"$pow": [{"$divide": [{"$subtract": ["$originalValues", "$mymean"]}, "$mystdDev"]}, 3]}}),
+                "theQuads": {
+                    "$cond": {
+                        "if": {"$eq": ["$mystdDev", 0]},
+                        "then": [0],
+                        "else": {
+                            "$pow": [{"$divide": [{"$subtract": ["$originalValues", "$mymean"]}, "$mystdDev"]}, 4]
+                        }
+                    }
+                },
+                "theSquares": {
+                    "$cond": {
+                        "if": {"$eq": ["$mystdDev", 0]},
+                        "then": [0],
+                        "else": {
+                            "$pow": [{"$divide": [{"$subtract": ["$originalValues", "$mymean"]}, "$mystdDev"]}, 3]
+                        }
+                    }
+                }}),
             Operators.group_by(group_key="$_id", groups=[
                 {"name": "sumQuads", "operator": "$sum", "field": "$theQuads"},
                 {"name": "sumSquares", "operator": "$sum", "field": "$theSquares"},
@@ -258,6 +275,7 @@ class FeatureProfileComputation:
                     "$cond": {
                         "if": {"$or": [
                             {"$eq": ["$n", 0]},
+                            {"$eq": ["sumQuads", [0]]},
                             {"$eq": [{"$sum": ["$n", -1]}, 0]},
                             {"$eq": [{"$sum": ["$n", -2]}, 0]},
                             {"$eq": [{"$sum": ["$n", -3]}, 0]}
@@ -284,6 +302,7 @@ class FeatureProfileComputation:
                     "$cond": {
                         "if": {"$or": [
                             {"$eq": ["$n", 0]},
+                            {"$eq": ["sumSquares", [0]]},
                             {"$eq": [{"$sum": ["$n", -1]}, 0]},
                             {"$eq": [{"$sum": ["$n", -2]}, 0]}
                         ]},
@@ -304,14 +323,37 @@ class FeatureProfileComputation:
     def iqr_query(self, features_ids: list) -> list:
         return [
             Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
-            Operators.match(field="value", value={"$ne": np.nan}, is_regex=False),
             Operators.group_by(group_key={"dataset": "$dataset", "instantiates": "$instantiates"}, groups=[
                 {"name": "thevalues", "operator": "$push", "field": "$value"},
                 {"name": "themedian", "operator": "$median", "field": {"input": "$value", "method": "approximate"}}
             ]),
             Operators.set_variables(variables=[{"name": "thevalues", "operation": {"$sortArray": {"input": "$thevalues", "sortBy": 1}}}]),
             Operators.project(field=None, projected_value={"thevalues": {"$filter": {"input": "$thevalues", "as": "item", "cond": {"$ne": ["$$item", "$themedian"]}}}}),
-            Operators.add_fields(key="thevalues", value={"$cond": {"if": {"$eq": [{"mod": [{"$size": "$thevalues"}, 2]}, 0]}, "then": {"$map": {"input": {"$range": [0, {"$size": "$thevalues"}, {"$divide": [{"$size": "$thevalues"}, 2]}]}, "as": "index", "in": {"$slice": ["$thevalues", "$$index", 2]}}}, "else": {"$map": {"input": {"$range": [0, {"$size": "$thevalues"}, {"$floor": {"$divide": [{"$size": "$thevalues"}, 2]}}]}, "as": "index", "in": {"$slice": ["$thevalues", "$$index", {"$floor": {"$divide": [{"$size": "$thevalues"}, 2]}}]}}}}}),
+            Operators.add_fields(key="thevalues", value={
+                "$cond": {
+                    "if": {"$eq": [{"$size": "$thevalues"}, 0]},
+                    "then": [[], []],
+                    "else": {
+                        "$cond": {
+                            "if": {"$eq": [{"mod": [{"$size": "$thevalues"}, 2]}, 0]},
+                            "then": {
+                                "$map": {
+                                    "input": {"$range": [0, {"$size": "$thevalues"}, {"$divide": [{"$size": "$thevalues"}, 2]}]},
+                                    "as": "index",
+                                    "in": {"$slice": ["$thevalues", "$$index", 2]}
+                                }
+                            },
+                            "else": {
+                                "$map": {
+                                    "input": {"$range": [0, {"$size": "$thevalues"}, {"$floor": {"$divide": [{"$size": "$thevalues"}, 2]}}]},
+                                    "as": "index",
+                                    "in": {"$slice": ["$thevalues", "$$index", {"$floor": {"$divide": [{"$size": "$thevalues"}, 2]}}]}
+                                }
+                            }
+                        }
+                    }
+                }
+            }),
             Operators.set_variables(variables=[
                 {"name": "q1", "operation": {"$median": {"input": {"$arrayElemAt": ["$thevalues", 0]}, "method": "approximate"}}},
                 {"name": "q3", "operation": {"$median": {"input": {"$arrayElemAt": ["$thevalues", 1]}, "method": "approximate"}}},
@@ -343,7 +385,7 @@ class FeatureProfileComputation:
             Operators.set_variables(variables=[
                 {"name": "top10", "operation": Operators.filter_array(input_array_name="$orderedfeatures", element="item", cond={}, limit=10)}
             ]),
-            #Operators.limit(10),
+            # Operators.limit(10),
             Operators.project(field=None, projected_value={
                 "dataset": "$_id.dataset",
                 "top10": 1,
@@ -465,7 +507,13 @@ class FeatureProfileComputation:
             Operators.project(field=None, projected_value={
                 "dataset": "$_id.dataset",
                 "instantiates": "$_id.instantiates",
-                "imbalance": {"$divide": ["$max_freq", "$min_freq"]}
+                "imbalance": {
+                    "$cond": {
+                        "if": {"$eq": ["$min_freq", 0]},
+                        "then": 0,
+                        "else": {"$divide": ["$max_freq", "$min_freq"]}
+                    }
+                }
             })
         ]
 
@@ -485,7 +533,13 @@ class FeatureProfileComputation:
             Operators.project(field=None, projected_value={
                 "dataset": "$_id.dataset",
                 "instantiates": "$_id.instantiates",
-                "constancy": {"$divide": ["$max_freq", "$max_freq"]}
+                "constancy": {
+                    "$cond": {
+                        "if": {"$eq": ["$max_freq", 0]},
+                        "then": 0,
+                        "else": {"$divide": ["$max_freq", "$max_freq"]}
+                    }
+                }
             })
         ]
 
@@ -522,7 +576,15 @@ class FeatureProfileComputation:
             Operators.project(field=None, projected_value={
                 "dataset": "$_id.dataset",
                 "instantiates": "$_id.instantiates",
-                "uniqueness": {"$divide": ["$distinct_count", "$count"]}
+                "uniqueness": {
+                    "$cond": {
+                        "if": {"$eq": ["$count", 0]},
+                        "then": 0,
+                        "else": {
+                            "$divide": ["$distinct_count", "$count"]
+                        }
+                    }
+                }
             })
         ]
 
@@ -541,7 +603,13 @@ class FeatureProfileComputation:
             Operators.project(field=None, projected_value={
                 "dataset": "$_id.dataset",
                 "instantiates": "$_id.instantiates",
-                "prob": {"$divide": ["$frequencies", "$total"]}
+                "prob": {
+                    "$cond": {
+                        "if": {"$eq": ["$total", 0]},
+                        "then": [0],
+                        "else": {"$divide": ["$frequencies", "$total"]}
+                    }
+                }
             }),
             Operators.project(field=None, projected_value={
                 "_id": "$_id",
@@ -572,13 +640,19 @@ class FeatureProfileComputation:
             Operators.project(field=None, projected_value={
                 "dataset": "$_id.dataset",
                 "instantiates": "$_id.instantiates",
-                "prob": {"$divide": ["$frequencies", "$total"]},
+                "prob": {
+                    "$cond": {
+                        "if": {"$eq": ["$total", 0]},
+                        "then": [0],
+                        "else": {"$divide": ["$frequencies", "$total"]}
+                    }
+                },
                 "distinct_count": "$distinct_count"
             }),
             Operators.group_by(group_key={"instantiates": "$_id.instantiates", "dataset": "$_id.dataset"}, groups=[
                 {"name": "avg_dens_value", "operator": "$avg", "field": "$prob"},
                 {"name": "probs", "operator": "$push", "field": "$prob"},
-                {"name": "distinct_count", "operator": "$first", "field":"$distinct_count"}
+                {"name": "distinct_count", "operator": "$first", "field": "$distinct_count"}
             ]),
             Operators.unwind("probs"),
             Operators.project(field=None, projected_value={
@@ -594,7 +668,13 @@ class FeatureProfileComputation:
             Operators.project(field=None, projected_value={
                 "dataset": "$_id.dataset",
                 "instantiates": "$_id.instantiates",
-                "density": {"$divide": ["$densities_sum", "$distinct_count"]}
+                "density": {
+                    "$cond": {
+                        "if": {"$eq": ["$distinct_count", 0]},
+                        "then": 0,
+                        "else": {"$divide": ["$densities_sum", "$distinct_count"]}
+                    }
+                }
             })
         ]
 
@@ -617,7 +697,15 @@ class FeatureProfileComputation:
                 {"name": "count_db_values", "operator": "$sum", "field": 1}
             ]),
             Operators.lookup(join_table_name=TableNames.COUNTS_PATIENTS, foreign_field="_id.dataset", local_field="_id.dataset", lookup_field_name="joined"),
-            Operators.project(field=None, projected_value={"missing_percentage": {"$subtract": [1, {"$divide": ["$count_db_values", {"$arrayElemAt": ["$joined.distinct_nb_patients", 0]}]}]}})
+            Operators.project(field=None, projected_value={
+                "missing_percentage": {
+                    "$cond": {
+                        "if": {"$eq": [{"$arrayElemAt": ["$joined.distinct_nb_patients", 0]}, 0]},
+                        "then": 0,
+                        "else": {"$subtract": [1, {"$divide": ["$count_db_values", {"$arrayElemAt": ["$joined.distinct_nb_patients", 0]}]}]}
+                    }
+                }
+            })
         ]
 
     def missing_percentage_query_clinical(self, features_ids: list) -> list:
@@ -628,7 +716,15 @@ class FeatureProfileComputation:
                 {"name": "count_db_values", "operator": "$sum", "field": 1}
             ]),
             Operators.lookup(join_table_name=TableNames.COUNTS_SAMPLES, foreign_field="dataset", local_field="dataset", lookup_field_name="joined"),
-            Operators.project(field=None, projected_value={"missing_percentage": {"$subtract": [1, {"$divide": ["$count_db_values", {"$arrayElemAt": ["$joined.distinct_nb_samples", 0]}]}]}})
+            Operators.project(field=None, projected_value={
+                "missing_percentage": {
+                    "$cond": {
+                        "if": {"$eq": [{"$arrayElemAt": ["$joined.distinct_nb_samples", 0]}, 0]},
+                        "then": 0,
+                        "else": {"$subtract": [1, {"$divide": ["$count_db_values", {"$arrayElemAt": ["$joined.distinct_nb_samples", 0]}]}]}
+                    }
+                }
+            })
         ]
 
     def finalize_query(self, include_value: bool) -> list:
@@ -646,3 +742,9 @@ class FeatureProfileComputation:
                             when_matched="merge",
                             when_not_matched="insert"))
         return last_fields
+
+    def to_json(self):
+        return dataclasses.asdict(self, dict_factory=factory)
+
+    def __str__(self):
+        return json.dumps(self.to_json())

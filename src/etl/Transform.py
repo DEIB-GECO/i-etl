@@ -11,8 +11,6 @@ from database.Counter import Counter
 from database.Database import Database
 from database.Dataset import Dataset
 from database.Execution import Execution
-from datatypes.Identifier import Identifier
-from datatypes.OntologyResource import OntologyResource
 from entities.ClinicalFeature import ClinicalFeature
 from entities.ClinicalRecord import ClinicalRecord
 from entities.DiagnosisFeature import DiagnosisFeature
@@ -23,10 +21,12 @@ from entities.ImagingFeature import ImagingFeature
 from entities.ImagingRecord import ImagingRecord
 from entities.MedicineFeature import MedicineFeature
 from entities.MedicineRecord import MedicineRecord
+from entities.OntologyResource import OntologyResource
 from entities.Patient import Patient
 from entities.PhenotypicFeature import PhenotypicFeature
 from entities.PhenotypicRecord import PhenotypicRecord
 from enums.DataTypes import DataTypes
+from enums.DiagnosisColumns import DiagnosisColumns
 from enums.Domain import Domain
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
@@ -34,13 +34,11 @@ from enums.Profile import Profile
 from enums.TableNames import TableNames
 from enums.Visibility import Visibility
 from etl.Task import Task
+from src.constants.defaults import DEFAULT_NAN_VALUE
 from statistics.QualityStatistics import QualityStatistics
-from statistics.TimeStatistics import TimeStatistics
 from utils.cast_utils import cast_str_to_boolean, cast_str_to_datetime, cast_str_to_float, cast_str_to_int
 from utils.file_utils import write_in_file
 from utils.setup_logger import log
-
-from src.constants.defaults import NAN_VALUES, DEFAULT_NAN_VALUE
 
 
 class Transform(Task):
@@ -49,15 +47,16 @@ class Transform(Task):
                  mapping_categorical_value_to_onto_resource: dict,
                  mapping_column_to_categorical_value: dict,
                  mapping_column_to_unit: dict, mapping_column_to_domain: dict,
-                 profile: str, dataset_number: int, file_counter: int, dataset_instance: Dataset, load_patients: bool,
-                 quality_stats: QualityStatistics, time_stats: TimeStatistics):
-        super().__init__(database=database, execution=execution, quality_stats=quality_stats, time_stats=time_stats)
+                 mapping_column_to_type: dict | None,
+                 profile: str, dataset_number: int, file_counter: int, dataset_key: Dataset, load_patients: bool,
+                 quality_stats: QualityStatistics):
+        super().__init__(database=database, execution=execution, quality_stats=quality_stats)
         self.counter = Counter()  # resource counter
         self.profile = profile
         self.load_patients = load_patients
         self.dataset_number = dataset_number  # file number (for each dataset)
         self.file_counter = file_counter  # file counter (for all the files created for a single dataset)
-        self.dataset_instance = dataset_instance
+        self.dataset_instance = dataset_key
 
         # get data, metadata and the mapped values computed in the Extract step
         self.data = data
@@ -65,6 +64,11 @@ class Transform(Task):
         self.mapping_column_to_unit = mapping_column_to_unit
         self.mapping_categorical_value_to_onto_resource = mapping_categorical_value_to_onto_resource
         self.mapping_column_to_categorical_value = mapping_column_to_categorical_value
+        if mapping_column_to_type is not None:
+            self.mapping_column_to_type = mapping_column_to_type  # we give it to Transform during tests
+        else:
+            self.mapping_column_to_type = {}
+        self.mapping_column_to_visibility = {}
         self.mapping_column_to_domain = mapping_column_to_domain
         self.mapping_apivalue_to_onto_resource = {}  # for API columns only; of the form: <"onto_name:onto_code": onto resource>
         # to keep track of anonymized vs. hospital patient ids
@@ -116,13 +120,15 @@ class Transform(Task):
         for row in self.metadata.itertuples(index=False):
             column_name = row[columns.get_loc(MetadataColumns.COLUMN_NAME)]
             # columns to remove have already been removed in the Extract part from the metadata
-            # here, we need to ensure that we create Features only for still-existing columns and not for ID column
-            if column_name not in [self.execution.patient_id_column_name, self.execution.sample_id_column_name]:
+            # here, we need to ensure that we create Features only for still-existing columns and not for ID column and not for Diagnosis counter (clinical base_id)
+            if column_name not in [self.execution.patient_id_column_name, self.execution.sample_id_column_name, DiagnosisColumns.DISEASE_COUNTER]:
                 if column_name not in db_existing_features:
                     # we create a new Feature from scratch
                     onto_resource = self.create_ontology_resource_from_row(column_name=column_name)
                     data_type = row[columns.get_loc(MetadataColumns.ETL_TYPE)]  # this has been normalized while loading + we take ETL_type to get the narrowest type (in which we cast values)
+                    self.mapping_column_to_type[column_name] = data_type
                     visibility = row[columns.get_loc(MetadataColumns.VISIBILITY)]  # this has been normalized while loading
+                    self.mapping_column_to_visibility[column_name] = visibility
                     unit = self.mapping_column_to_unit[column_name] if column_name in self.mapping_column_to_unit else None  # else covers: there is no dataType for this column; there is no datatype in that type of entity
                     description = row[columns.get_loc(MetadataColumns.SIGNIFICATION_EN)]
                     categorical_values = None
@@ -140,9 +146,9 @@ class Transform(Task):
                             if Domain.MAX in self.mapping_column_to_domain[column_name]:
                                 domain[Domain.MAX] = self.mapping_column_to_domain[column_name][Domain.MAX]
                     if self.profile == Profile.PHENOTYPIC:
-                        new_feature = PhenotypicFeature(name=column_name,
+                        new_feature = PhenotypicFeature(identifier=NO_ID, name=column_name,
                                                         ontology_resource=onto_resource,
-                                                        permitted_datatype=data_type, unit=unit,
+                                                        data_type=data_type, unit=unit,
                                                         counter=self.counter,
                                                         categories=categorical_values,
                                                         visibility=visibility,
@@ -150,8 +156,8 @@ class Transform(Task):
                                                         description=description,
                                                         domain=domain)
                     elif self.profile == Profile.CLINICAL:
-                        new_feature = ClinicalFeature(name=column_name, ontology_resource=onto_resource,
-                                                      permitted_datatype=data_type, unit=unit,
+                        new_feature = ClinicalFeature(identifier=NO_ID, name=column_name, ontology_resource=onto_resource,
+                                                      data_type=data_type, unit=unit,
                                                       counter=self.counter,
                                                       categories=categorical_values,
                                                       visibility=visibility,
@@ -159,36 +165,36 @@ class Transform(Task):
                                                       description=description,
                                                       domain=domain)
                     elif self.profile == Profile.DIAGNOSIS:
-                        new_feature = DiagnosisFeature(name=column_name,
+                        new_feature = DiagnosisFeature(identifier=NO_ID, name=column_name,
                                                        ontology_resource=onto_resource,
-                                                       permitted_datatype=data_type,
+                                                       data_type=data_type,
                                                        unit=unit, counter=self.counter,
                                                        categories=categorical_values, visibility=visibility,
                                                        dataset_gid=self.dataset_instance.global_identifier,
                                                        description=description,
                                                        domain=domain)
                     elif self.profile == Profile.GENOMIC:
-                        new_feature = GenomicFeature(name=column_name,
+                        new_feature = GenomicFeature(identifier=NO_ID, name=column_name,
                                                      ontology_resource=onto_resource,
-                                                     permitted_datatype=data_type,
+                                                     data_type=data_type,
                                                      unit=unit, counter=self.counter,
                                                      categories=categorical_values, visibility=visibility,
                                                      dataset_gid=self.dataset_instance.global_identifier,
                                                      description=description,
                                                      domain=domain)
                     elif self.profile == Profile.IMAGING:
-                        new_feature = ImagingFeature(name=column_name,
+                        new_feature = ImagingFeature(identifier=NO_ID, name=column_name,
                                                      ontology_resource=onto_resource,
-                                                     permitted_datatype=data_type,
+                                                     data_type=data_type,
                                                      unit=unit, counter=self.counter,
                                                      categories=categorical_values, visibility=visibility,
                                                      dataset_gid=self.dataset_instance.global_identifier,
                                                      description=description,
                                                      domain=domain)
                     elif self.profile == Profile.MEDICINE:
-                        new_feature = MedicineFeature(name=column_name,
+                        new_feature = MedicineFeature(identifier=NO_ID, name=column_name,
                                                       ontology_resource=onto_resource,
-                                                      permitted_datatype=data_type,
+                                                      data_type=data_type,
                                                       unit=unit, counter=self.counter,
                                                       categories=categorical_values, visibility=visibility,
                                                       dataset_gid=self.dataset_instance.global_identifier,
@@ -250,18 +256,18 @@ class Transform(Task):
                     # log.error(f"skipping value {value} in column {column_name} because it is None, or empty or nan")
                     self.quality_stats.count_empty_cell_for_column(column_name=column_name)
                     if column_name in mapping_column_to_feature_id:
-                        feature_id = Identifier(id_value=mapping_column_to_feature_id[column_name])
-                        if feature_id.value not in self.mapping_column_all_count:
-                            self.mapping_column_all_count[feature_id.value] = 1
+                        feature_id = mapping_column_to_feature_id[column_name]
+                        if feature_id not in self.mapping_column_all_count:
+                            self.mapping_column_all_count[feature_id] = 1
                         else:
-                            self.mapping_column_all_count[feature_id.value] = self.mapping_column_all_count[feature_id.value] + 1
+                            self.mapping_column_all_count[feature_id] = self.mapping_column_all_count[feature_id] + 1
                 else:
                     if column_name in mapping_column_to_feature_id:
                         # we know a code for this column, so we can register the value of that Feature in a new Record
-                        feature_id = Identifier(id_value=mapping_column_to_feature_id[column_name])
-                        hospital_id = Identifier(id_value=mapping_hospital_to_hospital_id[self.execution.hospital_name])
+                        feature_id = mapping_column_to_feature_id[column_name]
+                        hospital_id = mapping_hospital_to_hospital_id[self.execution.hospital_name]
                         # get the anonymized patient id using the mapping <initial id, anonymized id>
-                        patient_id = Identifier(id_value=self.patient_ids_mapping[row[columns.get_loc(self.execution.patient_id_column_name)]])
+                        patient_id = self.patient_ids_mapping[row[columns.get_loc(self.execution.patient_id_column_name)]]
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
                         anonymized_value, is_anonymized = self.anonymize_value(column_name=column_name,
                                                                                fairified_value=fairified_value)
@@ -269,44 +275,71 @@ class Transform(Task):
                             fairified_value = anonymized_value  # we could anonymize this value, this is the one to insert in the DB
                         dataset = self.execution.current_dataset_identifier
                         if self.profile == Profile.PHENOTYPIC:
-                            new_record = PhenotypicRecord(feature_id=feature_id,
-                                                          patient_id=patient_id, hospital_id=hospital_id,
+                            new_record = PhenotypicRecord(identifier=NO_ID,
+                                                          instantiates=feature_id,
+                                                          has_subject=patient_id,
+                                                          registered_by=hospital_id,
                                                           value=fairified_value,
                                                           counter=self.counter,
                                                           dataset=dataset)
                         elif self.profile == Profile.CLINICAL:
                             if self.execution.sample_id_column_name in columns:
-                                # this dataset contains a sample bar code (or equivalent)
+                                # this dataset contains a sample barcode (or equivalent)
                                 base_id = row[columns.get_loc(self.execution.sample_id_column_name)]
                             else:
                                 base_id = None
-                            new_record = ClinicalRecord(feature_id=feature_id, patient_id=patient_id,
-                                                        hospital_id=hospital_id, value=fairified_value,
+                            new_record = ClinicalRecord(identifier=NO_ID,
+                                                        instantiates=feature_id,
+                                                        has_subject=patient_id,
+                                                        registered_by=hospital_id,
+                                                        value=fairified_value,
                                                         base_id=base_id,
-                                                        counter=self.counter, dataset=dataset)
+                                                        counter=self.counter,
+                                                        dataset=dataset)
                         elif self.profile == Profile.DIAGNOSIS:
-                            new_record = DiagnosisRecord(feature_id=feature_id,
-                                                         patient_id=patient_id, hospital_id=hospital_id,
+                            if DiagnosisColumns.DISEASE_COUNTER in columns:
+                                # this dataset contains a diagnosis counter because patients may be affected
+                                # by several diseases
+                                # we also need to force the conversion to int, because we read the data as str
+                                # and such values do not go through the fairification method
+                                try:
+                                    diagnosis_counter = int(row[columns.get_loc(DiagnosisColumns.DISEASE_COUNTER)])
+                                except:
+                                    # the value is None because the patient diseases is unknown in the disease classification
+                                    diagnosis_counter = None
+                            else:
+                                diagnosis_counter = None
+                            new_record = DiagnosisRecord(identifier=NO_ID,
+                                                         instantiates=feature_id,
+                                                         has_subject=patient_id,
+                                                         registered_by=hospital_id,
                                                          value=fairified_value,
+                                                         diagnosis_counter=diagnosis_counter,
                                                          counter=self.counter,
                                                          dataset=dataset)
                         elif self.profile == Profile.GENOMIC:
-                            new_record = GenomicRecord(feature_id=feature_id,
-                                                       patient_id=patient_id, hospital_id=hospital_id,
+                            new_record = GenomicRecord(identifier=NO_ID,
+                                                       instantiates=feature_id,
+                                                       has_subject=patient_id,
+                                                       registered_by=hospital_id,
                                                        vcf=None,
                                                        value=fairified_value,
                                                        counter=self.counter,
                                                        dataset=dataset)
                         elif self.profile == Profile.IMAGING:
-                            new_record = ImagingRecord(feature_id=feature_id,
-                                                       patient_id=patient_id, hospital_id=hospital_id,
+                            new_record = ImagingRecord(identifier=NO_ID,
+                                                       instantiates=feature_id,
+                                                       has_subject=patient_id,
+                                                       registered_by=hospital_id,
                                                        scan=None,
                                                        value=fairified_value,
                                                        counter=self.counter,
                                                        dataset=dataset)
                         elif self.profile == Profile.MEDICINE:
-                            new_record = MedicineRecord(feature_id=feature_id,
-                                                        patient_id=patient_id, hospital_id=hospital_id,
+                            new_record = MedicineRecord(identifier=NO_ID,
+                                                        instantiates=feature_id,
+                                                        has_subject=patient_id,
+                                                        registered_by=hospital_id,
                                                         value=fairified_value,
                                                         counter=self.counter,
                                                         dataset=dataset)
@@ -315,10 +348,10 @@ class Transform(Task):
                         self.records.append(new_record)
                         self.process_batch_of_records(last=False)
                         # to compute the percentage of missing values in features' profiles
-                        if feature_id.value not in self.mapping_column_all_count:
-                            self.mapping_column_all_count[feature_id.value] = 1
+                        if feature_id not in self.mapping_column_all_count:
+                            self.mapping_column_all_count[feature_id] = 1
                         else:
-                            self.mapping_column_all_count[feature_id.value] = self.mapping_column_all_count[feature_id.value] + 1
+                            self.mapping_column_all_count[feature_id] = self.mapping_column_all_count[feature_id] + 1
                     else:
                         # this represents the case when a column has not been converted to a Feature resource
                         # this may happen for ID column for instance, or in BUZZI many clinical columns are not described in the metadata, thus skipped here
@@ -346,14 +379,13 @@ class Transform(Task):
                 row_patient_id = row[columns.get_loc(self.execution.patient_id_column_name)]
                 if row_patient_id not in self.patient_ids_mapping:
                     # the (anonymized) patient does not exist yet, we will create it
-                    new_patient = Patient(id_value=NO_ID, counter=self.counter, hospital_name=self.execution.hospital_name)
+                    new_patient = Patient(identifier=NO_ID, counter=self.counter)
                     # log.info(f"create new patient {row_patient_id} with anonymized ID {new_patient.identifier.value}")
-                    self.patient_ids_mapping[row_patient_id] = new_patient.identifier.value  # keep track of anonymized patient ids
+                    self.patient_ids_mapping[row_patient_id] = new_patient.identifier  # keep track of anonymized patient ids
                 else:
                     # the (anonymized) patient id already exists, we take it from the mapping
                     # log.info(f"create patient {row_patient_id} with existing anonymized ID {self.patient_ids_mapping[row_patient_id]}")
-                    new_patient = Patient(id_value=self.patient_ids_mapping[row_patient_id], counter=self.counter,
-                                          hospital_name=self.execution.hospital_name)
+                    new_patient = Patient(identifier=self.patient_ids_mapping[row_patient_id], counter=self.counter)
                 self.patients.append(new_patient)
                 if len(self.patients) >= BATCH_SIZE:
                     # this will save the data if it has reached BATCH_SIZE
@@ -366,7 +398,7 @@ class Transform(Task):
                     # which was provided by the hospital (thus is known by the dataset)
             if len(self.patients) > 0:
                 write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current,
-                                profile=TableNames.PATIENT, is_feature=False, dataset_number=self.dataset_number, file_counter=self.file_counter)
+                              profile=TableNames.PATIENT, is_feature=False, dataset_number=self.dataset_number, file_counter=self.file_counter)
                 self.file_counter += 1
             # finally, we also write the mapping patient ID / anonymized ID in a file - this will be ingested for subsequent runs to not renumber existing anonymized patients
             with open(self.execution.anonymized_patient_ids_filepath, "w") as data_file:
@@ -418,18 +450,15 @@ class Transform(Task):
         log.info(f"{len(self.patient_ids_mapping)} patient IDs in the mapping file.")
 
     def create_ontology_resource_from_row(self, column_name: str) -> OntologyResource | None:
-        rows = self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name]
+        rows = self.metadata[self.metadata[MetadataColumns.COLUMN_NAME].values == column_name]
         if len(rows) == 1:
             row = rows.iloc[0]
             onto_code = row.iloc[self.metadata.columns.get_loc(MetadataColumns.ONTO_CODE)]
             if len(onto_code) > 0:
-                onto_name = Ontologies.get_enum_from_name(row.iloc[self.metadata.columns.get_loc(MetadataColumns.ONTO_NAME)])
-                if type(onto_name) is dict:
-                    return OntologyResource(
-                            ontology=onto_name,
-                            full_code=onto_code,
-                            quality_stats=self.quality_stats,
-                            label=None)
+                onto_system = Ontologies.get_enum_from_name(row.iloc[self.metadata.columns.get_loc(MetadataColumns.ONTO_NAME)])
+                if type(onto_system) is dict and len(onto_system) > 0:
+                    the_or = OntologyResource(system=onto_system, code=onto_code, label=None, quality_stats=self.quality_stats)
+                    return the_or
                 else:
                     log.error(
                         f"In the metadata, {MetadataColumns.ONTO_NAME} is empty or unrecognised for the column '{column_name}'.")
@@ -450,8 +479,7 @@ class Transform(Task):
             return DEFAULT_NAN_VALUE
         else:
             return_value = None  # to ease logging, we also save the return value in a variable and return it at the very end
-            current_column_info = DataFrame(self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name])
-            etl_type = current_column_info[MetadataColumns.ETL_TYPE].iloc[0]  # we need to take the value itself, otherwise we end up with a series of 1 element (the ETL type)
+            etl_type = self.mapping_column_to_type[column_name] if column_name in self.mapping_column_to_type else DataTypes.STRING
             expected_unit = self.mapping_column_to_unit[column_name] if column_name in self.mapping_column_to_unit else None  # there was some unit specified in the metadata or extracted from the data
 
             # log.debug(f"ETL type is {etl_type}, expected unit is {expected_unit}")
@@ -474,9 +502,8 @@ class Transform(Task):
                 ontology_code = split_value[1]  # the code will be later normalized during the CC construction
                 if value not in self.mapping_apivalue_to_onto_resource:
                     onto_resource = OntologyResource(
-                        ontology=Ontologies.get_enum_from_name(ontology_name=ontology_name),
-                        full_code=ontology_code,
-                        label=None, quality_stats=self.quality_stats)
+                        system=Ontologies.get_enum_from_name(ontology_name=ontology_name), code=ontology_code, label=None,
+                        quality_stats=self.quality_stats)
                     self.mapping_apivalue_to_onto_resource[value] = onto_resource
                     return_value = onto_resource
                 else:
@@ -555,10 +582,8 @@ class Transform(Task):
         :return: two values: either (the anonymized value, True), or (the fairified value, False). This is to know whether we should create another Record with the anonymized value
         :rtype:
         """
-        current_column_info = DataFrame(self.metadata.loc[self.metadata[MetadataColumns.COLUMN_NAME] == column_name])
-        etl_type = current_column_info[MetadataColumns.ETL_TYPE].iloc[
-            0]  # we need to take the value itself, otherwise we end up with a series of 1 element (the ETL type)
-        visibility = current_column_info[MetadataColumns.VISIBILITY].iloc[0]
+        etl_type = self.mapping_column_to_type[column_name] if column_name in self.mapping_column_to_type else DataTypes.STRING
+        visibility = self.mapping_column_to_visibility[column_name] if column_name in self.mapping_column_to_visibility else Visibility.PRIVATE
         if etl_type == DataTypes.DATETIME:
             if visibility == Visibility.ANONYMIZED:
                 # anonymize the date and the time

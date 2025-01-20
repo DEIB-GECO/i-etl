@@ -1,0 +1,6 @@
+{
+  "id": null,
+  "sex": "category",
+  "ethnicity": "category",
+  "date_of_birth": "datetime"
+}

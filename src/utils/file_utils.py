@@ -20,7 +20,8 @@ def write_in_file(resource_list: list, current_working_dir: str, profile: str, i
         with open(filename, "w") as data_file:
             try:
                 log.debug(f"Dumping {len(resource_list)} instances in {filename}")
-                ujson.dump([resource.to_json() for resource in resource_list], data_file)
+                the_json_resources = [resource.to_json() for resource in resource_list]
+                ujson.dump(the_json_resources, data_file)
             except Exception:
                 raise ValueError(f"Could not dump the {len(resource_list)} JSON resources in the file located at {filename}.")
     else:

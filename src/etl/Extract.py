@@ -2,19 +2,18 @@ import itertools
 import json
 import os
 
-import numpy as np
-import pandas as pd
 from pandas import DataFrame
 
 from database.Database import Database
 from database.Execution import Execution
-from datatypes.OntologyResource import OntologyResource
+from entities.OntologyResource import OntologyResource
 from enums.DataTypes import DataTypes
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from enums.Profile import Profile
 from enums.TableNames import TableNames
+from enums.TimerKeys import TimerKeys
 from enums.Visibility import Visibility
 from etl.Task import Task
 from preprocessing.PreprocessingTask import PreprocessingTask
@@ -26,8 +25,8 @@ from utils.setup_logger import log
 
 class Extract(Task):
 
-    def __init__(self, metadata: DataFrame, profile: str, database: Database, execution: Execution, quality_stats: QualityStatistics, time_stats: TimeStatistics):
-        super().__init__(database=database, execution=execution, quality_stats=quality_stats, time_stats=time_stats)
+    def __init__(self, metadata: DataFrame, profile: str, database: Database, execution: Execution, quality_stats: QualityStatistics):
+        super().__init__(database=database, execution=execution, quality_stats=quality_stats)
         self.data = None
         self.metadata = metadata
         self.profile = Profile.normalize(profile)
@@ -68,7 +67,7 @@ class Extract(Task):
 
         # normalize the profiles before filtering
         self.metadata.loc[:, MetadataColumns.PROFILE] = self.metadata[MetadataColumns.PROFILE].apply(lambda x: Profile.normalize(file_type=x))
-        self.metadata = self.metadata[self.metadata[MetadataColumns.PROFILE] == self.profile]
+        self.metadata = self.metadata[self.metadata[MetadataColumns.PROFILE].values == self.profile]
 
         # if the filtered metadata (by dataset and profile) is not empty, we check whether we need to further filter
         # metadata by hospital name
@@ -162,31 +161,22 @@ class Extract(Task):
         # Normalize column names ("sex", "dateOfBirth", "Ethnicity", etc.) to match column names described in the metadata
         self.data = self.data.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x))
 
-        # removes the data columns that are NOT described in the metadata or that are explicitly marked as not to be loaded
+        # removes the data columns that are NOT described in the metadata or that are explicitly marked as not to be loaded (except if this is an ID column)
         # if a column is described in the metadata but is not present in the data or this column is empty we keep it
         # because people took the time to describe it.
         data_columns = list(set(self.data.columns))  # get the distinct list of columns
         log.info(data_columns)
         columns_described_in_metadata = list(self.metadata[MetadataColumns.COLUMN_NAME])
+        columns_to_drop = [data_column for data_column in data_columns if data_column not in columns_described_in_metadata or (data_column in self.execution.columns_to_remove and not data_column in [self.execution.patient_id_column_name, self.execution.sample_id_column_name])]
+        self.data = self.data.drop(columns_to_drop, axis=1)  # axis=1 -> columns
         for data_column in data_columns:
-            # we remove the column if it is not described in the metadata
-            is_not_described_in_current_metadata = data_column not in columns_described_in_metadata
-            column_has_to_be_removed = data_column in self.execution.columns_to_remove
-            column_is_an_id = data_column in [self.execution.patient_id_column_name, self.execution.sample_id_column_name]
-            if is_not_described_in_current_metadata or (column_has_to_be_removed and not column_is_an_id):
-                # we drop this column
-                log.info(f"drop column {data_column}")
-                self.data = self.data.drop(data_column, axis=1)  # axis=1 -> columns
-                # we record this column in the stats only if it is not described at all in the current file metadata
-                # this is because we iteratively look at the metadata of each pair <dataset, profile>
-                # and we do not want to record a column as "not described" if it is later described in another profile
-                # if data_column not in self.described_columns_current_file:
-                if is_not_described_in_current_metadata:
-                    log.info(f"Add data column {data_column} as not described.")
-                    self.quality_stats.add_column_not_described_in_metadata(data_column_name=data_column)
-            else:
-                # we keep this column
-                pass
+            # we record this column in the stats only if it is not described at all in the current file metadata
+            # this is because we iteratively look at the metadata of each pair <dataset, profile>
+            # and we do not want to record a column as "not described" if it is later described in another profile
+            # if data_column not in self.described_columns_current_file:
+            if data_column not in columns_described_in_metadata:
+                log.info(f"Add data column {data_column} as not described.")
+                self.quality_stats.add_column_not_described_in_metadata(data_column_name=data_column)
 
     def compute_mapping_categorical_value_to_onto_resource(self) -> None:
         self.mapping_categorical_value_to_onto_resource = {}
@@ -239,7 +229,7 @@ class Extract(Task):
                                     # here, we do normalize the ontology name to be able to get the corresponding enum
                                     # however, we do not normalize the code, because it needs extra attention (due to spaces in post-coordinated codes, etc)
                                     ontology = Ontologies.get_enum_from_name(ontology_name=Ontologies.normalize_name(key))
-                                    onto_resource = OntologyResource(ontology=ontology, full_code=val, label=None, quality_stats=self.quality_stats)
+                                    onto_resource = OntologyResource(system=ontology, code=val, label=None, quality_stats=self.quality_stats)
                                     if onto_resource.system != "" and onto_resource.code != "":
                                         or_has_been_built = True
                                         self.mapping_categorical_value_to_onto_resource[normalized_categorical_value] = onto_resource

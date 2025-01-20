@@ -1,34 +1,28 @@
-from constants.defaults import NO_ID
-from database.Counter import Counter
-from datatypes.OntologyResource import OntologyResource
+import dataclasses
+
+from entities.OntologyResource import OntologyResource
 from entities.Resource import Resource
-from enums.TableNames import TableNames
 from enums.Visibility import Visibility
 
-from src.utils.setup_logger import log
 
-
+@dataclasses.dataclass(kw_only=True)
 class Feature(Resource):
-    def __init__(self, name: str, ontology_resource: OntologyResource, column_type: str, unit: str, description: str, counter: Counter,
-                 profile: str, categories: list[OntologyResource], visibility: Visibility, dataset_gid: str,
-                 domain: dict):
-        # set up the resource ID
-        super().__init__(id_value=NO_ID, entity_type=f"{profile}{TableNames.FEATURE}", counter=counter)
+    name: str
+    ontology_resource: OntologyResource
+    data_type: str
+    unit: str
+    description: str
+    categories: list[OntologyResource]
+    visibility: Visibility
+    dataset_gid: str
+    domain: dict
 
-        # set up the resource attributes
-        self.name = name
-        self.ontology_resource = ontology_resource
-        self.data_type = column_type  # no need to check whether the column type is recognisable, we already normalized it while loading the metadata
-        self.unit = unit
-        self.description = description
-        if categories is not None and len(categories) > 0:
-            self.categories = categories  # this is the list of categorical values fot that column
-        else:
+    def __post_init__(self):
+        super().__post_init__()
+
+        # set up the feature attributes
+        self.datasets = [self.dataset_gid]
+        if self.categories is not None and len(self.categories) == 0:
             self.categories = None  # this avoids to store empty arrays when there is no categorical values for a certain Feature
-        self.visibility = visibility
-        self.datasets = [dataset_gid]
-        log.info(domain)
-        if len(domain) > 0:
-            self.domain = domain
-        else:
+        if self.domain is not None and len(self.domain) == 0:
             self.domain = None

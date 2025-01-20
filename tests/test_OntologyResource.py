@@ -1,6 +1,6 @@
 import unittest
 
-from datatypes.OntologyResource import OntologyResource
+from entities.OntologyResource import OntologyResource
 from enums.Ontologies import Ontologies
 
 
@@ -12,10 +12,10 @@ class TestOntologyResource(unittest.TestCase):
     FULL_CODE_4 = "GO:0000380"
 
     def test_compute_concat_codes(self):
-        o1 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_1, label=None, quality_stats=None)
-        o2 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_2, label=None, quality_stats=None)
-        o3 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_3, label=None, quality_stats=None)
-        o4 = OntologyResource(ontology=Ontologies.GENE_ONTOLOGY, full_code=TestOntologyResource.FULL_CODE_4, label=None, quality_stats=None)
+        o1 = OntologyResource(system=Ontologies.SNOMEDCT, code=TestOntologyResource.FULL_CODE_1, label=None, quality_stats=None)
+        o2 = OntologyResource(system=Ontologies.SNOMEDCT, code=TestOntologyResource.FULL_CODE_2, label=None, quality_stats=None)
+        o3 = OntologyResource(system=Ontologies.SNOMEDCT, code=TestOntologyResource.FULL_CODE_3, label=None, quality_stats=None)
+        o4 = OntologyResource(system=Ontologies.GENE_ONTOLOGY, code=TestOntologyResource.FULL_CODE_4, label=None, quality_stats=None)
 
         assert o1.code == "422549004"
         assert o2.code == "264275001:250895007"
@@ -23,10 +23,10 @@ class TestOntologyResource(unittest.TestCase):
         assert o4.code == "0000380"
 
     def test_compute_concat_names(self):
-        o1 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_1, label=None, quality_stats=None)
-        o2 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_2, label=None, quality_stats=None)
-        o3 = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code=TestOntologyResource.FULL_CODE_3, label=None, quality_stats=None)
-        o4 = OntologyResource(ontology=Ontologies.GENE_ONTOLOGY, full_code=TestOntologyResource.FULL_CODE_4, label=None, quality_stats=None)
+        o1 = OntologyResource(system=Ontologies.SNOMEDCT, code=TestOntologyResource.FULL_CODE_1, label=None, quality_stats=None)
+        o2 = OntologyResource(system=Ontologies.SNOMEDCT, code=TestOntologyResource.FULL_CODE_2, label=None, quality_stats=None)
+        o3 = OntologyResource(system=Ontologies.SNOMEDCT, code=TestOntologyResource.FULL_CODE_3, label=None, quality_stats=None)
+        o4 = OntologyResource(system=Ontologies.GENE_ONTOLOGY, code=TestOntologyResource.FULL_CODE_4, label=None, quality_stats=None)
 
         assert o1.label == "Patient-related Identification code"
         assert o2.label == "Fluorescence polarization immunoassay technique:Intensity change"

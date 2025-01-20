@@ -60,10 +60,3 @@ class Ontologies(EnumAsClass):
             return ""
         else:
             return process_spaces(input_string=ontology_code).lower().replace(" ", "")
-
-    @classmethod
-    def remove_prefix(cls, code: str) -> Any:
-        if code == "":
-            return ""
-        else:
-            return code.replace("ORPHA:", "").replace("orpha:", "").replace("GO:", "").replace("go:", "")

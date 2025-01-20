@@ -1,5 +1,4 @@
 import base64
-import json
 import xml.dom.minidom
 
 from bs4 import BeautifulSoup
@@ -30,7 +29,7 @@ def send_query(url: str, headers: dict | None) -> Response | None:
 
 # API ACCESS
 def send_query_to_api(url, secret: str | None, access_type: AccessTypes) -> Response | None:
-    # secret may contain an api key or (joint) username and passwort
+    # secret may contain an api key or (joint) username and password
     headers = {
         "User-Agent": "python-requests/2.31.0",
         "Accept-Encoding": "gzip, deflate",
@@ -65,9 +64,9 @@ def send_query_to_api(url, secret: str | None, access_type: AccessTypes) -> Resp
 
 def parse_json_response(response):
     # we need to load x2 and to dump to have a "real" JSON dict, parseable by Python
-    # otherwise, we have a JSON-like string or JSNO-like text data
+    # otherwise, we have a JSON-like string or JSON-like text data
     if response is not None:
-        return json.loads(json.dumps(json.loads(response.content)))
+        return response.json()  # json.loads(json.dumps(json.loads(response.content)))
     else:
         return {}
 
@@ -82,4 +81,3 @@ def parse_html_response(response):
 
 def load_xml_file(filepath: str):
     return xml.dom.minidom.parse(filepath)
-

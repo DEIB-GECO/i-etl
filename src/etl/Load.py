@@ -1,7 +1,9 @@
 from database.Database import Database
 from database.Execution import Execution
+from enums.DiagnosisColumns import DiagnosisColumns
 from enums.Profile import Profile
 from enums.TableNames import TableNames
+from enums.TimerKeys import TimerKeys
 from etl.Task import Task
 from statistics.QualityStatistics import QualityStatistics
 from statistics.TimeStatistics import TimeStatistics
@@ -10,9 +12,8 @@ from utils.setup_logger import log
 
 class Load(Task):
     def __init__(self, database: Database, execution: Execution, create_indexes: bool,
-                 dataset_number: int, profile: str,
-                 quality_stats: QualityStatistics, time_stats: TimeStatistics):
-        super().__init__(database=database, execution=execution, quality_stats=quality_stats, time_stats=time_stats)
+                 dataset_number: int, profile: str, quality_stats: QualityStatistics):
+        super().__init__(database=database, execution=execution, quality_stats=quality_stats)
         self.create_indexes = create_indexes
         self.dataset_number = dataset_number
         self.profile = profile
@@ -34,7 +35,7 @@ class Load(Task):
         unique_variables = ["registered_by", "has_subject", "instantiates", "entity_type", "base_id"]
         if self.profile == Profile.DIAGNOSIS:
             # we allow patients to have several diagnoses
-            unique_variables.append("value")
+            unique_variables.append(DiagnosisColumns.DISEASE_COUNTER)
         log.info(unique_variables)
         self.database.load_json_in_table(profile=self.profile, table_name=TableNames.RECORD, unique_variables=unique_variables, dataset_number=self.dataset_number)
 
@@ -69,6 +70,4 @@ class Load(Task):
         #     self.database.create_non_unique_index(table_name=TableNames.RECORD, columns={"base_id": 1})
         #     count += 1
 
-        # for Dataset entity only, we create an index on the global identifier
-        self.database.create_unique_index(table_name=TableNames.DATASET, columns={"global_identifier": 1})
         log.info(f"Finished to create {count} indexes.")

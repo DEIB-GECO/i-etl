@@ -1,0 +1,58 @@
+from enums.EnumAsClass import EnumAsClass
+
+
+class TimerKeys(EnumAsClass):
+    TOTAL_TIME = "total_time"
+    EXTRACT_TIME = "extract_time"
+    TRANSFORM_TIME = "transform_time"
+    LOAD_TIME = "load_time"
+    STATISTICS_TIME = "statistics_time"
+    REPORT_TIME = "report_time"
+    INSERT_DATASETS = "insert_datasets"
+    PROFILE_COMPUTATION = "profile_computation"
+    READ_TABULAR = "read_tabular"
+    PREPROCESS_DATA = "preprocess_data"
+    NORMALIZATION_DATA = "normalization_data"
+    NORMALIZATION_METADATA = "normalization_metadata"
+    FILTER_DATA = "filter_data"
+    FILTER_METADATA = "filter_metadata"
+    COMPUTE_MAPPINGS_OR = "compute_mappings_or"
+    COMPUTE_MAPPINGS_UNIT = "compute_mappings_domain"
+    COMPUTE_MAPPINGS_DOMAIN = "compute_mappings_unit"
+    OR_CREATION_TIME = "ontology_resource_creation_time"
+    API_CALLS_TIME = "api_calls_time"
+    API_CALL_USER_AGENT = "API_CALL_USER_AGENT"
+    API_CALL_AUTHENTICATION = "API_CALL_AUTHENTICATION"
+    API_CALL_KEY_HEADER = "API_CALL_KEY_HEADER"
+    API_CALL_KEY_BEARER = "API_CALL_KEY_BEARER"
+    API_CALL_KEY_URL = "API_CALL_KEY_URL"
+    API_CALL_SECOND_TRY = "api_call_second_try"
+    API_PROCESS_RESPONSE = "api_process_response"
+    DB_WRITE_TIME = "db_write_time"
+    LOAD_JSON_IN_MONGO = "load_json_in_mongo"
+    UPSERT_TUPLES = "upsert_tuples"
+
+    # # Transform
+    CREATE_PATIENTS = "create_patients"
+    WRITE_PATIENTS_IN_DB = "write_patients_in_db"
+    CREATE_FEATURES = "create_features"
+    CREATE_FEATURE_INSTANCES = "create_feature_instances"
+    PROCESS_FEATURE_BATCH = "process_feature_batch"
+    WRITE_FEATURES_IN_DB = "write_features_in_db"
+    CREATE_RECORDS = "create_records"
+    CREATE_RECORD_INSTANCES = "create_record_instances"
+    GET_IDS = "GET_IDS"
+    IF_ENTITY_TYPE = "IF_ENTITY_TYPE"
+    PROCESS_RECORD_BATCH = "process_record_batch"
+    WRITE_RECORDS_IN_DB = "write_records_in_db"
+
+    # # Fairification
+    VALUE_FAIRIFICATION = "value_fairification"
+
+    # Writing record resources
+    GET_RESOURCE_JSON_FILE = "get_resource_json_file"
+    JSONIFY_RECORDS = "jsonify_records"
+    UJSON_DUMP = "ujson_dump"
+    CREATE_UPSERT_OPERATIONS = "CREATE_UPSERT_OPERATIONS"
+    BULK_WRITE = "BULK_WRITE"
+

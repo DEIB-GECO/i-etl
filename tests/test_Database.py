@@ -11,13 +11,11 @@ from constants.structure import TEST_DB_NAME
 from database.Counter import Counter
 from database.Database import Database
 from database.Execution import Execution
-from datatypes.Identifier import Identifier
 from entities.ResourceTest import ResourceTest
 from enums.HospitalNames import HospitalNames
 from enums.ParameterKeys import ParameterKeys
 from enums.TableNames import TableNames
 from utils.file_utils import write_in_file
-from utils.setup_logger import log
 from utils.test_utils import wrong_number_of_docs, compare_tuples, set_env_variables_from_dict
 
 
@@ -52,7 +50,7 @@ class TestDatabase(unittest.TestCase):
         # create a test database
         # and add only one triple to be sure that the db is created
         database = Database(execution=TestDatabase.execution)
-        database.db[TableNames.TEST].insert_one(document={"id": "1", "name": "Alice Doe"})
+        database.db[TableNames.TEST].insert_one(document={"id": 1, "name": "Alice Doe"})
         assert database.db_exists(TEST_DB_NAME) is True, "The database does not exist."
         database.drop_db()
         # check the DB does not exist anymore after drop
@@ -62,7 +60,7 @@ class TestDatabase(unittest.TestCase):
         # test that the database is not dropped when the user asks for it
         # 1. create a db with a single table and only one tuple
         database = Database(execution=TestDatabase.execution)
-        database.db[TableNames.TEST].insert_one(document={"id": "1", "name": "Alice Doe"})
+        database.db[TableNames.TEST].insert_one(document={"id": 1, "name": "Alice Doe"})
         assert database.db_exists(TEST_DB_NAME) is True, "The database does not exist."  # we make sure that the db exists
 
         # 2. we create a new instance to the same database, with drop_db=False
@@ -79,7 +77,7 @@ class TestDatabase(unittest.TestCase):
         assert database.db_exists(TEST_DB_NAME) is True, "The database has not been dropped."
 
     def test_insert_empty_tuple(self):
-        database = Database(TestDatabase.execution)
+        database = Database(execution=TestDatabase.execution)
         my_tuple = {}
         my_original_tuple = copy.deepcopy(my_tuple)
         database.insert_one_tuple(table_name=TableNames.TEST, one_tuple=my_tuple)
@@ -100,7 +98,7 @@ class TestDatabase(unittest.TestCase):
         compare_tuples(original_tuple=my_original_tuple, inserted_tuple=docs[0])
 
     def test_insert_no_tuples(self):
-        database = Database(TestDatabase.execution)
+        database = Database(execution=TestDatabase.execution)
         my_tuples = []
 
         with pytest.raises(TypeError):
@@ -252,7 +250,7 @@ class TestDatabase(unittest.TestCase):
         set_env_variables_from_dict(env_vars=args)
         TestDatabase.execution.internals_set_up()
         TestDatabase.execution.file_set_up(setup_files=False)
-        database = Database(TestDatabase.execution)
+        database = Database(execution=TestDatabase.execution)
         my_batch_3 = [{"name": "Nelly", "age": 27}, {"name": "Anna", "citizenship": "Italian"}]
         database.upsert_one_batch_of_tuples(table_name=TableNames.TEST, unique_variables=["name"], the_batch=my_batch_3, ordered=True)
         expected_docs = [my_batch_3[1], my_original_batch[1], my_batch_3[0], my_batch_2[1]]  # ordered by name
@@ -302,17 +300,16 @@ class TestDatabase(unittest.TestCase):
             compare_tuples(original_tuple=expected_docs[i], inserted_tuple=docs[i])
 
     def test_retrieve_resource_identifiers_1(self):
-        database = Database(TestDatabase.execution)
-        my_id = Identifier(id_value=123)
-        my_tuple = {"identifier": my_id.to_json(), "name": "Nelly"}
+        database = Database(execution=TestDatabase.execution)
+        my_tuple = {"identifier": 123, "name": "Nelly"}
         database.db[TableNames.TEST].insert_one(my_tuple)
         the_doc = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="name", value_fields="identifier", filter_dict={})
-        expected_doc = {"Nelly": my_id.to_json()}
+        expected_doc = {"Nelly": 123}
         assert the_doc == expected_doc
 
     def test_retrieve_resource_identifiers_10(self):
-        database = Database(TestDatabase.execution)
-        my_tuples = [{"identifier": Identifier(id_value=i).to_json(), "value": i + random.randint(0, 100)} for i in range(0, 10)]
+        database = Database(execution=TestDatabase.execution)
+        my_tuples = [{"identifier": i, "value": i + random.randint(0, 100)} for i in range(0, 10)]
         my_original_tuples = copy.deepcopy(my_tuples)
         database.db[TableNames.TEST].insert_many(my_tuples)
         docs = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="value", value_fields="identifier", filter_dict={})
@@ -324,25 +321,23 @@ class TestDatabase(unittest.TestCase):
             compare_tuples(original_tuple={key: value}, inserted_tuple={key: docs[key]})
 
     def test_retrieve_resource_identifiers_wrong_key(self):
-        database = Database(TestDatabase.execution)
-        my_id = Identifier(id_value=123)
-        my_tuple = {"identifier": my_id.to_json(), "name": "Nelly"}
+        database = Database(execution=TestDatabase.execution)
+        my_tuple = {"identifier": 123, "name": "Nelly"}
         database.db[TableNames.TEST].insert_one(my_tuple)
         with pytest.raises(KeyError):
             _ = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="name2", value_fields="identifier", filter_dict={})
 
     def test_retrieve_patient_identifiers_1(self):
-        database = Database(TestDatabase.execution)
-        my_id = Identifier(id_value=123)
-        my_tuple = {"identifier": my_id.to_json(), "name": "Nelly"}
+        database = Database(execution=TestDatabase.execution)
+        my_tuple = {"identifier": 123, "name": "Nelly"}
         database.db[TableNames.TEST].insert_one(my_tuple)
         the_doc = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="name", value_fields="identifier", filter_dict={})
-        expected_doc = {"Nelly": my_id.value}
+        expected_doc = {"Nelly": 123}
         assert the_doc == expected_doc
 
     def test_retrieve_patient_identifiers_10(self):
-        database = Database(TestDatabase.execution)
-        my_tuples = [{"identifier": Identifier(id_value=i).to_json(), "value": i + random.randint(0, 100)} for i in range(0, 10)]
+        database = Database(execution=TestDatabase.execution)
+        my_tuples = [{"identifier": i, "value": i + random.randint(0, 100)} for i in range(0, 10)]
         my_original_tuples = copy.deepcopy(my_tuples)
         database.db[TableNames.TEST].insert_many(my_tuples)
         docs = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="value", value_fields="identifier", filter_dict={})
@@ -354,9 +349,8 @@ class TestDatabase(unittest.TestCase):
             compare_tuples(original_tuple={key: value}, inserted_tuple={key: docs[key]})
 
     def test_retrieve_patient_identifiers_wrong_key(self):
-        database = Database(TestDatabase.execution)
-        my_id = Identifier(id_value=123)
-        my_tuple = {"identifier": my_id.to_json(), "name": "Nelly"}
+        database = Database(execution=TestDatabase.execution)
+        my_tuple = {"identifier": 123, "name": "Nelly"}
         database.db[TableNames.TEST].insert_one(my_tuple)
         with pytest.raises(KeyError):
             _ = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="name2", value_fields="identifier", filter_dict={})
@@ -364,9 +358,9 @@ class TestDatabase(unittest.TestCase):
     def test_write_in_file(self):
         counter = Counter()
         my_tuples = [
-            ResourceTest(id_value=NO_ID, entity_type=TableNames.TEST, counter=counter),
-            ResourceTest(id_value=NO_ID, entity_type=TableNames.TEST, counter=counter),
-            ResourceTest(id_value=NO_ID, entity_type=TableNames.TEST, counter=counter),
+            ResourceTest(identifier=NO_ID, counter=counter),
+            ResourceTest(identifier=NO_ID, counter=counter),
+            ResourceTest(identifier=NO_ID, counter=counter),
         ]
         my_tuples_as_json = [my_tuples[i].to_json() for i in range(len(my_tuples))]
 
@@ -379,14 +373,14 @@ class TestDatabase(unittest.TestCase):
             assert my_tuples_as_json == read_tuples
 
     def test_write_in_file_no_resource(self):
-        _ = Database(TestDatabase.execution)
+        _ = Database(execution=TestDatabase.execution)
         my_tuples = []
         write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, profile=TableNames.TEST, is_feature=False, file_counter=2, dataset_number=1)
         filepath = os.path.join(TestDatabase.execution.working_dir_current, f"1{TableNames.TEST}2.json")
         assert os.path.exists(filepath) is False  # no file should have been created since there is no data to write
 
     def test_load_json_in_table(self):
-        database = Database(TestDatabase.execution)
+        database = Database(execution=TestDatabase.execution)
         my_tuples = [
             {"name": "Nelly", "age": 26},
             {"name": "Julien", "age": 30, "city": "Lyon"},
@@ -411,7 +405,7 @@ class TestDatabase(unittest.TestCase):
             compare_tuples(original_tuple=expected_docs[i], inserted_tuple=docs[i])
 
     def test_find_operation_1(self):
-        database = Database(TestDatabase.execution)
+        database = Database(execution=TestDatabase.execution)
         my_tuples = [
             {"name": "Julien", "job": "engineer", "city": "Lyon"},
             {"name": "Nelly", "job": "bachelor student", "city": "Lyon"},
@@ -493,7 +487,7 @@ class TestDatabase(unittest.TestCase):
             compare_tuples(original_tuple=expected_docs[i], inserted_tuple=docs[i])
 
     def test_count_documents(self):
-        database = Database(TestDatabase.execution)
+        database = Database(execution=TestDatabase.execution)
         my_tuples = [
             {"name": "Julien", "from": "France"},
             {"name": "Nelly", "from": "France", "city": "Milano"},
@@ -517,7 +511,7 @@ class TestDatabase(unittest.TestCase):
         assert current_count == len(expected_docs), wrong_number_of_docs(len(expected_docs))
 
     def test_get_min_or_max_value(self):
-        database = Database(TestDatabase.execution)
+        database = Database(execution=TestDatabase.execution)
         my_tuples = [
             {"value": 0.2},
             {"value": 1},
@@ -530,7 +524,7 @@ class TestDatabase(unittest.TestCase):
         assert min_value == 0.2, "The expected minimum value is 0.2."
         assert max_value == 10, "The expected maximum value is 10."
 
-        database = Database(TestDatabase.execution)
+        database = Database(execution=TestDatabase.execution)
         my_tuples = [
             {"value": -0.2},
             {"value": -1},
@@ -544,12 +538,12 @@ class TestDatabase(unittest.TestCase):
         assert max_value == -0.2, "The expected maximum value is -0.2."
 
     def test_get_min_or_max_resource_id(self):
-        database = Database(TestDatabase.execution)
+        database = Database(execution=TestDatabase.execution)
         my_tuples = [
-            {"value": Identifier(id_value=45).value},
-            {"value": Identifier(id_value=54).value},
-            {"value": Identifier(id_value=9).value},
-            {"value": Identifier(id_value=154).value}
+            {"value": 45},
+            {"value": 54},
+            {"value": 9},
+            {"value": 154}
         ]
         database.db[TableNames.TEST].insert_many(documents=my_tuples)
         min_value = database.get_min_or_max_value(table_name=TableNames.TEST, field="value", sort_order=1)
@@ -558,18 +552,16 @@ class TestDatabase(unittest.TestCase):
         assert max_value == 154, "The expected maximum value is 154."
 
     def test_get_max_resource_counter_id(self):
-        # we need to check both with Resource and AnonymizedPatient identifiers
-        # to be sure that both identifiers can be parsed accordingly and take the max value among them
-        database = Database(TestDatabase.execution)
+        database = Database(execution=TestDatabase.execution)
         my_resources_1 = [
-            {"identifier": Identifier(id_value=1).value, "name": "Anna"},
-            {"identifier": Identifier(id_value=4).value, "name": "Julien"},
-            {"identifier": Identifier(id_value=999).value, "name": "Nelly"},
+            {"identifier": 1, "name": "Anna"},
+            {"identifier": 4, "name": "Julien"},
+            {"identifier": 999, "name": "Nelly"},
         ]
         my_resources_2 = [
-            {"identifier": Identifier(id_value=2).value, "name": "Anna"},
-            {"identifier": Identifier(id_value=100).value, "name": "Nelly"},
-            {"identifier": Identifier(id_value=-1000).value, "name": "Pietro"},
+            {"identifier": 2, "name": "Anna"},
+            {"identifier": 100, "name": "Nelly"},
+            {"identifier": 998, "name": "Pietro"},
         ]
         # as an exception, we insert into LABORATORY_RECORD, not in TableNames.TEST,
         # because the method is made to set up resource counter and is expected to work on the

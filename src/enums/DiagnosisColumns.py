@@ -12,5 +12,7 @@ class DiagnosisColumns(EnumAsClass):
     INHERITANCE = MetadataColumns.normalize_name(column_name="VariantInheritance")
     CHR_NUMBER = MetadataColumns.normalize_name(column_name="ChromosomeNumber")
     ZIGOSITY = MetadataColumns.normalize_name(column_name="Zygosity")
+    # for hospitals which have patients possibly affected by several diseases
+    DISEASE_COUNTER = MetadataColumns.normalize_name(column_name="DiagnosisCounter")
 
 

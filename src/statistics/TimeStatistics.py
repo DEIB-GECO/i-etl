@@ -1,48 +1,38 @@
+import dataclasses
+import time
+
 from statistics.Statistics import Statistics
-from statistics.Timer import Timer
+from utils.setup_logger import log
 
 
+@dataclasses.dataclass(kw_only=True)
 class TimeStatistics(Statistics):
-    def __init__(self, record_stats: bool):
-        super().__init__(record_stats=record_stats)
+    stats: dict = dataclasses.field(default_factory=dict)
 
-        self.total_execution_timer = Timer()
-        self.total_extract_timer = Timer()
-        self.total_transform_timer = Timer()
-        self.total_load_timer = Timer()
+    def start(self, dataset: str | None, key: str):
+        if dataset is None:
+            dataset = "ALL"
+        if dataset not in self.stats:
+            self.stats[dataset] = {}
+        if key not in self.stats[dataset]:
+            self.stats[dataset][key] = {"start_time": 0.0, "cumulated_time": 0.0}
+        self.stats[dataset][key]["start_time"] = time.time()
 
-    def start_total_execution_timer(self):
-        self.total_execution_timer.start()
+    def increment(self, dataset: str | None, key: str):
+        if dataset is None:
+            dataset = "ALL"
+        if dataset in self.stats and key in self.stats[dataset]:
+            self.stats[dataset][key]["cumulated_time"] += time.time() - self.stats[dataset][key]["start_time"]
+        else:
+            log.error(f"No existing timer for dataset {dataset} and key {key}")
 
-    def start_total_extract_timer(self):
-        self.total_extract_timer.start()
-
-    def start_total_transform_timer(self):
-        self.total_transform_timer.start()
-
-    def start_total_load_timer(self):
-        self.total_load_timer.start()
-
-    def stop_total_execution_timer(self):
-        self.total_execution_timer.stop()
-
-    def stop_total_extract_timer(self):
-        self.total_extract_timer.stop()
-
-    def stop_total_transform_timer(self):
-        self.total_transform_timer.stop()
-
-    def stop_total_load_timer(self):
-        self.total_load_timer.stop()
-
-    def to_json(self):
-        return {  # TODO: do a for loop to iterate over the timers and get their total time for each
-            "total_execution_time": self.total_execution_timer.total_time,
-            "total_extract_time": self.total_extract_timer.total_time,
-            "total_transform_time": self.total_transform_timer.total_time,
-            "total_load_time": self.total_load_timer.total_time
-        }
-
-    def __getstate__(self):
-        # to directly show the timings in the DB, instead of nested objects containing timings
-        return self.to_json()
+    def count(self, value: int, dataset: str | None, key: str):
+        if dataset is None:
+            dataset = "ALL"
+        if dataset not in self.stats:
+            self.stats[dataset] = {}
+        if key in self.stats[dataset]:
+            self.stats[dataset][key]["count"] += value
+        else:
+            self.stats[dataset][key] = {}
+            self.stats[dataset][key]["count"] = value
