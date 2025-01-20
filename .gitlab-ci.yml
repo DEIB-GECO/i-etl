@@ -6,5 +6,6 @@ etl:
     - cp .env.ci .env
     - cat .env
     - export CONTEXT_MODE="TEST"
+    - export MY_ENV_FILE=.env.test
     - docker build . --tag etl
-    - docker compose up
+    - docker compose --env-file .env.test up
