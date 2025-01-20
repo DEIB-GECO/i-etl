@@ -46,7 +46,7 @@ class ETL:
 
     def run(self) -> None:
         time_stats = TimeStatistics(record_stats=True)
-        time_stats.start_timer(dataset=None, key=TimerKeys.TOTAL_TIME)
+        time_stats.start(dataset=None, key=TimerKeys.TOTAL_TIME)
         compute_indexes = False
         dataset_number = 0
         file_counter = 0
@@ -58,7 +58,7 @@ class ETL:
         log.info("********** create hospital")
         counter = Counter()
         counter.set_with_database(database=self.database)
-        file_counter = self.create_hospital(counter=counter, dataset_number=dataset_number, file_counter=file_counter, time_stats=time_stats, dataset_key=None)
+        file_counter = self.create_hospital(counter=counter, dataset_number=dataset_number, file_counter=file_counter)
 
         all_metadata = read_tabular_file_as_string(self.execution.metadata_filepath)  # keep all metadata as str
         log.info(all_metadata)
@@ -102,42 +102,41 @@ class ETL:
                             compute_indexes = True
 
                         # EXTRACT
-                        time_stats.start_timer(dataset=current_dataset_instance.global_identifier, key=TimerKeys.EXTRACT_TIME)
-                        self.extract = Extract(metadata=metadata, profile=profile, database=self.database, execution=self.execution, quality_stats=quality_stats, time_stats=time_stats, dataset_key=current_dataset_instance.global_identifier)
+                        time_stats.start(dataset=current_dataset_instance.global_identifier, key=TimerKeys.EXTRACT_TIME)
+                        self.extract = Extract(metadata=metadata, profile=profile, database=self.database, execution=self.execution, quality_stats=quality_stats)
                         self.extract.run()
-                        time_stats.increment_timer(dataset=current_dataset_instance.global_identifier, key=TimerKeys.EXTRACT_TIME)
+                        time_stats.increment(dataset=current_dataset_instance.global_identifier, key=TimerKeys.EXTRACT_TIME)
 
                         if self.extract.metadata is not None:
                             log.info(f"running transform on dataset {self.execution.current_filepath} with profile {profile}")
                             # TRANSFORM
-                            time_stats.start_timer(dataset=current_dataset_instance.global_identifier, key=TimerKeys.TRANSFORM_TIME)
+                            time_stats.start(dataset=current_dataset_instance.global_identifier, key=TimerKeys.TRANSFORM_TIME)
                             self.transform = Transform(database=self.database, execution=self.execution, data=self.extract.data,
                                                        metadata=self.extract.metadata,
                                                        mapping_categorical_value_to_onto_resource=self.extract.mapping_categorical_value_to_onto_resource,
                                                        mapping_column_to_categorical_value=self.extract.mapping_column_to_categorical_value,
                                                        mapping_column_to_unit=self.extract.mapping_column_to_unit,
                                                        mapping_column_to_domain=self.extract.mapping_column_to_domain,
+                                                       mapping_column_to_type=None,  # this will be computed during the Transform step
                                                        profile=profile, load_patients=count_profiles == 1,
                                                        dataset_number=dataset_number, file_counter=file_counter, dataset_key=current_dataset_instance,
-                                                       quality_stats=quality_stats, time_stats=time_stats)
+                                                       quality_stats=quality_stats)
                             self.transform.run()
-                            time_stats.increment_timer(dataset=current_dataset_instance.global_identifier, key=TimerKeys.TRANSFORM_TIME)
+                            time_stats.increment(dataset=current_dataset_instance.global_identifier, key=TimerKeys.TRANSFORM_TIME)
                             file_counter = self.transform.file_counter
 
                             # LOAD
-                            time_stats.start_timer(dataset=current_dataset_instance.global_identifier, key=TimerKeys.LOAD_TIME)
+                            time_stats.start(dataset=current_dataset_instance.global_identifier, key=TimerKeys.LOAD_TIME)
                             log.info(f"{one_filename} -> {compute_indexes}")
                             # create indexes only if this is the last file (otherwise, we would create useless intermediate indexes)
                             self.load = Load(database=self.database, execution=self.execution, create_indexes=compute_indexes,
                                              dataset_number=dataset_number, profile=profile,
-                                             quality_stats=quality_stats, time_stats=time_stats,
-                                             dataset_key=current_dataset_instance.global_identifier)
+                                             quality_stats=quality_stats)
                             self.load.run()
-                            time_stats.increment_timer(dataset=current_dataset_instance.global_identifier, key=TimerKeys.LOAD_TIME)
+                            time_stats.increment(dataset=current_dataset_instance.global_identifier, key=TimerKeys.LOAD_TIME)
                 self.execution.current_file_number += 1
 
         # save the datasets in the DB
-        time_stats.start_timer(dataset=None, key=TimerKeys.INSERT_DATASETS)
         log.info(len(self.datasets))
         log.info(self.datasets[0])
         log.info(self.datasets)
@@ -146,26 +145,18 @@ class ETL:
             self.database.upsert_one_batch_of_tuples(table_name=TableNames.DATASET, unique_variables=["docker_path"], the_batch=[dataset.to_json() for dataset in self.datasets], ordered=False)
             # for Dataset entity only, we create an index on the global identifier
             self.database.create_unique_index(table_name=TableNames.DATASET, columns={"global_identifier": 1})
-        time_stats.increment_timer(dataset=None, key=TimerKeys.INSERT_DATASETS)
         # compute their profiles
-        time_stats.start_timer(dataset=None, key=TimerKeys.PROFILE_COMPUTATION)
         log.info("profile computation")
         self.profile_computation = FeatureProfileComputation(database=self.database)
         self.profile_computation.compute_features_profiles()
-        time_stats.increment_timer(dataset=None, key=TimerKeys.PROFILE_COMPUTATION)
         # compute DB stats
-        time_stats.start_timer(dataset=None, key=TimerKeys.STATISTICS_TIME)
         db_stats = DatabaseStatistics(record_stats=True)
         db_stats.compute_stats(database=self.database)
-        time_stats.increment_timer(dataset=None, key=TimerKeys.STATISTICS_TIME)
         # compute the final report with all the stats
-        time_stats.start_timer(dataset=None, key=TimerKeys.REPORT_TIME)
-        self.reporting = Reporting(database=self.database, execution=self.execution, quality_stats=quality_stats, time_stats=time_stats, db_stats=db_stats, dataset_key=None)
+        self.reporting = Reporting(database=self.database, execution=self.execution, quality_stats=quality_stats, time_stats=time_stats, db_stats=db_stats)
         self.reporting.run()
-        time_stats.increment_timer(dataset=None, key=TimerKeys.REPORT_TIME)
-        time_stats.increment_timer(dataset=None, key=TimerKeys.TOTAL_TIME)
 
-    def create_hospital(self, counter: Counter, dataset_number: int, file_counter: int, time_stats: TimeStatistics, dataset_key: str) -> int:
+    def create_hospital(self, counter: Counter, dataset_number: int, file_counter: int) -> int:
         log.info(f"create hospital instance in memory")
         cursor = self.database.find_operation(table_name=TableNames.HOSPITAL, filter_dict={"name": self.execution.hospital_name}, projection={})
         hospital_exists = False
@@ -179,8 +170,7 @@ class ETL:
             log.info(new_hospital)
             hospitals = [new_hospital]
             write_in_file(resource_list=hospitals, current_working_dir=self.execution.working_dir_current,
-                          profile=TableNames.HOSPITAL, is_feature=False, dataset_number=dataset_number, file_counter=file_counter,
-                          time_stats=time_stats, dataset=dataset_key)
+                          profile=TableNames.HOSPITAL, is_feature=False, dataset_number=dataset_number, file_counter=file_counter)
             file_counter += 1
-            self.database.load_json_in_table(profile=TableNames.HOSPITAL, table_name=TableNames.HOSPITAL, unique_variables=["name"], dataset_number=dataset_number, time_stats=time_stats, dataset=dataset_key)
+            self.database.load_json_in_table(profile=TableNames.HOSPITAL, table_name=TableNames.HOSPITAL, unique_variables=["name"], dataset_number=dataset_number)
         return file_counter

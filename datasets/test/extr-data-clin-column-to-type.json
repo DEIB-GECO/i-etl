@@ -1,0 +1,8 @@
+{
+  "id": null,
+  "molecule_a": "float",
+  "molecule_b": "int",
+  "molecule_g": "bool",
+  "molecule_z": null,
+  "molecule_y": "int"
+}

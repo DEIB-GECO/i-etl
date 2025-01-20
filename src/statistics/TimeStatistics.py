@@ -1,8 +1,7 @@
 import dataclasses
 import time
 
-from database.Operators import Operators
-from statistics.Statistics import Statistics, factory
+from statistics.Statistics import Statistics
 from utils.setup_logger import log
 
 
@@ -10,7 +9,7 @@ from utils.setup_logger import log
 class TimeStatistics(Statistics):
     stats: dict = dataclasses.field(default_factory=dict)
 
-    def start_timer(self, dataset: str | None, key: str):
+    def start(self, dataset: str | None, key: str):
         if dataset is None:
             dataset = "ALL"
         if dataset not in self.stats:
@@ -19,7 +18,7 @@ class TimeStatistics(Statistics):
             self.stats[dataset][key] = {"start_time": 0.0, "cumulated_time": 0.0}
         self.stats[dataset][key]["start_time"] = time.time()
 
-    def increment_timer(self, dataset: str | None, key: str):
+    def increment(self, dataset: str | None, key: str):
         if dataset is None:
             dataset = "ALL"
         if dataset in self.stats and key in self.stats[dataset]:

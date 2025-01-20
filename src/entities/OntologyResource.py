@@ -1,20 +1,12 @@
 import dataclasses
-import json
 import re
-from datetime import datetime, date, time
 from urllib.parse import quote
 
 from constants.defaults import SNOMED_OPERATORS_LIST, DEFAULT_ONTOLOGY_RESOURCE_LABEL, SNOMED_OPERATORS_STR
 from constants.methods import factory
-from database.Counter import Counter
-from database.Database import Database
-from database.Operators import Operators
 from enums.AccessTypes import AccessTypes
 from enums.Ontologies import Ontologies
-from enums.TimerKeys import TimerKeys
-from statistics.DatabaseStatistics import DatabaseStatistics
 from statistics.QualityStatistics import QualityStatistics
-from statistics.TimeStatistics import TimeStatistics
 from utils.api_utils import send_query_to_api, parse_xml_response, parse_json_response, parse_html_response
 from utils.setup_logger import log
 from utils.str_utils import remove_specific_tokens, process_spaces, remove_operators_in_strings
@@ -25,16 +17,13 @@ class OntologyResource:
     system: dict | str
     code: str
     label: str | None
-    dataset_key: str
-    quality_stats: QualityStatistics | None
-    time_stats: TimeStatistics | None
+    quality_stats: QualityStatistics | None = dataclasses.field(repr=False)
 
     def __post_init__(self):
         # every attribute that is there will be serialized in the Ontology Resource
         # to avoid this, one needs to explicitly say which attributes are to be removed from the JSON serialization
         # using the __get_state__ method
         self.quality_stats = self.quality_stats if self.quality_stats is not None else QualityStatistics(record_stats=False)
-        self.time_stats = self.time_stats if self.time_stats is not None else TimeStatistics(record_stats=False)
         if len(self.system) == 0 or len(self.code) == 0:
             # no ontology code has been provided for that variable name, let's skip it
             log.error("Could not create an OntologyResource with no ontology system and/or code.")
@@ -53,9 +42,7 @@ class OntologyResource:
             if self.label is None:
                 # when we create a new OntologyResource from scratch, we need to compute the label with ontology API
                 # if the query to the API does not work, we can still use the column name as the label of the OntoResource
-                self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.OR_CREATION_TIME)
-                self.compute_label(code_elements=code_elements, quality_stats=self.quality_stats, dataset_key=self.dataset_key)
-                self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.OR_CREATION_TIME)
+                self.compute_label(code_elements=code_elements, quality_stats=self.quality_stats)
 
     def compute_elements(self, full_code: str) -> list:
         elements = []
@@ -91,7 +78,7 @@ class OntologyResource:
                 if element != "|":
                     self.code += element
 
-    def compute_label(self, code_elements: list, quality_stats: QualityStatistics, dataset_key: str) -> None:
+    def compute_label(self, code_elements: list, quality_stats: QualityStatistics) -> None:
         self.label = ""
         for i in range(len(code_elements)):
             element = code_elements[i]
@@ -102,7 +89,7 @@ class OntologyResource:
                     pass
                 else:
                     # this is a code, we get its label (name)
-                    resource_label = OntologyResource.get_resource_label_from_api(system=self.system, single_code=element, quality_stats=quality_stats, time_stats=self.time_stats, dataset_key=dataset_key)
+                    resource_label = OntologyResource.get_resource_label_from_api(system=self.system, single_code=element, quality_stats=quality_stats)
                     if resource_label is not None:
                         resource_label = process_spaces(input_string=resource_label)
                         resource_label = remove_specific_tokens(input_string=resource_label, tokens=["(property)", "- finding", "-finding", "(qualifier value)", "(observable entity)", "(social concept)", "(procedure)", "(assessment scale)", "- action", "-action", "- attribute", "-attribute"])  # useless and may break parsing (due to parenthesis and dash)
@@ -115,7 +102,7 @@ class OntologyResource:
                     self.label += element
 
     @classmethod
-    def get_resource_label_from_api(cls, system: str, single_code: str, quality_stats: QualityStatistics, time_stats: TimeStatistics, dataset_key: str) -> str:
+    def get_resource_label_from_api(cls, system: str, single_code: str, quality_stats: QualityStatistics) -> str:
         # column_name is to be used when the label of the OntologyResource could not be computed with any of the APIs
         compute_from_api = True
         if compute_from_api:
@@ -123,9 +110,7 @@ class OntologyResource:
                 if system == Ontologies.SNOMEDCT["url"]:
                     url_resource = quote(f"http://purl.bioontology.org/ontology/SNOMEDCT/{single_code}", safe="")
                     url = f"http://data.bioontology.org/ontologies/SNOMEDCT/classes/{url_resource}"
-                    time_stats.start_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
                     response = send_query_to_api(url=url, secret="d6fb9c05-3309-4158-892f-65434a9133b9", access_type=AccessTypes.API_KEY_IN_URL)
-                    time_stats.increment_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
                     if response is None:
                         error = f"Failed connection to SNOMED-CT API."
                     elif response.status_code == 200:
@@ -142,9 +127,7 @@ class OntologyResource:
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.LOINC["url"]:
                     url = f"https://loinc.regenstrief.org/searchapi/loincs?query={single_code}"
-                    time_stats.start_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
                     response = send_query_to_api(url=url, secret="nbarret d7=47@xiz$g=-Ns", access_type=AccessTypes.AUTHENTICATION)
-                    time_stats.increment_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
                     data = parse_json_response(response)
                     if response is None:
                         error = f"Failed connection to LOINC API."
@@ -157,16 +140,14 @@ class OntologyResource:
                         else:
                             error = f"Resource {single_code} not found."
                     else:
-                        error = f"Failed connection to SNOMED-CT API."
+                        error = f"Failed connection to LOINC API."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.PUBCHEM["url"]:
                     url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{single_code}/description/JSON"
-                    time_stats.start_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
                     response = send_query_to_api(url, secret=None, access_type=AccessTypes.USER_AGENT)
-                    time_stats.increment_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
                     if response is None:
-                        error = f"Failed connection to SNOMED-CT API."
+                        error = f"Failed connection to PUBCHEM API."
                     elif response.status_code == 404 or response.status_code == 400:
                         error = f"Resource {single_code} not found."
                     elif response.status_code == 200:
@@ -188,9 +169,7 @@ class OntologyResource:
                 elif system == Ontologies.GSSO["url"]:
                     iri = f"http://purl.obolibrary.org/obo/{single_code.upper()}"  # we need to upper case the GSSO_, otherwise the API returns None
                     url = f"https://ontobee.org/ontology/GSSO?iri={iri}"
-                    time_stats.start_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
                     response = send_query_to_api(url=url, secret="d6fb9c05-3309-4158-892f-65434a9133b9", access_type=AccessTypes.API_KEY_IN_BEARER)
-                    time_stats.increment_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
                     if response is None:
                         error = f"Failed connection to GSSO API."
                     elif response.status_code == 200:
@@ -223,11 +202,9 @@ class OntologyResource:
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.ORPHANET["url"]:
                     url = f"https://api.orphacode.org/EN/ClinicalEntity/orphacode/{single_code}/Name"
-                    time_stats.start_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
                     response = send_query_to_api(url=url, secret="nbarret", access_type=AccessTypes.API_KEY_IN_HEADER)
-                    time_stats.increment_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
                     if response is None:
-                        error = f"Failed connection to SNOMED-CT API."
+                        error = f"Failed connection to ORPHANET API."
                     elif response.status_code == 404 or response.status_code == 400:
                         error = f"Resource {single_code} not found."
                     elif response.status_code == 200:
@@ -245,9 +222,7 @@ class OntologyResource:
                     # it seems that there is an RDF query tool, but it is not sure that this can be queried as an API
                     # and there is no documentation on existing properties to query some codes
                     url = f"https://amigo.geneontology.org/amigo/term/GO:{single_code}"
-                    time_stats.start_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
                     response = send_query_to_api(url=url, secret=None, access_type=AccessTypes.USER_AGENT)
-                    time_stats.increment_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
                     if response is None:
                         error = f"Failed connection to GO API."
                     elif response.status_code == 200:
@@ -266,9 +241,7 @@ class OntologyResource:
                 elif system == Ontologies.OMIM["url"]:
                     # TODO NELLY: get OMIM API key (default one on OMIM website nfNEOscLNWWXdSmUoMLPPA is unauthorized)
                     url = f"https://api.omim.org/api/entry?mimNumber={single_code}&include=text&format=json"
-                    time_stats.start_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
                     response = send_query_to_api(url=url, secret="nfNEOscLNWWXdSmUoMLPPA", access_type=AccessTypes.API_KEY_IN_HEADER)
-                    time_stats.increment_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
                     if response is None:
                         error = f"Failed connection to OMIM API."
                     elif response.status_code == 200:
@@ -283,11 +256,9 @@ class OntologyResource:
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.HGNC["url"]:
                     url = f"https://rest.ensembl.org/xrefs/id/{single_code}?external_db=HGNC;content-type=application/json;all_levels=1"
-                    time_stats.start_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
                     response = send_query_to_api(url=url, secret=None, access_type=AccessTypes.USER_AGENT)
-                    time_stats.increment_timer(dataset=dataset_key, key=TimerKeys.API_CALLS_TIME)
                     if response is None:
-                        error = f"Failed connection to OMIM API."
+                        error = f"Failed connection to HGNC API."
                     elif response.status_code == 200:
                         data = parse_json_response(response)
                         if len(data) > 0 and "description" in data[0]:
@@ -295,7 +266,7 @@ class OntologyResource:
                         else:
                             error = f"No text field for resource {single_code}."
                     else:
-                        error = f"Failed connection to OMIM API."
+                        error = f"Failed connection to HGNC API."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 else:
@@ -311,15 +282,12 @@ class OntologyResource:
     def to_json(self):
         return dataclasses.asdict(self, dict_factory=factory)
 
-    # def __str__(self):
-    #     return json.dumps(self.to_json())
-
     @classmethod
-    def from_json(cls, json_or: dict, quality_stats: QualityStatistics, time_stats: TimeStatistics, dataset_key: str):  # returns an OntologyResource
+    def from_json(cls, json_or: dict, quality_stats: QualityStatistics):  # returns an OntologyResource
         # fill a new OntologyResource instance with a JSON-encoded OntologyResource
         the_or = OntologyResource(system=Ontologies.get_enum_from_url(json_or["system"]),
                                   code=json_or["code"], label=json_or["label"],
-                                  quality_stats=quality_stats, time_stats=time_stats, dataset_key=dataset_key)
+                                  quality_stats=quality_stats)
         return the_or
 
     def __eq__(self, other):
@@ -329,5 +297,3 @@ class OntologyResource:
         # we do not use the display  because this would lead to unequal instances
         # if provided descriptions differ from one hospital to another
         return self.system == other.system and self.code == other.code
-
-

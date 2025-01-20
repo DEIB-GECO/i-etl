@@ -79,6 +79,7 @@ def get_records_for_patient(records: list, patient_id: str) -> list[dict]:
         if json_record["has_subject"] == patient_id:
             matching_records.append(json_record)
     # also sort them by PhenFeature reference id
+    log.info(matching_records)
     return sorted(matching_records, key=lambda d: d["instantiates"])
 
 

@@ -6,15 +6,14 @@ import unittest
 import pandas as pd
 import pytest
 
-from constants.defaults import DEFAULT_ONTOLOGY_RESOURCE_LABEL
+from constants.defaults import DEFAULT_ONTOLOGY_RESOURCE_LABEL, NO_ID
 from constants.structure import TEST_DB_NAME, DOCKER_FOLDER_TEST
 from database.Counter import Counter
 from database.Database import Database
 from database.Dataset import Dataset
 from database.Execution import Execution
-from datatypes.Identifier import Identifier
-from entities.OntologyResource import OntologyResource
 from entities.Hospital import Hospital
+from entities.OntologyResource import OntologyResource
 from enums.DataTypes import DataTypes
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
@@ -26,10 +25,10 @@ from enums.TheTestFiles import TheTestFiles
 from enums.Visibility import Visibility
 from etl.Transform import Transform
 from statistics.QualityStatistics import QualityStatistics
-from statistics.TimeStatistics import TimeStatistics
 from utils.cast_utils import cast_str_to_datetime
 from utils.file_utils import get_json_resource_file
 from utils.file_utils import read_tabular_file_as_string
+from utils.setup_logger import log
 from utils.test_utils import set_env_variables_from_dict, get_feature_by_text, \
     get_field_value_for_patient, get_records_for_patient
 
@@ -38,6 +37,7 @@ from utils.test_utils import set_env_variables_from_dict, get_feature_by_text, \
 def my_setup(hospital_name: str, profile: str, extracted_metadata_path: str, extracted_data_paths: str,
              extracted_mapping_categorical_values_path: str,
              extracted_column_to_categorical_path: str,
+             extracted_column_type_path: str,
              extracted_column_unit_path: str,
              extracted_domain_path: str,
              extracted_patient_ids_mapping_path: str) -> Transform:
@@ -51,7 +51,7 @@ def my_setup(hospital_name: str, profile: str, extracted_metadata_path: str, ext
     set_env_variables_from_dict(env_vars=args)
     TestTransform.execution.internals_set_up()
     TestTransform.execution.file_set_up(setup_files=False)  # no need to set up the files, we get data and metadata as input
-    database = Database(TestTransform.execution)
+    database = Database(execution=TestTransform.execution)
     # I load:
     # - the data and metadata from two CSV files that I obtained by running the Extract step
     # - and mapped_values as a JSON file that I obtained from the same Extract object
@@ -71,20 +71,23 @@ def my_setup(hospital_name: str, profile: str, extracted_metadata_path: str, ext
         column_to_unit = json.load(f)
     with open(os.path.join(DOCKER_FOLDER_TEST, extracted_domain_path), "r") as f:
         mapping_column_to_domain = json.load(f)
+    with open(os.path.join(DOCKER_FOLDER_TEST, extracted_column_type_path), "r") as f:
+        mapping_column_to_type = json.load(f)
 
-    dataset_instance = Dataset(database=database, docker_path=None, version_notes=None, license=None, counter=Counter())
+    dataset_instance = Dataset(identifier=NO_ID, database=database, docker_path=None, version_notes=None, license=None, counter=Counter())
     transform = Transform(database=database, execution=TestTransform.execution, data=data, metadata=metadata,
                           profile=profile, dataset_number=get_dataset_number_from_profile(profile), file_counter=1,
                           mapping_categorical_value_to_onto_resource=mapping_categorical_values,
                           mapping_column_to_categorical_value=mapping_column_to_categorical_value,
                           mapping_column_to_unit=column_to_unit,
                           mapping_column_to_domain=mapping_column_to_domain,
+                          mapping_column_to_type=mapping_column_to_type,
                           load_patients=True,
-                          quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False),
+                          quality_stats=QualityStatistics(record_stats=False),
                           dataset_key=dataset_instance)
 
     # create a hospital instance, to be able to create records with references to the hospital
-    transform.database.insert_one_tuple(table_name=TableNames.HOSPITAL, one_tuple=Hospital(name=HospitalNames.TEST_H1, counter=Counter()).to_json())
+    transform.database.insert_one_tuple(table_name=TableNames.HOSPITAL, one_tuple=Hospital(identifier=NO_ID, name=HospitalNames.TEST_H1, counter=Counter()).to_json())
     counter = Counter()
     counter.set_with_database(database=transform.database)
     return transform
@@ -144,6 +147,7 @@ def get_transform_records(profile, file_counter):
     with open(get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, dataset_number=get_dataset_number_from_profile(profile), profile=profile, table_name=TableNames.RECORD, file_counter=file_counter)) as f:
         return json.load(f)
 
+
 def get_transform_patients(dataset_number, file_counter):
     with open(get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, dataset_number=dataset_number, profile=TableNames.PATIENT, table_name=TableNames.PATIENT, file_counter=file_counter)) as f:
         return json.load(f)
@@ -161,6 +165,7 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
+                             extracted_column_type_path=TheTestFiles.EXTR_PHENOTYPIC_TYPE_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
         counter = Counter()
         counter.set_with_database(database=transform.database)
@@ -169,7 +174,7 @@ class TestTransform(unittest.TestCase):
 
         # when some tables already contain resources, it should not be 0
         # I manually insert some resources in the database
-        database = Database(TestTransform.execution)
+        database = Database(execution=TestTransform.execution)
         my_tuples = [
             {"identifier": 1},
             {"identifier": 2},
@@ -192,6 +197,7 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
+                             extracted_column_type_path=TheTestFiles.EXTR_PHENOTYPIC_TYPE_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
         transform.create_patients()
         transform.counter.set_with_database(database=transform.database)
@@ -251,13 +257,15 @@ class TestTransform(unittest.TestCase):
 
         # CHECK RECORDS
         records = get_transform_records(profile=Profile.PHENOTYPIC, file_counter=3)
+        log.info(records)
         assert len(records) == 18  # in total, 18 PhenRecord instances are created, between 2 and 5 per Patient, the only explicit NaN value is indeed created
         # assert that PhenRecord instances have been correctly created for a given data row
         # we take the seventh row
         patient_id = transform.patient_ids_mapping["999999994"]
         assert patient_id == 6  # patient anonymized IDs start at h1:1, because no hospital has been created beforehand.
         phen_records_patient = get_records_for_patient(records=records, patient_id=patient_id)
-        female = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="248152002", label=None, quality_stats=None)
+        log.info(phen_records_patient)
+        female = OntologyResource(system=Ontologies.SNOMEDCT, code="248152002", label=None, quality_stats=None)
         assert phen_records_patient[0]["value"] == female.to_json()  # the value as been replaced by its ontology code (sex is a categorical value)
         assert phen_records_patient[1]["value"] == "black"
         assert phen_records_patient[2]["value"] == {"$date": "2021-12-01T00:00:00Z"}  # the value as been converted to a MongoDB-style datetime and anonymized (remove day and time)
@@ -285,6 +293,7 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
+                             extracted_column_type_path=TheTestFiles.EXTR_CLINICAL_TYPE_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_FILLED_PIDS_PATH)
         transform.load_patient_id_mapping()
         transform.create_patients()
@@ -386,6 +395,7 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
+                             extracted_column_type_path=TheTestFiles.EXTR_PHENOTYPIC_TYPE_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
         # this creates Patient resources (based on the data file) and insert them in a (JSON) temporary file
         transform.create_patients()
@@ -411,6 +421,7 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
+                             extracted_column_type_path=TheTestFiles.EXTR_PHENOTYPIC_TYPE_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_FILLED_PIDS_PATH)
         # this creates Patient resources (based on the data file) and insert them in a (JSON) temporary file
         transform.load_patient_id_mapping()
@@ -434,6 +445,7 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
+                             extracted_column_type_path=TheTestFiles.EXTR_CLINICAL_TYPE_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
         # no associated ontology code
         onto_resource = transform.create_ontology_resource_from_row(column_name="molecule_b")
@@ -441,7 +453,7 @@ class TestTransform(unittest.TestCase):
 
         # one associated ontology code
         onto_resource = transform.create_ontology_resource_from_row(column_name="molecule_a")
-        assert onto_resource.to_json() == OntologyResource(ontology=Ontologies.LOINC, full_code="1234", label=None, quality_stats=None).to_json()
+        assert onto_resource.to_json() == OntologyResource(system=Ontologies.LOINC, code="1234", label=None, quality_stats=None).to_json()
 
     def test_ontology_resource(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,
@@ -450,22 +462,23 @@ class TestTransform(unittest.TestCase):
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
+                             extracted_column_type_path=TheTestFiles.EXTR_CLINICAL_TYPE_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
         # no associated ontology code (patient id line)
         first_row = transform.metadata.iloc[0]
-        onto_resource = OntologyResource(ontology=Ontologies.get_enum_from_name(first_row[MetadataColumns.ONTO_NAME]),
-                                         full_code=first_row[MetadataColumns.ONTO_CODE],
+        onto_resource = OntologyResource(system=Ontologies.get_enum_from_name(first_row[MetadataColumns.ONTO_NAME]),
+                                         code=first_row[MetadataColumns.ONTO_CODE],
                                          label=None, quality_stats=None)
         assert onto_resource is not None
+        assert onto_resource.system == {}
+        assert onto_resource.code == ""
         assert onto_resource.label is None
-        assert onto_resource.system is None
-        assert onto_resource.code is None
 
         # one associated ontology code (molecule_g line)
         fourth = transform.metadata.iloc[4]
-        onto_resource = OntologyResource(ontology=Ontologies.get_enum_from_name(fourth[MetadataColumns.ONTO_NAME]),
-                                         full_code=fourth[MetadataColumns.ONTO_CODE],
+        onto_resource = OntologyResource(system=Ontologies.get_enum_from_name(fourth[MetadataColumns.ONTO_NAME]),
+                                         code=fourth[MetadataColumns.ONTO_CODE],
                                          label=None, quality_stats=None)
         assert onto_resource is not None
         assert onto_resource.system == Ontologies.SNOMEDCT["url"]
@@ -479,11 +492,12 @@ class TestTransform(unittest.TestCase):
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_PHENOTYPIC_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
+                             extracted_column_type_path=TheTestFiles.EXTR_PHENOTYPIC_TYPE_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
 
         assert transform.fairify_value(column_name="id", value=transform.data.iloc[0][0]) == "999999999"
-        onto_resource = OntologyResource(ontology=Ontologies.SNOMEDCT, full_code="248152002", label=None, quality_stats=None)
+        onto_resource = OntologyResource(system=Ontologies.SNOMEDCT, code="248152002", label=None, quality_stats=None)
         fairified_value = transform.fairify_value(column_name="sex", value=transform.data.iloc[0][1])
         assert fairified_value == onto_resource.to_json()
         assert transform.fairify_value(column_name="ethnicity", value=transform.data.iloc[0][2]) == "white"
@@ -496,6 +510,7 @@ class TestTransform(unittest.TestCase):
                              extracted_data_paths=TheTestFiles.EXTR_CLINICAL_DATA_PATH,
                              extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
+                             extracted_column_type_path=TheTestFiles.EXTR_CLINICAL_TYPE_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
@@ -517,6 +532,7 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
                            extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
+                           extracted_column_type_path=TheTestFiles.EXTR_CLINICAL_TYPE_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH)
         extract.load_patient_id_mapping()
 
@@ -536,6 +552,7 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
+                             extracted_column_type_path=TheTestFiles.EXTR_CLINICAL_TYPE_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.ORIG_FILLED_PIDS_PATH)
         transform.load_patient_id_mapping()
 

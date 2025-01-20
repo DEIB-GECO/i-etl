@@ -47,7 +47,8 @@ class Database:
             # and it no longer raises pymongo (ConnectionFailure, ConfigurationError) errors.
             # Instead, the constructor returns immediately and launches the connection process on background threads.
             # You can check if the server is available with a ping.
-            self.client = MongoClient(host=self.execution.db_connection, serverSelectionTimeoutMS=Database.SERVER_TIMEOUT)  # timeout after 5 sec instead of 20 (the default)
+            # w=0 disable acknowledgments from MongoDB (they are not necessary because we don't check them) to speedup write operations
+            self.client = MongoClient(host=self.execution.db_connection, serverSelectionTimeoutMS=Database.SERVER_TIMEOUT, w=0)  # timeout after 5 sec instead of 20 (the default)
             log.info(type(self.client))
         except Exception:
             raise ConnectionError(f"Could not connect to the MongoDB client located at {self.execution.db_connection} and with a timeout of {Database.SERVER_TIMEOUT} ms.")
@@ -183,15 +184,13 @@ class Database:
             mapping[projected_key] = projected_value
         return mapping
 
-    def load_json_in_table(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int, time_stats, dataset: str) -> None:
-        log.info(unique_variables)
-        log.info(dataset)
-        self.load_json_in_table_general(profile=profile, table_name=table_name, unique_variables=unique_variables, dataset_number=dataset_number, ordered=False, time_stats=time_stats, dataset=dataset)
+    def load_json_in_table(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int) -> None:
+        self.load_json_in_table_general(profile=profile, table_name=table_name, unique_variables=unique_variables, dataset_number=dataset_number, ordered=False)
 
     def load_json_in_table_for_tests(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int) -> None:
-        self.load_json_in_table_general(profile=profile, table_name=table_name, unique_variables=unique_variables, dataset_number=dataset_number, ordered=True, time_stats=None, dataset=None)
+        self.load_json_in_table_general(profile=profile, table_name=table_name, unique_variables=unique_variables, dataset_number=dataset_number, ordered=True)
 
-    def load_json_in_table_general(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int, ordered: bool, time_stats, dataset: str) -> None:
+    def load_json_in_table_general(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int, ordered: bool) -> None:
         log.info(f"Load {profile} data in {table_name} with unique variables {unique_variables}")
         first_file = True
         for filename in os.listdir(self.execution.working_dir_current):
@@ -203,13 +202,9 @@ class Database:
                         log.info(f"For profile {profile}, creating unique index {unique_variables}")
                         self.create_unique_index(table_name=table_name, columns={elem: 1 for elem in unique_variables})
                         first_file = False
-                    time_stats.start_timer(dataset=dataset, key=TimerKeys.LOAD_JSON_IN_MONGO)
                     tuples = bson.json_util.loads(json_datafile.read())
-                    time_stats.increment_timer(dataset=dataset, key=TimerKeys.LOAD_JSON_IN_MONGO)
                     log.debug(f"Table {table_name}, file {filename}, loading {len(tuples)} tuples with unique variables being {unique_variables}")
-                    time_stats.start_timer(dataset=dataset, key=TimerKeys.UPSERT_TUPLES)
                     self.upsert_one_batch_of_tuples(table_name=table_name, unique_variables=unique_variables, the_batch=tuples, ordered=ordered)
-                    time_stats.increment_timer(dataset=dataset, key=TimerKeys.UPSERT_TUPLES)
 
     def find_operation(self, table_name: str, filter_dict: dict, projection: dict) -> Cursor:
         """

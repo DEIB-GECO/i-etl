@@ -1,20 +1,26 @@
+import base64
 import copy
 import dataclasses
 import datetime
 import json
 import os
 import pickle
+import random
 import threading
+import time
+from multiprocessing import Pool
+from urllib.parse import quote
 
 import bson
 import jsonpickle
 import pandas as pd
 import pymongo
+import requests
 import ujson
 from dotenv import load_dotenv
 from pymongo.mongo_client import MongoClient
 
-from constants.defaults import NO_ID
+from constants.defaults import NO_ID, API_SESSION
 from constants.methods import factory
 from database.Counter import Counter
 from database.Database import Database
@@ -26,10 +32,13 @@ from entities.OntologyResource import OntologyResource
 from entities.PhenotypicRecord import PhenotypicRecord
 from entities.Record import Record
 from entities.Resource import Resource
+from enums.AccessTypes import AccessTypes
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from etl.Extract import Extract
 from statistics.QualityStatistics import QualityStatistics
+from statistics.TimeStatistics import TimeStatistics
+from utils.api_utils import send_query_to_api
 from utils.file_utils import read_tabular_file_as_string
 from utils.setup_logger import log
 
@@ -81,7 +90,7 @@ def main_ontology_api():
     # o8 = OntologyResource(ontology=Ontologies.PUBCHEM, full_code="126894", label=None, quality_stats=q_stats)
     # o9 = OntologyResource(ontology=Ontologies.ORPHANET, full_code="ORPHA:134", label=None, quality_stats=q_stats)
     # o10 = OntologyResource(ontology=Ontologies.OMIM, full_code="603263", label=None, quality_stats=q_stats)
-    o11 = OntologyResource(ontology=Ontologies.HGNC, full_code="ENSG00000140463", label=None, quality_stats=q_stats)
+    o11 = OntologyResource(system=Ontologies.HGNC, code="ENSG00000140463", label=None, quality_stats=q_stats)
     # print(f"label: {o3.label}")
     # print(f"label: {o4.label}")
     # print(f"label: {o5.label}")
@@ -249,11 +258,12 @@ def main_efficiency_json():
         print(f"{datetime.datetime.now()-start_time} with ujson to load")
 
     counter = Counter()
-    objects = [ClinicalRecord(feature_id=i,
-                              patient_id=i,
-                              hospital_id=i,
+    objects = [ClinicalRecord(identifier=NO_ID,
+                              instantiates=i,
+                              has_subject=i,
+                              registered_by=i,
                               value=str(i),
-                              base_id=None,
+                              base_id=str(i),
                               counter=counter,
                               dataset="abc.csv") for i in range(0, 1000)]
 
@@ -353,6 +363,86 @@ def main_jsonify():
     log.info(ph_record)
 
 
+def get_data(single_code1):
+    url_resource = quote(f"http://purl.bioontology.org/ontology/SNOMEDCT/{single_code1}", safe="")
+    url1 = f"http://data.bioontology.org/ontologies/SNOMEDCT/classes/{url_resource}?apikey=d6fb9c05-3309-4158-892f-65434a9133b9"
+    return API_SESSION.get(url1).json()["prefLabel"]
+
+
+def main_multiprocessing_api_requests():
+    if __name__ == '__main__':
+        codes = "289136006, 116154003, 72705000, 422549004, 206523001, 225525008, 367494004, 734000001, 1217194002, 127489000, 59888006".split(", ")
+        start_time = time.time()
+        with Pool(5) as p:
+            print(p.map(get_data, codes))
+        print(f"{time.time() - start_time} for pool of 5")
+
+        start_time = time.time()
+        for code in codes:
+            url_resource = quote(f"http://purl.bioontology.org/ontology/SNOMEDCT/{code}", safe="")
+            url = f"http://data.bioontology.org/ontologies/SNOMEDCT/classes/{url_resource}"
+            response = send_query_to_api(url=url, secret="d6fb9c05-3309-4158-892f-65434a9133b9",
+                                         access_type=AccessTypes.API_KEY_IN_URL)
+            a = response.json()
+            code_snomed = a["prefLabel"]
+
+            # print(p.map(get_data, codes))
+        print(f"{time.time() - start_time} for send query to api")
+
+
+def main_map_jsonify():
+    c = Counter()
+    resource_list = [
+        PhenotypicRecord(identifier=NO_ID, counter=c, has_subject=1, registered_by=2, instantiates=3, value="abcdefegs", dataset="XYZ"),
+        PhenotypicRecord(identifier=NO_ID, counter=c, has_subject=4, registered_by=5, instantiates=6, value=12356151, dataset="XYZ"),
+        PhenotypicRecord(identifier=NO_ID, counter=c, has_subject=7, registered_by=8, instantiates=9, value="hdjbhjbhfj", dataset="XYZ"),
+        PhenotypicRecord(identifier=NO_ID, counter=c, has_subject=11, registered_by=12, instantiates=10, value={"a": 1, "b": 2}, dataset="XYZ"),
+        PhenotypicRecord(identifier=NO_ID, counter=c, has_subject=14, registered_by=15, instantiates=13, value="abffezfezs  dffd  dscdefegs", dataset="XYZ"),
+        PhenotypicRecord(identifier=NO_ID, counter=c, has_subject=18, registered_by=17, instantiates=16, value="dgfh bj dhe", dataset="XYZ"),
+        PhenotypicRecord(identifier=NO_ID, counter=c, has_subject=19, registered_by=20, instantiates=21, value=25353, dataset="XYZ"),
+    ]
+    start_time = time.time()
+    the_json_resources = list(map(Resource.to_json, resource_list))
+    # the map is not worth it because then we need to convert it back to a list, which leads
+    # to the same time as the list comprehension or even worse
+    print(f"{time.time() - start_time} for map")
+    print(the_json_resources)
+
+    start_time = time.time()
+    the_json_resources = [resource.to_json() for resource in resource_list]
+    print(f"{time.time() - start_time} for array")
+    print(the_json_resources)
+
+
+def main_if_match():
+    start_time = time.time()
+    choices = [random.choice(["this", "that", "there", "else"]) for _ in range(10000)]
+    print(choices[0:10])
+    for i in choices:
+        match i:
+            case "this":
+                the_thing = 1
+            case "that":
+                the_thing = 2
+            case "there":
+                the_thing = 3
+            case _:
+                the_thing = 4
+    print(f"{time.time() - start_time}")
+
+    start_time = time.time()
+    for i in choices:
+        if i == "this":
+            the_thing = 1
+        elif i == "that":
+            the_thing = 2
+        elif i == "there":
+            the_thing = 3
+        else:
+            the_thing = 4
+    print(f"{time.time() - start_time}")
+
+
 if __name__ == '__main__':
     # main_load_json_from_file_as_bson()
     
@@ -375,6 +465,12 @@ if __name__ == '__main__':
 
     # main_na_pandas()
 
-    main_jsonify()
+    # main_jsonify()
+
+    # main_multiprocessing_api_requests()
+
+    # main_map_jsonify()
+
+    main_if_match()
 
     print("Done.")

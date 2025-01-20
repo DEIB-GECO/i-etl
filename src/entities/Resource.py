@@ -13,6 +13,7 @@ from database.Operators import Operators
 class Resource:
     identifier: int
     counter: Counter
+    timestamp: dict = dataclasses.field(init=False)
 
     def __post_init__(self):
         if self.identifier == NO_ID:

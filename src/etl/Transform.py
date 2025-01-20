@@ -32,12 +32,10 @@ from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from enums.Profile import Profile
 from enums.TableNames import TableNames
-from enums.TimerKeys import TimerKeys
 from enums.Visibility import Visibility
 from etl.Task import Task
 from src.constants.defaults import DEFAULT_NAN_VALUE
 from statistics.QualityStatistics import QualityStatistics
-from statistics.TimeStatistics import TimeStatistics
 from utils.cast_utils import cast_str_to_boolean, cast_str_to_datetime, cast_str_to_float, cast_str_to_int
 from utils.file_utils import write_in_file
 from utils.setup_logger import log
@@ -49,9 +47,10 @@ class Transform(Task):
                  mapping_categorical_value_to_onto_resource: dict,
                  mapping_column_to_categorical_value: dict,
                  mapping_column_to_unit: dict, mapping_column_to_domain: dict,
+                 mapping_column_to_type: dict | None,
                  profile: str, dataset_number: int, file_counter: int, dataset_key: Dataset, load_patients: bool,
-                 quality_stats: QualityStatistics, time_stats: TimeStatistics):
-        super().__init__(database=database, execution=execution, quality_stats=quality_stats, time_stats=time_stats, dataset_key=dataset_key.global_identifier)
+                 quality_stats: QualityStatistics):
+        super().__init__(database=database, execution=execution, quality_stats=quality_stats)
         self.counter = Counter()  # resource counter
         self.profile = profile
         self.load_patients = load_patients
@@ -65,7 +64,10 @@ class Transform(Task):
         self.mapping_column_to_unit = mapping_column_to_unit
         self.mapping_categorical_value_to_onto_resource = mapping_categorical_value_to_onto_resource
         self.mapping_column_to_categorical_value = mapping_column_to_categorical_value
-        self.mapping_column_to_etl_type = {}
+        if mapping_column_to_type is not None:
+            self.mapping_column_to_type = mapping_column_to_type  # we give it to Transform during tests
+        else:
+            self.mapping_column_to_type = {}
         self.mapping_column_to_visibility = {}
         self.mapping_column_to_domain = mapping_column_to_domain
         self.mapping_apivalue_to_onto_resource = {}  # for API columns only; of the form: <"onto_name:onto_code": onto resource>
@@ -88,22 +90,16 @@ class Transform(Task):
             # this is the first profile of the dataset, we load patients
             log.info("********** create patients")
             self.counter.set_with_database(database=self.database)
-            self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.CREATE_PATIENTS)
             self.create_patients()
-            self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.CREATE_PATIENTS)
         else:
             # this is another profile of the same dataset, we do not reload the same patients
             pass
 
         log.info(f"********** create {self.profile} features and records")
         self.counter.set_with_database(database=self.database)
-        self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.CREATE_FEATURES)
         self.create_features()
-        self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.CREATE_FEATURES)
         self.counter.set_with_database(database=self.database)
-        self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.CREATE_RECORDS)
         self.create_records()
-        self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.CREATE_RECORDS)
 
     ##############################################################
     # FEATURES
@@ -128,10 +124,9 @@ class Transform(Task):
             if column_name not in [self.execution.patient_id_column_name, self.execution.sample_id_column_name, DiagnosisColumns.DISEASE_COUNTER]:
                 if column_name not in db_existing_features:
                     # we create a new Feature from scratch
-                    self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.CREATE_FEATURE_INSTANCES)
                     onto_resource = self.create_ontology_resource_from_row(column_name=column_name)
                     data_type = row[columns.get_loc(MetadataColumns.ETL_TYPE)]  # this has been normalized while loading + we take ETL_type to get the narrowest type (in which we cast values)
-                    self.mapping_column_to_etl_type[column_name] = data_type
+                    self.mapping_column_to_type[column_name] = data_type
                     visibility = row[columns.get_loc(MetadataColumns.VISIBILITY)]  # this has been normalized while loading
                     self.mapping_column_to_visibility[column_name] = visibility
                     unit = self.mapping_column_to_unit[column_name] if column_name in self.mapping_column_to_unit else None  # else covers: there is no dataType for this column; there is no datatype in that type of entity
@@ -207,7 +202,6 @@ class Transform(Task):
                                                       domain=domain)
                     else:
                         raise NotImplementedError("To be implemented")
-                    self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.CREATE_FEATURE_INSTANCES)
 
                     if onto_resource is not None:
                         log.info(f"adding a new {self.profile} feature about {onto_resource.label}: {new_feature}")
@@ -216,9 +210,7 @@ class Transform(Task):
                         log.info(f"adding a new {self.profile} feature about {column_name}: {new_feature}")
 
                     self.features.append(new_feature)  # this cannot be null, otherwise we would have raise the above exception
-                    self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.PROCESS_FEATURE_BATCH)
                     self.process_batch_of_features(last=False)
-                    self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.PROCESS_FEATURE_BATCH)
                 else:
                     # the Feature already exists, so no need to add it to the database again.
                     # however, we need to update the set of datasets in which it appears
@@ -230,12 +222,8 @@ class Transform(Task):
             else:
                 log.debug(f"I am skipping column {column_name} because it has been dropped or is an ID column.")
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
-        self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.PROCESS_FEATURE_BATCH)
         self.process_batch_of_features(last=True)
-        self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.PROCESS_FEATURE_BATCH)
-        self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.WRITE_FEATURES_IN_DB)
-        self.database.load_json_in_table(profile=self.profile, table_name=TableNames.FEATURE, unique_variables=["name"], dataset_number=self.dataset_number, time_stats=self.time_stats, dataset=self.dataset_key)
-        self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.WRITE_FEATURES_IN_DB)
+        self.database.load_json_in_table(profile=self.profile, table_name=TableNames.FEATURE, unique_variables=["name"], dataset_number=self.dataset_number)
 
     ##############################################################
     # RECORDS
@@ -275,15 +263,12 @@ class Transform(Task):
                             self.mapping_column_all_count[feature_id] = self.mapping_column_all_count[feature_id] + 1
                 else:
                     if column_name in mapping_column_to_feature_id:
-                        self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.CREATE_RECORD_INSTANCES)
                         # we know a code for this column, so we can register the value of that Feature in a new Record
                         feature_id = mapping_column_to_feature_id[column_name]
                         hospital_id = mapping_hospital_to_hospital_id[self.execution.hospital_name]
                         # get the anonymized patient id using the mapping <initial id, anonymized id>
                         patient_id = self.patient_ids_mapping[row[columns.get_loc(self.execution.patient_id_column_name)]]
-                        self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.VALUE_FAIRIFICATION)
                         fairified_value = self.fairify_value(column_name=column_name, value=value)
-                        self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.VALUE_FAIRIFICATION)
                         anonymized_value, is_anonymized = self.anonymize_value(column_name=column_name,
                                                                                fairified_value=fairified_value)
                         if is_anonymized:
@@ -360,11 +345,8 @@ class Transform(Task):
                                                         dataset=dataset)
                         else:
                             raise NotImplementedError("Not implemented yet.")
-                        self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.CREATE_RECORD_INSTANCES)
                         self.records.append(new_record)
-                        self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.PROCESS_RECORD_BATCH)
                         self.process_batch_of_records(last=False)
-                        self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.PROCESS_RECORD_BATCH)
                         # to compute the percentage of missing values in features' profiles
                         if feature_id not in self.mapping_column_all_count:
                             self.mapping_column_all_count[feature_id] = 1
@@ -376,9 +358,7 @@ class Transform(Task):
                         # log.error(f"Skipping column {column_name} for row {index}")
                         pass
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
-        self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.PROCESS_RECORD_BATCH)
         self.process_batch_of_records(last=True)
-        self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.PROCESS_RECORD_BATCH)
         # and save the total counts for each column (to compute the percentage of missing values in the profiles)
         all_counts = []  # a list of <"identifier": identifier, "all_counts": all_counts> instead of <identifier: all_counts>
         for k in self.mapping_column_all_count:
@@ -411,16 +391,14 @@ class Transform(Task):
                     # this will save the data if it has reached BATCH_SIZE
                     write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current,
                                   profile=TableNames.PATIENT, is_feature=False,
-                                  dataset_number=self.dataset_number, file_counter=self.file_counter,
-                                  time_stats=self.time_stats, dataset=self.dataset_key)
+                                  dataset_number=self.dataset_number, file_counter=self.file_counter)
                     self.patients = []
                     self.file_counter += 1
                     # no need to load Patient instances because they are referenced using their ID,
                     # which was provided by the hospital (thus is known by the dataset)
             if len(self.patients) > 0:
                 write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current,
-                                profile=TableNames.PATIENT, is_feature=False, dataset_number=self.dataset_number, file_counter=self.file_counter,
-                              time_stats=self.time_stats, dataset=self.dataset_key)
+                              profile=TableNames.PATIENT, is_feature=False, dataset_number=self.dataset_number, file_counter=self.file_counter)
                 self.file_counter += 1
             # finally, we also write the mapping patient ID / anonymized ID in a file - this will be ingested for subsequent runs to not renumber existing anonymized patients
             with open(self.execution.anonymized_patient_ids_filepath, "w") as data_file:
@@ -429,9 +407,7 @@ class Transform(Task):
                 except Exception:
                     raise ValueError(
                         f"Could not dump the {len(self.patient_ids_mapping)} JSON resources in the file located at {self.execution.anonymized_patient_ids_filepath}.")
-            self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.WRITE_PATIENTS_IN_DB)
-            self.database.load_json_in_table(profile=TableNames.PATIENT, table_name=TableNames.PATIENT, unique_variables=["identifier"], dataset_number=self.dataset_number, time_stats=self.time_stats, dataset=self.dataset_key)
-            self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.WRITE_PATIENTS_IN_DB)
+            self.database.load_json_in_table(profile=TableNames.PATIENT, table_name=TableNames.PATIENT, unique_variables=["identifier"], dataset_number=self.dataset_number)
         else:
             # no patient ID in this dataset
             log.error(f"The column {self.execution.patient_id_column_name} has been declared as the patient id but has not been found in the data.")
@@ -447,7 +423,7 @@ class Transform(Task):
                           profile=self.profile,
                           is_feature=True,
                           dataset_number=self.dataset_number,
-                          file_counter=self.file_counter, time_stats=self.time_stats, dataset=self.dataset_key)
+                          file_counter=self.file_counter)
             self.features.clear()
             self.file_counter += 1
 
@@ -458,7 +434,7 @@ class Transform(Task):
                           profile=self.profile,
                           is_feature=False,
                           dataset_number=self.dataset_number,
-                          file_counter=self.file_counter, time_stats=self.time_stats, dataset=self.dataset_key)
+                          file_counter=self.file_counter)
             self.records.clear()
             self.file_counter += 1
 
@@ -481,10 +457,7 @@ class Transform(Task):
             if len(onto_code) > 0:
                 onto_system = Ontologies.get_enum_from_name(row.iloc[self.metadata.columns.get_loc(MetadataColumns.ONTO_NAME)])
                 if type(onto_system) is dict and len(onto_system) > 0:
-                    self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.OR_CREATION_TIME)
-                    the_or = OntologyResource(system=onto_system, code=onto_code, label=None,
-                                              quality_stats=self.quality_stats, time_stats=self.time_stats, dataset_key=self.dataset_key)
-                    self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.OR_CREATION_TIME)
+                    the_or = OntologyResource(system=onto_system, code=onto_code, label=None, quality_stats=self.quality_stats)
                     return the_or
                 else:
                     log.error(
@@ -506,20 +479,13 @@ class Transform(Task):
             return DEFAULT_NAN_VALUE
         else:
             return_value = None  # to ease logging, we also save the return value in a variable and return it at the very end
-            self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.GET_ETL_TYPE)
-            etl_type = self.mapping_column_to_etl_type[column_name] if column_name in self.mapping_column_to_etl_type else DataTypes.STRING
-            self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.GET_ETL_TYPE)
-            self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.GET_ETL_UNIT)
+            etl_type = self.mapping_column_to_type[column_name] if column_name in self.mapping_column_to_type else DataTypes.STRING
             expected_unit = self.mapping_column_to_unit[column_name] if column_name in self.mapping_column_to_unit else None  # there was some unit specified in the metadata or extracted from the data
-            self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.GET_ETL_UNIT)
 
             # log.debug(f"ETL type is {etl_type}, expected unit is {expected_unit}")
             if etl_type == DataTypes.STRING:
-                self.time_stats.count(value=1, dataset=self.dataset_key, key=TimerKeys.NB_FAIRIFY_STR)
                 return value  # the value is already normalized, we can return it as is
             elif etl_type == DataTypes.CATEGORY:
-                self.time_stats.count(value=1, dataset=self.dataset_key, key=TimerKeys.NB_FAIRIFY_CATEGORY)
-                self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.FAIRIFY_CATEGORY)
                 # we look for the CC associated to that categorical value
                 # we need to check that (a) the column expects this categorical value and (b) this categorical has an associated CC
                 if column_name in self.mapping_column_to_categorical_value and value in self.mapping_column_to_categorical_value[column_name] and value in self.mapping_categorical_value_to_onto_resource:
@@ -528,43 +494,29 @@ class Transform(Task):
                     # no categorical value for that value, we return the normalized value
                     self.quality_stats.add_unknown_categorical_value(column_name=column_name, categorical_value=value)
                     return_value = value
-                self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.FAIRIFY_CATEGORY)
             elif etl_type == DataTypes.API:
-                self.time_stats.count(value=1, dataset=self.dataset_key, key=TimerKeys.NB_FAIRIFY_API)
-                self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.FAIRIFY_API)
                 # there is no pre-defined list of the possible values, instead we create a CC based on the cell value,
                 # which is an ontology resource
                 split_value = value.split(":")  # we consider the ontology resource is of the form <ontology name>:<code>
                 ontology_name = Ontologies.normalize_name(ontology_name=split_value[0])
                 ontology_code = split_value[1]  # the code will be later normalized during the CC construction
                 if value not in self.mapping_apivalue_to_onto_resource:
-                    self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.OR_CREATION_TIME)
                     onto_resource = OntologyResource(
                         system=Ontologies.get_enum_from_name(ontology_name=ontology_name), code=ontology_code, label=None,
-                        quality_stats=self.quality_stats, time_stats=self.time_stats, dataset_key=self.dataset_key)
-                    self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.OR_CREATION_TIME)
+                        quality_stats=self.quality_stats)
                     self.mapping_apivalue_to_onto_resource[value] = onto_resource
                     return_value = onto_resource
                 else:
                     return_value = self.mapping_apivalue_to_onto_resource[value]
-                self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.FAIRIFY_API)
             elif etl_type == DataTypes.DATETIME or etl_type == DataTypes.DATE:
-                self.time_stats.count(value=1, dataset=self.dataset_key, key=TimerKeys.NB_FAIRIFY_DATES)
-                self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.FAIRIFY_DATES)
                 return_value = cast_str_to_datetime(str_value=value)
-                self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.FAIRIFY_DATES)
             elif etl_type == DataTypes.BOOLEAN:
-                self.time_stats.count(value=1, dataset=self.dataset_key, key=TimerKeys.NB_FAIRIFY_BOOLEAN)
-                self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.FAIRIFY_BOOLEAN)
                 value = "1" if value == "1.0" else "0" if value == "0.0" else value
                 return_value = cast_str_to_boolean(str_value=value)
                 if return_value is None:
                     self.quality_stats.add_unknown_boolean_value(column_name=column_name, boolean_value=value)
                     return_value = value
-                self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.FAIRIFY_BOOLEAN)
             elif etl_type == DataTypes.INTEGER or etl_type == DataTypes.FLOAT:
-                self.time_stats.count(value=1, dataset=self.dataset_key, key=TimerKeys.NB_FAIRIFY_NUM)
-                self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.FAIRIFY_NUM)
                 if column_name == self.execution.patient_id_column_name:
                     # do not cast int-like string identifiers as integers because this may add too much normalization
                     return_value = str(value)
@@ -597,7 +549,6 @@ class Transform(Task):
                             return_value = cast_str_to_float(str_value=value)
                         else:
                             return_value = value
-                self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.FAIRIFY_NUM)
             else:
                 # Unhandled ETL type: this cannot happen because all ETL types have been checked during the Extract step
                 return_value = value
@@ -631,7 +582,7 @@ class Transform(Task):
         :return: two values: either (the anonymized value, True), or (the fairified value, False). This is to know whether we should create another Record with the anonymized value
         :rtype:
         """
-        etl_type = self.mapping_column_to_etl_type[column_name] if column_name in self.mapping_column_to_etl_type else DataTypes.STRING
+        etl_type = self.mapping_column_to_type[column_name] if column_name in self.mapping_column_to_type else DataTypes.STRING
         visibility = self.mapping_column_to_visibility[column_name] if column_name in self.mapping_column_to_visibility else Visibility.PRIVATE
         if etl_type == DataTypes.DATETIME:
             if visibility == Visibility.ANONYMIZED:

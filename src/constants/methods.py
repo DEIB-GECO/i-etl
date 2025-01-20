@@ -13,5 +13,5 @@ def factory(data):
     return {
         key: Operators.from_datetime_to_isodate(value) if isinstance(value, (datetime, date, time)) else value
         for (key, value) in data
-        if value is not None and value != [] and value != {} and key not in ["quality_stats", "time_stats", "database_stats", "counter", "database", "execution", "client", "db"]
+        if value is not None and value != [] and value != {} and key not in ["quality_stats", "time_stats", "database_stats", "counter", "database", "execution", "client", "db", "dataset_key"]
     }

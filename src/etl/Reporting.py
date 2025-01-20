@@ -19,8 +19,8 @@ class Reporting(Task):
     CC_EMPTY_LIST = "CodeableConcept with empty 'list' field"
 
     def __init__(self, database: Database, execution: Execution, quality_stats: QualityStatistics, db_stats: DatabaseStatistics,
-                 time_stats: TimeStatistics, dataset_key: str | None):
-        super().__init__(database=database, execution=execution, quality_stats=QualityStatistics(record_stats=False), time_stats=TimeStatistics(record_stats=False), dataset_key=dataset_key)
+                 time_stats: TimeStatistics):
+        super().__init__(database=database, execution=execution, quality_stats=QualityStatistics(record_stats=False))
         self.quality_stats = quality_stats
         self.db_stats = db_stats
         self.time_stats = time_stats

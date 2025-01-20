@@ -12,9 +12,8 @@ from utils.setup_logger import log
 
 class Load(Task):
     def __init__(self, database: Database, execution: Execution, create_indexes: bool,
-                 dataset_number: int, profile: str,
-                 quality_stats: QualityStatistics, time_stats: TimeStatistics, dataset_key: str):
-        super().__init__(database=database, execution=execution, quality_stats=quality_stats, time_stats=time_stats, dataset_key=dataset_key)
+                 dataset_number: int, profile: str, quality_stats: QualityStatistics):
+        super().__init__(database=database, execution=execution, quality_stats=quality_stats)
         self.create_indexes = create_indexes
         self.dataset_number = dataset_number
         self.profile = profile
@@ -29,7 +28,6 @@ class Load(Task):
             self.create_db_indexes()
 
     def load_records(self) -> None:
-        self.time_stats.start_timer(dataset=self.dataset_key, key=TimerKeys.WRITE_RECORDS_IN_DB)
         log.info(f"load {self.profile} records")
         # we need to have registered_by, has_subject and instantiates for sure
         # we also need entity_type because we cannot have two indexes, one for non-clinical (reg, subj, inst) and one for clinical (reg, subj, inst, bid)
@@ -39,8 +37,7 @@ class Load(Task):
             # we allow patients to have several diagnoses
             unique_variables.append(DiagnosisColumns.DISEASE_COUNTER)
         log.info(unique_variables)
-        self.database.load_json_in_table(profile=self.profile, table_name=TableNames.RECORD, unique_variables=unique_variables, dataset_number=self.dataset_number, time_stats=self.time_stats, dataset=self.dataset_key)
-        self.time_stats.increment_timer(dataset=self.dataset_key, key=TimerKeys.WRITE_RECORDS_IN_DB)
+        self.database.load_json_in_table(profile=self.profile, table_name=TableNames.RECORD, unique_variables=unique_variables, dataset_number=self.dataset_number)
 
     def create_db_indexes(self) -> None:
         log.info(f"Creating indexes.")
