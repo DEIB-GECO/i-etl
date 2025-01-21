@@ -311,8 +311,6 @@ class Database:
             operations.append(Operators.limit(1))
         cursor = self.db[table_name].aggregate(operations)
         for result in cursor:
-            log.info(result)
-            log.info(field)
             # There should be only one result, so we can return directly the min or max value
             # if from_string:
             #     return result["min_max"]
@@ -331,10 +329,8 @@ class Database:
 
     def get_max_resource_counter_id(self) -> int:
         max_value = -1
-        log.info(TableNames.data_tables())
         for table_name in TableNames.data_tables():
             current_max_identifier = self.get_max_value(table_name=table_name, field="identifier")
-            log.info(f"max id in {table_name} is {current_max_identifier}")
             if current_max_identifier is not None:
                 try:
                     current_max_identifier = int(current_max_identifier)

@@ -7,7 +7,7 @@ from preprocessing.Preprocess import Preprocess
 
 
 class PreprocessCovid(Preprocess):
-    def __init__(self, execution: Execution, data: DataFrame, profile: Profile):
+    def __init__(self, execution: Execution, data: DataFrame, profile: str):
         super().__init__(execution=execution, data=data, profile=profile)
 
     def run(self):

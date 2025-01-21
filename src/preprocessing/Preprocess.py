@@ -7,7 +7,7 @@ from enums.Profile import Profile
 
 
 class Preprocess:
-    def __init__(self, execution: Execution, data: DataFrame, profile: Profile):
+    def __init__(self, execution: Execution, data: DataFrame, profile: str):
         self.execution = execution
         self.data = data
         self.profile = profile
