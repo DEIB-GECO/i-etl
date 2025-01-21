@@ -9,7 +9,8 @@ etl:
     - cp .env.ci .env
     - cat .env
     - export CONTEXT_MODE="TEST"
-    - export MY_ENV_FILE=.env.test
+    - export ETL_ENV_FILE_NAME=.env.ci
+    - export ABSOLUTE_PATH_ENV_FILE=/builds/padme-development/external/better/data-cataloging/etl/.env.ci
     - docker build . --tag etl
-    - docker compose --env-file .env.test up --exit-code-from etl || true
-    - docker compose --env-file .env.test down
+    - docker compose --env-file .env.ci up --exit-code-from etl || true
+    - docker compose --env-file .env.ci down
