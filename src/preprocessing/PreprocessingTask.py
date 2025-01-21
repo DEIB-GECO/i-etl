@@ -5,13 +5,15 @@ from enums.HospitalNames import HospitalNames
 from enums.Profile import Profile
 from preprocessing.PreprocessBuzziUC1 import PreprocessBuzziUC1
 from preprocessing.PreprocessCovid import PreprocessCovid
+from preprocessing.PreprocessImgge import PreprocessImgge
 from preprocessing.PreprocessKidneyCovid import PreprocessKidneyCovid
 
 
 class PreprocessingTask:
-    def __init__(self, execution: Execution, data: DataFrame, profile: Profile):
+    def __init__(self, execution: Execution, data: DataFrame, metadata: DataFrame, profile: str):
         self.execution = execution
         self.data = data
+        self.metadata = metadata
         self.profile = profile
 
     def run(self):
@@ -25,6 +27,10 @@ class PreprocessingTask:
             self.data = pp.data
         elif self.execution.hospital_name == HospitalNames.EXPES_KIDNEY:
             pp = PreprocessKidneyCovid(execution=self.execution, data=self.data, profile=self.profile)
+            pp.run()
+            self.data = pp.data
+        elif self.execution.hospital_name == HospitalNames.RS_IMGGE:
+            pp = PreprocessImgge(execution=self.execution, data=self.data, metadata=self.metadata, profile=self.profile)
             pp.run()
             self.data = pp.data
         else:

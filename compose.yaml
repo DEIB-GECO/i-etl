@@ -17,7 +17,7 @@ services:
     depends_on:
       - mongo
     env_file:
-      - ${MY_ENV_FILE}  # this specifies that when one runs a "docker compose", a .env file should be next to it
+      - ${ABSOLUTE_PATH_ENV_FILE}  # this specifies that when one runs a "docker compose", a .env file should be next to it
     working_dir: /home/fairificator-deployed
     volumes:
       # we need to provide to Docker the access to the folders where there is the data and the metadata
@@ -36,7 +36,7 @@ services:
       - ${SERVER_FOLDER_LOG_ETL}:/home/fairificator-deployed/working-dir
     environment:
       - CONTEXT_MODE=${CONTEXT_MODE:-DEV}
-      - MY_ENV_FILE=${MY_ENV_FILE:-.env}
+      - ETL_ENV_FILE_NAME=${ETL_ENV_FILE_NAME:-.env}
     networks:
       - network-fairificator
 networks:

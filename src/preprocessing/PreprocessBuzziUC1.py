@@ -15,7 +15,7 @@ from utils.setup_logger import log
 
 
 class PreprocessBuzziUC1(Preprocess):
-    def __init__(self, execution: Execution, data: DataFrame, profile: Profile):
+    def __init__(self, execution: Execution, data: DataFrame, profile: str):
         super().__init__(execution=execution, data=data, profile=profile)
 
         self.ids = []

@@ -19,6 +19,7 @@ class DataTypes(EnumAsClass):
     IMAGE = "image"
     REGEX = "regex"
     API = "api"
+    LIST = "list"
 
     METADATA_NB_UNRECOGNIZED_ETL_TYPE = 0
 
@@ -50,6 +51,8 @@ class DataTypes(EnumAsClass):
                 return DataTypes.REGEX
             elif data_type == "api":
                 return DataTypes.API
+            elif data_type == "list":
+                return DataTypes.LIST
             else:
                 log.error(f"{data_type} is not a recognized data type; we will use string type by default.")
                 DataTypes.METADATA_NB_UNRECOGNIZED_ETL_TYPE += 1
@@ -61,7 +64,7 @@ class DataTypes(EnumAsClass):
 
     @classmethod
     def categorical(cls) -> list:
-        return [DataTypes.STRING, DataTypes.BOOLEAN, DataTypes.CATEGORY, DataTypes.API]
+        return [DataTypes.STRING, DataTypes.BOOLEAN, DataTypes.CATEGORY, DataTypes.API, DataTypes.LIST]
 
     @classmethod
     def dates(cls) -> list:

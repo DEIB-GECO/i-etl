@@ -240,7 +240,7 @@ class Transform(Task):
                                                                       key_fields="name",
                                                                       value_fields="identifier",
                                                                       filter_dict={"entity_type": f"{self.profile}{TableNames.FEATURE}"})
-        log.info(f"{len(mapping_column_to_feature_id)} {self.profile}{TableNames.FEATURE}Features have been retrieved from the database.")
+        log.info(f"{len(mapping_column_to_feature_id)} {self.profile}{TableNames.FEATURE} have been retrieved from the database.")
         log.info(mapping_column_to_feature_id)
 
         # b. Create Record instance, and write them in temporary (JSON) files
@@ -485,6 +485,9 @@ class Transform(Task):
             # log.debug(f"ETL type is {etl_type}, expected unit is {expected_unit}")
             if etl_type == DataTypes.STRING:
                 return value  # the value is already normalized, we can return it as is
+            elif etl_type == DataTypes.LIST:
+                return_value = value.split(",")
+                return_value = [elem.strip() for elem in return_value]  # trim spaces around each str value
             elif etl_type == DataTypes.CATEGORY:
                 # we look for the CC associated to that categorical value
                 # we need to check that (a) the column expects this categorical value and (b) this categorical has an associated CC

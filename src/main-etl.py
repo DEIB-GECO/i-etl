@@ -20,7 +20,7 @@ if __name__ == "__main__":
         log.info("Load environment file")
         # A. load the env. variables defined in .env.
         # note: specifying the .env in the compose.yml only gives access to those env. var. to Docker (not to Python)
-        load_dotenv(os.environ["MY_ENV_FILE"])
+        load_dotenv(os.environ["ETL_ENV_FILE_NAME"])
 
         # create a new execution instance for that run
         log.info("Create execution")

@@ -150,7 +150,7 @@ class Extract(Task):
         # preprocess data files, i.e., change the data DataFrame to fit the metadata
         # we do not write the pre-processed data to any new ile, we simply run the ETL with it
         # this avoids to (a) overwrite given data files and (b) to have filenames which differ from the metadata
-        preprocessing_task = PreprocessingTask(execution=self.execution, data=self.data, profile=self.profile)
+        preprocessing_task = PreprocessingTask(execution=self.execution, data=self.data, metadata=self.metadata, profile=self.profile)
         preprocessing_task.run()
         self.data = preprocessing_task.data
 
