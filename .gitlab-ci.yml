@@ -8,7 +8,7 @@ etl:
     - ls -al /builds/padme-development/external/better/data-cataloging/etl/datasets
     - ls -al /builds/padme-development/external/better/data-cataloging/etl/datasets/test
     - cat /builds/padme-development/external/better/data-cataloging/etl/.env.ci
-    - cat .env
+    - cat .env.ci
     - export CONTEXT_MODE="TEST"
     - export ETL_ENV_FILE_NAME=.env.ci
     - export ABSOLUTE_PATH_ENV_FILE=/builds/padme-development/external/better/data-cataloging/etl/.env.ci
