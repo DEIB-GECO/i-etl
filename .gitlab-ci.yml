@@ -6,7 +6,8 @@ etl:
     - pwd
     - ls -al /builds/padme-development/external/better/data-cataloging/etl
     - ls -al /builds/padme-development/external/better/data-cataloging/etl/datasets
-    - cp .env.ci .env
+    - ls -al /builds/padme-development/external/better/data-cataloging/etl/datasets/test
+    - cat /builds/padme-development/external/better/data-cataloging/etl/.env.ci
     - cat .env
     - export CONTEXT_MODE="TEST"
     - export ETL_ENV_FILE_NAME=.env.ci
