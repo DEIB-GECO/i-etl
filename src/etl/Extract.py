@@ -67,6 +67,7 @@ class Extract(Task):
 
         # normalize the profiles before filtering
         self.metadata.loc[:, MetadataColumns.PROFILE] = self.metadata[MetadataColumns.PROFILE].apply(lambda x: Profile.normalize(file_type=x))
+        self.columns_dataset_all_profiles = self.metadata[MetadataColumns.COLUMN_NAME]
         self.metadata = self.metadata[self.metadata[MetadataColumns.PROFILE].values == self.profile]
 
         # if the filtered metadata (by dataset and profile) is not empty, we check whether we need to further filter
@@ -166,15 +167,22 @@ class Extract(Task):
         # because people took the time to describe it.
         data_columns = list(set(self.data.columns))  # get the distinct list of columns
         log.info(data_columns)
-        columns_described_in_metadata = list(self.metadata[MetadataColumns.COLUMN_NAME])
+        log.info(self.metadata)
+        columns_described_in_metadata = list(self.columns_dataset_all_profiles.apply(lambda x: MetadataColumns.normalize_name(x)))  # TODO: get all columns?
+        log.info(len(columns_described_in_metadata))
+        log.info(columns_described_in_metadata)
         columns_to_drop = [data_column for data_column in data_columns if data_column not in columns_described_in_metadata or (data_column in self.execution.columns_to_remove and not data_column in [self.execution.patient_id_column_name, self.execution.sample_id_column_name])]
+        log.info(columns_to_drop)
+        log.info(len(columns_to_drop))
+        log.info(len(self.data.columns))
         self.data = self.data.drop(columns_to_drop, axis=1)  # axis=1 -> columns
+        log.info(len(self.data.columns))
         for data_column in data_columns:
             # we record this column in the stats only if it is not described at all in the current file metadata
             # this is because we iteratively look at the metadata of each pair <dataset, profile>
             # and we do not want to record a column as "not described" if it is later described in another profile
             # if data_column not in self.described_columns_current_file:
-            if data_column not in columns_described_in_metadata:
+            if data_column in columns_to_drop:
                 log.info(f"Add data column {data_column} as not described.")
                 self.quality_stats.add_column_not_described_in_metadata(data_column_name=data_column)
 
