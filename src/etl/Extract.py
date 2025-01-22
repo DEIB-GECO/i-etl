@@ -166,17 +166,9 @@ class Extract(Task):
         # if a column is described in the metadata but is not present in the data or this column is empty we keep it
         # because people took the time to describe it.
         data_columns = list(set(self.data.columns))  # get the distinct list of columns
-        log.info(data_columns)
-        log.info(self.metadata)
-        columns_described_in_metadata = list(self.columns_dataset_all_profiles.apply(lambda x: MetadataColumns.normalize_name(x)))  # TODO: get all columns?
-        log.info(len(columns_described_in_metadata))
-        log.info(columns_described_in_metadata)
-        columns_to_drop = [data_column for data_column in data_columns if data_column not in columns_described_in_metadata or (data_column in self.execution.columns_to_remove and not data_column in [self.execution.patient_id_column_name, self.execution.sample_id_column_name])]
-        log.info(columns_to_drop)
-        log.info(len(columns_to_drop))
-        log.info(len(self.data.columns))
+        columns_described_in_metadata = list(self.columns_dataset_all_profiles.apply(lambda x: MetadataColumns.normalize_name(x)))  # https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/issues/282
+        columns_to_drop = [data_column for data_column in data_columns if data_column not in columns_described_in_metadata or (data_column in self.execution.columns_to_remove and data_column not in [self.execution.patient_id_column_name, self.execution.sample_id_column_name])]
         self.data = self.data.drop(columns_to_drop, axis=1)  # axis=1 -> columns
-        log.info(len(self.data.columns))
         for data_column in data_columns:
             # we record this column in the stats only if it is not described at all in the current file metadata
             # this is because we iteratively look at the metadata of each pair <dataset, profile>
