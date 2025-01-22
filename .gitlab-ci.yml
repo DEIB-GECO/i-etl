@@ -9,9 +9,10 @@ etl:
     - ls -al /builds/padme-development/external/better/data-cataloging/etl/datasets/test
     - cat /builds/padme-development/external/better/data-cataloging/etl/.env.ci
     - cat .env.ci
+    - cat /builds/padme-development/external/better/data-cataloging/etl/datasets/test/extr-metadata-phen.csv
     - export CONTEXT_MODE="TEST"
     - export ETL_ENV_FILE_NAME=.env.ci
     - export ABSOLUTE_PATH_ENV_FILE=/builds/padme-development/external/better/data-cataloging/etl/.env.ci
-    - docker build . --tag etl
-    - docker compose --env-file .env.ci up --exit-code-from etl || true
-    - docker compose --env-file .env.ci down
+#    - docker build . --tag etl
+#    - docker compose --env-file .env.ci up --exit-code-from etl || true
+#    - docker compose --env-file .env.ci down
