@@ -133,7 +133,7 @@ Then, on can access it using that port (for instance, `mongosh --port 27018`).
 To be used when working with the FAIRificator repository
 
 1. Install Docker Desktop and open it
-2. From the root of the project, run `docker build . --tag i-etl`
+2. From the root of the project, run `docker build . --tag ietl`
 3. If an error saying `ERROR: Cannot connect to the Docker daemon at XXX. Is the docker daemon running?` occurs, Docker Desktop has not started. 
 4. If an error saying `error getting credentials` occurs while building, go to your Docker config file (probably `~/.docker/config.json`) and remove the line `credsStore`. Then, save the file and build again the image.
 
@@ -142,7 +142,7 @@ To be used when working with the FAIRificator repository
 To be used when deploying the ETL within a center
 
 1. Build the Docker image: see above section
-2. Create a TAR image of I-ETL (only with the ETL, not with the mongo): `docker save i-etl > the-ietl-image.tar`
+2. Create a TAR image of I-ETL (only with the ETL, not with the mongo): `docker save ietl > the-ietl-image.tar`
 3. Send that TAR image to the host machine, e.g., using `scp the-ietl-image.tar "username@A.B.C.D:/somewhere/in/host/machine"`
 4. Send the env file to the host machine in the same folder as the TAR image, e.g., using `scp .env "username@A.B.C.D:/somewhere/in/host/machine"`
 5. Send the compose file to the host machine in the same folder as the TAR image, e.g., using `scp compose.yaml "username@A.B.C.D:/somewhere/in/host/machine`

@@ -13,7 +13,7 @@ services:
       - network-i-etl
   etl:
     container_name: the-etl
-    image: i-etl
+    image: ietl
     depends_on:
       - mongo
     env_file:
