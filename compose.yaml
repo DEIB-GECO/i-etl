@@ -10,36 +10,34 @@ services:
     volumes:  # docker run -v /path/on/host:/path/inside/container <image_name>
       - ${SERVER_FOLDER_MONGODB}:/data/db
     networks:
-      - network-fairificator
+      - network-i-etl
   etl:
     container_name: the-etl
-    image: fairificator
+    image: i-etl
     depends_on:
       - mongo
     env_file:
       - ${ABSOLUTE_PATH_ENV_FILE}  # this specifies that when one runs a "docker compose", a .env file should be next to it
-    working_dir: /home/fairificator-deployed
+    working_dir: /home/i-etl-deployed
     volumes:
       # we need to provide to Docker the access to the folders where there is the data and the metadata
       # this is mandatory to access data in the hospital - otherwise Docker won't see any file outside those copied in the image
-      # SERVER_FOLDER_METADATA is the hospital server folder where the metadata is - this is a "ghost copy"/"open view" which will show the same files in /home/fairificator-deployed/hospital-data/X
-      # same applies for SERVER_FOLDER_PHENOTYPIC, SERVER_FOLDER_DIAGNOSIS, etc.
-      # For the Docker image, the data, resp. metadata, is now in /home/fairificator-deployed/hospital-data/
-      # Therefore, the metadata and data paths given to the ETL should start with /home/fairificator-deployed/hospital-data/
+      # SERVER_FOLDER_METADATA is the hospital server folder where the metadata is - this is a "ghost copy"/"open view" which will show the same files in /home/i-etl-deployed/hospital-data/X
+      # Therefore, the metadata and data paths given to the ETL should start with /home/i-etl-deployed/hospital-data/
       # And instead of asking users to provide such an absolute path (which they don't have to see because this is the Docker internal structure),
       # we let the ETL build it by appending the data filename to that path
-      - ${SERVER_FOLDER_DATA_GENERATION}:/home/fairificator-deployed/synthetic-data
-      - ${SERVER_FOLDER_METADATA}:/home/fairificator-deployed/metadata
-      - ${SERVER_FOLDER_DATA}:/home/fairificator-deployed/real-data
-      - ${SERVER_FOLDER_PIDS}:/home/fairificator-deployed/pids
-      - ${SERVER_FOLDER_TEST}:/home/fairificator-deployed/test
-      - ${SERVER_FOLDER_LOG_ETL}:/home/fairificator-deployed/working-dir
+      - ${SERVER_FOLDER_DATA_GENERATION}:/home/i-etl-deployed/synthetic-data
+      - ${SERVER_FOLDER_METADATA}:/home/i-etl-deployed/metadata
+      - ${SERVER_FOLDER_DATA}:/home/i-etl-deployed/real-data
+      - ${SERVER_FOLDER_PIDS}:/home/i-etl-deployed/pids
+      - ${SERVER_FOLDER_TEST}:/home/i-etl-deployed/test
+      - ${SERVER_FOLDER_LOG_ETL}:/home/i-etl-deployed/working-dir
     environment:
       - CONTEXT_MODE=${CONTEXT_MODE:-DEV}
       - ETL_ENV_FILE_NAME=${ETL_ENV_FILE_NAME:-.env}
     networks:
-      - network-fairificator
+      - network-i-etl
 networks:
-  network-fairificator:
-    name: network-fairificator
+  network-i-etl:
+    name: network-i-etl
     driver: bridge
