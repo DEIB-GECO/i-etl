@@ -13,7 +13,7 @@ services:
       - network-fairificator
   etl:
     container_name: the-etl
-    image: fairificator
+    image: etl
     depends_on:
       - mongo
     env_file:
