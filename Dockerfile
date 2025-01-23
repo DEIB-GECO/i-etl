@@ -22,8 +22,7 @@ COPY entrypoint.sh /home/i-etl-deployed/entrypoint.sh
 # 3. for tests only, we copy tests too
 COPY pytest.ini /home/i-etl-deployed/pytest.ini
 COPY tests /home/i-etl-deployed/tests
-# no need to copy test data, we can access it through a shared folder (volume)
-# COPY datasets/test /home/i-etl-deployed/datasets/test
+COPY datasets/test /home/i-etl-deployed/datasets/test
 
 
 # 4. script to be executed when RUNNING the Docker image

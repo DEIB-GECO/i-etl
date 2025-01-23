@@ -30,7 +30,7 @@ services:
       - ${SERVER_FOLDER_METADATA}:/home/i-etl-deployed/metadata
       - ${SERVER_FOLDER_DATA}:/home/i-etl-deployed/real-data
       - ${SERVER_FOLDER_PIDS}:/home/i-etl-deployed/pids
-      - ${SERVER_FOLDER_TEST}:/home/i-etl-deployed/test
+      # - ${SERVER_FOLDER_TEST}:/home/i-etl-deployed/test
       - ${SERVER_FOLDER_LOG_ETL}:/home/i-etl-deployed/working-dir
     environment:
       - CONTEXT_MODE=${CONTEXT_MODE:-DEV}

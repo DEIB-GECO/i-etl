@@ -1,5 +1,7 @@
 #!/bin/bash
 
+ls -a /home/fairificator-deployed/test/
+
 if [ "${CONTEXT_MODE}" == "DEV" ]; then
   echo "Running main code with env file ${ETL_ENV_FILE_NAME}"
   python3 src/main-etl.py
