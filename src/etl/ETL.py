@@ -61,7 +61,6 @@ class ETL:
         file_counter = self.create_hospital(counter=counter, dataset_number=dataset_number, file_counter=file_counter)
 
         all_metadata = read_tabular_file_as_string(self.execution.metadata_filepath)  # keep all metadata as str
-        log.info(all_metadata)
         for one_filename in all_filenames:
             if one_filename != "":
                 log.info(one_filename)
@@ -127,7 +126,7 @@ class ETL:
 
                             # LOAD
                             time_stats.start(dataset=current_dataset_instance.global_identifier, key=TimerKeys.LOAD_TIME)
-                            log.info(f"{one_filename} -> {compute_indexes}")
+                            # log.info(f"{one_filename} -> {compute_indexes}")
                             # create indexes only if this is the last file (otherwise, we would create useless intermediate indexes)
                             self.load = Load(database=self.database, execution=self.execution, create_indexes=compute_indexes,
                                              dataset_number=dataset_number, profile=profile,

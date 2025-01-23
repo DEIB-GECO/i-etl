@@ -14,7 +14,7 @@ from utils.str_utils import remove_specific_tokens, process_spaces, remove_opera
 
 @dataclasses.dataclass(kw_only=True)
 class OntologyResource:
-    system: dict | str
+    system: dict
     code: str
     label: str | None
     quality_stats: QualityStatistics | None = dataclasses.field(repr=False)
@@ -285,9 +285,10 @@ class OntologyResource:
     @classmethod
     def from_json(cls, json_or: dict, quality_stats: QualityStatistics):  # returns an OntologyResource
         # fill a new OntologyResource instance with a JSON-encoded OntologyResource
-        the_or = OntologyResource(system=Ontologies.get_enum_from_url(json_or["system"]),
-                                  code=json_or["code"], label=json_or["label"],
-                                  quality_stats=quality_stats)
+        the_system = Ontologies.get_enum_from_url(json_or["system"]) if "system" in json_or else {}
+        the_code = json_or["code"] if "code" in json_or else ""
+        the_label = json_or["label"] if "label" in json_or else None
+        the_or = OntologyResource(system=the_system, code=the_code, label=the_label, quality_stats=quality_stats)
         return the_or
 
     def __eq__(self, other):

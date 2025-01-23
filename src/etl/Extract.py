@@ -266,8 +266,8 @@ class Extract(Task):
             else:
                 # if this was supposed to be categorical (thus having values), we count it in the reporting
                 # otherwise, this is not a categorical column (thus, everything is fine)
-                log.info(f"no JSON categories for column {column_name}")
                 if column_type == DataTypes.CATEGORY:
+                    # log.info(f"no JSON categories for column {column_name}")
                     self.quality_stats.add_categorical_column_with_no_json(column_name=column_name)
         # log.debug(f"{self.mapping_categorical_value_to_onto_resource}")
         # log.debug(f"{self.mapping_column_to_categorical_value}")
