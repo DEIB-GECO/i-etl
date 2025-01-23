@@ -32,7 +32,7 @@ services:
       - ${SERVER_FOLDER_METADATA}:/home/fairificator-deployed/metadata
       - ${SERVER_FOLDER_DATA}:/home/fairificator-deployed/real-data
       - ${SERVER_FOLDER_PIDS}:/home/fairificator-deployed/pids
-      - ${SERVER_FOLDER_TEST}:/home/fairificator-deployed/test
+      # - ${SERVER_FOLDER_TEST}:/home/fairificator-deployed/test
       - ${SERVER_FOLDER_LOG_ETL}:/home/fairificator-deployed/working-dir
     environment:
       - CONTEXT_MODE=${CONTEXT_MODE:-DEV}
