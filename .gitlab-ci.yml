@@ -14,5 +14,5 @@ etl:
     - export ETL_ENV_FILE_NAME=.env.ci
     - export ABSOLUTE_PATH_ENV_FILE=/builds/padme-development/external/better/data-cataloging/etl/.env.ci
     - docker build . --tag ietl
-    - docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} up --exit-code-from --remove-orphans ietl 
+    - docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} up --exit-code-from ietl --remove-orphans 
     - docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} down
