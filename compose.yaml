@@ -11,7 +11,7 @@ services:
       - ${SERVER_FOLDER_MONGODB}:/data/db
     networks:
       - network-i-etl
-  etl:
+  ietl:
     container_name: the-etl
     image: ietl
     depends_on:
