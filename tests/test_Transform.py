@@ -185,7 +185,15 @@ class TestTransform(unittest.TestCase):
             {"identifier": 123},
             {"identifier": 6}
         ]
+        log.info("***** before insert *****")
+        for res in database.find_operation(table_name=TableNames.FEATURE, filter_dict={}, projection={}):
+            log.info(res)
+        log.info("*****")
         database.insert_many_tuples(table_name=TableNames.FEATURE, tuples=my_tuples)
+        log.info("$$$$$ after insert $$$$$")
+        for res in database.find_operation(table_name=TableNames.FEATURE, filter_dict={}, projection={}):
+            log.info(res)
+        log.info("$$$$$")
         counter.set_with_database(database=transform.database)
         assert counter.resource_id == 125
 
