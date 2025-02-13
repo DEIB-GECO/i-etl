@@ -331,6 +331,7 @@ class Database:
         max_value = -1
         for table_name in TableNames.data_tables():
             current_max_identifier = self.get_max_value(table_name=table_name, field="identifier")
+            log.info(f"current max identifier for {table_name} is {current_max_identifier}")
             if current_max_identifier is not None:
                 try:
                     current_max_identifier = int(current_max_identifier)
