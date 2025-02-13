@@ -100,7 +100,7 @@ class Execution:
             else:
                 self.metadata_filepath = os.path.join(DOCKER_FOLDER_METADATA, self.metadata_filepath)
 
-    def check_parameter(self, key: str, accepted_values: list|None, default_value) -> str | bool | int | None:
+    def check_parameter(self, key: str, accepted_values: list|None, default_value) -> str | bool | int | None | list:
         try:
             the_parameter = os.getenv(key)
             if the_parameter is None:
@@ -129,7 +129,12 @@ class Execution:
                 if int_parameter is not None:
                     return int_parameter
                 else:
-                    return the_parameter
+                    # trying to cast as list
+                    if the_parameter.startswith("[") and the_parameter.endswith("]"):
+                        the_parameter = the_parameter.replace("[", "").replace("]", "")
+                        return the_parameter.split(",")
+                    else:
+                        return the_parameter
         except:
             log.error(f"The parameter {key} does not exist as an environment variable. Using default value: {default_value}.")
             return default_value
