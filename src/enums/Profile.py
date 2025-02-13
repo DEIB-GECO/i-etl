@@ -13,7 +13,6 @@ class Profile(EnumAsClass):
     MEDICINE = "medicine"
     GENOMIC = "genomic"
     IMAGING = "imaging"
-    DIAGNOSIS_REGEX = "diagnosis_regex"
     PATIENT_IDS = "patient_ids"
     METADATA = "metadata"
 
@@ -25,8 +24,6 @@ class Profile(EnumAsClass):
     def get_execution_key(cls, filetype) -> str | None:
         if filetype in [Profile.PHENOTYPIC, Profile.CLINICAL, Profile.GENOMIC, Profile.IMAGING, Profile.MEDICINE, Profile.DIAGNOSIS]:
             return ParameterKeys.DATA_FILES
-        elif filetype == Profile.DIAGNOSIS_REGEX:
-            return ParameterKeys.DIAGNOSIS_REGEXES
         elif filetype == Profile.PATIENT_IDS:
             return ParameterKeys.ANONYMIZED_PATIENT_IDS
         elif filetype == Profile.METADATA:
@@ -39,8 +36,7 @@ class Profile(EnumAsClass):
         if os.getenv("CONTEXT_MODE") == "TEST":
             return DOCKER_FOLDER_TEST
         else:
-            if filetype.lower() in [Profile.PHENOTYPIC, Profile.CLINICAL, Profile.GENOMIC, Profile.IMAGING, Profile.MEDICINE, Profile.DIAGNOSIS, Profile.DIAGNOSIS_REGEX]:
-                # TODO Nelly: see how I can move the regex diagnosis file in the metadata folder
+            if filetype.lower() in [Profile.PHENOTYPIC, Profile.CLINICAL, Profile.GENOMIC, Profile.IMAGING, Profile.MEDICINE, Profile.DIAGNOSIS]:
                 return DOCKER_FOLDER_DATA
             elif filetype.lower() in [Profile.METADATA]:
                 return DOCKER_FOLDER_METADATA

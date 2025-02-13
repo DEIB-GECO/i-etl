@@ -33,7 +33,6 @@ class Execution:
     current_filepath: str = field(init=False, default=None)  # set in the loop on files in ETL
     current_dataset_identifier: str = field(init=False, default=None)  # set in the loop on file sin ETL
     current_file_number: int = field(init=False, default=1)  # set in the ETL
-    diagnosis_regexes_filepath: str = field(init=False, default=None)  # user input
     anonymized_patient_ids_filepath: str = field(init=False, default=None)  # user input
     use_locale: str = field(init=False, default="en_GB")  # user input
     record_carrier_patients: bool = field(init=False, default=False)  # user input
@@ -100,14 +99,6 @@ class Execution:
                 self.metadata_filepath = os.path.join(DOCKER_FOLDER_TEST, self.metadata_filepath)
             else:
                 self.metadata_filepath = os.path.join(DOCKER_FOLDER_METADATA, self.metadata_filepath)
-
-            # and for the non-data files, e.g., the regex file for diagnoses
-            self.diagnosis_regexes_filepath = self.check_parameter(key=ParameterKeys.DIAGNOSIS_REGEXES, accepted_values=None, default_value=self.diagnosis_regexes_filepath)
-            log.debug(self.diagnosis_regexes_filepath)
-            if self.diagnosis_regexes_filepath is not None:
-                self.diagnosis_regexes_filepath = os.path.join(
-                    Profile.get_prefix_for_path(filetype=Profile.DIAGNOSIS_REGEX), self.diagnosis_regexes_filepath)
-                log.debug(f"{self.diagnosis_regexes_filepath}")
 
     def check_parameter(self, key: str, accepted_values: list|None, default_value) -> str | bool | int | None:
         try:

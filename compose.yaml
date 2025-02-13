@@ -20,12 +20,10 @@ services:
       - ${ABSOLUTE_PATH_ENV_FILE}  # this specifies that when one runs a "docker compose", a .env file should be next to it
     working_dir: /home/i-etl-deployed
     volumes:
-      # we need to provide to Docker the access to the folders where there is the data and the metadata
-      # this is mandatory to access data in the hospital - otherwise Docker won't see any file outside those copied in the image
-      # SERVER_FOLDER_METADATA is the hospital server folder where the metadata is - this is a "ghost copy"/"open view" which will show the same files in /home/i-etl-deployed/hospital-data/X
-      # Therefore, the metadata and data paths given to the ETL should start with /home/i-etl-deployed/hospital-data/
-      # And instead of asking users to provide such an absolute path (which they don't have to see because this is the Docker internal structure),
-      # we let the ETL build it by appending the data filename to that path
+      # we need to provide Docker the access to the folders where the data and the metadata files are
+      # this is mandatory to access data in the host machine (otherwise Docker won't see any file outside those copied in the image)
+      # each folder after the : represents a "view" over the folder in ${X}
+      # While executing, the code will refer to /home/i-etl-deployed/...
       - ${SERVER_FOLDER_DATA_GENERATION}:/home/i-etl-deployed/synthetic-data
       - ${SERVER_FOLDER_METADATA}:/home/i-etl-deployed/metadata
       - ${SERVER_FOLDER_DATA}:/home/i-etl-deployed/real-data

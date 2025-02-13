@@ -1,6 +1,9 @@
+import os
+
 import pandas as pd
 from pandas import DataFrame
 
+from constants.structure import DOCKER_FOLDER_DATA
 from database.Execution import Execution
 from enums.Profile import Profile
 from preprocessing.Preprocess import Preprocess
@@ -21,7 +24,7 @@ class PreprocessKidneyCovid(Preprocess):
 
     def run(self):
         if self.profile == Profile.CLINICAL or self.profile == Profile.GENOMIC:
-            df_barcode_to_patient = read_tabular_file_as_string(self.execution.diagnosis_regexes_filepath)
+            df_barcode_to_patient = read_tabular_file_as_string(os.path.join(DOCKER_FOLDER_DATA, "mapping_patient_sample.csv"))
             df_barcode_to_patient = df_barcode_to_patient[["sample_id", "individual_id"]]
             df_barcode_to_patient = df_barcode_to_patient.drop_duplicates()
 

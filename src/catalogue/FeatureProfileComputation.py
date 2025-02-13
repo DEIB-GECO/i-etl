@@ -4,6 +4,7 @@ import json
 
 import numpy as np
 
+from constants.defaults import DEFAULT_NAN_VALUE
 from constants.methods import factory
 from database.Database import Database
 from enums.DataTypes import DataTypes
@@ -685,7 +686,7 @@ class FeatureProfileComputation:
                                groups=[{"name": "counts", "operator": "$sum", "field": 1}]),
             Operators.group_by(group_key={"instantiates": "$_id.instantiates", "dataset": "$_id.dataset"}, groups=[
                 # push in an array of maps of two elements (value and counts) the elements of the  pair (dataset, feature)
-                {"name": "values_and_counts", "operator": "$push", "field": {"value": "$_id.value", "count": "$counts"}}
+                {"name": "values_and_counts", "operator": "$push", "field": {"value": {"$cond": {"if": {"$eq": ["$_id.value", DEFAULT_NAN_VALUE]}, "then": None, "else": "$_id.value"}}, "count": "$counts"}}
             ])
         ]
 

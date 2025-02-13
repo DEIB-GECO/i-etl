@@ -3,6 +3,7 @@ import re
 
 from pandas import DataFrame
 
+from constants.structure import DOCKER_FOLDER_DATA
 from database.Execution import Execution
 from enums.AccessTypes import AccessTypes
 from enums.DiagnosisColumns import DiagnosisColumns
@@ -35,7 +36,7 @@ class PreprocessBuzziUC1(Preprocess):
         log.info("pre-process BUZZI data")
         if self.profile == Profile.DIAGNOSIS:
             # 1. associate each disease to its information: gene, orphanet code, zigosity, etc
-            transformation_df = read_tabular_file_as_string(self.execution.diagnosis_regexes_filepath)
+            transformation_df = read_tabular_file_as_string(os.path.join(DOCKER_FOLDER_DATA, "ds-transformation-table.xlsx"))
             transformation_df.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x), inplace=True)  # normalize column names
             transformation_df.rename(columns={"gene": DiagnosisColumns.GENE_NAME, "orpha_net": DiagnosisColumns.ORPHANET_CODE}, inplace=True)
             log.info(transformation_df)
