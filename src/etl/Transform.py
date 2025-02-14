@@ -236,10 +236,6 @@ class Transform(Task):
         mapping_hospital_to_hospital_id = self.database.retrieve_mapping(table_name=TableNames.HOSPITAL,
                                                                          key_fields="name", value_fields="identifier", filter_dict={})
         log.info(mapping_hospital_to_hospital_id)
-        log.info("*** instances in features ***")
-        for res in self.database.find_operation(table_name=TableNames.FEATURE, filter_dict={}, projection={}):
-            log.info(res)
-        log.info("***")
         mapping_column_to_feature_id = self.database.retrieve_mapping(table_name=TableNames.FEATURE,
                                                                       key_fields="name",
                                                                       value_fields="identifier",
