@@ -188,7 +188,7 @@ class TestTransform(unittest.TestCase):
             {"identifier": 6}
         ]
         database.insert_many_tuples(table_name=TableNames.FEATURE, tuples=my_tuples)
-        # time.sleep(2)
+        time.sleep(2)
         counter.set_with_database(database=transform.database)
         assert counter.resource_id == 125
 
