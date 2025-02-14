@@ -42,7 +42,7 @@ class GeneratorImgge(DataGenerator):
 
         # Create the dataset
         data = hf.generate(num_rows=num_rows)
-        self.save_generated_file(df=data, filename="data.csv")
+        self.save_generated_file(df=data, filename="Core_Table.xlsx")
 
     def generate_fields(self):
         # PATIENT ID
