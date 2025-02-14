@@ -32,7 +32,7 @@ def my_setup(profile: str, create_indexes: bool) -> Load:
     TestLoad.execution.internals_set_up()
     TestLoad.execution.file_set_up(setup_files=False)  # no need to set up the files, we get data and metadata as input
     database = Database(execution=TestLoad.execution)
-    load = Load(database=database, execution=TestLoad.execution, create_indexes=create_indexes, dataset_number=1,
+    load = Load(database=database, execution=TestLoad.execution, create_indexes=create_indexes, dataset_number=99,
                 profile=profile, quality_stats=QualityStatistics(record_stats=False))
 
     # 2. create few "fake" files in the current working directory in order to test insertion and index creation
@@ -81,10 +81,12 @@ def my_setup(profile: str, create_indexes: bool) -> Load:
     hospital = {"identifier": f"{TableNames.HOSPITAL}:1", "name": HospitalNames.TEST_H1}
 
     # 3. write them in temporary JSON files
-    path_phen_features = os.path.join(TestLoad.execution.working_dir_current, f"1{Profile.PHENOTYPIC}{TableNames.FEATURE}1.json")
-    path_phen_records = os.path.join(TestLoad.execution.working_dir_current, f"1{Profile.PHENOTYPIC}{TableNames.RECORD}1.json")
-    path_patients = os.path.join(TestLoad.execution.working_dir_current, f"1{TableNames.PATIENT}{TableNames.PATIENT}1.json")
-    path_hospital = os.path.join(TestLoad.execution.working_dir_current, f"1{TableNames.HOSPITAL}{TableNames.HOSPITAL}1.json")
+    # we use 99 because we already have 1PhenotypicFeature1.json, and it would overwrite the json file
+    # leading to inconsistencies and wrong inserts
+    path_phen_features = os.path.join(TestLoad.execution.working_dir_current, f"99{Profile.PHENOTYPIC}{TableNames.FEATURE}1.json")
+    path_phen_records = os.path.join(TestLoad.execution.working_dir_current, f"99{Profile.PHENOTYPIC}{TableNames.RECORD}1.json")
+    path_patients = os.path.join(TestLoad.execution.working_dir_current, f"99{TableNames.PATIENT}{TableNames.PATIENT}1.json")
+    path_hospital = os.path.join(TestLoad.execution.working_dir_current, f"99{TableNames.HOSPITAL}{TableNames.HOSPITAL}1.json")
     # insert the data that is inserted during the Transform step
     with open(path_phen_features, 'w') as f:
         json.dump(phen_features, f)

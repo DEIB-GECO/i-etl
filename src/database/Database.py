@@ -173,6 +173,7 @@ class Database:
         cursor = self.find_operation(table_name=table_name, filter_dict=filter_dict, projection={key_fields: 1, value_fields: 1})
         mapping = {}
         for result in cursor:
+            log.info(result)
             projected_key = result
             for one_key in key_fields.split("."):
                 # this covers the case when the key of the mapping is a nested field, e.g., identifier.value
