@@ -126,6 +126,8 @@ class Transform(Task):
                     # we create a new Feature from scratch
                     onto_resource = self.create_ontology_resource_from_row(column_name=column_name)
                     data_type = row[columns.get_loc(MetadataColumns.ETL_TYPE)]  # this has been normalized while loading + we take ETL_type to get the narrowest type (in which we cast values)
+                    if data_type == DataTypes.API:  # because the catalogue does not know about the API datatype; each API call leads to an ontology resource, thus a category
+                        data_type = DataTypes.CATEGORY
                     self.mapping_column_to_type[column_name] = data_type
                     visibility = row[columns.get_loc(MetadataColumns.VISIBILITY)]  # this has been normalized while loading
                     self.mapping_column_to_visibility[column_name] = visibility
