@@ -81,10 +81,12 @@ def my_setup(profile: str, create_indexes: bool) -> Load:
     hospital = {"identifier": f"{TableNames.HOSPITAL}:1", "name": HospitalNames.TEST_H1}
 
     # 3. write them in temporary JSON files
-    path_phen_features = os.path.join(TestLoad.execution.working_dir_current, f"1{Profile.PHENOTYPIC}{TableNames.FEATURE}1.json")
-    path_phen_records = os.path.join(TestLoad.execution.working_dir_current, f"1{Profile.PHENOTYPIC}{TableNames.RECORD}1.json")
-    path_patients = os.path.join(TestLoad.execution.working_dir_current, f"1{TableNames.PATIENT}{TableNames.PATIENT}1.json")
-    path_hospital = os.path.join(TestLoad.execution.working_dir_current, f"1{TableNames.HOSPITAL}{TableNames.HOSPITAL}1.json")
+    # we use X because we already have 1PhenotypicFeature1.json, and it would overwrite the json file
+    # leading to inconsistencies and wrong inserts
+    path_phen_features = os.path.join(TestLoad.execution.working_dir_current, f"X{Profile.PHENOTYPIC}{TableNames.FEATURE}1.json")
+    path_phen_records = os.path.join(TestLoad.execution.working_dir_current, f"X{Profile.PHENOTYPIC}{TableNames.RECORD}1.json")
+    path_patients = os.path.join(TestLoad.execution.working_dir_current, f"X{TableNames.PATIENT}{TableNames.PATIENT}1.json")
+    path_hospital = os.path.join(TestLoad.execution.working_dir_current, f"X{TableNames.HOSPITAL}{TableNames.HOSPITAL}1.json")
     # insert the data that is inserted during the Transform step
     with open(path_phen_features, 'w') as f:
         json.dump(phen_features, f)
