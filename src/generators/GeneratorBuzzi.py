@@ -28,13 +28,13 @@ class GeneratorBuzzi(DataGenerator):
         fieldset = self.generate_screening_dataset()
         hf = headfake.HeadFake.from_python({"fieldset": fieldset})
 
-        # Create the metabolic dataset
+        # Create the screening dataset
         data_1 = hf.generate(num_rows=num_rows)
-        self.save_generated_file(df=data_1, filename="metabolic.csv")
+        self.save_generated_file(df=data_1, filename="screening.csv")
 
         # Create the diagnosis dataset
         data_2 = self.generate_diagnosis_dataset(data_1["id"])
-        self.save_generated_file(df=data_2, filename="diagnoses.csv")
+        self.save_generated_file(df=data_2, filename="diagnoses-latest.xlsx")
 
     def generate_screening_dataset(self):
         # argininosuccinic acid

@@ -29,16 +29,16 @@ class GeneratorUC2(DataGenerator):
         fieldset = self.generate_baseline_clinical_dataset()
         hf = headfake.HeadFake.from_python({"fieldset": fieldset})
         data_1 = hf.generate(num_rows=num_rows)
-        self.save_generated_file(df=data_1, filename="baseline.csv")
+        self.save_generated_file(df=data_1, filename="Baseline_Clinical_Table.xlsx")
 
         # Create the genetic table
         self.baseline_df = data_1
         data_2 = self.generate_genetic_dataset()
-        self.save_generated_file(df=data_2, filename="genetic.csv")
+        self.save_generated_file(df=data_2, filename="Genetic_Table.xlsx")
 
         # Create the dynamic table
         data_3 = self.generate_dynamic_dataset(data_1, 4)
-        self.save_generated_file(df=data_3, filename="dynamic.csv")
+        self.save_generated_file(df=data_3, filename="Dynamic_Clinical_Table.xlsx")
 
         # Create the imaging data table
         data_4 = self.generate_imaging_dataset(data_1)
