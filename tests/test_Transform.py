@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import time
 import unittest
 
 import pandas as pd
@@ -187,6 +188,7 @@ class TestTransform(unittest.TestCase):
             {"identifier": 6}
         ]
         database.insert_many_tuples(table_name=TableNames.FEATURE, tuples=my_tuples)
+        time.sleep(5.5)
         counter.set_with_database(database=transform.database)
         assert counter.resource_id == 125
 
