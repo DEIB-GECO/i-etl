@@ -120,8 +120,8 @@ class Transform(Task):
         for row in self.metadata.itertuples(index=False):
             column_name = row[columns.get_loc(MetadataColumns.COLUMN_NAME)]
             # columns to remove have already been removed in the Extract part from the metadata
-            # here, we need to ensure that we create Features only for still-existing columns and not for ID column and not for Diagnosis counter (clinical base_id)
-            if column_name not in [self.execution.patient_id_column_name, self.execution.sample_id_column_name, DiagnosisColumns.DISEASE_COUNTER]:
+            # here, we need to ensure that we create Features that have a name, which are not IDs (patient or sample) nor for Diagnosis counter (clinical base_id)
+            if column_name not in ["", self.execution.patient_id_column_name, self.execution.sample_id_column_name, DiagnosisColumns.DISEASE_COUNTER]:
                 if column_name not in db_existing_features:
                     # we create a new Feature from scratch
                     onto_resource = self.create_ontology_resource_from_row(column_name=column_name)
@@ -222,7 +222,7 @@ class Transform(Task):
                         datasets.append(self.dataset_instance.global_identifier)
                         self.database.update_one_tuple(table_name=TableNames.FEATURE, filter_dict={"identifier": db_existing_features[column_name]["identifier"]}, update={"datasets": datasets})
             else:
-                log.debug(f"I am skipping column {column_name} because it has been dropped or is an ID column.")
+                log.debug(f"I am skipping column {column_name} because it has been dropped or is an ID column or its name is empty.")
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
         self.process_batch_of_features(last=True)
         self.database.load_json_in_table(profile=self.profile, table_name=TableNames.FEATURE, unique_variables=["name"], dataset_number=self.dataset_number)
