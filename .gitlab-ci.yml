@@ -40,6 +40,7 @@ etl:
     # - echo git pull -r origin ${CI_COMMIT_REF_NAME}
     # - git remote show origin
     # - git pull -r origin ${CI_COMMIT_REF_NAME}
+    - git pull origin ${CI_COMMIT_REF_NAME}
 
     # take artifact from previous job, create timestamped file in reports directory
     - docker save ietl > the-ietl-image.tar
