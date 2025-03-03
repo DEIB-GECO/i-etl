@@ -16,3 +16,30 @@ etl:
     - docker build . --tag ietl
     - docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} up --exit-code-from ietl --remove-orphans 
     - docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} down
+    - git --version
+    - git config --global user.email "$GITLAB_USER_EMAIL"
+    - git config --global user.name "$GITLAB_USER_NAME"
+    - echo "email/login/name $GITLAB_USER_EMAIL/$GITLAB_USER_LOGIN/$GITLAB_USER_NAME"
+    - git config --global -l
+
+    # transform pipeline git url to use our project access token name and credentials
+    - git remote -v
+    - url_host=`git remote get-url origin | sed -e "s/https:\/\/gitlab-ci-token:.*@//g"`
+    - echo https://for-ci-cd:${KEY_TAR_IETL}@${url_host}
+    - git remote set-url origin "https://for-ci-cd:${KEY_TAR_IETL}@${url_host}"
+    - git remote -v
+
+    # get latest from branch
+    - echo git checkout of branch ${WHICH_BRANCH}
+    - git fetch --all && git checkout ${WHICH_BRANCH}
+    - git pull -r origin ${WHICH_BRANCH}
+
+    # take artifact from previous job, create timestamped file in reports directory
+    - docker save ietl > the-ietl-image.tar
+
+    # add, commit, and push new file (skip any workflow)
+    - git status
+    - ls -l 
+    - git add the-ietl-image.tar
+    - git commit -a -m "Generated latest TAR image of I-ETL"
+    - git push -o ci.skip
