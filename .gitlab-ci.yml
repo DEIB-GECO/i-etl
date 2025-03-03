@@ -26,22 +26,22 @@ etl:
     # transform pipeline git url to use our project access token name and credentials
     - git remote -v
     - url_host=`git remote get-url origin | sed -e "s/https:\/\/gitlab-ci-token:.*@//g"`
-    - echo https://for-ci-cd:${KEY_TAR_IETL}@${url_host}
-    - git remote set-url origin "https://for-ci-cd:${KEY_TAR_IETL}@${url_host}"
+    - the_origin="https://for-ci-cd:${KEY_TAR_IETL}@${url_host}"
+    - echo ${the_origin}
+    - git remote set-url origin ${the_origin}
     - git remote -v
 
     # get latest from branch
     - echo ${CI_PIPELINE_SOURCE}
     - echo ${CI_COMMIT_BRANCH}
-    - echo git checkout of branch ${CI_COMMIT_REF_NAME}
-    - git fetch --all && git checkout ${CI_COMMIT_REF_NAME}
-    - git branch --list
-    - git remote show
-    # - git remote show origin
-    # - git pull origin
-    - git pull origin ${CI_COMMIT_REF_NAME}
-    # - git pull HEAD #${CI_COMMIT_REF_NAME}
-    # - git pull origin ${CI_COMMIT_REF_NAME}
+    - echo ${the_origin}
+    - echo ${CI_COMMIT_REF_NAME}
+    - git fetch --all 
+    - git checkout ${CI_COMMIT_BRANCH}
+    #- git branch --list
+    - git status
+    # - git pull
+    # - git remote show
     # - git pull -r origin ${CI_COMMIT_REF_NAME}
     
     - docker save ietl > the-ietl-image.tar
