@@ -30,9 +30,9 @@ etl:
     - git remote -v
 
     # get latest from branch
-    - echo git checkout of branch ${WHICH_BRANCH}
-    - git fetch --all && git checkout ${WHICH_BRANCH}
-    - git pull -r origin ${WHICH_BRANCH}
+    - echo git checkout of branch main
+    - git fetch --all && git checkout main
+    - git pull -r origin main
 
     # take artifact from previous job, create timestamped file in reports directory
     - docker save ietl > the-ietl-image.tar
