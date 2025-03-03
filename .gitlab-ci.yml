@@ -33,6 +33,7 @@ etl:
     - echo git checkout of branch ${CI_COMMIT_REF_NAME}
     - git fetch --all && git checkout ${CI_COMMIT_REF_NAME}
     - echo git pull -r origin ${CI_COMMIT_REF_NAME}
+    - git remote show origin
     - git pull -r origin ${CI_COMMIT_REF_NAME}
 
     # take artifact from previous job, create timestamped file in reports directory
@@ -40,7 +41,6 @@ etl:
 
     # add, commit, and push new file (skip any workflow)
     - git status
-    - ls -l 
     - git add the-ietl-image.tar
     - git commit -a -m "Generated latest TAR image of I-ETL"
     - git push -o ci.skip
