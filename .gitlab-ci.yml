@@ -33,7 +33,7 @@ etl:
     # get latest from branch
     - echo git checkout of branch ${CI_COMMIT_REF_NAME}
     - git fetch --all && git checkout ${CI_COMMIT_REF_NAME}
-    - git pull ${CI_COMMIT_RED_NAME}
+    - git pull ${CI_COMMIT_REF_NAME}
     # - echo git pull -r origin ${CI_COMMIT_REF_NAME}
     # - git remote show origin
     # - git pull -r origin ${CI_COMMIT_REF_NAME}
