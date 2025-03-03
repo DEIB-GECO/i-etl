@@ -40,13 +40,8 @@ etl:
     - git checkout ${CI_COMMIT_BRANCH}
     #- git branch --list
     - git status
-    - git pull
+    # - git pull
     # - git remote show
-    # - git remote show origin
-    # - git pull origin
-    # - git pull ${the_origin}
-    # - git pull HEAD #${CI_COMMIT_REF_NAME}
-    # - git pull origin ${CI_COMMIT_REF_NAME}
     # - git pull -r origin ${CI_COMMIT_REF_NAME}
     
     - docker save ietl > the-ietl-image.tar
