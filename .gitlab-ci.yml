@@ -28,7 +28,7 @@ etl:
     - url_host=`git remote get-url origin | sed -e "s/https:\/\/gitlab-ci-token:.*@//g"`
     - the_origin="https://for-ci-cd:${KEY_TAR_IETL}@${url_host}"
     - echo ${the_origin}
-    - git remote set-url origin "${the_origin}
+    - git remote set-url origin ${the_origin}
     - git remote -v
 
     # get latest from branch
