@@ -16,10 +16,11 @@ etl:
     - docker build . --tag ietl
     - docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} up --exit-code-from ietl --remove-orphans 
     - docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} down
-    - git --version
+    
+    # generate the TAR archive of I-ETL
+    - echo "email/login/name $GITLAB_USER_EMAIL/$GITLAB_USER_LOGIN/$GITLAB_USER_NAME"
     - git config --global user.email "$GITLAB_USER_EMAIL"
     - git config --global user.name "$GITLAB_USER_NAME"
-    - echo "email/login/name $GITLAB_USER_EMAIL/$GITLAB_USER_LOGIN/$GITLAB_USER_NAME"
     - git config --global -l
 
     # transform pipeline git url to use our project access token name and credentials
@@ -32,9 +33,10 @@ etl:
     # get latest from branch
     - echo git checkout of branch ${CI_COMMIT_REF_NAME}
     - git fetch --all && git checkout ${CI_COMMIT_REF_NAME}
-    - echo git pull -r origin ${CI_COMMIT_REF_NAME}
-    - git remote show origin
-    - git pull -r origin ${CI_COMMIT_REF_NAME}
+    - git pull ${CI_COMMIT_RED_NAME}
+    # - echo git pull -r origin ${CI_COMMIT_REF_NAME}
+    # - git remote show origin
+    # - git pull -r origin ${CI_COMMIT_REF_NAME}
 
     # take artifact from previous job, create timestamped file in reports directory
     - docker save ietl > the-ietl-image.tar
@@ -42,5 +44,5 @@ etl:
     # add, commit, and push new file (skip any workflow)
     - git status
     - git add the-ietl-image.tar
-    - git commit -a -m "Generated latest TAR image of I-ETL"
+    - git commit -m "Generated latest TAR image of I-ETL"
     - git push -o ci.skip
