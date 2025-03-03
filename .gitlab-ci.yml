@@ -35,19 +35,14 @@ etl:
     - git fetch --all && git checkout ${CI_COMMIT_REF_NAME}
     - git branch --list
     - git remote show
-    - git pull origin
     # - git remote show origin
+    # - git pull origin
+    - git pull origin/${CI_COMMIT_REF_NAME}
     # - git pull HEAD #${CI_COMMIT_REF_NAME}
-    # - echo git pull -r origin ${CI_COMMIT_REF_NAME}
-    # - git remote show origin
-    # - git pull -r origin ${CI_COMMIT_REF_NAME}
     # - git pull origin ${CI_COMMIT_REF_NAME}
-
-    # take artifact from previous job, create timestamped file in reports directory
+    # - git pull -r origin ${CI_COMMIT_REF_NAME}
+    
     - docker save ietl > the-ietl-image.tar
-
-    # add, commit, and push new file (skip any workflow)
-    - git status
     - git add the-ietl-image.tar
     - git commit -m "Generated latest TAR image of I-ETL"
     - git push -o ci.skip
