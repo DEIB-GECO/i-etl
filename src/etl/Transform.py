@@ -374,45 +374,48 @@ class Transform(Task):
 
     def create_patients(self) -> None:
         log.info(f"create Patient instances in memory")
-        columns = self.data.columns
-        if self.execution.patient_id_column_name in self.data.columns:
-            log.info(f"creating patients using column {self.execution.patient_id_column_name}")
-            for row in self.data.itertuples(index=False):
-                row_patient_id = row[columns.get_loc(self.execution.patient_id_column_name)]
-                if row_patient_id not in self.patient_ids_mapping:
-                    # the (anonymized) patient does not exist yet, we will create it
-                    new_patient = Patient(identifier=NO_ID, counter=self.counter)
-                    # log.info(f"create new patient {row_patient_id} with anonymized ID {new_patient.identifier.value}")
-                    self.patient_ids_mapping[row_patient_id] = new_patient.identifier  # keep track of anonymized patient ids
-                else:
-                    # the (anonymized) patient id already exists, we take it from the mapping
-                    # log.info(f"create patient {row_patient_id} with existing anonymized ID {self.patient_ids_mapping[row_patient_id]}")
-                    new_patient = Patient(identifier=self.patient_ids_mapping[row_patient_id], counter=self.counter)
-                self.patients.append(new_patient)
-                if len(self.patients) >= BATCH_SIZE:
-                    # this will save the data if it has reached BATCH_SIZE
-                    write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current,
-                                  profile=TableNames.PATIENT, is_feature=False,
-                                  dataset_number=self.dataset_number, file_counter=self.file_counter)
-                    self.patients = []
-                    self.file_counter += 1
-                    # no need to load Patient instances because they are referenced using their ID,
-                    # which was provided by the hospital (thus is known by the dataset)
-            if len(self.patients) > 0:
-                write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current,
-                              profile=TableNames.PATIENT, is_feature=False, dataset_number=self.dataset_number, file_counter=self.file_counter)
-                self.file_counter += 1
-            # finally, we also write the mapping patient ID / anonymized ID in a file - this will be ingested for subsequent runs to not renumber existing anonymized patients
-            with open(self.execution.anonymized_patient_ids_filepath, "w") as data_file:
-                try:
-                    ujson.dump(self.patient_ids_mapping, data_file)
-                except Exception:
-                    raise ValueError(
-                        f"Could not dump the {len(self.patient_ids_mapping)} JSON resources in the file located at {self.execution.anonymized_patient_ids_filepath}.")
-            self.database.load_json_in_table(profile=TableNames.PATIENT, table_name=TableNames.PATIENT, unique_variables=["identifier"], dataset_number=self.dataset_number)
-        else:
+        log.info(self.execution.patient_id_column_name)
+        if self.execution.patient_id_column_name not in self.data.columns:
             # no patient ID in this dataset
-            log.error(f"The column {self.execution.patient_id_column_name} has been declared as the patient id but has not been found in the data.")
+            log.error(f"The column {self.execution.patient_id_column_name} has been declared as the patient id but has not been found in the data. Creating automatically patient IDs.")
+            pids = [i for i in range(1, len(self.data)+1)]
+            self.data[self.execution.patient_id_column_name] = pids
+
+        columns = self.data.columns
+        log.info(f"creating patients using column {self.execution.patient_id_column_name}")
+        for row in self.data.itertuples(index=False):
+            row_patient_id = row[columns.get_loc(self.execution.patient_id_column_name)]
+            if row_patient_id not in self.patient_ids_mapping:
+                # the (anonymized) patient does not exist yet, we will create it
+                new_patient = Patient(identifier=NO_ID, counter=self.counter)
+                # log.info(f"create new patient {row_patient_id} with anonymized ID {new_patient.identifier.value}")
+                self.patient_ids_mapping[row_patient_id] = new_patient.identifier  # keep track of anonymized patient ids
+            else:
+                # the (anonymized) patient id already exists, we take it from the mapping
+                # log.info(f"create patient {row_patient_id} with existing anonymized ID {self.patient_ids_mapping[row_patient_id]}")
+                new_patient = Patient(identifier=self.patient_ids_mapping[row_patient_id], counter=self.counter)
+            self.patients.append(new_patient)
+            if len(self.patients) >= BATCH_SIZE:
+                # this will save the data if it has reached BATCH_SIZE
+                write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current,
+                              profile=TableNames.PATIENT, is_feature=False,
+                              dataset_number=self.dataset_number, file_counter=self.file_counter)
+                self.patients = []
+                self.file_counter += 1
+                # no need to load Patient instances because they are referenced using their ID,
+                # which was provided by the hospital (thus is known by the dataset)
+        if len(self.patients) > 0:
+            write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current,
+                          profile=TableNames.PATIENT, is_feature=False, dataset_number=self.dataset_number, file_counter=self.file_counter)
+            self.file_counter += 1
+        # finally, we also write the mapping patient ID / anonymized ID in a file - this will be ingested for subsequent runs to not renumber existing anonymized patients
+        with open(self.execution.anonymized_patient_ids_filepath, "w") as data_file:
+            try:
+                ujson.dump(self.patient_ids_mapping, data_file)
+            except Exception:
+                raise ValueError(
+                    f"Could not dump the {len(self.patient_ids_mapping)} JSON resources in the file located at {self.execution.anonymized_patient_ids_filepath}.")
+        self.database.load_json_in_table(profile=TableNames.PATIENT, table_name=TableNames.PATIENT, unique_variables=["identifier"], dataset_number=self.dataset_number)
 
     ##############################################################
     # UTILITIES
