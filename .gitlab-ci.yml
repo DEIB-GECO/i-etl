@@ -47,4 +47,7 @@ etl:
     - docker save ietl > the-ietl-image.tar
     - git add the-ietl-image.tar
     - git commit -m "Generated latest TAR image of I-ETL"
-    - git push https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl.git HEAD:${CI_COMMIT_BRANCH} -o ci.skip
+    - git push ${the_origin} HEAD:${CI_COMMIT_BRANCH} -o ci.skip
+    #- git push ${CI_COMMIT_BRANCH} -o ci.skip
+    #- git push -o ci.skip
+    #- git push https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl.git HEAD:${CI_COMMIT_BRANCH} -o ci.skip
