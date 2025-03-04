@@ -44,7 +44,7 @@ etl:
     - git checkout ${CI_COMMIT_BRANCH}
     #- git branch --list
     - git status
-    # - git pull
+    - git pull
     # - git remote show
     # - git pull -r origin ${CI_COMMIT_REF_NAME}
     
