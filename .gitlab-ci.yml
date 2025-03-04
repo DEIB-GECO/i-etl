@@ -22,36 +22,36 @@ etl:
 #    - schedules
 #  script:
     # generate the TAR archive of I-ETL
-    - echo "email/login/name $GITLAB_USER_EMAIL/$GITLAB_USER_LOGIN/$GITLAB_USER_NAME"
-    - git config --global user.email "$GITLAB_USER_EMAIL"
-    - git config --global user.name "$GITLAB_USER_NAME"
-    - git config --global -l
+    #- echo "email/login/name $GITLAB_USER_EMAIL/$GITLAB_USER_LOGIN/$GITLAB_USER_NAME"
+    #- git config --global user.email "$GITLAB_USER_EMAIL"
+    #- git config --global user.name "$GITLAB_USER_NAME"
+    #- git config --global -l
 
     # transform pipeline git url to use our project access token name and credentials
-    - git remote -v
-    - url_host=`git remote get-url origin | sed -e "s/https:\/\/gitlab-ci-token:.*@//g"`
-    - the_origin="https://for-ci-cd:${KEY_TAR_IETL}@${url_host}"
-    - echo ${the_origin}
-    - git remote set-url origin ${the_origin}
-    - git remote -v
+    #- git remote -v
+    #- url_host=`git remote get-url origin | sed -e "s/https:\/\/gitlab-ci-token:.*@//g"`
+    #- the_origin="https://for-ci-cd:${KEY_TAR_IETL}@${url_host}"
+    #- echo ${the_origin}
+    #- git remote set-url origin ${the_origin}
+    #- git remote -v
 
     # get latest from branch
-    - echo ${CI_PIPELINE_SOURCE}
-    - echo ${CI_COMMIT_BRANCH}
-    - echo ${the_origin}
-    - echo ${CI_COMMIT_REF_NAME}
-    - git fetch --all 
-    - git checkout ${CI_COMMIT_BRANCH}
+    #- echo ${CI_PIPELINE_SOURCE}
+    #- echo ${CI_COMMIT_BRANCH}
+    #- echo ${the_origin}
+    #- echo ${CI_COMMIT_REF_NAME}
+    #- git fetch --all 
+    #- git checkout ${CI_COMMIT_BRANCH}
     #- git branch --list
-    - git status
-    - git pull --ff-only
+    #- git status
+    #- git pull --ff-only
     # - git remote show
     # - git pull -r origin ${CI_COMMIT_REF_NAME}
     
-    - docker save ietl > the-ietl-image.tar
-    - git add the-ietl-image.tar
-    - git commit -m "Generated latest TAR image of I-ETL"
-    - git push -f origin HEAD:${CI_COMMIT_BRANCH} -o ci.skip
+    #- docker save ietl > the-ietl-image.tar
+    #- git add the-ietl-image.tar
+    #- git commit -m "Generated latest TAR image of I-ETL"
+    #- git push -f origin HEAD:${CI_COMMIT_BRANCH} -o ci.skip
     #- git push ${CI_COMMIT_BRANCH} -o ci.skip
     #- git push -o ci.skip
     #- git push https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl.git HEAD:${CI_COMMIT_BRANCH} -o ci.skip
