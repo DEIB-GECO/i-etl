@@ -1,26 +1,36 @@
-docker_build:
+etl-build:
   image: docker:25.0-git
   services:
     - docker:27.5-dind
-  stage: build
+  script:
+    - pwd
+#    - ls -al /builds/padme-development/external/better/data-cataloging/etl
+#    - ls -al /builds/padme-development/external/better/data-cataloging/etl/datasets
+#    - ls -al /builds/padme-development/external/better/data-cataloging/etl/datasets/test
+#    - cat /builds/padme-development/external/better/data-cataloging/etl/.env.ci
+#    - cat .env.ci
+#    - cat /builds/padme-development/external/better/data-cataloging/etl/datasets/test/extr-metadata-phen.csv
+    - export CONTEXT_MODE="TEST"
+    - export ETL_ENV_FILE_NAME=.env.ci
+    - export ABSOLUTE_PATH_ENV_FILE=/builds/padme-development/external/better/data-cataloging/etl/.env.ci
+    - docker build . --tag ietl
+    - docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} up --exit-code-from ietl --remove-orphans 
+    - docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} down
+
+etl-deploy:
+  image: docker:23-dind
+  services:
+    - docker:23-dind
+  stage: deploy
 #  rules:
 #    - if: $CI_COMMIT_TAG  # release when a commit is tagged with a version
 #    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH  # release when a banch is merged to main or a commit is pushed to main
   before_script:
     - echo "$CI_JOB_TOKEN" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
   script:
-    - echo "Building I-ETL"
-    - export CONTEXT_MODE="TEST"
-    - export ETL_ENV_FILE_NAME=.env.ci
-    - export ABSOLUTE_PATH_ENV_FILE=/builds/padme-development/external/better/data-cataloging/etl/.env.ci
-    #- docker build . --tag "$DOCKER_IMAGE_NAME"  
-#    - docker build --pull -t "$DOCKER_IMAGE_NAME" .
-#    - docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} up --exit-code-from "$DOCKER_IMAGE_NAME" --remove-orphans 
-#    - docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} down
+    - echo "Deploying I-ETL"
     - echo "$CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH"
     - docker build --pull -t $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH .
-    - docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} up --exit-code-from $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH --remove-orphans 
-    - docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} down
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH
     - echo "I-ETL Build Complete!"
 
