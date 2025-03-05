@@ -17,8 +17,9 @@ docker_build:
 #    - docker build --pull -t "$DOCKER_IMAGE_NAME" .
 #    - docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} up --exit-code-from "$DOCKER_IMAGE_NAME" --remove-orphans 
 #    - docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} down
+    - echo "$CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH"
     - docker build --pull -t $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH .
-    - docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} up --exit-code-from --remove-orphans 
+    - docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} up --exit-code-from $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH --remove-orphans 
     - docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} down
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH
     - echo "I-ETL Build Complete!"
