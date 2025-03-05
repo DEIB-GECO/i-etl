@@ -1,5 +1,8 @@
 docker_build:
+  image: docker:cli
   stage: build
+  services:
+    - docker:dind
   script:
     - echo "$CI_REGISTRY_IMAGE"
     - echo "$CI_REGISTRY_USER"
