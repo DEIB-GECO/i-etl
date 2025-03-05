@@ -8,7 +8,7 @@ docker_build:
     - echo "$CI_REGISTRY_USER"
     - echo "$CI_REGISTRY_PASSWORD"
     - echo "$CI_REGISTRY"
-    - doocker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker pull $CI_REGISTRY_IMAGE:latest
     - docker build -t $CI_REGISTRY_IMAGE:latest .
     - docker push $CI_REGISTRY_IMAGE:latest
