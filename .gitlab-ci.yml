@@ -34,6 +34,11 @@ etl-deploy:
     - docker images
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH
     - echo "I-ETL Build Complete!"
+    - echo "Build I-ETL .tar"
+    - docker save ietl > the-ietl-image.tar
+  artifacts:
+    paths:
+      - the-ietl-image.tar
 
 
 #tests:
