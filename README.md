@@ -10,6 +10,9 @@ The ETL algorithm to create interoperable databases for the BETTER project.
 
 - Get the image of the I-ETL:
   - Either download the TAR image available in the repository (recommended)
+    - Go to the deployment artifacts page: https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/artifacts
+    - Click on the "folder" icon of the latest build (generally the first line of the table in the page)
+    - Download the TAR archive named `the-ietl-image.tar`
   - Or build it from the repository (not recommended, see section "For developers")
 - Create a folder with:
   - The I-ETL Docker (TAR) image 
