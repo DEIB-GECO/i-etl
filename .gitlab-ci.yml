@@ -37,6 +37,7 @@ etl-deploy:
     - echo "Build I-ETL .tar"
     - docker save ietl > the-ietl-image.tar
   artifacts:
+    name: "the-ietl-image"
     paths:
       - the-ietl-image.tar
 
