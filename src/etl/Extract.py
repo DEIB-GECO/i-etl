@@ -44,6 +44,7 @@ class Extract(Task):
         # normalize: the header and the values
         self.filter_metadata_file()
         self.normalize_metadata_file()
+        self.export_metadata_to_csv_for_generative_ai()
 
         # filter and normalize data
         # filter: remove data columns that are not described in the metadata
@@ -59,6 +60,29 @@ class Extract(Task):
             self.compute_mapping_categorical_value_to_onto_resource()
             self.compute_column_to_unit()
             self.compute_column_to_domain()
+            self.export_data_to_csv_for_generative_ai()
+
+    def export_metadata_to_csv_for_generative_ai(self):
+        exported_filepath = os.path.join(self.execution.working_dir_current, "exported_metadata.csv")
+        log.info(self.metadata)
+        if os.path.exists(exported_filepath) and os.path.getsize(exported_filepath) > 0:
+            # existing metadata, we happen
+            self.metadata.to_csv(exported_filepath, mode="a", header=False, index=False)
+        else:
+            self.metadata.to_csv(exported_filepath, index=False)
+
+    def export_data_to_csv_for_generative_ai(self):
+        log.info(self.execution.current_filepath)
+        filename = os.path.basename(self.execution.current_filepath)  # it contains the .csv
+        filename = filename[0:filename.index(".")]
+        log.info(filename)
+        exported_filepath = os.path.join(self.execution.working_dir_current, "exported_" + filename + ".csv")
+        log.info(self.data)
+        if os.path.exists(exported_filepath) and os.path.getsize(exported_filepath) > 0:
+            # existing metadata, we happen
+            self.data.to_csv(exported_filepath, mode="a", header=False, index=False)
+        else:
+            self.data.to_csv(exported_filepath, index=False)
 
     def filter_metadata_file(self) -> None:
         # Normalize the header, e.g., "Significato it" becomes "significato_it"
