@@ -8,20 +8,22 @@ The ETL algorithm to create interoperable databases for the BETTER project.
 
 ## 2. Running I-ETL (create an interoperable database with your data)
 
-- Get the image of the I-ETL:
+1. Get the image of the I-ETL:
   - Either download the TAR image available in the repository (recommended)
     - Go to the deployment artifacts page: https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/artifacts
     - Click on the "folder" icon of the latest build (generally the first line of the table in the page)
     - Download the TAR archive named `the-ietl-image.tar`
   - Or build it from the repository (not recommended, see section "For developers")
-- Create a folder with:
+2. Download the `comose.yaml` file, available in the repository (https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/blob/main/compose.yaml?ref_type=heads)
+3. Download the settings file `.env` file, available in the repository (https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/blob/main/.env?ref_type=heads)
+4. Create a folder with:
   - The I-ETL Docker (TAR) image 
   - The `.env` file template
   - The `compose.yaml` file
-- In that folder, load the TAR image within the Docker: `docker load < the-ietl-image.tar`
-- In that folder, follow any scenario described in the "Scenarios" section. The complete list of parameters is described in the "Parameters" section.
-- To check whether the ETL has finished, one can run `docker ps`: if `the-etl` does not show in the list, this means that it is done.
-- To check the logs of the ETL: 
+5. In that folder, load the TAR image within the Docker: `docker load < the-ietl-image.tar`
+6. In that folder, follow any scenario described in the "Scenarios" section. The complete list of parameters is described in the "Parameters" section.
+7. To check whether the ETL has finished, one can run `docker ps`: if `the-etl` does not show in the list, this means that it is done.
+8. To check the logs of the ETL: 
   - One can either look at the log file produced by I-ETL if one has specified the `SERVER_FOLDER_LOG_ETL` parameter
   - Otherwise, use `docker logs the-etl`.
 
@@ -59,10 +61,10 @@ In that folder, run `X=Y docker compose up -d` to launch the FAIRification, such
 #### 2. Run the following commands (in the host terminal): 
   - `export CONTEXT_MODE=DEV`
   - `export ETL_ENV_FILE_NAME=.env`
-  - `eport ABSOLUTE_PATH_ENV_FILE=X` where `X` is the absolute path to your `.env` file
+  - `export ABSOLUTE_PATH_ENV_FILE=X` where `X` is the absolute path to your `.env` file
 
 #### 3. Run I-ETL
-  - Run `docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} up -d` (`-d` stands for `--daemon`, meaning that I-ETL will run as a background process).
+  - From your folder (step 5 in section 2), run `docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} up -d` (`-d` stands for `--daemon`, meaning that I-ETL will run as a background process).
 
 ### Scenario 2: generate synthetic data only
 
@@ -74,10 +76,10 @@ In that folder, run `X=Y docker compose up -d` to launch the FAIRification, such
 #### 2. Run the following commands in your terminal: 
   - `export CONTEXT_MODE=GEN`
   - `export ETL_ENV_FILE_NAME=.env`
-  - `eport ABSOLUTE_PATH_ENV_FILE=X` where `X` is the absolute path to your `.env` file
+  - `export ABSOLUTE_PATH_ENV_FILE=X` where `X` is the absolute path to your `.env` file
 
 #### 3. Generate synthetic data
-  - Run `docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} up -d`
+  - From your folder (step 5 in section 2), run `docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} up -d`
 
 
 ### Scenario 3: generate synthetic data and run I-ETL on it
