@@ -1,4 +1,5 @@
 import re
+import sys
 from datetime import datetime
 from typing import Any
 
@@ -6,7 +7,7 @@ import pandas as pd
 import ujson
 from pandas import DataFrame
 
-from constants.defaults import BATCH_SIZE, PATTERN_VALUE_UNIT, NO_ID
+from constants.defaults import BATCH_SIZE, PATTERN_VALUE_UNIT, NO_ID, MAX_FILE_SIZE
 from database.Counter import Counter
 from database.Database import Database
 from database.Dataset import Dataset
@@ -25,6 +26,7 @@ from entities.OntologyResource import OntologyResource
 from entities.Patient import Patient
 from entities.PhenotypicFeature import PhenotypicFeature
 from entities.PhenotypicRecord import PhenotypicRecord
+from entities.Record import Record
 from enums.DataTypes import DataTypes
 from enums.DiagnosisColumns import DiagnosisColumns
 from enums.Domain import Domain
@@ -32,10 +34,12 @@ from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from enums.Profile import Profile
 from enums.TableNames import TableNames
+from enums.TimerKeys import TimerKeys
 from enums.Visibility import Visibility
 from etl.Task import Task
 from src.constants.defaults import DEFAULT_NAN_VALUE
 from statistics.QualityStatistics import QualityStatistics
+from statistics.TimeStatistics import TimeStatistics
 from utils.cast_utils import cast_str_to_boolean, cast_str_to_datetime, cast_str_to_float, cast_str_to_int
 from utils.file_utils import write_in_file
 from utils.setup_logger import log
@@ -51,6 +55,7 @@ class Transform(Task):
                  profile: str, dataset_number: int, file_counter: int, dataset_key: Dataset, load_patients: bool,
                  quality_stats: QualityStatistics):
         super().__init__(database=database, execution=execution, quality_stats=quality_stats)
+        self.time_statistics = TimeStatistics(record_stats=True)
         self.counter = Counter()  # resource counter
         self.profile = profile
         self.load_patients = load_patients
@@ -211,7 +216,7 @@ class Transform(Task):
                         # no associated ontology code or failed to retrieve the code with API
                         log.info(f"adding a new {self.profile} feature about {column_name}: {new_feature}")
 
-                    self.features.append(new_feature)  # this cannot be null, otherwise we would have raise the above exception
+                    self.features.append(new_feature.to_json())  # this cannot be null, otherwise we would have raise the above exception
                     self.process_batch_of_features(last=False)
                 else:
                     # the Feature already exists, so no need to add it to the database again.
@@ -233,6 +238,8 @@ class Transform(Task):
 
     def create_records(self) -> None:
         log.info(f"creating {self.profile}Record instances in memory")
+
+        current_records_size = 0.0
 
         # a. load some data from the database to compute references
         mapping_hospital_to_hospital_id = self.database.retrieve_mapping(table_name=TableNames.HOSPITAL,
@@ -347,8 +354,7 @@ class Transform(Task):
                                                         dataset=dataset)
                         else:
                             raise NotImplementedError("Not implemented yet.")
-                        self.records.append(new_record)
-                        self.process_batch_of_records(last=False)
+                        current_records_size = self.process_record_batch(new_record=new_record.to_json(), current_size=current_records_size, last=False)
                         # to compute the percentage of missing values in features' profiles
                         if feature_id not in self.mapping_column_all_count:
                             self.mapping_column_all_count[feature_id] = 1
@@ -360,7 +366,7 @@ class Transform(Task):
                         # log.error(f"Skipping column {column_name} for row {index}")
                         pass
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
-        self.process_batch_of_records(last=True)
+        _ = self.process_record_batch(new_record=None, current_size=current_records_size, last=True)
         # and save the total counts for each column (to compute the percentage of missing values in the profiles)
         all_counts = []  # a list of <"identifier": identifier, "all_counts": all_counts> instead of <identifier: all_counts>
         for k in self.mapping_column_all_count:
@@ -394,19 +400,25 @@ class Transform(Task):
                 # the (anonymized) patient id already exists, we take it from the mapping
                 # log.info(f"create patient {row_patient_id} with existing anonymized ID {self.patient_ids_mapping[row_patient_id]}")
                 new_patient = Patient(identifier=self.patient_ids_mapping[row_patient_id], counter=self.counter)
-            self.patients.append(new_patient)
-            if len(self.patients) >= BATCH_SIZE:
+            self.patients.append(new_patient.to_json())
+
+            self.time_statistics.start(dataset=self.dataset_instance.global_identifier, key=TimerKeys.CHECK_BATCH_SIZE_PATIENTS)
+            if sys.getsizeof(ujson.dumps(self.patients)) >= MAX_FILE_SIZE:
                 # this will save the data if it has reached BATCH_SIZE
+                last_added_patient = self.patients.pop()
+                self.time_statistics.increment(dataset=self.dataset_instance.global_identifier, key=TimerKeys.CHECK_BATCH_SIZE_PATIENTS)
+                self.time_statistics.start(dataset=self.dataset_instance.global_identifier, key=TimerKeys.WRITE_IN_FILE_PATIENTS)
                 write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current,
                               profile=TableNames.PATIENT, is_feature=False,
-                              dataset_number=self.dataset_number, file_counter=self.file_counter)
-                self.patients = []
+                              dataset_number=self.dataset_number, file_counter=self.file_counter, to_json=False)
+                self.time_statistics.increment(dataset=self.dataset_instance.global_identifier, key=TimerKeys.WRITE_IN_FILE_PATIENTS)
+                self.patients = [last_added_patient]
                 self.file_counter += 1
                 # no need to load Patient instances because they are referenced using their ID,
                 # which was provided by the hospital (thus is known by the dataset)
         if len(self.patients) > 0:
             write_in_file(resource_list=self.patients, current_working_dir=self.execution.working_dir_current,
-                          profile=TableNames.PATIENT, is_feature=False, dataset_number=self.dataset_number, file_counter=self.file_counter)
+                          profile=TableNames.PATIENT, is_feature=False, dataset_number=self.dataset_number, file_counter=self.file_counter, to_json=False)
             self.file_counter += 1
         # finally, we also write the mapping patient ID / anonymized ID in a file - this will be ingested for subsequent runs to not renumber existing anonymized patients
         with open(self.execution.anonymized_patient_ids_filepath, "w") as data_file:
@@ -422,26 +434,39 @@ class Transform(Task):
     ##############################################################
 
     def process_batch_of_features(self, last: bool) -> None:
-        if len(self.features) >= BATCH_SIZE or last:
+        self.time_statistics.start(dataset=self.dataset_instance.global_identifier, key=TimerKeys.CHECK_BATCH_SIZE_FEATURES)
+        if sys.getsizeof(ujson.dumps(self.features)) >= MAX_FILE_SIZE or last:
+            last_added_feature = self.features.pop()
+            self.time_statistics.increment(dataset=self.dataset_instance.global_identifier, key=TimerKeys.CHECK_BATCH_SIZE_FEATURES)
+            self.time_statistics.start(dataset=self.dataset_instance.global_identifier, key=TimerKeys.WRITE_IN_FILE_FEATURES)
             write_in_file(resource_list=self.features,
                           current_working_dir=self.execution.working_dir_current,
                           profile=self.profile,
                           is_feature=True,
                           dataset_number=self.dataset_number,
-                          file_counter=self.file_counter)
-            self.features.clear()
+                          file_counter=self.file_counter, to_json=False)
+            self.time_statistics.increment(dataset=self.dataset_instance.global_identifier, key=TimerKeys.WRITE_IN_FILE_FEATURES)
+            self.features = [last_added_feature]
             self.file_counter += 1
 
-    def process_batch_of_records(self, last: bool) -> None:
-        if len(self.records) >= BATCH_SIZE or last:
+    def process_record_batch(self, new_record: dict | None, current_size: float, last: bool) -> float:
+        record_size = len(ujson.dumps(new_record))
+        # log.info(f"record_size is {record_size}; current_size is {current_size}; MAX_FILE_SIZE is {MAX_FILE_SIZE}")
+        if last or current_size + record_size > MAX_FILE_SIZE:
+            log.info(f"writing batch of {len(self.records)}")
             write_in_file(resource_list=self.records,
                           current_working_dir=self.execution.working_dir_current,
                           profile=self.profile,
                           is_feature=False,
                           dataset_number=self.dataset_number,
-                          file_counter=self.file_counter)
-            self.records.clear()
+                          file_counter=self.file_counter, to_json=False)
+            self.records = []
             self.file_counter += 1
+            current_size = 0
+            return current_size
+        else:
+            self.records.append(new_record)
+            return current_size + record_size
 
     def load_patient_id_mapping(self) -> None:
         log.info(f"Patient ID mapping filepath is {self.execution.anonymized_patient_ids_filepath}")

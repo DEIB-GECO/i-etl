@@ -8,7 +8,7 @@ from enums.TableNames import TableNames
 from utils.setup_logger import log
 
 
-def write_in_file(resource_list: list, current_working_dir: str, profile: str, is_feature: bool, dataset_number: int, file_counter: int) -> None:
+def write_in_file(resource_list: list, current_working_dir: str, profile: str, is_feature: bool, dataset_number: int, file_counter: int, to_json: bool) -> None:
     if profile in [TableNames.PATIENT, TableNames.HOSPITAL, TableNames.TEST]:
         table_name = profile
     elif is_feature:
@@ -20,8 +20,12 @@ def write_in_file(resource_list: list, current_working_dir: str, profile: str, i
         with open(filename, "w") as data_file:
             try:
                 # log.debug(f"Dumping {len(resource_list)} instances in {filename}")
-                the_json_resources = [resource.to_json() for resource in resource_list]
-                ujson.dump(the_json_resources, data_file)
+                if to_json:
+                    the_json_resources = [resource.to_json() for resource in resource_list]
+                    ujson.dump(the_json_resources, data_file)
+                else:
+                    ujson.dump(resource_list, data_file)
+
             except Exception:
                 raise ValueError(f"Could not dump the {len(resource_list)} JSON resources in the file located at {filename}.")
     else:

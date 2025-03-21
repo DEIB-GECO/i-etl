@@ -6,6 +6,7 @@ import json
 import os
 import pickle
 import random
+import sys
 import threading
 import time
 from multiprocessing import Pool
@@ -20,7 +21,7 @@ import ujson
 from dotenv import load_dotenv
 from pymongo.mongo_client import MongoClient
 
-from constants.defaults import NO_ID, API_SESSION
+from constants.defaults import NO_ID, API_SESSION, MAX_FILE_SIZE
 from constants.methods import factory
 from database.Counter import Counter
 from database.Database import Database
@@ -443,6 +444,94 @@ def main_if_match():
     print(f"{time.time() - start_time}")
 
 
+def main_estimate_json_size():
+
+    # for i in range(0, 1500):
+    #     rand_nb_keys = 5 #random.randint(1, 10)
+    #     the_object = {}
+    #     for j in range(rand_nb_keys):
+    #         the_object[str(j)] = str(random.randint(0, 1000000))
+    #     the_list.append(the_object)
+
+    for size in [1000, 10000, 100000]:
+        print(f"size is {size}")
+        the_list = [{"a": 1, "b": 2, "c": {"d": 1234, "ee": "fzfez"}} for _ in range(size)]
+
+        total_str_size = 0.0
+        time_
+        # total_sys_size = 0.0
+        for element in the_list:
+            total_str_size += len(json.dumps(element))
+            # total_sys_size += sys.getsizeof(element)
+        total_str_size = total_str_size / 1024
+
+        # with uJSON
+        the_estimated_size = sys.getsizeof(ujson.dumps(the_list)) / 1024
+        with open("the_list_ujson.json", "w") as data_file:
+            ujson.dump(the_list, data_file)
+        the_real_size = os.path.getsize("the_list_ujson.json") / 1024
+        print(f"Elements str Kb size: {total_str_size}")
+        # print(f"Elements sys Kb size: {total_sys_size}")
+        print(f"List estimated Kb size: {the_estimated_size}")
+        print(f"List real Kb size: {the_real_size}")
+        print("***")
+
+
+def main_size_perf():
+
+    for max_size in [1000, 10000, 100000, 1000000]:
+        elements = []
+        total_time_dump = 0.0
+        total_time_size = 0.0
+        computed_byte_size = 0.0
+        computed_sys_size = 0.0
+        for _ in range(max_size):
+            the_new_json = {"a": 1, "b": 2, "cdf": {"adf": 123}}
+            elements.append(the_new_json)
+            current_time = time.time_ns()
+            # dumped = ujson.dumps(elements)
+            dumped = ujson.dumps(the_new_json)
+            total_time_dump += (time.time_ns() - current_time)
+            current_time = time.time_ns()
+            computed_byte_size += len(dumped)
+            computed_sys_size += sys.getsizeof(ujson.dumps(dumped))
+            total_time_size += (time.time_ns() - current_time)
+        estimated_size = sys.getsizeof(ujson.dumps(elements))
+        print(f"Total time for dump for {max_size} elements: {(total_time_dump/1000000000.0)}")
+        print(f"Total time for size for {max_size} elements: {(total_time_size/1000000000.0)}")
+        print(f"Computed len size: {computed_byte_size} vs. Computed sys size {computed_sys_size} vs. estimated list size {estimated_size}")
+
+    # for max_size in [1000, 2000, 4000, 8000, 16000]:
+    #     elements = []
+    #     total_time_dump = 0.0
+    #     total_time_size = 0.0
+    #     for _ in range(max_size):
+    #         elements.append({"a": 1, "b": 2})
+    #         current_time = time.time_ns()
+    #         dumped = ujson.dumps(elements)
+    #         total_time_dump += (time.time_ns() - current_time)
+    #         current_time = time.time_ns()
+    #         estimated_size = sys.getsizeof(dumped)
+    #         total_time_size += (time.time_ns() - current_time)
+    #     print(f"Total time for dump for {max_size} elements: {(total_time_dump/1000000000.0)}")
+    #     print(f"Total time for size for {max_size} elements: {(total_time_size/1000000000.0)}")
+
+    # for max_size in [1000, 10000, 100000]:
+    #     elements = []
+    #     total_time_dump = 0.0
+    #     total_time_size = 0.0
+    #     for _ in range(max_size):
+    #         elements.append({"a": 1, "b": 2})
+    #         current_time = time.time_ns()
+    #         dumped = ujson.dumps(elements)
+    #         total_time_dump += (time.time_ns() - current_time)
+    #         current_time = time.time_ns()
+    #         estimated_size = sys.getsizeof(dumped)
+    #         total_time_size += (time.time_ns() - current_time)
+    #     print(f"Total time for dump for {max_size} elements: {(total_time_dump/1000000000.0)}")
+    #     print(f"Total time for size for {max_size} elements: {(total_time_size/1000000000.0)}")
+
+
 if __name__ == '__main__':
     # main_load_json_from_file_as_bson()
     
@@ -471,6 +560,9 @@ if __name__ == '__main__':
 
     # main_map_jsonify()
 
-    main_if_match()
+    # main_if_match()
 
+    # main_estimate_json_size()
+
+    main_size_perf()
     print("Done.")
