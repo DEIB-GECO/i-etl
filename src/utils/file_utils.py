@@ -19,7 +19,7 @@ def write_in_file(resource_list: list, current_working_dir: str, profile: str, i
     if len(resource_list) > 0:
         with open(filename, "w") as data_file:
             try:
-                log.debug(f"Dumping {len(resource_list)} instances in {filename}")
+                # log.debug(f"Dumping {len(resource_list)} instances in {filename}")
                 the_json_resources = [resource.to_json() for resource in resource_list]
                 ujson.dump(the_json_resources, data_file)
             except Exception:

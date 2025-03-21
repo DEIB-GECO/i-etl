@@ -157,7 +157,7 @@ class Database:
         # and send one bulk operation per batch. This allows to save time by not doing a db call per upsert.
         # we use the bulk operation to send sets of BATCH_SIZE operations, each operation doing an upsert
         # this allows to have only one call to the database for each bulk operation (instead of one per upsert operation)
-        log.info(unique_variables)
+        #log.info(unique_variables)
         operations = [pymongo.UpdateOne(
             filter={unique_variable: one_tuple[unique_variable] for unique_variable in unique_variables if unique_variable in one_tuple},
             update=self.create_update_stmt(the_tuple=one_tuple), upsert=True)
@@ -194,6 +194,8 @@ class Database:
     def load_json_in_table_general(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int, ordered: bool) -> None:
         log.info(f"Load {profile} data in {table_name} with unique variables {unique_variables}")
         first_file = True
+        counter_files = 0
+        total_count_files = len([name for name in os.listdir(self.execution.working_dir_current) if os.path.isfile(os.path.join(self.execution.working_dir_current, name)) and name.startswith(f"{str(dataset_number)}{profile}{table_name}")])
         for filename in os.listdir(self.execution.working_dir_current):
             if filename.startswith(f"{str(dataset_number)}{profile}{table_name}"):
                 with open(os.path.join(self.execution.working_dir_current, filename), "r") as json_datafile:
@@ -204,8 +206,11 @@ class Database:
                         self.create_unique_index(table_name=table_name, columns={elem: 1 for elem in unique_variables})
                         first_file = False
                     tuples = bson.json_util.loads(json_datafile.read())
-                    log.debug(f"Table {table_name}, file {filename}, loading {len(tuples)} tuples with unique variables being {unique_variables}")
                     self.upsert_one_batch_of_tuples(table_name=table_name, unique_variables=unique_variables, the_batch=tuples, ordered=ordered)
+                    counter_files += 1
+                    if counter_files % 5 == 0:
+                        log.debug(f"Table {table_name}, loaded {counter_files}/{total_count_files}")
+        log.debug(f"Table {table_name}, loaded {counter_files}/{total_count_files}")
 
     def find_operation(self, table_name: str, filter_dict: dict, projection: dict) -> Cursor:
         """
