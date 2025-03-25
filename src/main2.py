@@ -4,6 +4,7 @@ import json
 import os
 import pickle
 import random
+import re
 import sys
 import time
 from multiprocessing import Pool
@@ -14,6 +15,7 @@ import pandas as pd
 import pymongo
 import ujson
 from filesplit.split import Split
+from jsonlines import jsonlines
 from pymongo.mongo_client import MongoClient
 
 from constants.defaults import NO_ID, API_SESSION, MAX_FILE_SIZE
@@ -586,4 +588,16 @@ if __name__ == '__main__':
     # main_size_perf()
 
     main_test_append_json_to_file()
+
+    # with open("/Users/nelly/Documents/boulot/postdoc-polimi/etl/logs/better_mol/2025-03-25T11:13:43.976742/1phenotypicRecord.json", "r") as file:
+    #     my_records_str = file.read()
+    #     print(my_records_str)
+    #     my_records_str = "[" + my_records_str + "]"
+    #     my_records_str = re.sub("}\n\\{", "},{", my_records_str)
+    #     print(my_records_str)
+
+    with jsonlines.open("test.jsonl", "r") as jsonl_f:
+        lst = [obj for obj in jsonl_f]
+        print(lst)
+
     print("Done.")

@@ -1,7 +1,9 @@
+import dataclasses
+
 from entities.Resource import Resource
-from database.Counter import Counter
+from enums.TableNames import TableNames
 
 
+@dataclasses.dataclass(kw_only=True)
 class ResourceTest(Resource):
-    def __init__(self, identifier: int, counter: Counter):
-        super().__init__(identifier=identifier, counter=counter)
+    entity_type: str = f"{TableNames.TEST}"

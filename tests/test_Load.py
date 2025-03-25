@@ -3,19 +3,21 @@ import os.path
 import unittest
 from datetime import datetime
 
+from jsonlines import jsonlines
+
+from constants.structure import TEST_DB_NAME
 from database.Database import Database
 from database.Dataset import Dataset
 from database.Execution import Execution
-from enums.ParameterKeys import ParameterKeys
-from enums.Profile import Profile
-from etl.Load import Load
+from database.Operators import Operators
 from enums.HospitalNames import HospitalNames
 from enums.Ontologies import Ontologies
+from enums.ParameterKeys import ParameterKeys
+from enums.Profile import Profile
 from enums.TableNames import TableNames
-from constants.structure import TEST_DB_NAME
-from database.Operators import Operators
+from etl.Load import Load
 from statistics.QualityStatistics import QualityStatistics
-from statistics.TimeStatistics import TimeStatistics
+from utils.file_utils import get_json_resource_file, write_in_file
 from utils.setup_logger import log
 from utils.test_utils import set_env_variables_from_dict
 
@@ -83,22 +85,14 @@ def my_setup(profile: str, create_indexes: bool) -> Load:
     # 3. write them in temporary JSON files
     # we use 99 because we already have 1PhenotypicFeature1.json, and it would overwrite the json file
     # leading to inconsistencies and wrong inserts
-    path_phen_features = os.path.join(TestLoad.execution.working_dir_current, f"99{Profile.PHENOTYPIC}{TableNames.FEATURE}1.json")
-    path_phen_records = os.path.join(TestLoad.execution.working_dir_current, f"99{Profile.PHENOTYPIC}{TableNames.RECORD}1.json")
-    path_patients = os.path.join(TestLoad.execution.working_dir_current, f"99{TableNames.PATIENT}{TableNames.PATIENT}1.json")
-    path_hospital = os.path.join(TestLoad.execution.working_dir_current, f"99{TableNames.HOSPITAL}{TableNames.HOSPITAL}1.json")
     # insert the data that is inserted during the Transform step
-    with open(path_phen_features, 'w') as f:
-        json.dump(phen_features, f)
+    write_in_file(resource_list=phen_features, current_working_dir=TestLoad.execution.working_dir_current, table_name=TableNames.FEATURE, is_feature=True, dataset_number=99, to_json=False)
     load.database.insert_many_tuples(table_name=TableNames.FEATURE, tuples=phen_features)
-    with open(path_hospital, 'w') as f:
-        json.dump(hospital, f)
+    write_in_file(resource_list=[hospital], current_working_dir=TestLoad.execution.working_dir_current, table_name=TableNames.HOSPITAL, is_feature=False, dataset_number=99, to_json=False)
     load.database.insert_one_tuple(table_name=TableNames.HOSPITAL, one_tuple=hospital)
     # for other files, it will be inserted with the function load_remaining_data()
-    with open(path_phen_records, 'w') as f:
-        json.dump(phen_records, f)
-    with open(path_patients, 'w') as f:
-        json.dump(patients, f)
+    write_in_file(resource_list=phen_records, current_working_dir=TestLoad.execution.working_dir_current, table_name=TableNames.RECORD, is_feature=False, dataset_number=99, to_json=False)
+    write_in_file(resource_list=patients, current_working_dir=TestLoad.execution.working_dir_current, table_name=TableNames.PATIENT, is_feature=False, dataset_number=99, to_json=False)
 
     return load
 

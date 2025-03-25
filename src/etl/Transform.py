@@ -217,7 +217,8 @@ class Transform(Task):
                         log.info(f"adding a new {self.profile} feature about {column_name}: {new_feature}")
 
                     self.features.append(new_feature.to_json())  # this cannot be null, otherwise we would have raise the above exception
-                    self.process_batch_of_features()
+                    if len(self.features) >= BATCH_SIZE:
+                        self.process_batch_of_features()
                 else:
                     # the Feature already exists, so no need to add it to the database again.
                     # however, we need to update the set of datasets in which it appears
@@ -229,8 +230,10 @@ class Transform(Task):
             else:
                 log.debug(f"I am skipping column {column_name} because it has been dropped or is an ID column or its name is empty.")
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
-        self.process_batch_of_features()
-        self.database.load_json_in_table(profile=self.profile, table_name=TableNames.FEATURE, unique_variables=["name"], dataset_number=self.dataset_number)
+        if len(self.features) > 0:
+            self.process_batch_of_features()
+        # write all the features in the database now (to be able to retrieve them for creating records just after
+        self.database.load_json_in_table(table_name=TableNames.FEATURE, unique_variables=["name"], dataset_number=self.dataset_number)
 
     ##############################################################
     # RECORDS
@@ -238,8 +241,6 @@ class Transform(Task):
 
     def create_records(self) -> None:
         log.info(f"creating {self.profile}Record instances in memory")
-
-        current_records_size = 0.0
 
         # a. load some data from the database to compute references
         mapping_hospital_to_hospital_id = self.database.retrieve_mapping(table_name=TableNames.HOSPITAL,
@@ -368,7 +369,8 @@ class Transform(Task):
                         # log.error(f"Skipping column {column_name} for row {index}")
                         pass
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
-        self.process_batch_of_records()
+        if len(self.records) > 0:
+            self.process_batch_of_records()
         # and save the total counts for each column (to compute the percentage of missing values in the profiles)
         all_counts = []  # a list of <"identifier": identifier, "all_counts": all_counts> instead of <identifier: all_counts>
         for k in self.mapping_column_all_count:
@@ -405,7 +407,8 @@ class Transform(Task):
             self.patients.append(new_patient.to_json())
 
             self.time_statistics.start(dataset=self.dataset_instance.global_identifier, key=TimerKeys.CHECK_BATCH_SIZE_PATIENTS)
-            self.process_batch_of_patients()
+            if len(self.patients) >= BATCH_SIZE:
+                self.process_batch_of_patients()
             # no need to load Patient instances because they are referenced using their ID,
             # which was provided by the hospital (thus is known by the dataset)
         if len(self.patients) > 0:
@@ -417,45 +420,41 @@ class Transform(Task):
             except Exception:
                 raise ValueError(
                     f"Could not dump the {len(self.patient_ids_mapping)} JSON resources in the file located at {self.execution.anonymized_patient_ids_filepath}.")
-        self.database.load_json_in_table(profile=TableNames.PATIENT, table_name=TableNames.PATIENT, unique_variables=["identifier"], dataset_number=self.dataset_number)
+        self.database.load_json_in_table(table_name=TableNames.PATIENT, unique_variables=["identifier"], dataset_number=self.dataset_number)
 
     ##############################################################
     # UTILITIES
     ##############################################################
 
     def process_batch_of_patients(self) -> None:
+        log.info(f"writing {len(self.patients)} patients in file")
         write_in_file(resource_list=self.patients,
                       current_working_dir=self.execution.working_dir_current,
-                      profile=TableNames.PATIENT,
+                      table_name=TableNames.PATIENT,
                       is_feature=False,
                       dataset_number=self.dataset_number,
-                      file_counter=self.file_counter, to_json=False)
+                      to_json=False)
         self.patients.clear()
-        self.file_counter += 1
 
     def process_batch_of_features(self) -> None:
-        self.time_statistics.start(dataset=self.dataset_instance.global_identifier, key=TimerKeys.WRITE_IN_FILE_FEATURES)
+        log.info(f"writing {len(self.features)} features in file")
         write_in_file(resource_list=self.features,
                       current_working_dir=self.execution.working_dir_current,
-                      profile=self.profile,
+                      table_name=TableNames.FEATURE,
                       is_feature=True,
                       dataset_number=self.dataset_number,
-                      file_counter=self.file_counter, to_json=False)
-        self.time_statistics.increment(dataset=self.dataset_instance.global_identifier, key=TimerKeys.WRITE_IN_FILE_FEATURES)
+                      to_json=False)
         self.features.clear()
-        self.file_counter += 1
 
     def process_batch_of_records(self) -> None:
-        log.info(f"writing batch of {len(self.records)}")
+        log.info(f"writing {len(self.records)} records in file")
         write_in_file(resource_list=self.records,
                       current_working_dir=self.execution.working_dir_current,
-                      profile=self.profile,
+                      table_name=TableNames.RECORD,
                       is_feature=False,
                       dataset_number=self.dataset_number,
-                      file_counter=self.file_counter,
                       to_json=False)
         self.records.clear()
-        self.file_counter += 1
 
     def load_patient_id_mapping(self) -> None:
         log.info(f"Patient ID mapping filepath is {self.execution.anonymized_patient_ids_filepath}")
