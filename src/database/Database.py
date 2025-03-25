@@ -1,15 +1,18 @@
 import dataclasses
 import json
 import os
+import re
 from typing import Any
 
 import bson
 import pymongo
 from bson.json_util import loads
+from filesplit.split import Split
 from pymongo import MongoClient
 from pymongo.command_cursor import CommandCursor
 from pymongo.cursor import Cursor
 
+from constants.defaults import MAX_FILE_SIZE
 from constants.methods import factory
 from database.Execution import Execution
 from enums.TableNames import TableNames
@@ -196,20 +199,34 @@ class Database:
         first_file = True
         counter_files = 0
         total_count_files = len([name for name in os.listdir(self.execution.working_dir_current) if os.path.isfile(os.path.join(self.execution.working_dir_current, name)) and name.startswith(f"{str(dataset_number)}{profile}{table_name}")])
-        for filename in os.listdir(self.execution.working_dir_current):
-            if filename.startswith(f"{str(dataset_number)}{profile}{table_name}"):
-                with open(os.path.join(self.execution.working_dir_current, filename), "r") as json_datafile:
-                    if first_file:
-                        # first, create an index on the unique variables to speed up the upsert (which checks whether each document already exists)
-                        # we do this only if we have data for that kind of data
-                        log.info(f"For profile {profile}, creating unique index {unique_variables}")
-                        self.create_unique_index(table_name=table_name, columns={elem: 1 for elem in unique_variables})
-                        first_file = False
-                    tuples = bson.json_util.loads(json_datafile.read())
-                    self.upsert_one_batch_of_tuples(table_name=table_name, unique_variables=unique_variables, the_batch=tuples, ordered=ordered)
-                    counter_files += 1
-                    if counter_files % 5 == 0:
-                        log.debug(f"Table {table_name}, loaded {counter_files}/{total_count_files}")
+        expected_filename = os.path.join(self.execution.working_dir_current, f"{str(dataset_number)}{profile}{table_name}.json")
+        regex_chunk_filename = re.compile(f"{dataset_number}{profile}{table_name}_[0-9]+\.json")
+        if os.path.exists(expected_filename):
+            # this is a big file with all records for patients, or records, or features, or hospitals
+            # we split it in smaller files of 15Mo (the MogoDB limit is 16Mo)
+            # and send each chunk to the db
+            split = Split(expected_filename, self.execution.working_dir_current)
+            split.bysize(MAX_FILE_SIZE, newline=True)
+            for chunk_filename in os.listdir(self.execution.working_dir_current):
+                if regex_chunk_filename.search(chunk_filename):
+                    with open(os.path.join(self.execution.working_dir_current, chunk_filename), "r") as json_datafile:
+                        if first_file:
+                            # first, create an index on the unique variables to speed up the upsert (which checks whether each document already exists)
+                            # we do this only if we have data for that kind of data
+                            log.info(f"For profile {profile}, creating unique index {unique_variables}")
+                            self.create_unique_index(table_name=table_name, columns={elem: 1 for elem in unique_variables})
+                            first_file = False
+                        # the chunk file is a JSON-by-line file, meaning that each record is on a line, with no separating comma and no encompassing array
+                        # this needs to be added back to the JSON read string before parsing it
+                        read_json = json_datafile.read()
+                        read_json = "[" + read_json + "]"
+                        read_json = read_json.replace("}\n{", "}, {")
+                        log.info(read_json)
+                        tuples = bson.json_util.loads(read_json)
+                        self.upsert_one_batch_of_tuples(table_name=table_name, unique_variables=unique_variables, the_batch=tuples, ordered=ordered)
+                        counter_files += 1
+                        if counter_files % 5 == 0:
+                            log.debug(f"Table {table_name}, loaded {counter_files}/{total_count_files}")
         log.debug(f"Table {table_name}, loaded {counter_files}/{total_count_files}")
 
     def find_operation(self, table_name: str, filter_dict: dict, projection: dict) -> Cursor:

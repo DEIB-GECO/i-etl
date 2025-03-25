@@ -15,25 +15,28 @@ def write_in_file(resource_list: list, current_working_dir: str, profile: str, i
         table_name = TableNames.FEATURE
     else:
         table_name = TableNames.RECORD
-    filename = get_json_resource_file(current_working_dir=current_working_dir, profile=profile, table_name=table_name, dataset_number=dataset_number, file_counter=file_counter)
+    filename = get_json_resource_file(current_working_dir=current_working_dir, profile=profile, table_name=table_name, dataset_number=dataset_number)
     if len(resource_list) > 0:
         with open(filename, "w") as data_file:
             try:
                 # log.debug(f"Dumping {len(resource_list)} instances in {filename}")
                 if to_json:
                     the_json_resources = [resource.to_json() for resource in resource_list]
-                    ujson.dump(the_json_resources, data_file)
+                    processed_json = ujson.dumps(the_json_resources)
                 else:
-                    ujson.dump(resource_list, data_file)
-
+                    processed_json = ujson.dumps(resource_list)
+                processed_json = processed_json[1:-1]
+                processed_json = processed_json.replace("},{", "}\n{")
+                log.info(processed_json)
+                data_file.write(processed_json)
             except Exception:
                 raise ValueError(f"Could not dump the {len(resource_list)} JSON resources in the file located at {filename}.")
     else:
         log.info(f"No data when writing file {filename}.")
 
 
-def get_json_resource_file(current_working_dir: str, dataset_number: int, profile: str, table_name: str, file_counter: int) -> str:
-    return os.path.join(current_working_dir, f"{str(dataset_number)}{profile}{table_name}{str(file_counter)}.json")
+def get_json_resource_file(current_working_dir: str, dataset_number: int, profile: str, table_name: str) -> str:
+    return os.path.join(current_working_dir, f"{str(dataset_number)}{profile}{table_name}.json")
 
 
 def read_tabular_file_as_string(filepath: str) -> pd.DataFrame:

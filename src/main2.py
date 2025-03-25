@@ -1,5 +1,3 @@
-import base64
-import copy
 import dataclasses
 import datetime
 import json
@@ -7,38 +5,29 @@ import os
 import pickle
 import random
 import sys
-import threading
 import time
 from multiprocessing import Pool
 from urllib.parse import quote
 
 import bson
-import jsonpickle
 import pandas as pd
 import pymongo
-import requests
 import ujson
-from dotenv import load_dotenv
+from filesplit.split import Split
 from pymongo.mongo_client import MongoClient
 
 from constants.defaults import NO_ID, API_SESSION, MAX_FILE_SIZE
 from constants.methods import factory
 from database.Counter import Counter
-from database.Database import Database
-from database.Dataset import Dataset
-from database.Execution import Execution
-from database.Operators import Operators
 from entities.ClinicalRecord import ClinicalRecord
 from entities.OntologyResource import OntologyResource
 from entities.PhenotypicRecord import PhenotypicRecord
-from entities.Record import Record
 from entities.Resource import Resource
 from enums.AccessTypes import AccessTypes
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from etl.Extract import Extract
 from statistics.QualityStatistics import QualityStatistics
-from statistics.TimeStatistics import TimeStatistics
 from utils.api_utils import send_query_to_api
 from utils.file_utils import read_tabular_file_as_string
 from utils.setup_logger import log
@@ -458,7 +447,6 @@ def main_estimate_json_size():
         the_list = [{"a": 1, "b": 2, "c": {"d": 1234, "ee": "fzfez"}} for _ in range(size)]
 
         total_str_size = 0.0
-        time_
         # total_sys_size = 0.0
         for element in the_list:
             total_str_size += len(json.dumps(element))
@@ -532,6 +520,37 @@ def main_size_perf():
     #     print(f"Total time for size for {max_size} elements: {(total_time_size/1000000000.0)}")
 
 
+def main_test_append_json_to_file():
+    my_list_1 = [
+        [
+            {
+                "a": random.randint(0, 1000),
+                "b": {"e": random.randint(0, 1000), "f": {"g": "125", "h": 45}} if random.randint(0, 1) else "None",
+                "c": random.randint(0, 1000),
+                "d": "daddq"
+            }
+            for _ in range(0, 100000)
+        ]
+        for _ in range(5)
+    ]
+
+    with open("my_appended_list.json", "w") as my_file:
+        for my_list in my_list_1:
+            processed_json = json.dumps(my_list) #, separators=(',', ':'), indent="")
+            processed_json = processed_json[1:-1]
+            processed_json = processed_json.replace("}, {", "}\n{")  # put each record to insert on a line
+            my_file.write(processed_json)
+
+    for size in [MAX_FILE_SIZE]:
+        try:
+            os.makedirs(f"split_dir_{size}")
+        except FileExistsError:
+            # directory already exists
+            pass
+        split = Split("my_appended_list.json", f"split_dir_{size}")
+        split.bysize(size, newline=True)
+
+
 if __name__ == '__main__':
     # main_load_json_from_file_as_bson()
     
@@ -564,5 +583,7 @@ if __name__ == '__main__':
 
     # main_estimate_json_size()
 
-    main_size_perf()
+    # main_size_perf()
+
+    main_test_append_json_to_file()
     print("Done.")
