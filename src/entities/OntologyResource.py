@@ -19,6 +19,12 @@ class OntologyResource:
     label: str | None
     quality_stats: QualityStatistics | None = dataclasses.field(repr=False)
 
+    # keys to be used when writing JSON or queries
+    # those names have to exactly match the variables names declared in entity classes
+    SYSTEM_ = "system"
+    CODE_ = "code"
+    LABEL_ = "label"
+
     def __post_init__(self):
         # every attribute that is there will be serialized in the Ontology Resource
         # to avoid this, one needs to explicitly say which attributes are to be removed from the JSON serialization

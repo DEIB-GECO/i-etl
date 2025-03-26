@@ -3,6 +3,8 @@ from datetime import timedelta, datetime
 from typing import Any
 
 from database.Operators import THE_DATETIME_FORMAT
+from entities.Record import Record
+from entities.Resource import Resource
 from utils.setup_logger import log
 
 
@@ -33,7 +35,7 @@ def compare_tuples(original_tuple: dict, inserted_tuple: dict) -> None:
     assert compare_keys(original_object=original_tuple, inserted_object=inserted_tuple) is True, different_keys()
     for original_key in original_tuple:
         assert original_key in inserted_tuple, missing_attribute(original_key)
-        if original_key == "timestamp":
+        if original_key == Resource.TIMESTAMP_:
             # for the special case of timestamp attributes, we check +/- few milliseconds
             # to avoid failing when conversions do not yield the exact same datetime value
             inserted_time = datetime.strptime(inserted_tuple[original_key]["$date"], THE_DATETIME_FORMAT)
@@ -76,11 +78,11 @@ def get_records_for_patient(records: list, patient_id: str) -> list[dict]:
     """
     matching_records = []
     for json_record in records:
-        if json_record["has_subject"] == patient_id:
+        if json_record[Record.SUBJECT_] == patient_id:
             matching_records.append(json_record)
     # also sort them by PhenFeature reference id
     log.info(matching_records)
-    return sorted(matching_records, key=lambda d: d["instantiates"])
+    return sorted(matching_records, key=lambda d: d[Record.INSTANTIATES_])
 
 
 def get_field_value_for_patient(records: list, features: list, patient_id: str, column_name: str) -> Any:
@@ -101,7 +103,7 @@ def get_field_value_for_patient(records: list, features: list, patient_id: str, 
     if feature is not None:
         for record in records:
             # log.info(f"checking {json_lab_record['has_subject']} vs. {patient_id} and {json_lab_record['instantiates']} vs. {feature['identifier']}")
-            if record["has_subject"] == patient_id and record["instantiates"] == feature["identifier"]:
+            if record[Record.SUBJECT_] == patient_id and record[Record.INSTANTIATES_] == feature[Resource.IDENTIFIER]:
                 log.info(f"for patient {patient_id} and column {column_name}, record is {record}")
-                return record["value"]
+                return record[Record.VALUE_]
     return None

@@ -1,6 +1,8 @@
 import dataclasses
 
 from database.Database import Database
+from entities.Record import Record
+from entities.Resource import Resource
 from enums.TableNames import TableNames
 from statistics.Statistics import Statistics
 
@@ -38,7 +40,7 @@ class DatabaseStatistics(Statistics):
 
     def compute_rec_with_no_value(self, database: Database) -> None:
         # for each RecordX, count the number of instances with no field "value"
-        no_val_records = [DatabaseStatistics.jsonify_tuple(res) for res in database.find_operation(table_name=TableNames.RECORD, filter_dict={"value": {"$exists": 0}}, projection={"_id": 0})]
+        no_val_records = [DatabaseStatistics.jsonify_tuple(res) for res in database.find_operation(table_name=TableNames.RECORD, filter_dict={Record.VALUE_: {"$exists": 0}}, projection={"_id": 0})]
         self.records_with_no_value[TableNames.RECORD] = {"elements": no_val_records, "size": len(no_val_records)}
 
     def compute_rec_with_no_value_per_instantiate(self, database: Database) -> None:
@@ -46,10 +48,10 @@ class DatabaseStatistics(Statistics):
         # db["LaboratoryRecord"].distinct("instantiates", {"value": {"$exists": 0}})
         # this query returns something like [ { reference: '83' }, { reference: '87' } ]
         # then we process it to return a dict <ref. id, count>, e.g. { "83": {"elements": [...], "size": 5}, "87": {...} }
-        instantiates_no_value = [res for res in database.find_distinct_operation(table_name=TableNames.RECORD, key="instantiates", filter_dict={"value": {"$exists": 0}})]
+        instantiates_no_value = [res for res in database.find_distinct_operation(table_name=TableNames.RECORD, key=Record.INSTANTIATES_, filter_dict={Record.VALUE_: {"$exists": 0}})]
         records_with_no_val_per_instantiate = {}
         for instantiate_ref in instantiates_no_value:
-            records_with_no_val_per_instantiate[instantiate_ref] = [DatabaseStatistics.jsonify_tuple(res) for res in database.find_operation(table_name=TableNames.RECORD, filter_dict={"instantiates": instantiate_ref, "value": {"$exists": 0}}, projection={"_id": 0})]
+            records_with_no_val_per_instantiate[instantiate_ref] = [DatabaseStatistics.jsonify_tuple(res) for res in database.find_operation(table_name=TableNames.RECORD, filter_dict={Record.INSTANTIATES_: instantiate_ref, Record.VALUE_: {"$exists": 0}}, projection={"_id": 0})]
             if TableNames.RECORD not in self.records_with_no_value_per_instantiate:
                 self.records_with_no_value_per_instantiate[TableNames.RECORD] = {}
             self.records_with_no_value_per_instantiate[TableNames.RECORD][instantiate_ref] = {"elements": records_with_no_val_per_instantiate, "size": len(records_with_no_val_per_instantiate)}
@@ -63,13 +65,13 @@ class DatabaseStatistics(Statistics):
             self.cc_with_no_text_per_table[table_name] = {"elements": no_text_cc, "size": len(no_text_cc)}
 
     def compute_unknown_patient_refs_per_record_table(self, database: Database) -> None:
-        unknown_patient_refs = [DatabaseStatistics.jsonify_tuple(res) for res in database.inverse_inner_join(name_table_1=TableNames.RECORD, name_table_2=TableNames.PATIENT, foreign_field="identifier", local_field="has_subject", lookup_name="KnownRefs")]
+        unknown_patient_refs = [DatabaseStatistics.jsonify_tuple(res) for res in database.inverse_inner_join(name_table_1=TableNames.RECORD, name_table_2=TableNames.PATIENT, foreign_field=Resource.IDENTIFIER_, local_field=Record.SUBJECT_, lookup_name="KnownRefs")]
         self.unknown_patient_refs_per_table[TableNames.RECORD] = {"elements": unknown_patient_refs, "size": len(unknown_patient_refs)}
 
     def compute_unknown_hospital_refs_per_record_table(self, database: Database) -> None:
-        unknown_hospital_refs = [DatabaseStatistics.jsonify_tuple(res) for res in database.inverse_inner_join(name_table_1=TableNames.RECORD, name_table_2=TableNames.HOSPITAL, foreign_field="identifier", local_field="registered_by", lookup_name="KnownRefs")]
+        unknown_hospital_refs = [DatabaseStatistics.jsonify_tuple(res) for res in database.inverse_inner_join(name_table_1=TableNames.RECORD, name_table_2=TableNames.HOSPITAL, foreign_field=Resource.IDENTIFIER_, local_field=Record.REG_BY_, lookup_name="KnownRefs")]
         self.unknown_hospital_refs_per_table[TableNames.RECORD] = {"elements": unknown_hospital_refs, "size": len(unknown_hospital_refs)}
 
     def compute_unknown_feat_refs_in_records(self, database: Database) -> None:
-        unknown_refs = [DatabaseStatistics.jsonify_tuple(res) for res in database.inverse_inner_join(name_table_1=TableNames.RECORD, name_table_2=TableNames.FEATURE, foreign_field="identifier", local_field="instantiates", lookup_name="KnownRefs")]
+        unknown_refs = [DatabaseStatistics.jsonify_tuple(res) for res in database.inverse_inner_join(name_table_1=TableNames.RECORD, name_table_2=TableNames.FEATURE, foreign_field=Resource.IDENTIFIER_, local_field=Record.INSTANTIATES_, lookup_name="KnownRefs")]
         self.unknown_feat_refs_in_records = {"elements": unknown_refs, "size": len(unknown_refs)}

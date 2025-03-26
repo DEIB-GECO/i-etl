@@ -6,6 +6,7 @@ from pandas import DataFrame
 
 from database.Database import Database
 from database.Execution import Execution
+from entities.Feature import Feature
 from entities.OntologyResource import OntologyResource
 from enums.DataTypes import DataTypes
 from enums.HospitalNames import HospitalNames
@@ -76,7 +77,7 @@ class Extract(Task):
         filename = os.path.basename(self.execution.current_filepath)  # it contains the .csv
         filename = filename[0:filename.index(".")]
         log.info(filename)
-        exported_filepath = os.path.join(self.execution.working_dir_current, "exported_" + filename + ".csv")
+        exported_filepath = os.path.join(self.execution.working_dir_current, f"exported_{filename}.csv")
         log.info(self.data)
         if os.path.exists(exported_filepath) and os.path.getsize(exported_filepath) > 0:
             # existing metadata, we happen
@@ -211,10 +212,10 @@ class Extract(Task):
         existing_categorical_codeable_concepts = {}
         # the set of categorical values are defined in Features only, thus we can restrict the find to only those:
         # categorical_values_for_table_name = {'_id': ObjectId('...'), 'categorical_values': [{...}, {...}, ...]}
-        categorical_values_for_table_name = self.database.find_operation(table_name=TableNames.FEATURE, filter_dict={"categories": {"$exists": 1}}, projection={"categories": 1})
+        categorical_values_for_table_name = self.database.find_operation(table_name=TableNames.FEATURE, filter_dict={Feature.CATEGORIES_: {"$exists": 1}}, projection={Feature.CATEGORIES_: 1})
         for one_tuple in categorical_values_for_table_name:
             # existing_categorical_value_for_table_name = [{...}, {...}, ...]}
-            existing_categorical_values_for_table_name = one_tuple["categories"]
+            existing_categorical_values_for_table_name = one_tuple[Feature.CATEGORIES_]
             for encoded_categorical_value in existing_categorical_values_for_table_name:
                 existing_or = OntologyResource.from_json(encoded_categorical_value, quality_stats=self.quality_stats)
                 existing_categorical_codeable_concepts[existing_or.label] = existing_or

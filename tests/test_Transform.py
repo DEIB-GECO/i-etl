@@ -4,7 +4,6 @@ import re
 import time
 import unittest
 
-import bson
 import pandas as pd
 import pytest
 
@@ -12,7 +11,7 @@ from constants.defaults import DEFAULT_ONTOLOGY_RESOURCE_LABEL, NO_ID
 from constants.structure import TEST_DB_NAME, DOCKER_FOLDER_TEST
 from database.Counter import Counter
 from database.Database import Database
-from database.Dataset import Dataset
+from entities.Dataset import Dataset
 from database.Execution import Execution
 from entities.Hospital import Hospital
 from entities.OntologyResource import OntologyResource

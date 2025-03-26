@@ -9,7 +9,7 @@ class DatasetProfile:
     description: str
     theme: str
     filetype: str
-    size: int
+    size: float  # in Mb
     nb_tuples: int
     completeness: int
     uniqueness: float

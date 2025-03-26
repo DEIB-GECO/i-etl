@@ -1,13 +1,9 @@
-import json
-import os.path
 import unittest
 from datetime import datetime
 
-from jsonlines import jsonlines
-
 from constants.structure import TEST_DB_NAME
 from database.Database import Database
-from database.Dataset import Dataset
+from entities.Dataset import Dataset
 from database.Execution import Execution
 from database.Operators import Operators
 from enums.HospitalNames import HospitalNames
@@ -17,7 +13,7 @@ from enums.Profile import Profile
 from enums.TableNames import TableNames
 from etl.Load import Load
 from statistics.QualityStatistics import QualityStatistics
-from utils.file_utils import get_json_resource_file, write_in_file
+from utils.file_utils import write_in_file
 from utils.setup_logger import log
 from utils.test_utils import set_env_variables_from_dict
 
