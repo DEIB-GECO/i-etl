@@ -395,22 +395,27 @@ class Transform(Task):
         log.info(f"creating patients using column {self.execution.patient_id_column_name}")
         for row in self.data.itertuples(index=False):
             row_patient_id = row[columns.get_loc(self.execution.patient_id_column_name)]
-            if row_patient_id not in self.patient_ids_mapping:
-                # the (anonymized) patient does not exist yet, we will create it
-                new_patient = Patient(identifier=NO_ID, counter=self.counter)
-                # log.info(f"create new patient {row_patient_id} with anonymized ID {new_patient.identifier.value}")
-                self.patient_ids_mapping[row_patient_id] = new_patient.identifier  # keep track of anonymized patient ids
+            if row_patient_id == "":
+                # this line does not contain a patient id (the cell is empty)
+                # thus, we skip it
+                pass
             else:
-                # the (anonymized) patient id already exists, we take it from the mapping
-                # log.info(f"create patient {row_patient_id} with existing anonymized ID {self.patient_ids_mapping[row_patient_id]}")
-                new_patient = Patient(identifier=self.patient_ids_mapping[row_patient_id], counter=self.counter)
-            self.patients.append(new_patient.to_json())
+                if row_patient_id not in self.patient_ids_mapping:
+                    # the (anonymized) patient does not exist yet, we will create it
+                    new_patient = Patient(identifier=NO_ID, counter=self.counter)
+                    # log.info(f"create new patient {row_patient_id} with anonymized ID {new_patient.identifier.value}")
+                    self.patient_ids_mapping[row_patient_id] = new_patient.identifier  # keep track of anonymized patient ids
+                else:
+                    # the (anonymized) patient id already exists, we take it from the mapping
+                    # log.info(f"create patient {row_patient_id} with existing anonymized ID {self.patient_ids_mapping[row_patient_id]}")
+                    new_patient = Patient(identifier=self.patient_ids_mapping[row_patient_id], counter=self.counter)
+                self.patients.append(new_patient.to_json())
 
-            self.time_statistics.start(dataset=self.dataset_instance.global_identifier, key=TimerKeys.CHECK_BATCH_SIZE_PATIENTS)
-            if len(self.patients) >= BATCH_SIZE:
-                self.process_batch_of_patients()
-            # no need to load Patient instances because they are referenced using their ID,
-            # which was provided by the hospital (thus is known by the dataset)
+                self.time_statistics.start(dataset=self.dataset_instance.global_identifier, key=TimerKeys.CHECK_BATCH_SIZE_PATIENTS)
+                if len(self.patients) >= BATCH_SIZE:
+                    self.process_batch_of_patients()
+                # no need to load Patient instances because they are referenced using their ID,
+                # which was provided by the hospital (thus is known by the dataset)
         if len(self.patients) > 0:
             self.process_batch_of_patients()
         # finally, we also write the mapping patient ID / anonymized ID in a file - this will be ingested for subsequent runs to not renumber existing anonymized patients
