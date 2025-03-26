@@ -1,20 +1,25 @@
 import dataclasses
 import json
 import os
+import re
 from typing import Any
 
 import bson
 import pymongo
 from bson.json_util import loads
+from filesplit.split import Split
+from jsonlines import jsonlines
 from pymongo import MongoClient
 from pymongo.command_cursor import CommandCursor
 from pymongo.cursor import Cursor
 
+from constants.defaults import MAX_FILE_SIZE
 from constants.methods import factory
 from database.Execution import Execution
 from enums.TableNames import TableNames
 from database.Operators import Operators
 from enums.TimerKeys import TimerKeys
+from utils.file_utils import from_json_line_to_json_str, get_json_resource_file
 from utils.setup_logger import log
 
 
@@ -153,16 +158,11 @@ class Database:
         :param the_batch:
         :return: The `filter_dict` to know exactly which fields have been used for the upsert (some of the given fields in unique_variables may not exist in some instances)
         """
-        # in case there are more than 1000 tuples to upserts, we split them in batch of 1000
-        # and send one bulk operation per batch. This allows to save time by not doing a db call per upsert.
-        # we use the bulk operation to send sets of BATCH_SIZE operations, each operation doing an upsert
-        # this allows to have only one call to the database for each bulk operation (instead of one per upsert operation)
-        #log.info(unique_variables)
+        log.info(unique_variables)
         operations = [pymongo.UpdateOne(
             filter={unique_variable: one_tuple[unique_variable] for unique_variable in unique_variables if unique_variable in one_tuple},
             update=self.create_update_stmt(the_tuple=one_tuple), upsert=True)
             for one_tuple in the_batch]
-        # log.info(operations)
         # July 18th, 2024: bulk_write modifies the hospital lists in Transform (even if I use deep copies everywhere)
         # It changes (only?) the timestamp value with +1/100, e.g., 2024-07-18T14:34:32Z becomes 2024-07-18T14:34:33Z
         # in the tests I use a delta to compare datetime
@@ -185,32 +185,45 @@ class Database:
             mapping[projected_key] = projected_value
         return mapping
 
-    def load_json_in_table(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int) -> None:
-        self.load_json_in_table_general(profile=profile, table_name=table_name, unique_variables=unique_variables, dataset_number=dataset_number, ordered=False)
+    def load_json_in_table(self, table_name: str, unique_variables: list[str], dataset_number: int) -> None:
+        self.load_json_in_table_general(table_name=table_name, unique_variables=unique_variables, dataset_number=dataset_number, ordered=False)
 
-    def load_json_in_table_for_tests(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int) -> None:
-        self.load_json_in_table_general(profile=profile, table_name=table_name, unique_variables=unique_variables, dataset_number=dataset_number, ordered=True)
+    def load_json_in_table_for_tests(self, unique_variables: list[str], dataset_number: int) -> None:
+        self.load_json_in_table_general(table_name=TableNames.TEST, unique_variables=unique_variables, dataset_number=dataset_number, ordered=True)
 
-    def load_json_in_table_general(self, profile: str, table_name: str, unique_variables: list[str], dataset_number: int, ordered: bool) -> None:
-        log.info(f"Load {profile} data in {table_name} with unique variables {unique_variables}")
+    def load_json_in_table_general(self, table_name: str, unique_variables: list[str], dataset_number: int, ordered: bool) -> None:
+        log.info(f"Write {table_name} data in table {table_name} with unique variables {unique_variables}")
         first_file = True
-        counter_files = 0
-        total_count_files = len([name for name in os.listdir(self.execution.working_dir_current) if os.path.isfile(os.path.join(self.execution.working_dir_current, name)) and name.startswith(f"{str(dataset_number)}{profile}{table_name}")])
-        for filename in os.listdir(self.execution.working_dir_current):
-            if filename.startswith(f"{str(dataset_number)}{profile}{table_name}"):
-                with open(os.path.join(self.execution.working_dir_current, filename), "r") as json_datafile:
-                    if first_file:
-                        # first, create an index on the unique variables to speed up the upsert (which checks whether each document already exists)
-                        # we do this only if we have data for that kind of data
-                        log.info(f"For profile {profile}, creating unique index {unique_variables}")
-                        self.create_unique_index(table_name=table_name, columns={elem: 1 for elem in unique_variables})
-                        first_file = False
-                    tuples = bson.json_util.loads(json_datafile.read())
-                    self.upsert_one_batch_of_tuples(table_name=table_name, unique_variables=unique_variables, the_batch=tuples, ordered=ordered)
-                    counter_files += 1
-                    if counter_files % 5 == 0:
-                        log.debug(f"Table {table_name}, loaded {counter_files}/{total_count_files}")
-        log.debug(f"Table {table_name}, loaded {counter_files}/{total_count_files}")
+        expected_filename = get_json_resource_file(self.execution.working_dir_current, dataset_number, table_name)
+        if os.path.exists(expected_filename):
+            # this is a big file with all records for patients, or records, or features, or hospitals
+            # we split it in smaller files of 15Mo (the MogoDB limit is 16Mo)
+            # and send each chunk to the db
+            split = Split(expected_filename, self.execution.working_dir_current)
+            split.bysize(MAX_FILE_SIZE, newline=True)
+            counter_files = 0
+            regex_chunk_filename = re.compile(f"{dataset_number}{table_name}_[0-9]+\\.jsonl")
+            total_count_files = sum([1 if regex_chunk_filename.search(elem) else 0 for elem in os.listdir(self.execution.working_dir_current)])
+            for chunk_filename in os.listdir(self.execution.working_dir_current):
+                if regex_chunk_filename.search(chunk_filename):
+                    with jsonlines.open(os.path.join(self.execution.working_dir_current, chunk_filename), "r") as json_datafile:
+                        if first_file:
+                            # first, create an index on the unique variables to speed up the upsert (which checks whether each document already exists)
+                            # we do this only if we have data for that kind of data
+                            log.info(f"For table {table_name}, creating unique index {unique_variables}")
+                            self.create_unique_index(table_name=table_name, columns={elem: 1 for elem in unique_variables})
+                            first_file = False
+                        # the chunk file is a JSON-by-line file, meaning that each record is on a line, with no separating comma and no encompassing array
+                        # this needs to be added back to the JSON read string before parsing it
+                        tuples = [obj for obj in json_datafile]  # this transforms the JSONL file to a list of objects
+                        tuples = bson.json_util.loads(json.dumps(tuples))  # we need to read the objects with bson to interpret dates
+                        self.upsert_one_batch_of_tuples(table_name=table_name, unique_variables=unique_variables, the_batch=tuples, ordered=ordered)
+                        counter_files += 1
+                        if counter_files % 5 == 0:
+                            log.debug(f"Table {table_name}, loaded {counter_files}/{total_count_files}")
+            log.debug(f"Table {table_name}, loaded {counter_files}/{total_count_files}")
+        else:
+            log.debug(f"Table {table_name}, no file to load.")
 
     def find_operation(self, table_name: str, filter_dict: dict, projection: dict) -> Cursor:
         """

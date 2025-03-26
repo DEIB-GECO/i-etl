@@ -31,3 +31,6 @@ beautifulsoup4~=4.12.3
 scipy~=1.14.1
 headfake~=1.1.1
 ujson~=5.10.0
+enums~=0.0.2
+filesplit~=4.1.0
+jsonlines~=4.0.0

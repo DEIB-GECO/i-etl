@@ -5,6 +5,7 @@ import random
 import unittest
 
 import pytest
+from jsonlines import jsonlines
 
 from constants.defaults import NO_ID
 from constants.structure import TEST_DB_NAME
@@ -15,7 +16,7 @@ from entities.ResourceTest import ResourceTest
 from enums.HospitalNames import HospitalNames
 from enums.ParameterKeys import ParameterKeys
 from enums.TableNames import TableNames
-from utils.file_utils import write_in_file
+from utils.file_utils import write_in_file, from_json_line_to_json_str, get_json_resource_file
 from utils.test_utils import wrong_number_of_docs, compare_tuples, set_env_variables_from_dict
 
 
@@ -364,19 +365,19 @@ class TestDatabase(unittest.TestCase):
         ]
         my_tuples_as_json = [my_tuples[i].to_json() for i in range(len(my_tuples))]
 
-        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, profile=TableNames.TEST, is_feature=False, file_counter=1, dataset_number=1)
-        filepath = os.path.join(TestDatabase.execution.working_dir_current, f"1{TableNames.TEST}{TableNames.TEST}1.json")
+        write_in_file(resource_list=my_tuples_as_json, current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, is_feature=False, dataset_number=1, to_json=False)
+        filepath = get_json_resource_file(current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, dataset_number=1)
         assert os.path.exists(filepath) is True
-        with open(filepath) as my_file:
-            read_tuples = json.load(my_file)
+        with jsonlines.open(filepath) as my_file:
+            read_tuples = [obj for obj in my_file]
             assert len(my_tuples_as_json) == len(read_tuples), wrong_number_of_docs(len(my_tuples))
             assert my_tuples_as_json == read_tuples
 
     def test_write_in_file_no_resource(self):
         _ = Database(execution=TestDatabase.execution)
         my_tuples = []
-        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, profile=TableNames.TEST, is_feature=False, file_counter=2, dataset_number=1)
-        filepath = os.path.join(TestDatabase.execution.working_dir_current, f"1{TableNames.TEST}2.json")
+        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, is_feature=False, dataset_number=98, to_json=False)
+        filepath = get_json_resource_file(current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, dataset_number=98)
         assert os.path.exists(filepath) is False  # no file should have been created since there is no data to write
 
     def test_load_json_in_table(self):
@@ -392,11 +393,11 @@ class TestDatabase(unittest.TestCase):
 
         # I need to write the tuples in the working dir
         # because load_json_in_table() looks for files having the given table name in that directory
-        filepath = os.path.join(TestDatabase.execution.working_dir_current, f"1{TableNames.TEST}{TableNames.TEST}1.json")
-        with open(filepath, 'w') as f:
-            json.dump(my_tuples, f)
-
-        database.load_json_in_table_for_tests(profile=TableNames.TEST, table_name=TableNames.TEST, unique_variables=["name", "age"], dataset_number=1)
+        # filepath = get_json_resource_file(current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, dataset_number=1)
+        # with jsonlines.open(filepath, 'w') as f:
+        #     json.dump(my_tuples, f)
+        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, is_feature=False, dataset_number=1, to_json=False)
+        database.load_json_in_table_for_tests(unique_variables=["name", "age"], dataset_number=1)
 
         docs = [doc for doc in database.db[TableNames.TEST].find({}).sort({"name": 1, "age": 1})]
         expected_docs = [my_original_tuples[2], my_original_tuples[0], my_original_tuples[3], my_original_tuples[4]]

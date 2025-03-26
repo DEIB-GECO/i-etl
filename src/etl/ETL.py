@@ -167,9 +167,9 @@ class ETL:
             # the hospital does not exist because we have reset the database, we create a new one
             new_hospital = Hospital(identifier=NO_ID, name=self.execution.hospital_name, counter=counter)
             log.info(new_hospital)
-            hospitals = [new_hospital]
+            hospitals = [new_hospital.to_json()]
             write_in_file(resource_list=hospitals, current_working_dir=self.execution.working_dir_current,
-                          profile=TableNames.HOSPITAL, is_feature=False, dataset_number=dataset_number, file_counter=file_counter)
+                          table_name=TableNames.HOSPITAL, is_feature=False, dataset_number=dataset_number, to_json=False)
             file_counter += 1
-            self.database.load_json_in_table(profile=TableNames.HOSPITAL, table_name=TableNames.HOSPITAL, unique_variables=["name"], dataset_number=dataset_number)
+            self.database.load_json_in_table(table_name=TableNames.HOSPITAL, unique_variables=["name"], dataset_number=dataset_number)
         return file_counter

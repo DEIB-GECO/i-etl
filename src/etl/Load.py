@@ -37,7 +37,7 @@ class Load(Task):
             # we allow patients to have several diagnoses
             unique_variables.append(DiagnosisColumns.DISEASE_COUNTER)
         log.info(unique_variables)
-        self.database.load_json_in_table(profile=self.profile, table_name=TableNames.RECORD, unique_variables=unique_variables, dataset_number=self.dataset_number)
+        self.database.load_json_in_table(table_name=TableNames.RECORD, unique_variables=unique_variables, dataset_number=self.dataset_number)
 
     def create_db_indexes(self) -> None:
         log.info(f"Creating indexes.")

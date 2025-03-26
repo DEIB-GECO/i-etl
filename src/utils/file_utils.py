@@ -1,35 +1,46 @@
 import os
+import re
 
 import pandas as pd
 import ujson
+import jsonlines
 
 from constants.structure import GROUND_DATA_FOLDER_FOR_GENERATION, GROUND_METADATA_FOLDER_FOR_GENERATION
 from enums.TableNames import TableNames
 from utils.setup_logger import log
 
 
-def write_in_file(resource_list: list, current_working_dir: str, profile: str, is_feature: bool, dataset_number: int, file_counter: int) -> None:
-    if profile in [TableNames.PATIENT, TableNames.HOSPITAL, TableNames.TEST]:
-        table_name = profile
-    elif is_feature:
-        table_name = TableNames.FEATURE
-    else:
-        table_name = TableNames.RECORD
-    filename = get_json_resource_file(current_working_dir=current_working_dir, profile=profile, table_name=table_name, dataset_number=dataset_number, file_counter=file_counter)
+def write_in_file(resource_list: list, current_working_dir: str, table_name: str, is_feature: bool, dataset_number: int, to_json: bool) -> None:
+    if table_name not in [TableNames.PATIENT, TableNames.HOSPITAL, TableNames.TEST]:
+        if is_feature:
+            table_name = TableNames.FEATURE
+        else:
+            table_name = TableNames.RECORD
+    filename = get_json_resource_file(current_working_dir=current_working_dir, table_name=table_name, dataset_number=dataset_number)
     if len(resource_list) > 0:
-        with open(filename, "w") as data_file:
+        with jsonlines.open(filename, "w") as data_file:
             try:
                 # log.debug(f"Dumping {len(resource_list)} instances in {filename}")
-                the_json_resources = [resource.to_json() for resource in resource_list]
-                ujson.dump(the_json_resources, data_file)
+                if to_json:
+                    data_file.write_all([resource.to_json() for resource in resource_list])
+                    # the_json_resources = [resource.to_json() for resource in resource_list]
+                    # the_json_string = ujson.dumps(the_json_resources)
+                else:
+                    data_file.write_all(resource_list)
+                    # the_json_resources = resource_list
+                # here we write a JSONL, meaning that each record is on a line
+                # there is not encompassing brackets (array), not commas between records
+                # json_string = from_json_str_to_json_line(the_json_string)
+                # log.info(json_string)
+                # data_file.write(json_string)
             except Exception:
                 raise ValueError(f"Could not dump the {len(resource_list)} JSON resources in the file located at {filename}.")
     else:
         log.info(f"No data when writing file {filename}.")
 
 
-def get_json_resource_file(current_working_dir: str, dataset_number: int, profile: str, table_name: str, file_counter: int) -> str:
-    return os.path.join(current_working_dir, f"{str(dataset_number)}{profile}{table_name}{str(file_counter)}.json")
+def get_json_resource_file(current_working_dir: str, dataset_number: int, table_name: str) -> str:
+    return os.path.join(current_working_dir, f"{str(dataset_number)}{table_name}.jsonl")
 
 
 def read_tabular_file_as_string(filepath: str) -> pd.DataFrame:
@@ -48,6 +59,21 @@ def read_tabular_file_as_string(filepath: str) -> pd.DataFrame:
         return pd.concat(all_sub_df, ignore_index=True, axis="rows")  # append lines, not vertically as new columns
     else:
         raise ValueError(f"The extension of the tabular file {filepath} is not recognised. Accepted extensions are .csv, .xls, and .xlsx.")
+
+
+# transform a json-line file (one record per line, no comma, no encompassing brackets) to a valid stringified json (with brackets and commas)
+def from_json_line_to_json_str(json_file) -> str:
+    read_json = json_file.read()  # this is a JSON-by-line file, we need to append the encompassing brackets and a comma between each record
+    read_json = "[" + read_json + "]"
+    return re.sub("}\n\\{", "},{", read_json)
+
+
+# transform a stringified json (e.g., outputed by json.dumps) into a str containing one record per line, no comma, and no encompassing brackets
+def from_json_str_to_json_line(json_str) -> str:
+    # be careful here: the easy solution is to replace },{ by }\n{
+    # however, if there are nested elements, such pattern can appear in an element while not being the end of the record
+    # therefore the regex needs to be tightened
+    return json_str[1:-1].replace("},{", "}\n{")  # remove the brackets from the list and move each record on a line
 
 
 def get_ground_data(filename: str) -> str:

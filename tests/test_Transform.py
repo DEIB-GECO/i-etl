@@ -4,6 +4,7 @@ import re
 import time
 import unittest
 
+import bson
 import pandas as pd
 import pytest
 
@@ -27,7 +28,7 @@ from enums.Visibility import Visibility
 from etl.Transform import Transform
 from statistics.QualityStatistics import QualityStatistics
 from utils.cast_utils import cast_str_to_datetime
-from utils.file_utils import get_json_resource_file
+from utils.file_utils import get_json_resource_file, from_json_line_to_json_str
 from utils.file_utils import read_tabular_file_as_string
 from utils.setup_logger import log
 from utils.test_utils import set_env_variables_from_dict, get_feature_by_text, \
@@ -140,19 +141,22 @@ def get_back_to_original_pid_files():
         f.write(original_filled_pids)
 
 
-def get_transform_features(profile, file_counter):
-    with open(get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, dataset_number=get_dataset_number_from_profile(profile), profile=profile, table_name=TableNames.FEATURE, file_counter=file_counter)) as f:
-        return json.load(f)
+def get_transform_features(profile):
+    with open(get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, dataset_number=get_dataset_number_from_profile(profile), table_name=TableNames.FEATURE)) as f:
+        # return json.load(f)  # this is a JSON-line file, we need to append brackets and commas back before parsing it
+        return json.loads(from_json_line_to_json_str(f))
 
 
-def get_transform_records(profile, file_counter):
-    with open(get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, dataset_number=get_dataset_number_from_profile(profile), profile=profile, table_name=TableNames.RECORD, file_counter=file_counter)) as f:
-        return json.load(f)
+def get_transform_records(profile):
+    with open(get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, dataset_number=get_dataset_number_from_profile(profile), table_name=TableNames.RECORD)) as f:
+        # return json.load(f)  # this is a JSON-line file, we need to append brackets and commas back before parsing it
+        return json.loads(from_json_line_to_json_str(f))
 
 
-def get_transform_patients(dataset_number, file_counter):
-    with open(get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, dataset_number=dataset_number, profile=TableNames.PATIENT, table_name=TableNames.PATIENT, file_counter=file_counter)) as f:
-        return json.load(f)
+def get_transform_patients(dataset_number):
+    with open(get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, dataset_number=dataset_number, table_name=TableNames.PATIENT)) as f:
+        # return json.load(f)  # this is a JSON-line file, we need to append brackets and commas back before parsing it
+        return json.loads(from_json_line_to_json_str(f))
 
 
 class TestTransform(unittest.TestCase):
@@ -209,7 +213,7 @@ class TestTransform(unittest.TestCase):
         transform.create_records()
 
         # CHECK FEATURES
-        features = get_transform_features(profile=Profile.PHENOTYPIC, file_counter=2)
+        features = get_transform_features(profile=Profile.PHENOTYPIC)
         assert len(features) == 4 - 1  # id does not count as a PhenFeature
         # assert the fourth and first PhenFeature instances:
         # lab_feature_a has one associated code
@@ -259,7 +263,7 @@ class TestTransform(unittest.TestCase):
         assert len(lab_features_names_list) == len(lab_features_names_set)
 
         # CHECK RECORDS
-        records = get_transform_records(profile=Profile.PHENOTYPIC, file_counter=3)
+        records = get_transform_records(profile=Profile.PHENOTYPIC)
         log.info(records)
         assert len(records) == 18  # in total, 18 PhenRecord instances are created, between 2 and 5 per Patient, the only explicit NaN value is indeed created
         # assert that PhenRecord instances have been correctly created for a given data row
@@ -308,7 +312,7 @@ class TestTransform(unittest.TestCase):
         # CHECK FEATURES
         # we cannot use transform.features, because the array is cleared after all features are saved
         # we need to read from the JSON file written during the Transform step
-        features = get_transform_features(profile=Profile.CLINICAL, file_counter=2)
+        features = get_transform_features(profile=Profile.CLINICAL)
         assert len(features) == 6 - 2  # sid and id do not count as SamFeatures
         # assert the third and fourth SamFeature instances:
         # lab_feature_a has one associated code
@@ -356,7 +360,7 @@ class TestTransform(unittest.TestCase):
         assert len(lab_features_names_list) == len(lab_features_names_set)
 
         # CHECK RECORDS
-        records = get_transform_records(profile=Profile.CLINICAL, file_counter=3)
+        records = get_transform_records(profile=Profile.CLINICAL)
         assert len(records) == 23  # in total, 16 ClinicalRecord instances are created, between 2 and 5 per Patient
 
         # assert that ClinicalRecord instances have been correctly created for a given data row
@@ -403,7 +407,7 @@ class TestTransform(unittest.TestCase):
         # this creates Patient resources (based on the data file) and insert them in a (JSON) temporary file
         transform.create_patients()
 
-        patients = get_transform_patients(dataset_number=1, file_counter=1)
+        patients = get_transform_patients(dataset_number=1)
         assert len(patients) == 10
         # we cannot simply order by identifier value because they are strings, not int
         # thus will need a bit more of processing to sort by the integer represented within the string
@@ -430,7 +434,7 @@ class TestTransform(unittest.TestCase):
         transform.load_patient_id_mapping()
         transform.create_patients()
 
-        patients = get_transform_patients(dataset_number=2, file_counter=1)
+        patients = get_transform_patients(dataset_number=2)
         assert len(patients) == 10
         # we cannot simply order by identifier value because they are strings, not int
         # thus will need a bit more of processing to sort by the integer represented within the string

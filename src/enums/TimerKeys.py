@@ -56,3 +56,10 @@ class TimerKeys(EnumAsClass):
     CREATE_UPSERT_OPERATIONS = "CREATE_UPSERT_OPERATIONS"
     BULK_WRITE = "BULK_WRITE"
 
+    # increase file size to reach the 16Mb limit
+    WRITE_IN_FILE_FEATURES = "write_in_file_features"
+    WRITE_IN_FILE_RECORDS = "write_in_file_records"
+    WRITE_IN_FILE_PATIENTS = "write_in_file_patients"
+    CHECK_BATCH_SIZE_FEATURES = "check_batch_size_features"
+    CHECK_BATCH_SIZE_RECORDS = "check_batch_size_records"
+    CHECK_BATCH_SIZE_PATIENTS = "check_batch_size_patients"
