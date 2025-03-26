@@ -19,7 +19,7 @@ from database.Execution import Execution
 from enums.TableNames import TableNames
 from database.Operators import Operators
 from enums.TimerKeys import TimerKeys
-from utils.file_utils import from_json_line_to_json_str
+from utils.file_utils import from_json_line_to_json_str, get_json_resource_file
 from utils.setup_logger import log
 
 
@@ -163,7 +163,6 @@ class Database:
             filter={unique_variable: one_tuple[unique_variable] for unique_variable in unique_variables if unique_variable in one_tuple},
             update=self.create_update_stmt(the_tuple=one_tuple), upsert=True)
             for one_tuple in the_batch]
-        log.info(operations[0])
         # July 18th, 2024: bulk_write modifies the hospital lists in Transform (even if I use deep copies everywhere)
         # It changes (only?) the timestamp value with +1/100, e.g., 2024-07-18T14:34:32Z becomes 2024-07-18T14:34:33Z
         # in the tests I use a delta to compare datetime
@@ -195,7 +194,7 @@ class Database:
     def load_json_in_table_general(self, table_name: str, unique_variables: list[str], dataset_number: int, ordered: bool) -> None:
         log.info(f"Write {table_name} data in table {table_name} with unique variables {unique_variables}")
         first_file = True
-        expected_filename = os.path.join(self.execution.working_dir_current, f"{str(dataset_number)}{table_name}.jsonl")
+        expected_filename = get_json_resource_file(self.execution.working_dir_current, dataset_number, table_name)
         if os.path.exists(expected_filename):
             # this is a big file with all records for patients, or records, or features, or hospitals
             # we split it in smaller files of 15Mo (the MogoDB limit is 16Mo)

@@ -365,7 +365,7 @@ class TestDatabase(unittest.TestCase):
         ]
         my_tuples_as_json = [my_tuples[i].to_json() for i in range(len(my_tuples))]
 
-        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, is_feature=False, dataset_number=1, to_json=False)
+        write_in_file(resource_list=my_tuples_as_json, current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, is_feature=False, dataset_number=1, to_json=False)
         filepath = get_json_resource_file(current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, dataset_number=1)
         assert os.path.exists(filepath) is True
         with jsonlines.open(filepath) as my_file:
@@ -376,8 +376,8 @@ class TestDatabase(unittest.TestCase):
     def test_write_in_file_no_resource(self):
         _ = Database(execution=TestDatabase.execution)
         my_tuples = []
-        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, is_feature=False, dataset_number=1, to_json=False)
-        filepath = get_json_resource_file(current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, dataset_number=1)
+        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, is_feature=False, dataset_number=98, to_json=False)
+        filepath = get_json_resource_file(current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, dataset_number=98)
         assert os.path.exists(filepath) is False  # no file should have been created since there is no data to write
 
     def test_load_json_in_table(self):
