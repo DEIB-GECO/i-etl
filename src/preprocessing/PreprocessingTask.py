@@ -5,6 +5,7 @@ from enums.HospitalNames import HospitalNames
 from enums.Profile import Profile
 from preprocessing.PreprocessBuzziUC1 import PreprocessBuzziUC1
 from preprocessing.PreprocessCovid import PreprocessCovid
+from preprocessing.PreprocessHsjd import PreprocessHsjd
 from preprocessing.PreprocessImgge import PreprocessImgge
 from preprocessing.PreprocessKidneyCovid import PreprocessKidneyCovid
 
@@ -31,6 +32,10 @@ class PreprocessingTask:
             self.data = pp.data
         elif self.execution.hospital_name == HospitalNames.RS_IMGGE:
             pp = PreprocessImgge(execution=self.execution, data=self.data, metadata=self.metadata, profile=self.profile)
+            pp.run()
+            self.data = pp.data
+        elif self.execution.hospital_name == HospitalNames.ES_HSJD:
+            pp = PreprocessHsjd(execution=self.execution, data=self.data, metadata=self.metadata, profile=self.profile)
             pp.run()
             self.data = pp.data
         else:
