@@ -53,15 +53,14 @@ class Transform(Task):
                  mapping_column_to_categorical_value: dict,
                  mapping_column_to_unit: dict, mapping_column_to_domain: dict,
                  mapping_column_to_type: dict | None,
-                 profile: str, dataset_number: int, file_counter: int, dataset_key: Dataset, load_patients: bool,
+                 profile: str, dataset_id: int, dataset_key: Dataset, load_patients: bool,
                  quality_stats: QualityStatistics):
         super().__init__(database=database, execution=execution, quality_stats=quality_stats)
         self.time_statistics = TimeStatistics(record_stats=True)
         self.counter = Counter()  # resource counter
         self.profile = profile
         self.load_patients = load_patients
-        self.dataset_number = dataset_number  # file number (for each dataset)
-        self.file_counter = file_counter  # file counter (for all the files created for a single dataset)
+        self.dataset_id = dataset_id  # file number (one for each dataset)
         self.dataset_instance = dataset_key
 
         # get data, metadata and the mapped values computed in the Extract step
@@ -228,7 +227,7 @@ class Transform(Task):
         if len(self.features) > 0:
             self.process_batch_of_features()
         # write all the features in the database now (to be able to retrieve them for creating records just after
-        self.database.load_json_in_table(table_name=TableNames.FEATURE, unique_variables=[Feature.NAME_], dataset_number=self.dataset_number)
+        self.database.load_json_in_table(table_name=TableNames.FEATURE, unique_variables=[Feature.NAME_], dataset_id=self.dataset_id)
 
     ##############################################################
     # RECORDS
@@ -280,7 +279,7 @@ class Transform(Task):
                                                                                fairified_value=fairified_value)
                         if is_anonymized:
                             fairified_value = anonymized_value  # we could anonymize this value, this is the one to insert in the DB
-                        dataset = self.execution.current_dataset_identifier
+                        dataset = self.execution.current_dataset_gid
                         if self.profile == Profile.PHENOTYPIC:
                             new_record = PhenotypicRecord(identifier=NO_ID,
                                                           instantiates=feature_id,
@@ -422,7 +421,7 @@ class Transform(Task):
             except Exception:
                 raise ValueError(
                     f"Could not dump the {len(self.patient_ids_mapping)} JSON resources in the file located at {self.execution.anonymized_patient_ids_filepath}.")
-        self.database.load_json_in_table(table_name=TableNames.PATIENT, unique_variables=[Resource.IDENTIFIER_], dataset_number=self.dataset_number)
+        self.database.load_json_in_table(table_name=TableNames.PATIENT, unique_variables=[Resource.IDENTIFIER_], dataset_id=self.dataset_id)
 
     ##############################################################
     # UTILITIES
@@ -434,7 +433,7 @@ class Transform(Task):
                       current_working_dir=self.execution.working_dir_current,
                       table_name=TableNames.PATIENT,
                       is_feature=False,
-                      dataset_number=self.dataset_number,
+                      dataset_id=self.dataset_id,
                       to_json=False)
         self.patients.clear()
 
@@ -444,7 +443,7 @@ class Transform(Task):
                       current_working_dir=self.execution.working_dir_current,
                       table_name=TableNames.FEATURE,
                       is_feature=True,
-                      dataset_number=self.dataset_number,
+                      dataset_id=self.dataset_id,
                       to_json=False)
         self.features.clear()
 
@@ -454,7 +453,7 @@ class Transform(Task):
                       current_working_dir=self.execution.working_dir_current,
                       table_name=TableNames.RECORD,
                       is_feature=False,
-                      dataset_number=self.dataset_number,
+                      dataset_id=self.dataset_id,
                       to_json=False)
         self.records.clear()
 
