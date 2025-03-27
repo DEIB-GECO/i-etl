@@ -183,16 +183,16 @@ class Database:
             mapping[projected_key] = projected_value
         return mapping
 
-    def load_json_in_table(self, table_name: str, unique_variables: list[str], dataset_number: int) -> None:
-        self.load_json_in_table_general(table_name=table_name, unique_variables=unique_variables, dataset_number=dataset_number, ordered=False)
+    def load_json_in_table(self, table_name: str, unique_variables: list[str], dataset_id: int) -> None:
+        self.load_json_in_table_general(table_name=table_name, unique_variables=unique_variables, dataset_id=dataset_id, ordered=False)
 
-    def load_json_in_table_for_tests(self, unique_variables: list[str], dataset_number: int) -> None:
-        self.load_json_in_table_general(table_name=TableNames.TEST, unique_variables=unique_variables, dataset_number=dataset_number, ordered=True)
+    def load_json_in_table_for_tests(self, unique_variables: list[str], dataset_id: int) -> None:
+        self.load_json_in_table_general(table_name=TableNames.TEST, unique_variables=unique_variables, dataset_id=dataset_id, ordered=True)
 
-    def load_json_in_table_general(self, table_name: str, unique_variables: list[str], dataset_number: int, ordered: bool) -> None:
+    def load_json_in_table_general(self, table_name: str, unique_variables: list[str], dataset_id: int, ordered: bool) -> None:
         log.info(f"Write {table_name} data in table {table_name} with unique variables {unique_variables}")
         first_file = True
-        expected_filename = get_json_resource_file(self.execution.working_dir_current, dataset_number, table_name)
+        expected_filename = get_json_resource_file(self.execution.working_dir_current, dataset_id, table_name)
         if os.path.exists(expected_filename):
             # this is a big file with all records for patients, or records, or features, or hospitals
             # we split it in smaller files of 15Mo (the MogoDB limit is 16Mo)
@@ -200,7 +200,7 @@ class Database:
             split = Split(expected_filename, self.execution.working_dir_current)
             split.bysize(MAX_FILE_SIZE, newline=True)
             counter_files = 0
-            regex_chunk_filename = re.compile(f"{dataset_number}{table_name}_[0-9]+\\.jsonl")
+            regex_chunk_filename = re.compile(f"{dataset_id}{table_name}_[0-9]+\\.jsonl")
             total_count_files = sum([1 if regex_chunk_filename.search(elem) else 0 for elem in os.listdir(self.execution.working_dir_current)])
             for chunk_filename in os.listdir(self.execution.working_dir_current):
                 if regex_chunk_filename.search(chunk_filename):

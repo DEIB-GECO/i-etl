@@ -35,11 +35,11 @@ def my_setup(profile: str, create_indexes: bool) -> Load:
     TestLoad.execution.internals_set_up()
     TestLoad.execution.file_set_up(setup_files=False)  # no need to set up the files, we get data and metadata as input
     database = Database(execution=TestLoad.execution)
-    load = Load(database=database, execution=TestLoad.execution, create_indexes=create_indexes, dataset_number=99,
+    load = Load(database=database, execution=TestLoad.execution, create_indexes=create_indexes, dataset_id=99,
                 profile=profile, quality_stats=QualityStatistics(record_stats=False))
 
     # 2. create few "fake" files in the current working directory in order to test insertion and index creation
-    TestLoad.execution.current_dataset_identifier = Dataset.compute_global_identifier()
+    TestLoad.execution.current_dataset_gid = Dataset.compute_global_identifier()
     phen_features = [
         {
             Resource.IDENTIFIER_: 1,
@@ -69,7 +69,7 @@ def my_setup(profile: str, create_indexes: bool) -> Load:
             Record.SUBJECT_: 4,
             Record.REG_BY_: 1,
             Record.INSTANTIATES_: 2,
-            Resource.DATASET_: f"{TestLoad.execution.current_dataset_identifier}",
+            Resource.DATASET_: f"{TestLoad.execution.current_dataset_gid}",
             Resource.TIMESTAMP_: Operators.from_datetime_to_isodate(current_datetime=datetime.now()),
             Resource.ENTITY_TYPE_: f"{profile}{TableNames.RECORD}"
         }
@@ -87,13 +87,13 @@ def my_setup(profile: str, create_indexes: bool) -> Load:
     # we use 99 because we already have 1PhenotypicFeature1.json, and it would overwrite the json file
     # leading to inconsistencies and wrong inserts
     # insert the data that is inserted during the Transform step
-    write_in_file(resource_list=phen_features, current_working_dir=TestLoad.execution.working_dir_current, table_name=TableNames.FEATURE, is_feature=True, dataset_number=99, to_json=False)
+    write_in_file(resource_list=phen_features, current_working_dir=TestLoad.execution.working_dir_current, table_name=TableNames.FEATURE, is_feature=True, dataset_id=99, to_json=False)
     load.database.insert_many_tuples(table_name=TableNames.FEATURE, tuples=phen_features)
-    write_in_file(resource_list=[hospital], current_working_dir=TestLoad.execution.working_dir_current, table_name=TableNames.HOSPITAL, is_feature=False, dataset_number=99, to_json=False)
+    write_in_file(resource_list=[hospital], current_working_dir=TestLoad.execution.working_dir_current, table_name=TableNames.HOSPITAL, is_feature=False, dataset_id=99, to_json=False)
     load.database.insert_one_tuple(table_name=TableNames.HOSPITAL, one_tuple=hospital)
     # for other files, it will be inserted with the function load_remaining_data()
-    write_in_file(resource_list=phen_records, current_working_dir=TestLoad.execution.working_dir_current, table_name=TableNames.RECORD, is_feature=False, dataset_number=99, to_json=False)
-    write_in_file(resource_list=patients, current_working_dir=TestLoad.execution.working_dir_current, table_name=TableNames.PATIENT, is_feature=False, dataset_number=99, to_json=False)
+    write_in_file(resource_list=phen_records, current_working_dir=TestLoad.execution.working_dir_current, table_name=TableNames.RECORD, is_feature=False, dataset_id=99, to_json=False)
+    write_in_file(resource_list=patients, current_working_dir=TestLoad.execution.working_dir_current, table_name=TableNames.PATIENT, is_feature=False, dataset_id=99, to_json=False)
 
     return load
 
