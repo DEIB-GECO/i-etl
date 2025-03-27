@@ -1,5 +1,7 @@
 from database.Database import Database
 from database.Execution import Execution
+from entities.Record import Record
+from entities.Resource import Resource
 from enums.DiagnosisColumns import DiagnosisColumns
 from enums.Profile import Profile
 from enums.TableNames import TableNames
@@ -32,7 +34,7 @@ class Load(Task):
         # we need to have registered_by, has_subject and instantiates for sure
         # we also need entity_type because we cannot have two indexes, one for non-clinical (reg, subj, inst) and one for clinical (reg, subj, inst, bid)
         # we also need base_id for the same reason, the value will be null for non-clinical records and clinical records without sample information
-        unique_variables = ["registered_by", "has_subject", "instantiates", "entity_type", "base_id"]
+        unique_variables = [Record.REG_BY_, Record.SUBJECT_, Record.INSTANTIATES_, Resource.ENTITY_TYPE_, Record.BASE_ID_]
         if self.profile == Profile.DIAGNOSIS:
             # we allow patients to have several diagnoses
             unique_variables.append(DiagnosisColumns.DISEASE_COUNTER)
@@ -47,9 +49,9 @@ class Load(Task):
         # 1. for each resource type, we create an index on its "identifier" and its creation date "timestamp"
         for table_name in TableNames.data_tables():
             log.info(f"add index on id + timestamp + entity_type for table {table_name}")
-            self.database.create_unique_index(table_name=table_name, columns={"identifier": 1})
-            self.database.create_non_unique_index(table_name=table_name, columns={"timestamp": 1})
-            self.database.create_non_unique_index(table_name=table_name, columns={"entity_type": 1})
+            self.database.create_unique_index(table_name=table_name, columns={Resource.IDENTIFIER_: 1})
+            self.database.create_non_unique_index(table_name=table_name, columns={Resource.TIMESTAMP_: 1})
+            self.database.create_non_unique_index(table_name=table_name, columns={Resource.ENTITY_TYPE_: 1})
             count += 3
 
         # 2. next, we also create resource-wise indexes
@@ -60,13 +62,13 @@ class Load(Task):
         count += 1
 
         # for Record instances, we create an index per reference because we usually join each reference to a table
-        self.database.create_non_unique_index(table_name=TableNames.RECORD, columns={"instantiates": 1})
-        self.database.create_non_unique_index(table_name=TableNames.RECORD, columns={"has_subject": 1})
-        self.database.create_non_unique_index(table_name=TableNames.RECORD, columns={"dataset": 1})
+        self.database.create_non_unique_index(table_name=TableNames.RECORD, columns={Record.INSTANTIATES_: 1})
+        self.database.create_non_unique_index(table_name=TableNames.RECORD, columns={Record.SUBJECT_: 1})
+        self.database.create_non_unique_index(table_name=TableNames.RECORD, columns={Record.DATASET_: 1})
         count += 3
         # we cannot create an index on the base id because some records have it (the clinical ones)
         # while others do not have (imaging, phenotypic, etc.)
-        # if have_base_id:
+        # if has_base_id:
         #     self.database.create_non_unique_index(table_name=TableNames.RECORD, columns={"base_id": 1})
         #     count += 1
 
