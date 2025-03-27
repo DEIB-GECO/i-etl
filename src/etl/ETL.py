@@ -48,8 +48,6 @@ class ETL:
         time_stats = TimeStatistics(record_stats=True)
         time_stats.start(dataset=None, key=TimerKeys.TOTAL_TIME)
         compute_indexes = False
-        dataset_number = 0
-        file_counter = 0
 
         quality_stats = QualityStatistics(record_stats=True)
         all_filenames = os.getenv("DATA_FILES").split(",")
@@ -58,13 +56,12 @@ class ETL:
         log.info("********** create hospital")
         counter = Counter()
         counter.set_with_database(database=self.database)
-        file_counter = self.create_hospital(counter=counter, dataset_number=dataset_number, file_counter=file_counter)
 
         all_metadata = read_tabular_file_as_string(self.execution.metadata_filepath)  # keep all metadata as str
+        first = True
         for one_filename in all_filenames:
             if one_filename != "":
                 log.info(one_filename)
-                dataset_number = dataset_number + 1
 
                 # set the current filepath
                 self.execution.current_filepath = os.path.join(DOCKER_FOLDER_DATA, one_filename)
@@ -72,9 +69,14 @@ class ETL:
 
                 # create a new Dataset instance
                 counter.set_with_database(database=self.database)
-                current_dataset_instance = Dataset(identifier=NO_ID, database=self.database, docker_path=self.execution.current_filepath, version_notes=None, license=None, counter=counter)
-                self.datasets.append(current_dataset_instance)
-                self.execution.current_dataset_identifier = current_dataset_instance.global_identifier
+                dataset = Dataset(identifier=NO_ID, database=self.database, docker_path=self.execution.current_filepath, version_notes=None, license=None, counter=counter)
+                self.datasets.append(dataset)
+                self.execution.current_dataset_gid = dataset.global_identifier
+
+                # create the hospital only once
+                if first:
+                    self.create_hospital(counter=counter, dataset_id=dataset.identifier)
+                    first = False
 
                 # get metadata of file
                 log.info(one_filename)
@@ -97,19 +99,19 @@ class ETL:
 
                         # check whether this is the last profile of the last dataset
                         # to know whether we should compute indexes
-                        if dataset_number == len(all_filenames) and count_profiles == len(unique_profiles_of_current_dataset):
+                        if dataset.identifier == len(all_filenames) and count_profiles == len(unique_profiles_of_current_dataset):
                             compute_indexes = True
 
                         # EXTRACT
-                        time_stats.start(dataset=current_dataset_instance.global_identifier, key=TimerKeys.EXTRACT_TIME)
+                        time_stats.start(dataset=dataset.global_identifier, key=TimerKeys.EXTRACT_TIME)
                         self.extract = Extract(metadata=metadata, profile=profile, database=self.database, execution=self.execution, quality_stats=quality_stats)
                         self.extract.run()
-                        time_stats.increment(dataset=current_dataset_instance.global_identifier, key=TimerKeys.EXTRACT_TIME)
+                        time_stats.increment(dataset=dataset.global_identifier, key=TimerKeys.EXTRACT_TIME)
 
                         if self.extract.metadata is not None:
                             log.info(f"running transform on dataset {self.execution.current_filepath} with profile {profile}")
                             # TRANSFORM
-                            time_stats.start(dataset=current_dataset_instance.global_identifier, key=TimerKeys.TRANSFORM_TIME)
+                            time_stats.start(dataset=dataset.global_identifier, key=TimerKeys.TRANSFORM_TIME)
                             self.transform = Transform(database=self.database, execution=self.execution, data=self.extract.data,
                                                        metadata=self.extract.metadata,
                                                        mapping_categorical_value_to_onto_resource=self.extract.mapping_categorical_value_to_onto_resource,
@@ -118,21 +120,20 @@ class ETL:
                                                        mapping_column_to_domain=self.extract.mapping_column_to_domain,
                                                        mapping_column_to_type=None,  # this will be computed during the Transform step
                                                        profile=profile, load_patients=count_profiles == 1,
-                                                       dataset_number=dataset_number, file_counter=file_counter, dataset_key=current_dataset_instance,
+                                                       dataset_id=dataset.identifier, dataset_key=dataset,
                                                        quality_stats=quality_stats)
                             self.transform.run()
-                            time_stats.increment(dataset=current_dataset_instance.global_identifier, key=TimerKeys.TRANSFORM_TIME)
-                            file_counter = self.transform.file_counter
+                            time_stats.increment(dataset=dataset.global_identifier, key=TimerKeys.TRANSFORM_TIME)
 
                             # LOAD
-                            time_stats.start(dataset=current_dataset_instance.global_identifier, key=TimerKeys.LOAD_TIME)
+                            time_stats.start(dataset=dataset.global_identifier, key=TimerKeys.LOAD_TIME)
                             # log.info(f"{one_filename} -> {compute_indexes}")
                             # create indexes only if this is the last file (otherwise, we would create useless intermediate indexes)
                             self.load = Load(database=self.database, execution=self.execution, create_indexes=compute_indexes,
-                                             dataset_number=dataset_number, profile=profile,
+                                             dataset_id=dataset.identifier, profile=profile,
                                              quality_stats=quality_stats)
                             self.load.run()
-                            time_stats.increment(dataset=current_dataset_instance.global_identifier, key=TimerKeys.LOAD_TIME)
+                            time_stats.increment(dataset=dataset.global_identifier, key=TimerKeys.LOAD_TIME)
                 self.execution.current_file_number += 1
 
         # save the datasets in the DB
@@ -155,7 +156,7 @@ class ETL:
         self.reporting = Reporting(database=self.database, execution=self.execution, quality_stats=quality_stats, time_stats=time_stats, db_stats=db_stats)
         self.reporting.run()
 
-    def create_hospital(self, counter: Counter, dataset_number: int, file_counter: int) -> int:
+    def create_hospital(self, counter: Counter, dataset_id: int) -> None:
         log.info(f"create hospital instance in memory")
         cursor = self.database.find_operation(table_name=TableNames.HOSPITAL, filter_dict={Hospital.NAME_: self.execution.hospital_name}, projection={})
         hospital_exists = False
@@ -169,7 +170,5 @@ class ETL:
             log.info(new_hospital)
             hospitals = [new_hospital.to_json()]
             write_in_file(resource_list=hospitals, current_working_dir=self.execution.working_dir_current,
-                          table_name=TableNames.HOSPITAL, is_feature=False, dataset_number=dataset_number, to_json=False)
-            file_counter += 1
-            self.database.load_json_in_table(table_name=TableNames.HOSPITAL, unique_variables=[Hospital.NAME_], dataset_number=dataset_number)
-        return file_counter
+                          table_name=TableNames.HOSPITAL, is_feature=False, dataset_id=dataset_id, to_json=False)
+            self.database.load_json_in_table(table_name=TableNames.HOSPITAL, unique_variables=[Hospital.NAME_], dataset_id=dataset_id)

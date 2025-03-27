@@ -31,7 +31,7 @@ class Execution:
     # parameters related to the project structure and the input/output files
     metadata_filepath: str = field(init=False, default=None)  # user input
     current_filepath: str = field(init=False, default=None)  # set in the loop on files in ETL
-    current_dataset_identifier: str = field(init=False, default=None)  # set in the loop on file sin ETL
+    current_dataset_gid: str = field(init=False, default=None)  # set in the loop on file sin ETL
     current_file_number: int = field(init=False, default=1)  # set in the ETL
     anonymized_patient_ids_filepath: str = field(init=False, default=None)  # user input
     use_locale: str = field(init=False, default="en_GB")  # user input

@@ -10,13 +10,13 @@ from enums.TableNames import TableNames
 from utils.setup_logger import log
 
 
-def write_in_file(resource_list: list, current_working_dir: str, table_name: str, is_feature: bool, dataset_number: int, to_json: bool) -> None:
+def write_in_file(resource_list: list, current_working_dir: str, table_name: str, is_feature: bool, dataset_id: int, to_json: bool) -> None:
     if table_name not in [TableNames.PATIENT, TableNames.HOSPITAL, TableNames.TEST]:
         if is_feature:
             table_name = TableNames.FEATURE
         else:
             table_name = TableNames.RECORD
-    filename = get_json_resource_file(current_working_dir=current_working_dir, table_name=table_name, dataset_number=dataset_number)
+    filename = get_json_resource_file(current_working_dir=current_working_dir, table_name=table_name, dataset_id=dataset_id)
     if len(resource_list) > 0:
         with jsonlines.open(filename, "w") as data_file:
             try:
@@ -39,8 +39,8 @@ def write_in_file(resource_list: list, current_working_dir: str, table_name: str
         log.info(f"No data when writing file {filename}.")
 
 
-def get_json_resource_file(current_working_dir: str, dataset_number: int, table_name: str) -> str:
-    return os.path.join(current_working_dir, f"{str(dataset_number)}{table_name}.jsonl")
+def get_json_resource_file(current_working_dir: str, dataset_id: int, table_name: str) -> str:
+    return os.path.join(current_working_dir, f"{str(dataset_id)}{table_name}.jsonl")
 
 
 def read_tabular_file_as_string(filepath: str) -> pd.DataFrame:

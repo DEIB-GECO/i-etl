@@ -14,10 +14,10 @@ from utils.setup_logger import log
 
 class Load(Task):
     def __init__(self, database: Database, execution: Execution, create_indexes: bool,
-                 dataset_number: int, profile: str, quality_stats: QualityStatistics):
+                 dataset_id: int, profile: str, quality_stats: QualityStatistics):
         super().__init__(database=database, execution=execution, quality_stats=quality_stats)
         self.create_indexes = create_indexes
-        self.dataset_number = dataset_number
+        self.dataset_id = dataset_id
         self.profile = profile
 
     def run(self) -> None:
@@ -39,7 +39,7 @@ class Load(Task):
             # we allow patients to have several diagnoses
             unique_variables.append(DiagnosisColumns.DISEASE_COUNTER)
         log.info(unique_variables)
-        self.database.load_json_in_table(table_name=TableNames.RECORD, unique_variables=unique_variables, dataset_number=self.dataset_number)
+        self.database.load_json_in_table(table_name=TableNames.RECORD, unique_variables=unique_variables, dataset_id=self.dataset_id)
 
     def create_db_indexes(self) -> None:
         log.info(f"Creating indexes.")

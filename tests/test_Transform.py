@@ -82,7 +82,7 @@ def my_setup(hospital_name: str, profile: str, extracted_metadata_path: str, ext
 
     dataset_instance = Dataset(identifier=NO_ID, database=database, docker_path=data_path, version_notes=None, license=None, counter=Counter())
     transform = Transform(database=database, execution=TestTransform.execution, data=data, metadata=metadata,
-                          profile=profile, dataset_number=get_dataset_number_from_profile(profile), file_counter=1,
+                          profile=profile, dataset_id=get_dataset_id_from_profile(profile),
                           mapping_categorical_value_to_onto_resource=mapping_categorical_values,
                           mapping_column_to_categorical_value=mapping_column_to_categorical_value,
                           mapping_column_to_unit=column_to_unit,
@@ -99,7 +99,7 @@ def my_setup(hospital_name: str, profile: str, extracted_metadata_path: str, ext
     return transform
 
 
-def get_dataset_number_from_profile(profile: str):
+def get_dataset_id_from_profile(profile: str):
     if profile == Profile.PHENOTYPIC:
         return 1
     elif profile == Profile.CLINICAL:
@@ -145,19 +145,19 @@ def get_back_to_original_pid_files():
 
 
 def get_transform_features(profile):
-    with open(get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, dataset_number=get_dataset_number_from_profile(profile), table_name=TableNames.FEATURE)) as f:
+    with open(get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, dataset_id=get_dataset_id_from_profile(profile), table_name=TableNames.FEATURE)) as f:
         # return json.load(f)  # this is a JSON-line file, we need to append brackets and commas back before parsing it
         return json.loads(from_json_line_to_json_str(f))
 
 
 def get_transform_records(profile):
-    with open(get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, dataset_number=get_dataset_number_from_profile(profile), table_name=TableNames.RECORD)) as f:
+    with open(get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, dataset_id=get_dataset_id_from_profile(profile), table_name=TableNames.RECORD)) as f:
         # return json.load(f)  # this is a JSON-line file, we need to append brackets and commas back before parsing it
         return json.loads(from_json_line_to_json_str(f))
 
 
-def get_transform_patients(dataset_number):
-    with open(get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, dataset_number=dataset_number, table_name=TableNames.PATIENT)) as f:
+def get_transform_patients(dataset_id):
+    with open(get_json_resource_file(current_working_dir=TestTransform.execution.working_dir_current, dataset_id=dataset_id, table_name=TableNames.PATIENT)) as f:
         # return json.load(f)  # this is a JSON-line file, we need to append brackets and commas back before parsing it
         return json.loads(from_json_line_to_json_str(f))
 
@@ -410,7 +410,7 @@ class TestTransform(unittest.TestCase):
         # this creates Patient resources (based on the data file) and insert them in a (JSON) temporary file
         transform.create_patients()
 
-        patients = get_transform_patients(dataset_number=1)
+        patients = get_transform_patients(dataset_id=1)
         assert len(patients) == 10
         # we cannot simply order by identifier value because they are strings, not int
         # thus will need a bit more of processing to sort by the integer represented within the string
@@ -437,7 +437,7 @@ class TestTransform(unittest.TestCase):
         transform.load_patient_id_mapping()
         transform.create_patients()
 
-        patients = get_transform_patients(dataset_number=2)
+        patients = get_transform_patients(dataset_id=2)
         assert len(patients) == 10
         # we cannot simply order by identifier value because they are strings, not int
         # thus will need a bit more of processing to sort by the integer represented within the string
