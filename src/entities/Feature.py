@@ -28,6 +28,16 @@ class Feature(Resource):
     VISIBILITY_ = "visibility"
     DOMAIN_ = "domain"
 
+    # keys to be used when using an entity attribute as a query variable
+    NAME__ = f"${NAME_}"
+    ONTO__ = f"${ONTO_}"
+    DT__ = f"${DT_}"
+    UNIT__ = f"${UNIT_}"
+    DESCR__ = f"${DESCR_}"
+    CATEGORIES__ = f"${CATEGORIES_}"
+    VISIBILITY__ = f"${VISIBILITY_}"
+    DOMAIN__ = f"${DOMAIN_}"
+
     def __post_init__(self):
         super().__post_init__()
 

@@ -12,6 +12,8 @@ from constants.structure import TEST_DB_NAME
 from database.Counter import Counter
 from database.Database import Database
 from database.Execution import Execution
+from entities.Record import Record
+from entities.Resource import Resource
 from entities.ResourceTest import ResourceTest
 from enums.HospitalNames import HospitalNames
 from enums.ParameterKeys import ParameterKeys
@@ -310,13 +312,13 @@ class TestDatabase(unittest.TestCase):
 
     def test_retrieve_resource_identifiers_10(self):
         database = Database(execution=TestDatabase.execution)
-        my_tuples = [{"identifier": i, "value": i + random.randint(0, 100)} for i in range(0, 10)]
+        my_tuples = [{Resource.IDENTIFIER_: i, Record.VALUE_: i + random.randint(0, 100)} for i in range(0, 10)]
         my_original_tuples = copy.deepcopy(my_tuples)
         database.db[TableNames.TEST].insert_many(my_tuples)
-        docs = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="value", value_fields="identifier", filter_dict={})
+        docs = database.retrieve_mapping(table_name=TableNames.TEST, key_fields=Record.VALUE_, value_fields=Resource.IDENTIFIER_, filter_dict={})
         expected_docs = {}
         for doc in my_original_tuples:
-            expected_docs[doc["value"]] = doc["identifier"]
+            expected_docs[doc[Record.VALUE_]] = doc[Resource.IDENTIFIER_]
         assert len(docs) == len(expected_docs), wrong_number_of_docs(len(expected_docs))
         for key, value in expected_docs.items():
             compare_tuples(original_tuple={key: value}, inserted_tuple={key: docs[key]})
@@ -338,13 +340,13 @@ class TestDatabase(unittest.TestCase):
 
     def test_retrieve_patient_identifiers_10(self):
         database = Database(execution=TestDatabase.execution)
-        my_tuples = [{"identifier": i, "value": i + random.randint(0, 100)} for i in range(0, 10)]
+        my_tuples = [{Resource.IDENTIFIER_: i, Record.VALUE_: i + random.randint(0, 100)} for i in range(0, 10)]
         my_original_tuples = copy.deepcopy(my_tuples)
         database.db[TableNames.TEST].insert_many(my_tuples)
-        docs = database.retrieve_mapping(table_name=TableNames.TEST, key_fields="value", value_fields="identifier", filter_dict={})
+        docs = database.retrieve_mapping(table_name=TableNames.TEST, key_fields=Record.VALUE_, value_fields=Resource.IDENTIFIER_, filter_dict={})
         expected_docs = {}
         for doc in my_original_tuples:
-            expected_docs[doc["value"]] = doc["identifier"]
+            expected_docs[doc[Record.VALUE_]] = doc[Resource.IDENTIFIER_]
         assert len(docs) == len(expected_docs), wrong_number_of_docs(len(expected_docs))
         for key, value in expected_docs.items():
             compare_tuples(original_tuple={key: value}, inserted_tuple={key: docs[key]})

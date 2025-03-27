@@ -27,6 +27,9 @@ class Dataset(Resource):
     # those names have to exactly match the variables names declared in entity classes
     GID_ = "global_identifier"
 
+    # keys to be used when using an entity attribute as a query variable
+    GID__ = f"${GID_}"
+
     def __post_init__(self):
         super().__post_init__()
         log.info(self.docker_path)

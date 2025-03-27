@@ -103,7 +103,7 @@ def get_field_value_for_patient(records: list, features: list, patient_id: str, 
     if feature is not None:
         for record in records:
             # log.info(f"checking {json_lab_record['has_subject']} vs. {patient_id} and {json_lab_record['instantiates']} vs. {feature['identifier']}")
-            if record[Record.SUBJECT_] == patient_id and record[Record.INSTANTIATES_] == feature[Resource.IDENTIFIER]:
+            if record[Record.SUBJECT_] == patient_id and record[Record.INSTANTIATES_] == feature[Resource.IDENTIFIER_]:
                 log.info(f"for patient {patient_id} and column {column_name}, record is {record}")
                 return record[Record.VALUE_]
     return None

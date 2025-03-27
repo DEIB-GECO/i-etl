@@ -12,3 +12,6 @@ class Hospital(Resource):
     # keys to be used when writing JSON or queries
     # those names have to exactly match the variables names declared in entity classes
     NAME_ = "name"
+
+    # keys to be used when using an entity attribute as a query variable
+    NAME__ = f"${NAME_}"
