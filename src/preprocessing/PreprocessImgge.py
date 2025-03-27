@@ -1,17 +1,9 @@
-import os
-import re
-
 import pandas as pd
 from pandas import DataFrame
 
 from database.Execution import Execution
-from enums.AccessTypes import AccessTypes
-from enums.DiagnosisColumns import DiagnosisColumns
 from enums.MetadataColumns import MetadataColumns
-from enums.Profile import Profile
 from preprocessing.Preprocess import Preprocess
-from utils.api_utils import send_query_to_api, parse_json_response
-from utils.file_utils import read_tabular_file_as_string
 from utils.setup_logger import log
 
 
