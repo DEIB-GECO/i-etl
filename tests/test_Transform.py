@@ -4,7 +4,6 @@ import re
 import time
 import unittest
 
-import bson
 import pandas as pd
 import pytest
 
@@ -12,10 +11,13 @@ from constants.defaults import DEFAULT_ONTOLOGY_RESOURCE_LABEL, NO_ID
 from constants.structure import TEST_DB_NAME, DOCKER_FOLDER_TEST
 from database.Counter import Counter
 from database.Database import Database
-from database.Dataset import Dataset
+from entities.Dataset import Dataset
 from database.Execution import Execution
+from entities.Feature import Feature
 from entities.Hospital import Hospital
 from entities.OntologyResource import OntologyResource
+from entities.Record import Record
+from entities.Resource import Resource
 from enums.DataTypes import DataTypes
 from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
@@ -59,7 +61,8 @@ def my_setup(hospital_name: str, profile: str, extracted_metadata_path: str, ext
     # - the data and metadata from two CSV files that I obtained by running the Extract step
     # - and mapped_values as a JSON file that I obtained from the same Extract object
     metadata = read_tabular_file_as_string(os.path.join(DOCKER_FOLDER_TEST, extracted_metadata_path))
-    data = read_tabular_file_as_string(os.path.join(DOCKER_FOLDER_TEST, extracted_data_paths))
+    data_path = os.path.join(DOCKER_FOLDER_TEST, extracted_data_paths)
+    data = read_tabular_file_as_string(data_path)
     # for data only, we need to do a second pass on the data to replace explicit NaN values by np.nan
     # something Extract is doing, but here we need to do it because we simply read the expected CSV file,
     # thus NaN values are read as strings and need to be transformed
@@ -77,7 +80,7 @@ def my_setup(hospital_name: str, profile: str, extracted_metadata_path: str, ext
     with open(os.path.join(DOCKER_FOLDER_TEST, extracted_column_type_path), "r") as f:
         mapping_column_to_type = json.load(f)
 
-    dataset_instance = Dataset(identifier=NO_ID, database=database, docker_path=None, version_notes=None, license=None, counter=Counter())
+    dataset_instance = Dataset(identifier=NO_ID, database=database, docker_path=data_path, version_notes=None, license=None, counter=Counter())
     transform = Transform(database=database, execution=TestTransform.execution, data=data, metadata=metadata,
                           profile=profile, dataset_number=get_dataset_number_from_profile(profile), file_counter=1,
                           mapping_categorical_value_to_onto_resource=mapping_categorical_values,
@@ -223,42 +226,42 @@ class TestTransform(unittest.TestCase):
         # PhenFeature about sex
         lab_feature_a = get_feature_by_text(features, "sex")
         assert len(lab_feature_a) == 11  # inherited fields (identifier, entity_type, timestamp), proper fields (name, ontology_resource, data_type, unit, visibility, datasets, description, domain)
-        assert "identifier" in lab_feature_a
-        assert lab_feature_a["name"] == "sex"
-        assert lab_feature_a["ontology_resource"] == {
-            "system": Ontologies.SNOMEDCT["url"],
-            "code": "123:789",
-            "label": f"{DEFAULT_ONTOLOGY_RESOURCE_LABEL}:{DEFAULT_ONTOLOGY_RESOURCE_LABEL}"
+        assert Resource.IDENTIFIER_ in lab_feature_a
+        assert lab_feature_a[Feature.NAME_] == "sex"
+        assert lab_feature_a[Feature.ONTO_] == {
+            OntologyResource.SYSTEM_: Ontologies.SNOMEDCT["url"],
+            OntologyResource.CODE_: "123:789",
+            OntologyResource.LABEL_: f"{DEFAULT_ONTOLOGY_RESOURCE_LABEL}:{DEFAULT_ONTOLOGY_RESOURCE_LABEL}"
             # the two codes do not exist for eal in SNOMED, thus using the empty label
         }
-        assert lab_feature_a["data_type"] == DataTypes.CATEGORY
-        assert "unit" not in lab_feature_a
-        assert lab_feature_a["entity_type"] == f"{Profile.PHENOTYPIC}{TableNames.FEATURE}"
-        assert lab_feature_a["domain"] is not None
-        assert "accepted_values" in lab_feature_a["domain"]
-        assert len(lab_feature_a["domain"]["accepted_values"]) == 2
-        assert "m" in lab_feature_a["domain"]["accepted_values"]
-        assert "f" in lab_feature_a["domain"]["accepted_values"]
+        assert lab_feature_a[Feature.DT_] == DataTypes.CATEGORY
+        assert Feature.UNIT_ not in lab_feature_a
+        assert lab_feature_a[Feature.ENTITY_TYPE_] == f"{Profile.PHENOTYPIC}{TableNames.FEATURE}"
+        assert lab_feature_a[Feature.DOMAIN_] is not None
+        assert "accepted_values" in lab_feature_a[Feature.DOMAIN_]
+        assert len(lab_feature_a[Feature.DOMAIN_]["accepted_values"]) == 2
+        assert "m" in lab_feature_a[Feature.DOMAIN_]["accepted_values"]
+        assert "f" in lab_feature_a[Feature.DOMAIN_]["accepted_values"]
 
         # PhenFeature about date_of_birth
         lab_feature_b = get_feature_by_text(features, "date_of_birth")
         assert len(lab_feature_b) == 8  # no ontology_resource, no unit, no domain
-        assert "identifier" in lab_feature_b
-        assert "timestamp" in lab_feature_b
-        assert lab_feature_b["name"] == "date_of_birth"
-        assert "ontology_resource" not in lab_feature_b
-        assert lab_feature_b["data_type"] == DataTypes.DATETIME
-        assert "unit" not in lab_feature_b
-        assert lab_feature_b["entity_type"] == f"{Profile.PHENOTYPIC}{TableNames.FEATURE}"
-        assert lab_feature_b["description"] == "The date of birth"
-        assert lab_feature_b["visibility"] == Visibility.ANONYMIZED
+        assert Resource.IDENTIFIER_ in lab_feature_b
+        assert Resource.TIMESTAMP_ in lab_feature_b
+        assert lab_feature_b[Feature.NAME_] == "date_of_birth"
+        assert Feature.ONTO_ not in lab_feature_b
+        assert lab_feature_b[Feature.DT_] == DataTypes.DATETIME
+        assert Feature.UNIT_ not in lab_feature_b
+        assert lab_feature_b[Feature.ENTITY_TYPE_] == f"{Profile.PHENOTYPIC}{TableNames.FEATURE}"
+        assert lab_feature_b[Feature.DESCR_] == "The date of birth"
+        assert lab_feature_b[Feature.VISIBILITY_] == Visibility.ANONYMIZED
 
         # check that there are no duplicates in PhenFeature instances
         # for this, we get the set of their names (in the field "text")
         lab_features_names_list = []
         for lab_feature in features:
             if lab_feature is not None:
-                lab_features_names_list.append(lab_feature["name"])
+                lab_features_names_list.append(lab_feature[Feature.NAME_])
         lab_features_names_set = set(lab_features_names_list)
         assert len(lab_features_names_list) == len(lab_features_names_set)
 
@@ -273,11 +276,11 @@ class TestTransform(unittest.TestCase):
         phen_records_patient = get_records_for_patient(records=records, patient_id=patient_id)
         log.info(phen_records_patient)
         female = OntologyResource(system=Ontologies.SNOMEDCT, code="248152002", label=None, quality_stats=None)
-        assert phen_records_patient[0]["value"] == female.to_json()  # the value as been replaced by its ontology code (sex is a categorical value)
-        assert phen_records_patient[1]["value"] == "black"
-        assert phen_records_patient[2]["value"] == {"$date": "2021-12-01T00:00:00Z"}  # the value as been converted to a MongoDB-style datetime and anonymized (remove day and time)
+        assert phen_records_patient[0][Record.VALUE_] == female.to_json()  # the value as been replaced by its ontology code (sex is a categorical value)
+        assert phen_records_patient[1][Record.VALUE_] == "black"
+        assert phen_records_patient[2][Record.VALUE_] == {"$date": "2021-12-01T00:00:00Z"}  # the value as been converted to a MongoDB-style datetime and anonymized (remove day and time)
         pattern_date = re.compile("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2,3}Z")
-        assert pattern_date.match(phen_records_patient[0]["timestamp"]["$date"])  # check the date is in datetime (CEST) form
+        assert pattern_date.match(phen_records_patient[0][Resource.TIMESTAMP_]["$date"])  # check the date is in datetime (CEST) form
 
         # we also check that string are normalized (no caps, etc.)
         assert transform.patient_ids_mapping["999999996"] == 4  # 0 Hospital before patients
@@ -322,40 +325,40 @@ class TestTransform(unittest.TestCase):
         # SamFeature about molecule_a
         lab_feature_a = get_feature_by_text(features, "molecule_a")
         assert len(lab_feature_a) == 11  # inherited fields (identifier, entity_type, timestamp), proper fields (name, ontology_resource, data_type, unit, visibility, datasets, description, domain)
-        assert "identifier" in lab_feature_a
-        assert lab_feature_a["name"] == "molecule_a"
-        assert lab_feature_a["ontology_resource"] == {
-            "system": Ontologies.LOINC["url"],
-            "code": "1234",
-            "label": DEFAULT_ONTOLOGY_RESOURCE_LABEL
+        assert Resource.IDENTIFIER_ in lab_feature_a
+        assert lab_feature_a[Feature.NAME_] == "molecule_a"
+        assert lab_feature_a[Feature.ONTO_] == {
+            OntologyResource.SYSTEM_: Ontologies.LOINC["url"],
+            OntologyResource.CODE_: "1234",
+            OntologyResource.LABEL_: DEFAULT_ONTOLOGY_RESOURCE_LABEL
             # this resource does not exist for real in LOINC, thus display is empty
         }
-        assert lab_feature_a["data_type"] == DataTypes.FLOAT
-        assert lab_feature_a["unit"] == "mg/L"
-        assert lab_feature_a["visibility"] == Visibility.PUBLIC
-        assert lab_feature_a["entity_type"] == f"{Profile.CLINICAL}{TableNames.FEATURE}"
-        assert lab_feature_a["description"] == "The molecule Alpha"
-        assert lab_feature_a["domain"] == {"min": 0}
+        assert lab_feature_a[Feature.DT_] == DataTypes.FLOAT
+        assert lab_feature_a[Feature.UNIT_] == "mg/L"
+        assert lab_feature_a[Feature.VISIBILITY_] == Visibility.PUBLIC
+        assert lab_feature_a[Feature.ENTITY_TYPE_] == f"{Profile.CLINICAL}{TableNames.FEATURE}"
+        assert lab_feature_a[Feature.DESCR_] == "The molecule Alpha"
+        assert lab_feature_a[Feature.DOMAIN_] == {"min": 0}
         # timestamp is not tested
 
         # LabFeature about molecule_b
         lab_feature_b = get_feature_by_text(features, "molecule_b")
         assert len(lab_feature_b) == 9
-        assert "identifier" in lab_feature_b
-        assert lab_feature_b["name"] == "molecule_b"
-        assert "ontology_resource" not in lab_feature_b
-        assert lab_feature_b["data_type"] == DataTypes.INTEGER
-        assert lab_feature_b["unit"] == "g"  # unit is gram
-        assert lab_feature_b["entity_type"] == f"{Profile.CLINICAL}{TableNames.FEATURE}"
-        assert lab_feature_b["description"] == "The molecule Beta"
-        assert "domain" not in lab_feature_b
+        assert Resource.IDENTIFIER_ in lab_feature_b
+        assert lab_feature_b[Feature.NAME_] == "molecule_b"
+        assert Feature.ONTO_ not in lab_feature_b
+        assert lab_feature_b[Feature.DT_] == DataTypes.INTEGER
+        assert lab_feature_b[Feature.UNIT_] == "g"  # unit is gram
+        assert lab_feature_b[Feature.ENTITY_TYPE_] == f"{Profile.CLINICAL}{TableNames.FEATURE}"
+        assert lab_feature_b[Feature.DESCR_] == "The molecule Beta"
+        assert Feature.DOMAIN_ not in lab_feature_b
 
         # check that there are no duplicates in SamFeature instances
         # for this, we get the set of their names (in the field "text")
         lab_features_names_list = []
         for lab_feature in features:
             if lab_feature is not None:
-                lab_features_names_list.append(lab_feature["name"])
+                lab_features_names_list.append(lab_feature[Feature.NAME_])
         lab_features_names_set = set(lab_features_names_list)
         assert len(lab_features_names_list) == len(lab_features_names_set)
 
@@ -369,17 +372,17 @@ class TestTransform(unittest.TestCase):
         assert patient_id == 994
         records_patient = get_records_for_patient(records=records, patient_id=patient_id)
         assert len(records_patient) == 2
-        assert records_patient[0]["value"] == -0.003  # the value as been converted to a float
-        assert records_patient[0]["has_subject"] == patient_id
-        assert records_patient[0]["registered_by"] == 1  # Hospital:1
-        assert records_patient[0]["instantiates"] == 1001  # LabRecord 1001 is about molecule_a (there are Hospital 1 and Dataset 2, and patients with large anonymized pids)
-        assert records_patient[0]["entity_type"] == f"{Profile.CLINICAL}{TableNames.RECORD}"  #
+        assert records_patient[0][Record.VALUE_] == -0.003  # the value as been converted to a float
+        assert records_patient[0][Record.SUBJECT_] == patient_id
+        assert records_patient[0][Record.REG_BY_] == 1  # Hospital:1
+        assert records_patient[0][Record.INSTANTIATES_] == 1001  # LabRecord 1001 is about molecule_a (there are Hospital 1 and Dataset 2, and patients with large anonymized pids)
+        assert records_patient[0][Feature.ENTITY_TYPE_] == f"{Profile.CLINICAL}{TableNames.RECORD}"  #
         pattern_date = re.compile("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2,3}Z")
-        assert pattern_date.match(records_patient[0]["timestamp"]["$date"])  # check the date is in datetime (CEST) form
+        assert pattern_date.match(records_patient[0][Resource.TIMESTAMP_]["$date"])  # check the date is in datetime (CEST) form
 
         # check that all values are cast to the expected type
-        assert records_patient[0]["value"] == -0.003  # the value as been converted to an integer
-        assert records_patient[1]["value"] is False  # the value as been converted to a boolean
+        assert records_patient[0][Record.VALUE_] == -0.003  # the value as been converted to an integer
+        assert records_patient[1][Record.VALUE_] is False  # the value as been converted to a boolean
 
         # we also check that conversions str->int/float and category->bool worked
         assert get_field_value_for_patient(records=records, features=features, patient_id=transform.patient_ids_mapping["999999999"], column_name="molecule_b") == 100  # this has been cast as int because it matches the expected unit
@@ -411,10 +414,10 @@ class TestTransform(unittest.TestCase):
         assert len(patients) == 10
         # we cannot simply order by identifier value because they are strings, not int
         # thus will need a bit more of processing to sort by the integer represented within the string
-        sorted_patients = sorted(patients, key=lambda d: d["identifier"])
+        sorted_patients = sorted(patients, key=lambda d: d[Resource.IDENTIFIER_])
         for i in range(0, len(sorted_patients)):
             # patients have their own anonymized ids
-            assert sorted_patients[i]["identifier"] == i + 1
+            assert sorted_patients[i][Resource.IDENTIFIER_] == i + 1
 
         # get back to the original file
         with open(self.execution.anonymized_patient_ids_filepath, "w") as f:
@@ -438,11 +441,11 @@ class TestTransform(unittest.TestCase):
         assert len(patients) == 10
         # we cannot simply order by identifier value because they are strings, not int
         # thus will need a bit more of processing to sort by the integer represented within the string
-        sorted_patients = sorted(patients, key=lambda d: d["identifier"])
+        sorted_patients = sorted(patients, key=lambda d: d[Resource.IDENTIFIER_])
         # sorted_patients = sorted(transform.patients)
         for i in range(0, len(sorted_patients)):
             # patients have their own anonymized ids
-            assert sorted_patients[i]["identifier"] == 990 + i
+            assert sorted_patients[i][Resource.IDENTIFIER_] == 990 + i
 
     def test_create_ontology_resource_from_row(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,

@@ -8,7 +8,7 @@ from constants.defaults import NO_ID
 from constants.structure import DOCKER_FOLDER_DATA
 from database.Counter import Counter
 from database.Database import Database
-from database.Dataset import Dataset
+from entities.Dataset import Dataset
 from database.Execution import Execution
 from entities.Hospital import Hospital
 from enums.MetadataColumns import MetadataColumns
@@ -157,7 +157,7 @@ class ETL:
 
     def create_hospital(self, counter: Counter, dataset_number: int, file_counter: int) -> int:
         log.info(f"create hospital instance in memory")
-        cursor = self.database.find_operation(table_name=TableNames.HOSPITAL, filter_dict={"name": self.execution.hospital_name}, projection={})
+        cursor = self.database.find_operation(table_name=TableNames.HOSPITAL, filter_dict={Hospital.NAME_: self.execution.hospital_name}, projection={})
         hospital_exists = False
         for _ in cursor:
             # the hospital already exists within the database, we do nothing
@@ -171,5 +171,5 @@ class ETL:
             write_in_file(resource_list=hospitals, current_working_dir=self.execution.working_dir_current,
                           table_name=TableNames.HOSPITAL, is_feature=False, dataset_number=dataset_number, to_json=False)
             file_counter += 1
-            self.database.load_json_in_table(table_name=TableNames.HOSPITAL, unique_variables=["name"], dataset_number=dataset_number)
+            self.database.load_json_in_table(table_name=TableNames.HOSPITAL, unique_variables=[Hospital.NAME_], dataset_number=dataset_number)
         return file_counter

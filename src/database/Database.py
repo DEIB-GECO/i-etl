@@ -2,7 +2,6 @@ import dataclasses
 import json
 import os
 import re
-from typing import Any
 
 import bson
 import pymongo
@@ -16,10 +15,9 @@ from pymongo.cursor import Cursor
 from constants.defaults import MAX_FILE_SIZE
 from constants.methods import factory
 from database.Execution import Execution
-from enums.TableNames import TableNames
 from database.Operators import Operators
-from enums.TimerKeys import TimerKeys
-from utils.file_utils import from_json_line_to_json_str, get_json_resource_file
+from enums.TableNames import TableNames
+from utils.file_utils import get_json_resource_file
 from utils.setup_logger import log
 
 
@@ -349,7 +347,7 @@ class Database:
     def get_max_resource_counter_id(self) -> int:
         max_value = -1
         for table_name in TableNames.data_tables():
-            current_max_identifier = self.get_max_value(table_name=table_name, field="identifier")
+            current_max_identifier = self.get_max_value(table_name=table_name, field="identifier") # cannot use Resource.IDENTIFIER_ because ti leads to a circular dependency
             log.info(f"current max identifier for {table_name} is {current_max_identifier}")
             if current_max_identifier is not None:
                 try:

@@ -1,5 +1,4 @@
 import re
-import sys
 from datetime import datetime
 from typing import Any
 
@@ -7,17 +6,19 @@ import pandas as pd
 import ujson
 from pandas import DataFrame
 
-from constants.defaults import BATCH_SIZE, PATTERN_VALUE_UNIT, NO_ID, MAX_FILE_SIZE
+from constants.defaults import BATCH_SIZE, PATTERN_VALUE_UNIT, NO_ID
 from database.Counter import Counter
 from database.Database import Database
-from database.Dataset import Dataset
+from entities.Dataset import Dataset
 from database.Execution import Execution
 from entities.ClinicalFeature import ClinicalFeature
 from entities.ClinicalRecord import ClinicalRecord
 from entities.DiagnosisFeature import DiagnosisFeature
 from entities.DiagnosisRecord import DiagnosisRecord
+from entities.Feature import Feature
 from entities.GenomicFeature import GenomicFeature
 from entities.GenomicRecord import GenomicRecord
+from entities.Hospital import Hospital
 from entities.ImagingFeature import ImagingFeature
 from entities.ImagingRecord import ImagingRecord
 from entities.MedicineFeature import MedicineFeature
@@ -26,7 +27,7 @@ from entities.OntologyResource import OntologyResource
 from entities.Patient import Patient
 from entities.PhenotypicFeature import PhenotypicFeature
 from entities.PhenotypicRecord import PhenotypicRecord
-from entities.Record import Record
+from entities.Resource import Resource
 from enums.DataTypes import DataTypes
 from enums.DiagnosisColumns import DiagnosisColumns
 from enums.Domain import Domain
@@ -113,10 +114,8 @@ class Transform(Task):
     def create_features(self) -> None:
         # 1. get existing features in memory
         log.info(f"Retrieving {self.profile}Feature from database")
-        result = self.database.find_operation(table_name=TableNames.FEATURE, filter_dict={"entity_type": f"{self.profile}Feature"}, projection={"name": 1, "identifier": 1, "datasets": 1})
-        db_existing_features = {}
-        for res in result:
-            db_existing_features[res["name"]] = {"identifier": res["identifier"], "datasets": res["datasets"]}
+        result = self.database.find_operation(table_name=TableNames.FEATURE, filter_dict={Resource.ENTITY_TYPE_: f"{self.profile}Feature"}, projection={Feature.NAME_: 1, Resource.IDENTIFIER_: 1, Resource.DATASET_: 1})
+        db_existing_features = [res[Feature.NAME_] for res in result]  # list of features (names) existing in this dataset
         log.info(db_existing_features)
 
         # 2. create non-existing features in-memory, then insert them
@@ -159,7 +158,7 @@ class Transform(Task):
                                                         counter=self.counter,
                                                         categories=categorical_values,
                                                         visibility=visibility,
-                                                        dataset_gid=self.dataset_instance.global_identifier,
+                                                        dataset=self.dataset_instance.global_identifier,
                                                         description=description,
                                                         domain=domain)
                     elif self.profile == Profile.CLINICAL:
@@ -168,7 +167,7 @@ class Transform(Task):
                                                       counter=self.counter,
                                                       categories=categorical_values,
                                                       visibility=visibility,
-                                                      dataset_gid=self.dataset_instance.global_identifier,
+                                                      dataset=self.dataset_instance.global_identifier,
                                                       description=description,
                                                       domain=domain)
                     elif self.profile == Profile.DIAGNOSIS:
@@ -177,7 +176,7 @@ class Transform(Task):
                                                        data_type=data_type,
                                                        unit=unit, counter=self.counter,
                                                        categories=categorical_values, visibility=visibility,
-                                                       dataset_gid=self.dataset_instance.global_identifier,
+                                                       dataset=self.dataset_instance.global_identifier,
                                                        description=description,
                                                        domain=domain)
                     elif self.profile == Profile.GENOMIC:
@@ -186,7 +185,7 @@ class Transform(Task):
                                                      data_type=data_type,
                                                      unit=unit, counter=self.counter,
                                                      categories=categorical_values, visibility=visibility,
-                                                     dataset_gid=self.dataset_instance.global_identifier,
+                                                     dataset=self.dataset_instance.global_identifier,
                                                      description=description,
                                                      domain=domain)
                     elif self.profile == Profile.IMAGING:
@@ -195,7 +194,7 @@ class Transform(Task):
                                                      data_type=data_type,
                                                      unit=unit, counter=self.counter,
                                                      categories=categorical_values, visibility=visibility,
-                                                     dataset_gid=self.dataset_instance.global_identifier,
+                                                     dataset=self.dataset_instance.global_identifier,
                                                      description=description,
                                                      domain=domain)
                     elif self.profile == Profile.MEDICINE:
@@ -204,7 +203,7 @@ class Transform(Task):
                                                       data_type=data_type,
                                                       unit=unit, counter=self.counter,
                                                       categories=categorical_values, visibility=visibility,
-                                                      dataset_gid=self.dataset_instance.global_identifier,
+                                                      dataset=self.dataset_instance.global_identifier,
                                                       description=description,
                                                       domain=domain)
                     else:
@@ -222,18 +221,14 @@ class Transform(Task):
                 else:
                     # the Feature already exists, so no need to add it to the database again.
                     # however, we need to update the set of datasets in which it appears
-                    log.error(f"The feature about {column_name} already exists. Not added, but updated.")
-                    datasets = db_existing_features[column_name]["datasets"]
-                    if self.dataset_instance.global_identifier not in datasets:
-                        datasets.append(self.dataset_instance.global_identifier)
-                        self.database.update_one_tuple(table_name=TableNames.FEATURE, filter_dict={"identifier": db_existing_features[column_name]["identifier"]}, update={"datasets": datasets})
+                    log.error(f"The feature about {column_name} already exists. Not added.")
             else:
                 log.debug(f"I am skipping column {column_name} because it has been dropped or is an ID column or its name is empty.")
         # save the remaining tuples that have not been saved (because there were less than BATCH_SIZE tuples before the loop ends).
         if len(self.features) > 0:
             self.process_batch_of_features()
         # write all the features in the database now (to be able to retrieve them for creating records just after
-        self.database.load_json_in_table(table_name=TableNames.FEATURE, unique_variables=["name"], dataset_number=self.dataset_number)
+        self.database.load_json_in_table(table_name=TableNames.FEATURE, unique_variables=[Feature.NAME_], dataset_number=self.dataset_number)
 
     ##############################################################
     # RECORDS
@@ -244,12 +239,14 @@ class Transform(Task):
 
         # a. load some data from the database to compute references
         mapping_hospital_to_hospital_id = self.database.retrieve_mapping(table_name=TableNames.HOSPITAL,
-                                                                         key_fields="name", value_fields="identifier", filter_dict={})
+                                                                         key_fields=Hospital.NAME_,
+                                                                         value_fields=Resource.IDENTIFIER_,
+                                                                         filter_dict={})
         log.info(mapping_hospital_to_hospital_id)
         mapping_column_to_feature_id = self.database.retrieve_mapping(table_name=TableNames.FEATURE,
-                                                                      key_fields="name",
-                                                                      value_fields="identifier",
-                                                                      filter_dict={"entity_type": f"{self.profile}{TableNames.FEATURE}"})
+                                                                      key_fields=Feature.NAME_,
+                                                                      value_fields=Resource.IDENTIFIER_,
+                                                                      filter_dict={Resource.ENTITY_TYPE_: f"{self.profile}{TableNames.FEATURE}"})
         log.info(f"{len(mapping_column_to_feature_id)} {self.profile}{TableNames.FEATURE} have been retrieved from the database.")
         log.info(mapping_column_to_feature_id)
 
@@ -374,7 +371,7 @@ class Transform(Task):
         # and save the total counts for each column (to compute the percentage of missing values in the profiles)
         all_counts = []  # a list of <"identifier": identifier, "all_counts": all_counts> instead of <identifier: all_counts>
         for k in self.mapping_column_all_count:
-            all_counts.append({"identifier": k, "count_all_values": self.mapping_column_all_count[k], "dataset": self.dataset_instance.global_identifier})
+            all_counts.append({Resource.IDENTIFIER_: k, "count_all_values": self.mapping_column_all_count[k], Resource.DATASET_: self.dataset_instance.global_identifier})
         log.info(all_counts)
         self.database.insert_many_tuples(table_name=TableNames.COUNTS_FEATURES, tuples=all_counts)
 
@@ -425,7 +422,7 @@ class Transform(Task):
             except Exception:
                 raise ValueError(
                     f"Could not dump the {len(self.patient_ids_mapping)} JSON resources in the file located at {self.execution.anonymized_patient_ids_filepath}.")
-        self.database.load_json_in_table(table_name=TableNames.PATIENT, unique_variables=["identifier"], dataset_number=self.dataset_number)
+        self.database.load_json_in_table(table_name=TableNames.PATIENT, unique_variables=[Resource.IDENTIFIER_], dataset_number=self.dataset_number)
 
     ##############################################################
     # UTILITIES

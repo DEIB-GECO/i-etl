@@ -7,6 +7,10 @@ import numpy as np
 from constants.defaults import DEFAULT_NAN_VALUE
 from constants.methods import factory
 from database.Database import Database
+from entities.Dataset import Dataset
+from entities.Feature import Feature
+from entities.Record import Record
+from entities.Resource import Resource
 from enums.DataTypes import DataTypes
 from enums.Profile import Profile
 from enums.TableNames import TableNames
@@ -21,9 +25,9 @@ class FeatureProfileComputation:
     def __post_init__(self):
         # store, for each dataset, the total number of patients to compute the missing percentage
         operations = [
-            Operators.match(field=None, value={"entity_type": {"$ne": f"{Profile.CLINICAL}{TableNames.RECORD}"}}, is_regex=False),
-            Operators.group_by(group_key={"dataset": "$dataset", "has_subject": "$has_subject"}, groups=[{"name": "nb_patients", "operator": "$sum", "field": 1}]),
-            Operators.group_by(group_key={"dataset": "$_id.dataset"}, groups=[{"name": "distinct_nb_patients", "operator": "$sum", "field": 1}]),
+            Operators.match(field=None, value={Resource.ENTITY_TYPE_: {"$ne": f"{Profile.CLINICAL}{TableNames.RECORD}"}}, is_regex=False),
+            Operators.group_by(group_key={Record.DATASET_: Record.DATASET__, Record.SUBJECT_: Record.SUBJECT__}, groups=[{"name": "nb_patients", "operator": "$sum", "field": 1}]),
+            Operators.group_by(group_key={Record.DATASET_: Record.DATASET___}, groups=[{"name": "distinct_nb_patients", "operator": "$sum", "field": 1}]),
             Operators.write_to_table(table_name=TableNames.COUNTS_PATIENTS)
         ]
         log.info(operations)
@@ -31,9 +35,9 @@ class FeatureProfileComputation:
 
         # store, for each clinical dataset, the total number of samples to compute the missing percentage for clinical data
         operations = [
-            Operators.match(field=None, value={"entity_type": {"$eq": f"{Profile.CLINICAL}{TableNames.RECORD}"}}, is_regex=False),
-            Operators.group_by(group_key={"dataset": "$dataset", "base_id": "$base_id"}, groups=[{"name": "nb_samples", "operator": "$sum", "field": 1}]),
-            Operators.group_by(group_key={"dataset": "$_id.dataset"}, groups=[{"name": "distinct_nb_samples", "operator": "$sum", "field": 1}]),
+            Operators.match(field=None, value={Resource.ENTITY_TYPE_: {"$eq": f"{Profile.CLINICAL}{TableNames.RECORD}"}}, is_regex=False),
+            Operators.group_by(group_key={Record.DATASET_: Record.DATASET__, Record.BASE_ID_: Record.BASE_ID__}, groups=[{"name": "nb_samples", "operator": "$sum", "field": 1}]),
+            Operators.group_by(group_key={Record.DATASET_: Record.DATASET___}, groups=[{"name": "distinct_nb_samples", "operator": "$sum", "field": 1}]),
             Operators.write_to_table(table_name=TableNames.COUNTS_SAMPLES)
         ]
         log.info(operations)
@@ -41,12 +45,12 @@ class FeatureProfileComputation:
 
         # compute the list of Feature identifiers for each Profile data type (numeric, category, date)
         # the filter {"datasets": self.dataset_gid} means that the array "datasets" contains the element self.dataset_gid
-        cursor = self.database.find_operation(table_name=TableNames.FEATURE, filter_dict={}, projection={"identifier": 1, "data_type": 1, "_id": 0})
+        cursor = self.database.find_operation(table_name=TableNames.FEATURE, filter_dict={}, projection={Resource.IDENTIFIER_: 1, Feature.DT_: 1, "_id": 0})
         map_feature_datatype = {}
         for element in cursor:
-            if element["data_type"] not in map_feature_datatype:
-                map_feature_datatype[element["data_type"]] = []
-            map_feature_datatype[element["data_type"]].append(element["identifier"])
+            if element[Feature.DT_] not in map_feature_datatype:
+                map_feature_datatype[element[Feature.DT_]] = []
+            map_feature_datatype[element[Feature.DT_]].append(element[Resource.IDENTIFIER_])
         log.info(map_feature_datatype)
 
         self.numeric_features = []
@@ -68,15 +72,15 @@ class FeatureProfileComputation:
         # clear FeatureProfile table and create a unique index on <dataset, instantiates>
         # because merge requires a unique index on the merge keys
         self.database.drop_table(TableNames.FEATURE_PROFILE)
-        self.database.create_unique_index(TableNames.FEATURE_PROFILE, columns={"dataset": 1, "instantiates": 1})
+        self.database.create_unique_index(TableNames.FEATURE_PROFILE, columns={Record.DATASET_: 1, Record.INSTANTIATES_: 1})
 
         # NUMERIC FEATURES
         match_numeric_values = [Operators.match(field=None, value=Operators.or_operator([
-                                    {"value": {"$type": "int"}},
-                                    {"value": {"$type": "double"}},
-                                    {"value": {"$type": "long"}},
-                                    {"value": {"$type": "decimal"}}]), is_regex=False),
-                                Operators.match(field=None, value={"value": {"$ne": np.nan}}, is_regex=False)]
+                                    {Record.VALUE_: {"$type": "int"}},
+                                    {Record.VALUE_: {"$type": "double"}},
+                                    {Record.VALUE_: {"$type": "long"}},
+                                    {Record.VALUE_: {"$type": "decimal"}}]), is_regex=False),
+                                Operators.match(field=None, value={Record.VALUE_: {"$ne": np.nan}}, is_regex=False)]
 
         # 1. compute min, max, mean, median, std values for numerical features
         operators = copy.deepcopy(match_numeric_values)
@@ -115,9 +119,9 @@ class FeatureProfileComputation:
 
         # DATE FEATURES
         match_date_values = [Operators.match(field=None, value=Operators.or_operator([
-                                {"value": {"$type": "date"}},
-                                {"value": {"$type": "timestamp"}}]), is_regex=False),
-                             Operators.match(field=None, value={"value": {"$ne": np.nan}}, is_regex=False)]
+                                {Record.VALUE_: {"$type": "date"}},
+                                {Record.VALUE_: {"$type": "timestamp"}}]), is_regex=False),
+                             Operators.match(field=None, value={Record.VALUE_: {"$ne": np.nan}}, is_regex=False)]
 
         # 1. compute min, max, mean, median, std values for numerical features
         operators = copy.deepcopy(match_date_values)
@@ -135,8 +139,8 @@ class FeatureProfileComputation:
 
         # CATEGORICAL FEATURES
         match_categorical_values = [Operators.match(field=None, value=Operators.or_operator([
-                                        {"value": {"$type": "object"}}]), is_regex=False),
-                                    Operators.match(field=None, value={"value": {"$ne": np.nan}}, is_regex=False)]
+                                        {Record.VALUE_: {"$type": "object"}}]), is_regex=False),
+                                    Operators.match(field=None, value={Record.VALUE_: {"$ne": np.nan}}, is_regex=False)]
 
         # 1. compute imbalance for categorical features
         operators = copy.deepcopy(match_categorical_values)
@@ -197,33 +201,33 @@ class FeatureProfileComputation:
     def min_max_mean_median_std_query(self, features_ids: list, compute_min: bool, compute_max: bool, compute_mean: bool, compute_median: bool, compute_std: bool) -> list:
         groups = []
         if compute_min:
-            groups.append({"name": "min_value", "operator": "$min", "field": "$value"})
+            groups.append({"name": "min_value", "operator": "$min", "field": Record.VALUE__})
         if compute_max:
-            groups.append({"name": "max_value", "operator": "$max", "field": "$value"})
+            groups.append({"name": "max_value", "operator": "$max", "field": Record.VALUE__})
         if compute_mean:
-            groups.append({"name": "mean_value", "operator": "$avg", "field": "$value"})
+            groups.append({"name": "mean_value", "operator": "$avg", "field": Record.VALUE__})
         if compute_median:
-            groups.append({"name": "median_value", "operator": "$median", "field": {"input": "$value", "method": "approximate"}})
+            groups.append({"name": "median_value", "operator": "$median", "field": {"input": Record.VALUE__, "method": "approximate"}})
         if compute_std:
-            groups.append({"name": "std_value", "operator": "$stdDevPop", "field": "$value"})
+            groups.append({"name": "std_value", "operator": "$stdDevPop", "field": Record.VALUE__})
         return [
-            Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
-            Operators.group_by(group_key={"dataset": "$dataset", "instantiates": "$instantiates"}, groups=groups),
+            Operators.match(field=Record.INSTANTIATES_, value={"$in": features_ids}, is_regex=False),
+            Operators.group_by(group_key={Record.DATASET_: Record.DATASET__, Record.INSTANTIATES_: Record.INSTANTIATES__}, groups=groups),
         ]
 
     def abs_med_dev_query(self, features_ids: list) -> list:
         # i.e., EMA=median(|Xi-Y|) where Xi is a value, Y is the median, and L is the absolute value (no minus sign)
         # [{'$group': {'_id': {'_id': null}, 'originalValues': {'$push': '$value'}, 'mymedian': {'$median': {"input": "$value", "method": "approximate"}}}}, {'$unwind': '$originalValues'}, {'$project': {"absVal": {'$abs': {'$subtract': ['$originalValues', '$mymedian']}}}}, {'$group': {'_id': {'_id': null}, 'ema': {'$median': {"input": "$absVal", "method": "approximate"}}}}]
         return [
-            Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
-            Operators.group_by(group_key={"dataset": "$dataset", "instantiates": "$instantiates"}, groups=[
-                {"name": "originalValues", "operator": "$push", "field": "$value"},
-                {"name": "mymedian", "operator": "$median", "field": {"input": "$value", "method": "approximate"}},
+            Operators.match(field=Record.INSTANTIATES_, value={"$in": features_ids}, is_regex=False),
+            Operators.group_by(group_key={Record.DATASET_: Record.DATASET__, Record.INSTANTIATES_: Record.INSTANTIATES__}, groups=[
+                {"name": "originalValues", "operator": "$push", "field": Record.VALUE__},
+                {"name": "mymedian", "operator": "$median", "field": {"input": Record.VALUE__, "method": "approximate"}},
             ]),
             # after groupby, the access to individual elements is lost, so we need to use $push or $addToSet to keep track of original values
             Operators.unwind("originalValues"),
             Operators.project(field=None, projected_value={"absVal": {"$abs": {"$subtract": ["$originalValues", "$mymedian"]}}}),
-            Operators.group_by(group_key={"dataset": "$_id.dataset", "instantiates": "$_id.instantiates"}, groups=[
+            Operators.group_by(group_key={Record.DATASET_: Record.DATASET___, Record.INSTANTIATES_: Record.INSTANTIATES___}, groups=[
                 {"name": "ema", "operator": "$median", "field": {"input": "$absVal", "method": "approximate"}}
             ])
         ]
@@ -236,11 +240,11 @@ class FeatureProfileComputation:
         # and we merge them to avoid repeating computation of mean, std, dev and the array with push
         # [ { "$group": { "_id": { "_id": null }, "originalValues": { "$push": "$value" }, "mymean": { "$avg": "$value" }, "mystdDev": { "$stdDevSamp": "$value" } } }, { "$unwind": "$originalValues" }, {"$project":{"theQuads":{"$pow":[{"$divide":[{"$subtract":["$originalValues","$mymean"]},"$mystdDev"]},4]}, "theSquares":{"$pow":[{"$divide":[{"$subtract":["$originalValues","$mymean"]},"$mystdDev"]},3]}}},{"$group":{"_id":{"_id":null},"sumQuads":{"$sum":"$theQuads"}, "sumSquares":{"$sum":"$theSquares"}, "summedValues": { "$push": "$theQuads" }}},{"$project":{"sumQuads": 1, "sumSquares": 1, "mysize": {"$size": "$summedValues"}}}, {"$project":{"kurtosis":{"$subtract":[{"$multiply":[{"$divide":[{"$multiply":["$mysize",{"$sum":["$mysize",1]}]},{"$multiply":[{"$sum":["$mysize",-1]},{"$sum":["$mysize",-2]},{"$sum":["$mysize",-3]}]}]},"$sumQuads"]},{"$divide":[{"$multiply":[3,{"$pow":[{"$sum":["$mysize",-1]},2]}]},{"$multiply":[{"$sum":["$mysize",-2]},{"$sum":["$mysize",-3]}]}]}]}, "skewness":{"$multiply": [{"$divide": ["$mysize", {"$multiply": [{"$sum": ["$mysize", -1]}, {"$sum": ["$mysize", -2]}]}]}, "$sumSquares"]}}}]
         return [
-            Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
-            Operators.group_by(group_key={"dataset": "$dataset", "instantiates": "$instantiates"}, groups=[
-                {"name": "originalValues", "operator": "$push", "field": "$value"},
-                {"name": "mymean", "operator": "$avg", "field": "$value"},
-                {"name": "mystdDev", "operator": "$stdDevSamp", "field": "$value"}
+            Operators.match(field=Record.INSTANTIATES_, value={"$in": features_ids}, is_regex=False),
+            Operators.group_by(group_key={Record.DATASET_: Record.DATASET__, Record.INSTANTIATES_: Record.INSTANTIATES__}, groups=[
+                {"name": "originalValues", "operator": "$push", "field": Record.VALUE__},
+                {"name": "mymean", "operator": "$avg", "field": Record.VALUE__},
+                {"name": "mystdDev", "operator": "$stdDevSamp", "field": Record.VALUE__}
             ]),
             # after groupby, the access to individual elements is lost, so we need to use $push or $addToSet to keep track of original values
             Operators.unwind("originalValues"),
@@ -323,10 +327,10 @@ class FeatureProfileComputation:
 
     def iqr_query(self, features_ids: list) -> list:
         return [
-            Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
-            Operators.group_by(group_key={"dataset": "$dataset", "instantiates": "$instantiates"}, groups=[
-                {"name": "thevalues", "operator": "$push", "field": "$value"},
-                {"name": "themedian", "operator": "$median", "field": {"input": "$value", "method": "approximate"}}
+            Operators.match(field=Record.INSTANTIATES_, value={"$in": features_ids}, is_regex=False),
+            Operators.group_by(group_key={Record.DATASET_: Record.DATASET__, Record.INSTANTIATES_: Record.INSTANTIATES__}, groups=[
+                {"name": "thevalues", "operator": "$push", "field": Record.VALUE__},
+                {"name": "themedian", "operator": "$median", "field": {"input": Record.VALUE__, "method": "approximate"}}
             ]),
             Operators.set_variables(variables=[{"name": "thevalues", "operation": {"$sortArray": {"input": "$thevalues", "sortBy": 1}}}]),
             Operators.project(field=None, projected_value={"thevalues": {"$filter": {"input": "$thevalues", "as": "item", "cond": {"$ne": ["$$item", "$themedian"]}}}}),
@@ -373,27 +377,27 @@ class FeatureProfileComputation:
         # we only take the top-10 of numeric features, i.e.,
         # the 10 numeric features with most values (if tied, take the ones with the lowest ID)
         top_10_features = [
-            Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
-            Operators.group_by(group_key={"dataset": "$dataset", "instantiates": "$instantiates"}, groups=[
+            Operators.match(field=Record.INSTANTIATES_, value={"$in": features_ids}, is_regex=False),
+            Operators.group_by(group_key={Record.DATASET_: Record.DATASET__, Record.INSTANTIATES_: Record.INSTANTIATES__}, groups=[
                 {"name": "frequency", "operator": "$sum", "field": 1}
             ]),
-            Operators.sort(field="_id.dataset", sort_order=-1),
+            Operators.sort(field=f"_id.{Record.DATASET_}", sort_order=-1),
             Operators.sort(field="frequency", sort_order=-1),
-            Operators.sort(field="_id.instantiates", sort_order=1),
-            Operators.group_by(group_key={"dataset": "$_id.dataset"}, groups=[
-                {"name": "orderedfeatures", "operator": "$push", "field": "$_id.instantiates"}
+            Operators.sort(field=f"_id.{Record.INSTANTIATES_}", sort_order=1),
+            Operators.group_by(group_key={Record.DATASET_: Record.DATASET___}, groups=[
+                {"name": "orderedfeatures", "operator": "$push", "field": Record.INSTANTIATES___}
             ]),
             Operators.set_variables(variables=[
                 {"name": "top10", "operation": Operators.filter_array(input_array_name="$orderedfeatures", element="item", cond={}, limit=10)}
             ]),
             # Operators.limit(10),
             Operators.project(field=None, projected_value={
-                "dataset": "$_id.dataset",
+                Record.DATASET_: Record.DATASET___,
                 "top10": 1,
                 "_id": 0
             }),
             Operators.unwind(field="top10"),
-            Operators.project(field=None, projected_value={"instantiates": "$top10", "dataset": 1}),
+            Operators.project(field=None, projected_value={Record.INSTANTIATES_: "$top10", Record.DATASET_: 1}),
             Operators.write_to_table(table_name=TableNames.TOP10_FEATURES)
         ]
         log.info(top_10_features)
@@ -404,11 +408,11 @@ class FeatureProfileComputation:
             Operators.unwind(field="features_b"),
             Operators.match(field=None, value={"$expr": {
                 "$and": [
-                    {"$eq": ["$dataset", "$features_b.dataset"]},  # created pairs of features in a single dataset
-                    {"$lt": ["$instantiates", "$features_b.instantiates"]}
+                    {"$eq": [Record.DATASET__, f"$features_b.{Record.DATASET_}"]},  # created pairs of features in a single dataset
+                    {"$lt": [Record.INSTANTIATES__, f"$features_b.{Record.INSTANTIATES_}"]}
                 ]
             }}, is_regex=False),
-            Operators.project(field=None, projected_value={"dataset": "$dataset", "feat_a": "$instantiates", "feat_b": "$features_b.instantiates", "_id": 0}),  # this allows to not export the _id in the table (which contains duplicated due to unwind), and _id is regenerated when creating the table
+            Operators.project(field=None, projected_value={Record.DATASET_: Record.DATASET__, "feat_a": Record.INSTANTIATES__, "feat_b": f"$features_b.{Record.INSTANTIATES_}", "_id": 0}),  # this allows to not export the _id in the table (which contains duplicated due to unwind), and _id is regenerated when creating the table
             Operators.write_to_table(TableNames.PAIRS_FEATURES)
         ]
         log.info(pairs_features)
@@ -418,28 +422,28 @@ class FeatureProfileComputation:
         return [
             Operators.lookup_with_condition(
                 join_table_name=TableNames.RECORD,
-                let_variables={"feat_a": "$feat_a", "a_dataset": "$dataset"},
+                let_variables={"feat_a": "$feat_a", "a_dataset": Record.DATASET__},
                 pipeline=[Operators.match(field=None, value={"$expr": {"$and": [
-                    {"$eq": ["$instantiates", "$$feat_a"]},
-                    {"$eq": ["$dataset", "$$a_dataset"]}
+                    {"$eq": [Record.INSTANTIATES__, "$$feat_a"]},
+                    {"$eq": [Record.DATASET__, "$$a_dataset"]}
                 ]}}, is_regex=False)],
                 lookup_field_name="x"
             ),
             Operators.lookup_with_condition(
                 join_table_name=TableNames.RECORD,
-                let_variables={"feat_b": "$feat_b", "b_dataset": "$dataset"},
+                let_variables={"feat_b": "$feat_b", "b_dataset": Record.DATASET__},
                 pipeline=[Operators.match(field=None, value={"$expr": {
                     "$and": [
-                        {"$eq": ["$instantiates", "$$feat_b"]},
-                        {"$eq": ["$dataset", "$$b_dataset"]}
+                        {"$eq": [Record.INSTANTIATES__, "$$feat_b"]},
+                        {"$eq": [Record.DATASET__, "$$b_dataset"]}
                     ]}}, is_regex=False)],
                 lookup_field_name="y"
             ),
             Operators.project(field=None, projected_value={"values": {"$zip": {"inputs": ["$x", "$y"]}}}),
             Operators.unwind(field="values"),
             Operators.project(field=None, projected_value={"x": {"$arrayElemAt": ["$values", 0]}, "y": {"$arrayElemAt": ["$values", 1]}}),
-            Operators.project(field=None, projected_value={"x": "$x.value", "y": "$y.value", "feat_a": "$x.instantiates", "feat_b": "$y.instantiates", "dataset": "$x.dataset"}),
-            Operators.group_by(group_key={"feat_a": "$feat_a", "feat_b": "$feat_b", "dataset": "$dataset"}, groups=[
+            Operators.project(field=None, projected_value={"x": "$x.value", "y": f"$y.{Record.VALUE_}", "feat_a": f"$x.{Record.INSTANTIATES_}", "feat_b": f"$y.{Record.INSTANTIATES_}", Record.DATASET_: f"$x.{Record.DATASET_}"}),
+            Operators.group_by(group_key={"feat_a": "$feat_a", "feat_b": "$feat_b", Record.DATASET_: Record.DATASET__}, groups=[
                 {"name": "originalX", "operator": "$push", "field": "$x"},
                 {"name": "originalY", "operator": "$push", "field": "$y"},
                 {"name": "avgX", "operator": "$avg", "field": "$x"},
@@ -477,11 +481,11 @@ class FeatureProfileComputation:
                 }
             }),
             # the last group by and project groups all features b within the feature a for easier profiles
-            Operators.group_by(group_key={"instantiates": "$_id.feat_a", "dataset": "$_id.dataset"}, groups=[
+            Operators.group_by(group_key={Record.INSTANTIATES_: "$_id.feat_a", Record.DATASET_: Record.DATASET___}, groups=[
                 {"name": "feat_b_dict", "operator": "$push", "field": {"k": "$_id.feat_b", "v": "$pearson"}}
             ]),
             Operators.project(field=None, projected_value={
-                "instantiates": 1,
+                Record.INSTANTIATES_: 1,
                 "pearson": {
                     "$arrayToObject": {
                         "$map": {
@@ -497,17 +501,17 @@ class FeatureProfileComputation:
     def imbalance_query(self, features_ids: list) -> list:
         # Ratio between the number of appearances of the most frequent value and the least frequent value.
         return [
-            Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
-            Operators.group_by(group_key={"dataset": "$dataset", "instantiates": "$instantiates", "value": "$value"}, groups=[
+            Operators.match(field=Record.INSTANTIATES_, value={"$in": features_ids}, is_regex=False),
+            Operators.group_by(group_key={Record.DATASET_: Record.DATASET__, Record.INSTANTIATES_: Record.INSTANTIATES__, Record.VALUE_: Record.VALUE__}, groups=[
                 {"name": "frequency", "operator": "$sum", "field": 1}
             ]),
-            Operators.group_by(group_key={"instantiates": "$_id.instantiates", "dataset": "$_id.dataset"}, groups=[
+            Operators.group_by(group_key={Record.INSTANTIATES_: Record.INSTANTIATES___, Record.DATASET_: Record.DATASET___}, groups=[
                 {"name": "max_freq", "operator": "$max", "field": "$frequency"},
                 {"name": "min_freq", "operator": "$min", "field": "$frequency"},
             ]),
             Operators.project(field=None, projected_value={
-                "dataset": "$_id.dataset",
-                "instantiates": "$_id.instantiates",
+                Record.DATASET_: Record.DATASET___,
+                Record.INSTANTIATES_: Record.INSTANTIATES___,
                 "imbalance": {
                     "$cond": {
                         "if": {"$eq": ["$min_freq", 0]},
@@ -523,17 +527,17 @@ class FeatureProfileComputation:
         # However, we never have null values because we do not create Records for them
         # thus, the constancy is always 1 (for practical reasons, I divided the max freq by itself, to always obtain 1)
         return [
-            Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
-            Operators.group_by(group_key={"instantiates": "$instantiates", "dataset": "$dataset", "value": "$value"}, groups=[
+            Operators.match(field=Record.INSTANTIATES_, value={"$in": features_ids}, is_regex=False),
+            Operators.group_by(group_key={Record.INSTANTIATES_: Record.INSTANTIATES__, Record.DATASET_: Record.DATASET__, Record.VALUE_: Record.VALUE__}, groups=[
                 {"name": "frequency", "operator": "$sum", "field": 1},
                 {"name": "frequencyNonNull", "operator": "$sum", "field": 1}
             ]),
-            Operators.group_by(group_key={"instantiates": "$_id.instantiates", "dataset": "$_id.dataset"}, groups=[
+            Operators.group_by(group_key={Record.INSTANTIATES_: Record.INSTANTIATES___, Record.DATASET_: Record.DATASET___}, groups=[
                 {"name": "max_freq", "operator": "$max", "field": "$frequency"}
             ]),
             Operators.project(field=None, projected_value={
-                "dataset": "$_id.dataset",
-                "instantiates": "$_id.instantiates",
+                Record.DATASET_: Record.DATASET___,
+                Record.INSTANTIATES_: Record.INSTANTIATES___,
                 "constancy": {
                     "$cond": {
                         "if": {"$eq": ["$max_freq", 0]},
@@ -547,18 +551,18 @@ class FeatureProfileComputation:
     def mode_query(self, features_ids: list) -> list:
         # the most frequent value
         return [
-            Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
-            Operators.group_by(group_key={"instantiates": "$instantiates", "dataset": "$dataset", "value": "$value"}, groups=[
+            Operators.match(field=Record.INSTANTIATES_, value={"$in": features_ids}, is_regex=False),
+            Operators.group_by(group_key={Record.INSTANTIATES_: Record.INSTANTIATES__, Record.DATASET_: Record.DATASET__, Record.VALUE_: Record.VALUE__}, groups=[
                 {"name": "frequency", "operator": "$sum", "field": 1},
             ]),
-            Operators.sort(field="_id.instantiates", sort_order=1),
+            Operators.sort(field=f"_id.{Record.INSTANTIATES_}", sort_order=1),
             Operators.sort(field="frequency", sort_order=-1),
-            Operators.group_by(group_key={"instantiates": "$_id.instantiates", "dataset": "$_id.dataset"}, groups=[
-                {"name": "values", "operator": "$push", "field": "$_id.value"}
+            Operators.group_by(group_key={Record.INSTANTIATES_: Record.INSTANTIATES___, Record.DATASET_: Record.DATASET___}, groups=[
+                {"name": "values", "operator": "$push", "field": Record.VALUE___}
             ]),
             Operators.project(field=None, projected_value={
-                "dataset": "$_id.dataset",
-                "instantiates": "$_id.instantiates",
+                Record.DATASET_: Record.DATASET___,
+                Record.INSTANTIATES_: Record.INSTANTIATES___,
                 "mode": {"$arrayElemAt": ["$values", 0]}
             })
         ]
@@ -566,17 +570,17 @@ class FeatureProfileComputation:
     def uniqueness_query(self, features_ids: list) -> list:
         # Percentage of distinct values with respect to the total amount of non-null values
         return [
-            Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
-            Operators.group_by(group_key={"instantiates": "$instantiates", "dataset": "$dataset", "value": "$value"}, groups=[
+            Operators.match(field=Record.INSTANTIATES_, value={"$in": features_ids}, is_regex=False),
+            Operators.group_by(group_key={Record.INSTANTIATES_: Record.INSTANTIATES__, Record.DATASET_: Record.DATASET__, Record.VALUE_: Record.VALUE__}, groups=[
                 {"name": "frequency", "operator": "$sum", "field": 1}]),
-            Operators.group_by(group_key={"instantiates": "$_id.instantiates", "dataset": "$_id.dataset"}, groups=[
+            Operators.group_by(group_key={Record.INSTANTIATES_: Record.INSTANTIATES___, Record.DATASET_: Record.DATASET___}, groups=[
                 {"name": "count", "operator": "$sum", "field": "$frequency"},
                 {"name": "distinct_count", "operator": "$sum", "field": 1}
                 ]
-            ),
+                               ),
             Operators.project(field=None, projected_value={
-                "dataset": "$_id.dataset",
-                "instantiates": "$_id.instantiates",
+                Record.DATASET_: Record.DATASET___,
+                Record.INSTANTIATES_: Record.INSTANTIATES___,
                 "uniqueness": {
                     "$cond": {
                         "if": {"$eq": ["$count", 0]},
@@ -593,17 +597,17 @@ class FeatureProfileComputation:
         # Measure of uncertainty and disorder within the values of the column.
         # A large entropy means that the values are highly heterogeneous.
         return [
-            Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
-            Operators.group_by(group_key={"instantiates": "$instantiates", "dataset": "$dataset", "value": "$value"}, groups=[
+            Operators.match(field=Record.INSTANTIATES_, value={"$in": features_ids}, is_regex=False),
+            Operators.group_by(group_key={Record.INSTANTIATES_: Record.INSTANTIATES__, Record.DATASET_: Record.DATASET__, Record.VALUE_: Record.VALUE__}, groups=[
                 {"name": "frequency", "operator": "$sum", "field": 1}]),
-            Operators.group_by(group_key={"instantiates": "$_id.instantiates", "dataset": "$_id.dataset"}, groups=[
+            Operators.group_by(group_key={Record.INSTANTIATES_: Record.INSTANTIATES___, Record.DATASET_: Record.DATASET___}, groups=[
                 {"name": "total", "operator": "$sum", "field": "$frequency"},
                 {"name": "frequencies", "operator": "$push", "field": "$frequency"}
             ]),
             Operators.unwind("frequencies"),
             Operators.project(field=None, projected_value={
-                "dataset": "$_id.dataset",
-                "instantiates": "$_id.instantiates",
+                Record.DATASET_: Record.DATASET___,
+                Record.INSTANTIATES_: Record.INSTANTIATES___,
                 "prob": {
                     "$cond": {
                         "if": {"$eq": ["$total", 0]},
@@ -616,12 +620,12 @@ class FeatureProfileComputation:
                 "_id": "$_id",
                 "entropy_value": {"$multiply": ["$prob", {"$log": ["$prob", 2]}]}
             }),
-            Operators.group_by(group_key={"instantiates": "$_id.instantiates", "dataset": "$_id.dataset"}, groups=[
+            Operators.group_by(group_key={Record.INSTANTIATES_: Record.INSTANTIATES___, Record.DATASET_: Record.DATASET___}, groups=[
                 {"name": "entropy", "operator": "$sum", "field": "$entropy_value"}
             ]),
             Operators.project(field=None, projected_value={
-                "dataset": "$_id.dataset",
-                "instantiates": "$_id.instantiates",
+                Record.DATASET_: Record.DATASET___,
+                Record.INSTANTIATES_: Record.INSTANTIATES___,
                 "entropy": {"$abs": "$entropy"}
             })
         ]
@@ -629,18 +633,18 @@ class FeatureProfileComputation:
     def density_query(self, features_ids: list) -> list:
         # a measure of appropriate numerosity and intensity between different real-world entities available in the data
         return [
-            Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
-            Operators.group_by(group_key={"instantiates": "$instantiates", "dataset": "$dataset", "value": "$value"}, groups=[
+            Operators.match(field=Record.INSTANTIATES_, value={"$in": features_ids}, is_regex=False),
+            Operators.group_by(group_key={Record.INSTANTIATES_: Record.INSTANTIATES__, Record.DATASET_: Record.DATASET__, Record.VALUE_: Record.VALUE__}, groups=[
                 {"name": "frequency", "operator": "$sum", "field": 1}]),
-            Operators.group_by(group_key={"instantiates": "$_id.instantiates", "dataset": "$_id.dataset"}, groups=[
+            Operators.group_by(group_key={Record.INSTANTIATES_: Record.INSTANTIATES___, Record.DATASET__: Record.DATASET___}, groups=[
                 {"name": "total", "operator": "$sum", "field": "$frequency"},
                 {"name": "distinct_count", "operator": "$sum", "field": 1},
                 {"name": "frequencies", "operator": "$push", "field": "$frequency"}
             ]),
             Operators.unwind("frequencies"),
             Operators.project(field=None, projected_value={
-                "dataset": "$_id.dataset",
-                "instantiates": "$_id.instantiates",
+                "dataset": Record.DATASET___,
+                Record.INSTANTIATES_: Record.INSTANTIATES___,
                 "prob": {
                     "$cond": {
                         "if": {"$eq": ["$total", 0]},
@@ -650,25 +654,25 @@ class FeatureProfileComputation:
                 },
                 "distinct_count": "$distinct_count"
             }),
-            Operators.group_by(group_key={"instantiates": "$_id.instantiates", "dataset": "$_id.dataset"}, groups=[
+            Operators.group_by(group_key={Record.INSTANTIATES_: Record.INSTANTIATES___, Record.DATASET_: Record.DATASET___}, groups=[
                 {"name": "avg_dens_value", "operator": "$avg", "field": "$prob"},
                 {"name": "probs", "operator": "$push", "field": "$prob"},
                 {"name": "distinct_count", "operator": "$first", "field": "$distinct_count"}
             ]),
             Operators.unwind("probs"),
             Operators.project(field=None, projected_value={
-                "dataset": "$_id.dataset",
-                "instantiates": "$_id.instantiates",
+                Record.DATASET_: Record.DATASET___,
+                Record.INSTANTIATES_: Record.INSTANTIATES___,
                 "density_value": {"$abs": {"$subtract": ["$probs", "$avg_dens_value"]}},
                 "distinct_count": "$distinct_count"
             }),
-            Operators.group_by(group_key={"instantiates": "$_id.instantiates", "dataset": "$_id.dataset"}, groups=[
+            Operators.group_by(group_key={Record.INSTANTIATES_: Record.INSTANTIATES___, Record.DATASET_: Record.DATASET___}, groups=[
                 {"name": "densities_sum", "operator": "$sum", "field": "$density_value"},
                 {"name": "distinct_count", "operator": "$first", "field": "$distinct_count"}
             ]),
             Operators.project(field=None, projected_value={
-                "dataset": "$_id.dataset",
-                "instantiates": "$_id.instantiates",
+                Record.DATASET_: Record.DATASET___,
+                Record.INSTANTIATES_: Record.INSTANTIATES___,
                 "density": {
                     "$cond": {
                         "if": {"$eq": ["$distinct_count", 0]},
@@ -681,23 +685,23 @@ class FeatureProfileComputation:
 
     def values_and_counts_query(self, features_ids: list) -> list:
         return [
-            Operators.match(field="instantiates", value={"$in": features_ids}, is_regex=False),
-            Operators.group_by(group_key={"instantiates": "$instantiates", "dataset": "$dataset", "value": "$value"},
+            Operators.match(field=Record.INSTANTIATES_, value={"$in": features_ids}, is_regex=False),
+            Operators.group_by(group_key={Record.INSTANTIATES_: Record.INSTANTIATES__, Record.DATASET_: Record.DATASET__, Record.VALUE_: Record.VALUE__},
                                groups=[{"name": "counts", "operator": "$sum", "field": 1}]),
-            Operators.group_by(group_key={"instantiates": "$_id.instantiates", "dataset": "$_id.dataset"}, groups=[
+            Operators.group_by(group_key={Record.INSTANTIATES_: Record.INSTANTIATES___, Record.DATASET_: Record.DATASET___}, groups=[
                 # push in an array of maps of two elements (value and counts) the elements of the  pair (dataset, feature)
-                {"name": "values_and_counts", "operator": "$push", "field": {"value": {"$cond": {"if": {"$eq": ["$_id.value", DEFAULT_NAN_VALUE]}, "then": None, "else": "$_id.value"}}, "count": "$counts"}}
+                {"name": "values_and_counts", "operator": "$push", "field": {Record.VALUE_: {"$cond": {"if": {"$eq": [Record.VALUE___, DEFAULT_NAN_VALUE]}, "then": None, "else": Record.VALUE___}}, "count": "$counts"}}
             ])
         ]
 
     def missing_percentage_query_non_clinical(self, features_ids: list) -> list:
         return [
             # first compute the missing percentage of each feature by dividing the number of values and the number of patients
-            Operators.match(field=None, value={"$and": [{"instantiates": {"$in": features_ids}}, {"entity_type": {"$ne": f"{Profile.CLINICAL}{TableNames.RECORD}"}}]}, is_regex=False),
-            Operators.group_by(group_key={"dataset": "$dataset", "instantiates": "$instantiates"}, groups=[
+            Operators.match(field=None, value={"$and": [{Record.INSTANTIATES_: {"$in": features_ids}}, {Record.ENTITY_TYPE_: {"$ne": f"{Profile.CLINICAL}{TableNames.RECORD}"}}]}, is_regex=False),
+            Operators.group_by(group_key={Record.DATASET_: Record.DATASET__, Record.INSTANTIATES_: Record.INSTANTIATES__}, groups=[
                 {"name": "count_db_values", "operator": "$sum", "field": 1}
             ]),
-            Operators.lookup(join_table_name=TableNames.COUNTS_PATIENTS, foreign_field="_id.dataset", local_field="_id.dataset", lookup_field_name="joined"),
+            Operators.lookup(join_table_name=TableNames.COUNTS_PATIENTS, foreign_field=f"_id.{Record.DATASET_}", local_field="_id.{Record.DATASET_}", lookup_field_name="joined"),
             Operators.project(field=None, projected_value={
                 "missing_percentage": {
                     "$cond": {
@@ -712,11 +716,11 @@ class FeatureProfileComputation:
     def missing_percentage_query_clinical(self, features_ids: list) -> list:
         return [
             # first compute the missing percentage of each feature by dividing the number of values and the number of patients
-            Operators.match(field=None, value={"$and": [{"instantiates": {"$in": features_ids}}, {"entity_type": {"$eq": f"{Profile.CLINICAL}{TableNames.RECORD}"}}]}, is_regex=False),
-            Operators.group_by(group_key={"dataset": "$dataset", "instantiates": "$instantiates"}, groups=[
+            Operators.match(field=None, value={"$and": [{Record.INSTANTIATES_: {"$in": features_ids}}, {Record.ENTITY_TYPE_: {"$eq": f"{Profile.CLINICAL}{TableNames.RECORD}"}}]}, is_regex=False),
+            Operators.group_by(group_key={Record.DATASET_: Record.DATASET__, Record.INSTANTIATES_: Record.INSTANTIATES__}, groups=[
                 {"name": "count_db_values", "operator": "$sum", "field": 1}
             ]),
-            Operators.lookup(join_table_name=TableNames.COUNTS_SAMPLES, foreign_field="dataset", local_field="dataset", lookup_field_name="joined"),
+            Operators.lookup(join_table_name=TableNames.COUNTS_SAMPLES, foreign_field=Record.DATASET_, local_field=Record.DATASET_, lookup_field_name="joined"),
             Operators.project(field=None, projected_value={
                 "missing_percentage": {
                     "$cond": {
@@ -732,14 +736,14 @@ class FeatureProfileComputation:
         # get dataset and instantiates from the group key and keep remaining fields, except the group key _id
         # project requires to specify all fields to keep, set and unset work only on those of interest and keep others
         if include_value:
-            last_fields = [{"$set": {"dataset": "$_id.dataset", "instantiates": "$_id.instantiates", "value": "$_id.value"}}]
+            last_fields = [{"$set": {Record.DATASET_: Record.DATASET___, Record.INSTANTIATES_: Record.INSTANTIATES___, Record.VALUE_: Record.VALUE___}}]
         else:
-            last_fields = [{"$set": {"dataset": "$_id.dataset", "instantiates": "$_id.instantiates"}}]
+            last_fields = [{"$set": {Record.DATASET_: Record.DATASET___, Record.INSTANTIATES_: Record.INSTANTIATES___}}]
         last_fields.append({"$unset": ["_id"]})
         # merge the profile into the profile table
         last_fields.append(
             Operators.merge(table_name=TableNames.FEATURE_PROFILE,
-                            on_attribute=["dataset", "instantiates"],
+                            on_attribute=[Record.DATASET_, Record.INSTANTIATES_],
                             when_matched="merge",
                             when_not_matched="insert"))
         return last_fields
