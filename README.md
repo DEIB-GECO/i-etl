@@ -74,7 +74,7 @@ In that folder, run `X=Y docker compose up -d` to launch the FAIRification, such
    3. _Note: synthetic data will be generated based on the hospital name because each hospital has its own structure of data._  
 
 #### 2. Run the following commands in your terminal: 
-  - `export CONTEXT_MODE=GEN`
+  - `export CONTEXT_MODE=GENERATION`
   - `export ETL_ENV_FILE_NAME=.env`
   - `export ABSOLUTE_PATH_ENV_FILE=X` where `X` is the absolute path to your `.env` file
 
