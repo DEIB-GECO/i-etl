@@ -140,8 +140,10 @@ class Transform(Task):
                         # for categorical values, we first need to take the list of (normalized) values that are available for the current column, and then take their CC
                         # this avoids to add categorical values for boolean features (where Yes and No and encoded with ontology resource), we do not add them
                         normalized_categorical_values = list(self.mapping_column_to_categorical_value[column_name].values())
+                        log.info(normalized_categorical_values)
                         # categorical_values = [self.mapping_categorical_value_to_onto_resource[normalized_categorical_value] for normalized_categorical_value in normalized_categorical_values]
-                        domain[Domain.ACCEPTED_VALUES] = [onto_res.label for onto_res in normalized_categorical_values]
+                        domain[Domain.ACCEPTED_VALUES] = list(self.mapping_column_to_categorical_value[column_name].keys())
+                        log.info(domain[Domain.ACCEPTED_VALUES])
                     elif data_type in [DataTypes.DATE, DataTypes.DATETIME] or data_type in DataTypes.numeric():
                         if column_name in self.mapping_column_to_domain and self.mapping_column_to_domain[column_name] is not None:
                             if Domain.MIN in self.mapping_column_to_domain[column_name]:

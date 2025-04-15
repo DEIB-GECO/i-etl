@@ -1,3 +1,19 @@
 {
-  "molecule_g": ["0", "1", "na"]
+    "molecule_g": {
+        "0": {
+            "system": "http://snomed.info/sct",
+            "code": "373067005",
+            "label": "No"
+        },
+        "1": {
+            "system": "http://snomed.info/sct",
+            "code": "373066001",
+            "label": "Yes"
+        },
+        "n/a": {
+            "system": "http://snomed.info/sct",
+            "code": "276727009",
+            "label": "Null"
+        }
+    }
 }

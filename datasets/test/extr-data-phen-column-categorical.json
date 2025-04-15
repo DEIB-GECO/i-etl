@@ -1,3 +1,14 @@
 {
-  "sex": ["m", "f"]
+    "sex": {
+        "m": {
+            "label": "Male",
+            "system": "http://snomed.info/sct",
+            "code": "248153007"
+        },
+        "f": {
+            "label": "Female",
+            "system": "http://snomed.info/sct",
+            "code": "248152002"
+        }
+    }
 }
