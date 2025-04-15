@@ -32,7 +32,11 @@ class OntologyResource:
         self.quality_stats = self.quality_stats if self.quality_stats is not None else QualityStatistics(record_stats=False)
         if len(self.system) == 0 or len(self.code) == 0:
             # no ontology code has been provided for that variable name, let's skip it
-            log.error("Could not create an OntologyResource with no ontology system and/or code.")
+            # the only case when we don't want to skip it is when a label is provided as input
+            if self.label is not None and self.label != "":
+                log.error("Creating an OntologyResource with a label only.")
+            else:
+                log.error("Could not create an OntologyResource with no ontology system and/or code.")
         else:
             # this corresponds to the first (and only) ontology system;
             # if there are many, we record only the first but make API calls with all
