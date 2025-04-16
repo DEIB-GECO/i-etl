@@ -32,7 +32,11 @@ class OntologyResource:
         self.quality_stats = self.quality_stats if self.quality_stats is not None else QualityStatistics(record_stats=False)
         if len(self.system) == 0 or len(self.code) == 0:
             # no ontology code has been provided for that variable name, let's skip it
-            log.error("Could not create an OntologyResource with no ontology system and/or code.")
+            # the only case when we don't want to skip it is when a label is provided as input
+            if self.label is not None and self.label != "":
+                log.error("Creating an OntologyResource with a label only.")
+            else:
+                log.error("Could not create an OntologyResource with no ontology system and/or code.")
         else:
             # this corresponds to the first (and only) ontology system;
             # if there are many, we record only the first but make API calls with all
@@ -291,7 +295,8 @@ class OntologyResource:
     @classmethod
     def from_json(cls, json_or: dict, quality_stats: QualityStatistics):  # returns an OntologyResource
         # fill a new OntologyResource instance with a JSON-encoded OntologyResource
-        the_system = Ontologies.get_enum_from_url(json_or["system"]) if "system" in json_or else {}
+        log.info(json_or)
+        the_system = Ontologies.get_enum_from_url(json_or["system"]) if "system" in json_or else ""
         the_code = json_or["code"] if "code" in json_or else ""
         the_label = json_or["label"] if "label" in json_or else None
         the_or = OntologyResource(system=the_system, code=the_code, label=the_label, quality_stats=quality_stats)

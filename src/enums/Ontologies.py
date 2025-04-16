@@ -37,7 +37,7 @@ class Ontologies(EnumAsClass):
         for existing_ontology in Ontologies.values():
             if existing_ontology["url"] == ontology_url:
                 return existing_ontology  # return the ontology enum
-        return None
+        return ""
 
     @classmethod
     def get_names(cls):

@@ -302,10 +302,13 @@ class TestExtract(unittest.TestCase):
                            hospital_name=HospitalNames.TEST_H1)
         extract.compute_mapping_categorical_value_to_onto_resource()
 
-        assert len(extract.mapping_categorical_value_to_onto_resource.keys()) == 3  # 0, 1, NA
+        print(extract.mapping_column_to_categorical_value)
+        assert "molecule_g" in extract.mapping_column_to_categorical_value  # only one categorical feature
+        assert len(extract.mapping_column_to_categorical_value) == 1
+        assert len(extract.mapping_column_to_categorical_value["molecule_g"].keys()) == 3  # 0, 1, NA
         # checking "0" mapping
-        assert "0" in extract.mapping_categorical_value_to_onto_resource  # normalized categorical value
-        cc_0 = extract.mapping_categorical_value_to_onto_resource["0"].to_json()
+        assert "0" in extract.mapping_column_to_categorical_value["molecule_g"]  # normalized categorical value
+        cc_0 = extract.mapping_column_to_categorical_value["molecule_g"]["0"]
         assert len(cc_0) == 3  # system, code, and label keys
         assert "system" in cc_0
         assert "code" in cc_0
@@ -314,8 +317,8 @@ class TestExtract(unittest.TestCase):
         assert cc_0["system"] == Ontologies.SNOMEDCT["url"]  # normalized (ontology) key
         assert cc_0["code"] == "373067005"  # normalized ontology code
         # checking "1" mapping
-        assert "1" in extract.mapping_categorical_value_to_onto_resource  # normalized categorical value
-        cc_1 = extract.mapping_categorical_value_to_onto_resource["1"].to_json()
+        assert "1" in extract.mapping_column_to_categorical_value["molecule_g"]  # normalized categorical value
+        cc_1 = extract.mapping_column_to_categorical_value["molecule_g"]["1"]
         assert len(cc_1) == 3  # system, code, and label keys
         assert "system" in cc_1
         assert "code" in cc_1
@@ -324,8 +327,8 @@ class TestExtract(unittest.TestCase):
         assert cc_1["system"] == Ontologies.SNOMEDCT["url"]  # normalized (ontology) key
         assert cc_1["code"] == "373066001"  # normalized ontology code
         # checking "na" mapping
-        assert np.nan in extract.mapping_categorical_value_to_onto_resource  # normalized categorical value; np.nan is the key name
-        cc_na = extract.mapping_categorical_value_to_onto_resource[np.nan].to_json()
+        assert np.nan in extract.mapping_column_to_categorical_value["molecule_g"]  # normalized categorical value; np.nan is the key name
+        cc_na = extract.mapping_column_to_categorical_value["molecule_g"][np.nan]
         assert len(cc_na) == 3  # system, code, and label keys
         assert "system" in cc_na
         assert "code" in cc_na
@@ -342,10 +345,12 @@ class TestExtract(unittest.TestCase):
                            hospital_name=HospitalNames.TEST_H1)
         extract.compute_mapping_categorical_value_to_onto_resource()
 
-        assert len(extract.mapping_categorical_value_to_onto_resource.keys()) == 2  # F/M
+        print(extract.mapping_column_to_categorical_value)
+        assert "sex" in extract.mapping_column_to_categorical_value
+        assert len(extract.mapping_column_to_categorical_value.keys()) == 1  # only sex feature is here
         # checking "male" mapping
-        assert "m" in extract.mapping_categorical_value_to_onto_resource  # normalized categorical value
-        cc_male = extract.mapping_categorical_value_to_onto_resource["m"].to_json()
+        assert "m" in extract.mapping_column_to_categorical_value["sex"]  # normalized categorical value
+        cc_male = extract.mapping_column_to_categorical_value["sex"]["m"]
         assert len(cc_male) == 3  # system, code, and label keys
         assert "system" in cc_male
         assert "code" in cc_male
@@ -354,8 +359,8 @@ class TestExtract(unittest.TestCase):
         assert cc_male["system"] == Ontologies.SNOMEDCT["url"]  # normalized (ontology) key
         assert cc_male["code"] == "248153007"  # normalized ontology code
         # checking "female" mapping
-        assert "f" in extract.mapping_categorical_value_to_onto_resource  # normalized categorical value
-        cc_female = extract.mapping_categorical_value_to_onto_resource["f"].to_json()
+        assert "f" in extract.mapping_column_to_categorical_value["sex"]  # normalized categorical value
+        cc_female = extract.mapping_column_to_categorical_value["sex"]["f"]
         assert len(cc_female) == 3  # system, code, and label keys
         assert "system" in cc_female
         assert "code" in cc_female

@@ -39,7 +39,6 @@ from utils.test_utils import set_env_variables_from_dict, get_feature_by_text, \
 
 # personalized setup called at the beginning of each test
 def my_setup(hospital_name: str, profile: str, extracted_metadata_path: str, extracted_data_paths: str,
-             extracted_mapping_categorical_values_path: str,
              extracted_column_to_categorical_path: str,
              extracted_column_type_path: str,
              extracted_column_unit_path: str,
@@ -69,8 +68,6 @@ def my_setup(hospital_name: str, profile: str, extracted_metadata_path: str, ext
     for column in data:
         data.loc[:, column] = data[column].apply(lambda x: MetadataColumns.normalize_value(column_value=x))
 
-    with open(os.path.join(DOCKER_FOLDER_TEST, extracted_mapping_categorical_values_path), "r") as f:
-        mapping_categorical_values = json.load(f)
     with open(os.path.join(DOCKER_FOLDER_TEST, extracted_column_to_categorical_path), "r") as f:
         mapping_column_to_categorical_value = json.load(f)
     with open(os.path.join(DOCKER_FOLDER_TEST, extracted_column_unit_path), "r") as f:
@@ -83,7 +80,6 @@ def my_setup(hospital_name: str, profile: str, extracted_metadata_path: str, ext
     dataset_instance = Dataset(identifier=NO_ID, database=database, docker_path=data_path, version_notes=None, license=None, counter=Counter())
     transform = Transform(database=database, execution=TestTransform.execution, data=data, metadata=metadata,
                           profile=profile, dataset_id=get_dataset_id_from_profile(profile),
-                          mapping_categorical_value_to_onto_resource=mapping_categorical_values,
                           mapping_column_to_categorical_value=mapping_column_to_categorical_value,
                           mapping_column_to_unit=column_to_unit,
                           mapping_column_to_domain=mapping_column_to_domain,
@@ -170,7 +166,6 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.PHENOTYPIC,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_PHENOTYPIC_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_PHENOTYPIC_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_PHENOTYPIC_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
@@ -203,7 +198,6 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.PHENOTYPIC,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_PHENOTYPIC_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_PHENOTYPIC_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_PHENOTYPIC_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
@@ -299,7 +293,6 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_CLINICAL_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
@@ -401,7 +394,6 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.PHENOTYPIC,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_PHENOTYPIC_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_PHENOTYPIC_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_PHENOTYPIC_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
@@ -427,7 +419,6 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.PHENOTYPIC,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_PHENOTYPIC_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_PHENOTYPIC_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_PHENOTYPIC_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
@@ -451,7 +442,6 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_CLINICAL_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
@@ -469,7 +459,6 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_CLINICAL_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
                              extracted_column_type_path=TheTestFiles.EXTR_CLINICAL_TYPE_PATH,
@@ -499,7 +488,6 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.PHENOTYPIC,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_PHENOTYPIC_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_PHENOTYPIC_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_PHENOTYPIC_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
                              extracted_column_type_path=TheTestFiles.EXTR_PHENOTYPIC_TYPE_PATH,
@@ -518,7 +506,6 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_CLINICAL_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_type_path=TheTestFiles.EXTR_CLINICAL_TYPE_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
@@ -538,7 +525,6 @@ class TestTransform(unittest.TestCase):
         extract = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_CLINICAL_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
                            extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
@@ -558,7 +544,6 @@ class TestTransform(unittest.TestCase):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_CLINICAL_DATA_PATH,
-                             extracted_mapping_categorical_values_path=TheTestFiles.EXTR_CLINICAL_CATEGORICAL_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,

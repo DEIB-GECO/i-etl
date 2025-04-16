@@ -114,7 +114,6 @@ class ETL:
                             time_stats.start(dataset=dataset.global_identifier, key=TimerKeys.TRANSFORM_TIME)
                             self.transform = Transform(database=self.database, execution=self.execution, data=self.extract.data,
                                                        metadata=self.extract.metadata,
-                                                       mapping_categorical_value_to_onto_resource=self.extract.mapping_categorical_value_to_onto_resource,
                                                        mapping_column_to_categorical_value=self.extract.mapping_column_to_categorical_value,
                                                        mapping_column_to_unit=self.extract.mapping_column_to_unit,
                                                        mapping_column_to_domain=self.extract.mapping_column_to_domain,

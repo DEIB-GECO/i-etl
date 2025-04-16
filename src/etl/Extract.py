@@ -32,7 +32,7 @@ class Extract(Task):
         self.metadata = metadata
         self.profile = Profile.normalize(profile)
         self.columns_dataset_all_profiles = None
-        self.mapping_categorical_value_to_onto_resource = {}  # <categorical value label ("JSON_values" column), OntologyResource>
+        # self.mapping_categorical_value_to_onto_resource = {}  # <categorical value label ("JSON_values" column), OntologyResource>
         self.mapping_column_to_categorical_value = {}  # <column name, list of normalized accepted values>
         self.mapping_column_to_vartype = {}  # <column name, var type ("vartype" column)>
         self.mapping_column_to_unit = {}  # <column name, unit provided in the metadata>
@@ -204,7 +204,10 @@ class Extract(Task):
                 self.quality_stats.add_column_not_described_in_metadata(data_column_name=data_column)
 
     def compute_mapping_categorical_value_to_onto_resource(self) -> None:
-        self.mapping_categorical_value_to_onto_resource = {}
+        # Apr 15, 2025: I cannot use the mapping category/OR
+        # because in IMGGE all categorical values are encoded with numbers (1, 2, 3, etc.)
+        # and thus this mapping lacks a level of nesting with the feature name to avoid writing agin and again new OR for categorical values
+        # self.mapping_categorical_value_to_onto_resource = {}
         self.mapping_column_to_categorical_value = {}
         # 1. first, we retrieve the existing categorical values already transformed as OntologyResource
         # this will avoid to send again API queries to re-build already-built OntologyResource,
@@ -234,11 +237,16 @@ class Extract(Task):
                 except Exception:
                     self.quality_stats.add_categorical_colum_with_unparseable_json(column_name=column_name, broken_json=candidate_json_values)
                     json_categorical_values = {}
-                self.mapping_column_to_categorical_value[column_name] = []
+                categories_for_column = {}  # we append this dictionary to the list only if it has at least one categorical value
+                # { 'sex': {
+                #   'm': {"system": "snomed", "code": "248153007", "label": "m (Male)"},
+                #   'f': {"system": "snomed", "code": "248152002", "label": "f (Female)"},
+                #   'inadeguata': {"system": "snomed", "code": "71978007", "label": "inadeguata (inadequate)"},
+                #   ...
+                # }, ...}
                 for json_categorical_value in json_categorical_values:
                     normalized_categorical_value = MetadataColumns.normalize_value(json_categorical_value["value"])
-                    or_has_been_built = False
-                    if normalized_categorical_value not in self.mapping_categorical_value_to_onto_resource:
+                    if normalized_categorical_value not in categories_for_column:
                         # the categorical value does not exist yet in the mapping, thus:
                         # - it may be retrieved from the db and be added to the mapping
                         # - or, it may be computed for the first time
@@ -246,56 +254,45 @@ class Extract(Task):
                             # this is a categorical value that we have never seen (not even in previous executions),
                             # we need to create an OntologyResource for it from scratch
                             # json_categorical_value is of the form: {'value': 'X', 'explanation': 'some definition', 'onto_system_Y': 'onto_code_Z' }
-                            for key, val in json_categorical_value.items():
-                                # for any key value pair that is not about the value or the explanation
-                                # (i.e., loinc and snomedct columns), we create an OntologyResource, which we add to the CodeableConcept
-                                # we need to do a loop because there may be several ontology terms for a single mapping
-                                if key != "value" and key != "explanation":
-                                    # here, we do normalize the ontology name to be able to get the corresponding enum
-                                    # however, we do not normalize the code, because it needs extra attention (due to spaces in post-coordinated codes, etc)
-                                    ontology = Ontologies.get_enum_from_name(ontology_name=Ontologies.normalize_name(key))
-                                    onto_resource = OntologyResource(system=ontology, code=val, label=None, quality_stats=self.quality_stats)
-                                    if onto_resource.system != "" and onto_resource.code != "":
-                                        or_has_been_built = True
-                                        self.mapping_categorical_value_to_onto_resource[normalized_categorical_value] = onto_resource
-                                    else:
-                                        # the ontology system is unknown or no code has been provided,
-                                        # thus the OntologyResource contains only None fields,
-                                        # thus we do not record it as a possible category
-                                        pass
-                            # {
-                            #   'm': {"system": "snomed", "code": "248153007", "label": "m (Male)"},
-                            #   'f': {"system": "snomed", "code": "248152002", "label": "f (Female)"},
-                            #   'inadeguata': {"system": "snomed", "code": "71978007", "label": "inadeguata (inadequate)"},
-                            #   ...
-                            # }
+                            if len(json_categorical_value) == 2 and "value" in json_categorical_value and "explanation" in json_categorical_value:
+                                # this is the specific case when categories are not mapped to a code, but they are encoded
+                                # therefore the mapping is simply the encoded value (1, 2, 3, etc) to the label (found in the "explanation" field)
+                                # we need to use empty system and code instead of None otherwise NoneType exception
+                                onto_resource = OntologyResource(system="", code="", label=json_categorical_value["explanation"], quality_stats=self.quality_stats)
+                                categories_for_column[normalized_categorical_value] = onto_resource.to_json()
+                            else:
+                                for key, val in json_categorical_value.items():
+                                    # for any key value pair that is not about the value or the explanation
+                                    # (i.e., loinc and snomedct columns), we create an OntologyResource, which we add to the CodeableConcept
+                                    # we need to do a loop because there may be several ontology terms for a single mapping
+                                    if key != "value" and key != "explanation":
+                                        # here, we do normalize the ontology name to be able to get the corresponding enum
+                                        # however, we do not normalize the code, because it needs extra attention (due to spaces in post-coordinated codes, etc)
+                                        ontology = Ontologies.get_enum_from_name(ontology_name=Ontologies.normalize_name(key))
+                                        onto_resource = OntologyResource(system=ontology, code=val, label=None, quality_stats=self.quality_stats)
+                                        if onto_resource.system != "" and onto_resource.code != "":
+                                            categories_for_column[normalized_categorical_value] = onto_resource.to_json()
+                                        else:
+                                            # the ontology system is unknown or no code has been provided,
+                                            # thus the OntologyResource contains only None fields,
+                                            # thus we do not record it as a possible category
+                                            pass
+
                         else:
                             # an OntologyResource already exists for this value (it has been retrieved from the db),
                             # we simply add it to the mapping
                             log.debug(f"The categorical value {normalized_categorical_value} already exists in the database as a CC. Taking it from here.")
-                            self.mapping_categorical_value_to_onto_resource[normalized_categorical_value] = existing_categorical_codeable_concepts[normalized_categorical_value]
-                        # in any case (regardless how the CC is build), we need to record that this value is a categorical value for that column
-                        if or_has_been_built and normalized_categorical_value not in self.mapping_column_to_categorical_value[column_name]:
-                            # record the normalized value only if we have built an OR
-                            # otherwise, do add it, and Transform will return the normalized (non-FAIRified) value
-                            self.mapping_column_to_categorical_value[column_name].append(normalized_categorical_value)
-                    else:
-                        # this categorical value is already present in the mapping self.mapping_categorical_value_to_cc
-                        # (it has either been retrieved from the db or computed for the first time),
-                        # so no need to add it again
-                        # log.debug(f"{normalized_categorical_value} is already in the mapping: {self.mapping_categorical_value_to_cc}")
-
-                        # however, we still need to add it as a categorical value for the current column
-                        if normalized_categorical_value not in self.mapping_column_to_categorical_value[column_name]:
-                            self.mapping_column_to_categorical_value[column_name].append(normalized_categorical_value)
+                            categories_for_column[normalized_categorical_value] = existing_categorical_codeable_concepts[normalized_categorical_value].to_json()
+                    if column_name not in self.mapping_column_to_categorical_value and len(categories_for_column) > 0:
+                        # there is at least one category for this column
+                        self.mapping_column_to_categorical_value[column_name] = categories_for_column
             else:
                 # if this was supposed to be categorical (thus having values), we count it in the reporting
                 # otherwise, this is not a categorical column (thus, everything is fine)
                 if column_type == DataTypes.CATEGORY:
                     # log.info(f"no JSON categories for column {column_name}")
                     self.quality_stats.add_categorical_column_with_no_json(column_name=column_name)
-        # log.debug(f"{self.mapping_categorical_value_to_onto_resource}")
-        # log.debug(f"{self.mapping_column_to_categorical_value}")
+        log.debug(f"{self.mapping_column_to_categorical_value}")
 
     def compute_column_to_unit(self) -> None:
         self.mapping_column_to_unit = {}

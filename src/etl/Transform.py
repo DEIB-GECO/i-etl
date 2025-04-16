@@ -49,7 +49,6 @@ from utils.setup_logger import log
 class Transform(Task):
 
     def __init__(self, database: Database, execution: Execution, data: DataFrame, metadata: DataFrame,
-                 mapping_categorical_value_to_onto_resource: dict,
                  mapping_column_to_categorical_value: dict,
                  mapping_column_to_unit: dict, mapping_column_to_domain: dict,
                  mapping_column_to_type: dict | None,
@@ -67,7 +66,6 @@ class Transform(Task):
         self.data = data
         self.metadata = metadata
         self.mapping_column_to_unit = mapping_column_to_unit
-        self.mapping_categorical_value_to_onto_resource = mapping_categorical_value_to_onto_resource
         self.mapping_column_to_categorical_value = mapping_column_to_categorical_value
         if mapping_column_to_type is not None:
             self.mapping_column_to_type = mapping_column_to_type  # we give it to Transform during tests
@@ -136,14 +134,16 @@ class Transform(Task):
                     self.mapping_column_to_visibility[column_name] = visibility
                     unit = self.mapping_column_to_unit[column_name] if column_name in self.mapping_column_to_unit else None  # else covers: there is no dataType for this column; there is no datatype in that type of entity
                     description = row[columns.get_loc(MetadataColumns.SIGNIFICATION_EN)]
-                    categorical_values = None
+                    normalized_categorical_values = None
                     domain = {}
                     if data_type in [DataTypes.CATEGORY, DataTypes.REGEX] and column_name in self.mapping_column_to_categorical_value:
                         # for categorical values, we first need to take the list of (normalized) values that are available for the current column, and then take their CC
                         # this avoids to add categorical values for boolean features (where Yes and No and encoded with ontology resource), we do not add them
-                        normalized_categorical_values = self.mapping_column_to_categorical_value[column_name]
-                        categorical_values = [self.mapping_categorical_value_to_onto_resource[normalized_categorical_value] for normalized_categorical_value in normalized_categorical_values]
-                        domain[Domain.ACCEPTED_VALUES] = normalized_categorical_values
+                        normalized_categorical_values = list(self.mapping_column_to_categorical_value[column_name].values())
+                        log.info(normalized_categorical_values)
+                        # categorical_values = [self.mapping_categorical_value_to_onto_resource[normalized_categorical_value] for normalized_categorical_value in normalized_categorical_values]
+                        domain[Domain.ACCEPTED_VALUES] = list(self.mapping_column_to_categorical_value[column_name].keys())
+                        log.info(domain[Domain.ACCEPTED_VALUES])
                     elif data_type in [DataTypes.DATE, DataTypes.DATETIME] or data_type in DataTypes.numeric():
                         if column_name in self.mapping_column_to_domain and self.mapping_column_to_domain[column_name] is not None:
                             if Domain.MIN in self.mapping_column_to_domain[column_name]:
@@ -155,7 +155,7 @@ class Transform(Task):
                                                         ontology_resource=onto_resource,
                                                         data_type=data_type, unit=unit,
                                                         counter=self.counter,
-                                                        categories=categorical_values,
+                                                        categories=normalized_categorical_values,
                                                         visibility=visibility,
                                                         dataset=self.dataset_instance.global_identifier,
                                                         description=description,
@@ -164,7 +164,7 @@ class Transform(Task):
                         new_feature = ClinicalFeature(identifier=NO_ID, name=column_name, ontology_resource=onto_resource,
                                                       data_type=data_type, unit=unit,
                                                       counter=self.counter,
-                                                      categories=categorical_values,
+                                                      categories=normalized_categorical_values,
                                                       visibility=visibility,
                                                       dataset=self.dataset_instance.global_identifier,
                                                       description=description,
@@ -174,7 +174,8 @@ class Transform(Task):
                                                        ontology_resource=onto_resource,
                                                        data_type=data_type,
                                                        unit=unit, counter=self.counter,
-                                                       categories=categorical_values, visibility=visibility,
+                                                       categories=normalized_categorical_values,
+                                                       visibility=visibility,
                                                        dataset=self.dataset_instance.global_identifier,
                                                        description=description,
                                                        domain=domain)
@@ -183,7 +184,8 @@ class Transform(Task):
                                                      ontology_resource=onto_resource,
                                                      data_type=data_type,
                                                      unit=unit, counter=self.counter,
-                                                     categories=categorical_values, visibility=visibility,
+                                                     categories=normalized_categorical_values,
+                                                     visibility=visibility,
                                                      dataset=self.dataset_instance.global_identifier,
                                                      description=description,
                                                      domain=domain)
@@ -192,7 +194,8 @@ class Transform(Task):
                                                      ontology_resource=onto_resource,
                                                      data_type=data_type,
                                                      unit=unit, counter=self.counter,
-                                                     categories=categorical_values, visibility=visibility,
+                                                     categories=normalized_categorical_values,
+                                                     visibility=visibility,
                                                      dataset=self.dataset_instance.global_identifier,
                                                      description=description,
                                                      domain=domain)
@@ -201,7 +204,8 @@ class Transform(Task):
                                                       ontology_resource=onto_resource,
                                                       data_type=data_type,
                                                       unit=unit, counter=self.counter,
-                                                      categories=categorical_values, visibility=visibility,
+                                                      categories=normalized_categorical_values,
+                                                      visibility=visibility,
                                                       dataset=self.dataset_instance.global_identifier,
                                                       description=description,
                                                       domain=domain)
@@ -252,7 +256,7 @@ class Transform(Task):
         # b. Create Record instance, and write them in temporary (JSON) files
         columns = self.data.columns
         for row in self.data.itertuples(index=False):
-            # log.info(row)
+            log.info(row)
             # create Record instances by associating observations to a patient, a record and a hospital
             for column_name in columns:
                 value = row[columns.get_loc(column_name)]
@@ -510,8 +514,8 @@ class Transform(Task):
             elif etl_type == DataTypes.CATEGORY:
                 # we look for the CC associated to that categorical value
                 # we need to check that (a) the column expects this categorical value and (b) this categorical has an associated CC
-                if column_name in self.mapping_column_to_categorical_value and value in self.mapping_column_to_categorical_value[column_name] and value in self.mapping_categorical_value_to_onto_resource:
-                    return_value = self.mapping_categorical_value_to_onto_resource[value]
+                if column_name in self.mapping_column_to_categorical_value and value in self.mapping_column_to_categorical_value[column_name]:
+                    return_value = self.mapping_column_to_categorical_value[column_name][value]
                 else:
                     # no categorical value for that value, we return the normalized value
                     self.quality_stats.add_unknown_categorical_value(column_name=column_name, categorical_value=value)
