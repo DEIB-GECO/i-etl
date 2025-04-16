@@ -254,19 +254,20 @@ class Extract(Task):
                             # this is a categorical value that we have never seen (not even in previous executions),
                             # we need to create an OntologyResource for it from scratch
                             # json_categorical_value is of the form: {'value': 'X', 'explanation': 'some definition', 'onto_system_Y': 'onto_code_Z' }
-                            for key, val in json_categorical_value.items():
-                                # for any key value pair that is not about the value or the explanation
-                                # (i.e., loinc and snomedct columns), we create an OntologyResource, which we add to the CodeableConcept
-                                # we need to do a loop because there may be several ontology terms for a single mapping
-                                if key != "value" and key != "explanation":
-                                    # here, we do normalize the ontology name to be able to get the corresponding enum
-                                    # however, we do not normalize the code, because it needs extra attention (due to spaces in post-coordinated codes, etc)
-                                    if key == "":
-                                        # this is the specific case when categories are not mapped to a code, but they are encoded
-                                        # therefore the mapping is simply the encoded value (1, 2, 3, etc) to the label (found in the "explanation" field)
-                                        onto_resource = OntologyResource(system=None, code=None, label=json_categorical_value["explanation"], quality_stats=self.quality_stats)
-                                        categories_for_column[normalized_categorical_value] = onto_resource.to_json()
-                                    else:
+                            if len(json_categorical_value) == 2 and "value" in json_categorical_value and "explanation" in json_categorical_value:
+                                # this is the specific case when categories are not mapped to a code, but they are encoded
+                                # therefore the mapping is simply the encoded value (1, 2, 3, etc) to the label (found in the "explanation" field)
+                                # we need to use empty system and code instead of None otherwise NoneType exception
+                                onto_resource = OntologyResource(system="", code="", label=json_categorical_value["explanation"], quality_stats=self.quality_stats)
+                                categories_for_column[normalized_categorical_value] = onto_resource.to_json()
+                            else:
+                                for key, val in json_categorical_value.items():
+                                    # for any key value pair that is not about the value or the explanation
+                                    # (i.e., loinc and snomedct columns), we create an OntologyResource, which we add to the CodeableConcept
+                                    # we need to do a loop because there may be several ontology terms for a single mapping
+                                    if key != "value" and key != "explanation":
+                                        # here, we do normalize the ontology name to be able to get the corresponding enum
+                                        # however, we do not normalize the code, because it needs extra attention (due to spaces in post-coordinated codes, etc)
                                         ontology = Ontologies.get_enum_from_name(ontology_name=Ontologies.normalize_name(key))
                                         onto_resource = OntologyResource(system=ontology, code=val, label=None, quality_stats=self.quality_stats)
                                         if onto_resource.system != "" and onto_resource.code != "":
