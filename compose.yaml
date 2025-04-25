@@ -10,7 +10,7 @@ services:
     volumes:  # docker run -v /path/on/host:/path/inside/container <image_name>
       - ${SERVER_FOLDER_MONGODB}:/data/db
     networks:
-      - network-i-etl
+      - pht-net
   ietl:
     container_name: the-etl
     image: ietl
@@ -34,8 +34,8 @@ services:
       - CONTEXT_MODE=${CONTEXT_MODE:-DEV}
       - ETL_ENV_FILE_NAME=${ETL_ENV_FILE_NAME:-.env}
     networks:
-      - network-i-etl
+      - pht-net
 networks:
-  network-i-etl:
-    name: network-i-etl
-    driver: bridge
+  pht-net:
+    name: pht-net
+    external: true
