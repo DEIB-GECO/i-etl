@@ -9,8 +9,11 @@ services:
       driver: none
     volumes:  # docker run -v /path/on/host:/path/inside/container <image_name>
       - ${SERVER_FOLDER_MONGODB}:/data/db
+    # networks:
+    #  - pht-net
     networks:
       - network-i-etl
+      - pht-net  # PHT only needs Mongo (not the ETL), so it is better to put it only here
   ietl:
     container_name: the-etl
     image: ietl
@@ -33,9 +36,17 @@ services:
     environment:
       - CONTEXT_MODE=${CONTEXT_MODE:-DEV}
       - ETL_ENV_FILE_NAME=${ETL_ENV_FILE_NAME:-.env}
+    # nope, this is a security leak because all people accessing the ETL can also access the PHT and vice versa
+    # this is better to go through the host machine and stay on the ietl network
+    # networks:
+    #  - pht-net
     networks:
       - network-i-etl
 networks:
   network-i-etl:
     name: network-i-etl
     driver: bridge
+  pht-net:  # created if does not exist, otherwise reused
+  #pht-net:
+  #  name: pht-net
+  #  external: true
