@@ -295,7 +295,6 @@ class OntologyResource:
     @classmethod
     def from_json(cls, json_or: dict, quality_stats: QualityStatistics):  # returns an OntologyResource
         # fill a new OntologyResource instance with a JSON-encoded OntologyResource
-        log.info(json_or)
         the_system = Ontologies.get_enum_from_url(json_or["system"]) if "system" in json_or else ""
         the_code = json_or["code"] if "code" in json_or else ""
         the_label = json_or["label"] if "label" in json_or else None

@@ -256,7 +256,7 @@ class Transform(Task):
         # b. Create Record instance, and write them in temporary (JSON) files
         columns = self.data.columns
         for row in self.data.itertuples(index=False):
-            log.info(row)
+            # log.info(row)
             # create Record instances by associating observations to a patient, a record and a hospital
             for column_name in columns:
                 value = row[columns.get_loc(column_name)]
