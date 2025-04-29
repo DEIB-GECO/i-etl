@@ -18,7 +18,7 @@ def write_in_file(resource_list: list, current_working_dir: str, table_name: str
             table_name = TableNames.RECORD
     filename = get_json_resource_file(current_working_dir=current_working_dir, table_name=table_name, dataset_id=dataset_id)
     if len(resource_list) > 0:
-        with jsonlines.open(filename, "w") as data_file:
+        with jsonlines.open(filename, "a") as data_file:
             try:
                 # log.debug(f"Dumping {len(resource_list)} instances in {filename}")
                 if to_json:

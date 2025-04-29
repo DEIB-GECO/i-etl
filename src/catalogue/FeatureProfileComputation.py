@@ -4,7 +4,7 @@ import json
 
 import numpy as np
 
-from constants.defaults import DEFAULT_NAN_VALUE
+from constants.defaults import DEFAULT_NAN_VALUE, PRINT_QUERIES
 from constants.methods import factory
 from database.Database import Database
 from entities.Dataset import Dataset
@@ -30,7 +30,8 @@ class FeatureProfileComputation:
             Operators.group_by(group_key={Record.DATASET_: Record.DATASET___}, groups=[{"name": "distinct_nb_patients", "operator": "$sum", "field": 1}]),
             Operators.write_to_table(table_name=TableNames.COUNTS_PATIENTS)
         ]
-        log.info(operations)
+        if PRINT_QUERIES:
+            log.info(operations)
         _ = self.database.db[TableNames.RECORD].aggregate(operations)
 
         # store, for each clinical dataset, the total number of samples to compute the missing percentage for clinical data
@@ -40,7 +41,8 @@ class FeatureProfileComputation:
             Operators.group_by(group_key={Record.DATASET_: Record.DATASET___}, groups=[{"name": "distinct_nb_samples", "operator": "$sum", "field": 1}]),
             Operators.write_to_table(table_name=TableNames.COUNTS_SAMPLES)
         ]
-        log.info(operations)
+        if PRINT_QUERIES:
+            log.info(operations)
         _ = self.database.db[TableNames.RECORD].aggregate(operations)
 
         # compute the list of Feature identifiers for each Profile data type (numeric, category, date)
@@ -51,21 +53,18 @@ class FeatureProfileComputation:
             if element[Feature.DT_] not in map_feature_datatype:
                 map_feature_datatype[element[Feature.DT_]] = []
             map_feature_datatype[element[Feature.DT_]].append(element[Resource.IDENTIFIER_])
-        log.info(map_feature_datatype)
+        # log.info(map_feature_datatype)
 
         self.numeric_features = []
         self.numeric_features.extend(map_feature_datatype[DataTypes.INTEGER] if DataTypes.INTEGER in map_feature_datatype else [])
         self.numeric_features.extend(map_feature_datatype[DataTypes.FLOAT] if DataTypes.FLOAT in map_feature_datatype else [])
-        log.info(self.numeric_features)
         self.categorical_features = []
         self.categorical_features.extend(map_feature_datatype[DataTypes.STRING] if DataTypes.STRING in map_feature_datatype else [])
         self.categorical_features.extend(map_feature_datatype[DataTypes.BOOLEAN] if DataTypes.BOOLEAN in map_feature_datatype else [])
         self.categorical_features.extend(map_feature_datatype[DataTypes.CATEGORY] if DataTypes.CATEGORY in map_feature_datatype else [])
-        log.info(self.categorical_features)
         self.date_features = []
         self.date_features.extend(map_feature_datatype[DataTypes.DATE] if DataTypes.DATE in map_feature_datatype else [])
         self.date_features.extend(map_feature_datatype[DataTypes.DATETIME] if DataTypes.DATETIME in map_feature_datatype else [])
-        log.info(self.date_features)
         self.all_features = self.numeric_features + self.categorical_features + self.date_features
 
     def compute_features_profiles(self) -> None:
@@ -86,35 +85,40 @@ class FeatureProfileComputation:
         operators = copy.deepcopy(match_numeric_values)
         operators.extend(self.min_max_mean_median_std_query(features_ids=self.numeric_features, compute_min=True, compute_max=True, compute_mean=True, compute_median=True, compute_std=True))
         operators.extend(self.finalize_query(include_value=False))
-        log.info(operators)
+        if PRINT_QUERIES:
+            log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         # 2. compute the Median Absolute Deviation
         operators = copy.deepcopy(match_numeric_values)
         operators.extend(self.abs_med_dev_query(features_ids=self.numeric_features))
         operators.extend(self.finalize_query(include_value=False))
-        log.info(operators)
+        if PRINT_QUERIES:
+            log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         # 3. compute skewness and kurtosis for numerical features
         operators = copy.deepcopy(match_numeric_values)
         operators.extend(self.skewness_and_kurtosis_query(features_ids=self.numeric_features))
         operators.extend(self.finalize_query(include_value=False))
-        log.info(operators)
+        if PRINT_QUERIES:
+            log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         # 4. compute IQR for numerical features
         operators = copy.deepcopy(match_numeric_values)
         operators.extend(self.iqr_query(features_ids=self.numeric_features))
         operators.extend(self.finalize_query(include_value=False))
-        log.info(operators)
+        if PRINT_QUERIES:
+            log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         # 5. compute Pearson correlation coefficients
         operators = copy.deepcopy(match_numeric_values)
         operators.extend(self.pearson_correlation_query(features_ids=self.numeric_features, database=self.database))
         operators.extend(self.finalize_query(include_value=False))
-        log.info(operators)
+        if PRINT_QUERIES:
+            log.info(operators)
         self.database.db[TableNames.PAIRS_FEATURES].aggregate(operators)
 
         # DATE FEATURES
@@ -127,14 +131,16 @@ class FeatureProfileComputation:
         operators = copy.deepcopy(match_date_values)
         operators.extend(self.min_max_mean_median_std_query(features_ids=self.date_features, compute_min=True, compute_max=True, compute_mean=False, compute_median=True, compute_std=False))
         operators.extend(self.finalize_query(include_value=False))
-        log.info(operators)
+        if PRINT_QUERIES:
+            log.info(operators)
         # self.database.db[TableNames.RECORD].aggregate(operators)
 
         # 2. compute IQR for numerical features
         operators = copy.deepcopy(match_date_values)
         operators.extend(self.iqr_query(features_ids=self.date_features))
         operators.extend(self.finalize_query(include_value=False))
-        log.info(operators)
+        if PRINT_QUERIES:
+            log.info(operators)
         # self.database.db[TableNames.RECORD].aggregate(operators)
 
         # CATEGORICAL FEATURES
@@ -146,56 +152,65 @@ class FeatureProfileComputation:
         operators = copy.deepcopy(match_categorical_values)
         operators.extend(self.imbalance_query(features_ids=self.categorical_features))
         operators.extend(self.finalize_query(include_value=False))
-        log.info(operators)
+        if PRINT_QUERIES:
+            log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         # 2. compute constancy for categorical features
         operators = copy.deepcopy(match_categorical_values)
         operators.extend(self.constancy_query(features_ids=self.categorical_features))
         operators.extend(self.finalize_query(include_value=False))
-        log.info(operators)
+        if PRINT_QUERIES:
+            log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         # 3. compute mode for categorical features
         operators = copy.deepcopy(match_categorical_values)
         operators.extend(self.mode_query(features_ids=self.categorical_features))
         operators.extend(self.finalize_query(include_value=False))
-        log.info(operators)
+        if PRINT_QUERIES:
+            log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         # SHARED PROFILE FEATURES
         # uniqueness
         operators = self.uniqueness_query(features_ids=self.all_features)
         operators.extend(self.finalize_query(include_value=False))
-        log.info(operators)
+        if PRINT_QUERIES:
+            log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         # entropy
         operators = self.entropy_query(features_ids=self.all_features)
         operators.extend(self.finalize_query(include_value=False))
-        log.info(operators)
+        if PRINT_QUERIES:
+            log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         # density
         operators = self.density_query(features_ids=self.all_features)
         operators.extend(self.finalize_query(include_value=False))
-        log.info(operators)
+        if PRINT_QUERIES:
+            log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         # values and counts
         operators = self.values_and_counts_query(features_ids=self.all_features)
         operators.extend(self.finalize_query(include_value=True))
-        log.info(operators)
+        if PRINT_QUERIES:
+            log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         operators = self.missing_percentage_query_non_clinical(features_ids=self.all_features)
         operators.extend(self.finalize_query(include_value=False))
-        log.info(operators)
+        if PRINT_QUERIES:
+            log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
         operators = self.missing_percentage_query_clinical(features_ids=self.all_features)
         operators.extend(self.finalize_query(include_value=False))
-        log.info(operators)
+        if PRINT_QUERIES:
+            log.info(operators)
         self.database.db[TableNames.RECORD].aggregate(operators)
 
     def min_max_mean_median_std_query(self, features_ids: list, compute_min: bool, compute_max: bool, compute_mean: bool, compute_median: bool, compute_std: bool) -> list:

@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from itertools import islice
 from typing import Any
 
 import pandas as pd
@@ -251,7 +252,12 @@ class Transform(Task):
                                                                       value_fields=Resource.IDENTIFIER_,
                                                                       filter_dict={Resource.ENTITY_TYPE_: f"{self.profile}{TableNames.FEATURE}"})
         log.info(f"{len(mapping_column_to_feature_id)} {self.profile}{TableNames.FEATURE} have been retrieved from the database.")
-        log.info(mapping_column_to_feature_id)
+        # if len(mapping_column_to_feature_id) > 10:
+        #     # print only the ten first elements
+        #     log.info(dict(islice(mapping_column_to_feature_id.items(), 10)))
+        #
+        # else:
+        # log.info(mapping_column_to_feature_id)
 
         # b. Create Record instance, and write them in temporary (JSON) files
         columns = self.data.columns
@@ -260,7 +266,7 @@ class Transform(Task):
             # create Record instances by associating observations to a patient, a record and a hospital
             for column_name in columns:
                 value = row[columns.get_loc(column_name)]
-                # log.debug(f"for row {row}) and column {column_name} (type: {type(column_name)}), value is {value}")
+                # log.debug(f"column {column_name} (type: {type(column_name)}), value is {value}")
                 if value == "":
                     # if there is no value for that Feature, no need to create a Record instance
                     # log.error(f"skipping value {value} in column {column_name} because it is None, or empty or nan")
