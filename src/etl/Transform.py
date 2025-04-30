@@ -381,7 +381,7 @@ class Transform(Task):
         all_counts = []  # a list of <"identifier": identifier, "all_counts": all_counts> instead of <identifier: all_counts>
         for k in self.mapping_column_all_count:
             all_counts.append({Resource.IDENTIFIER_: k, "count_all_values": self.mapping_column_all_count[k], Resource.DATASET_: self.dataset_instance.global_identifier})
-        log.info(all_counts)
+        # log.info(all_counts)
         self.database.insert_many_tuples(table_name=TableNames.COUNTS_FEATURES, tuples=all_counts)
 
     ##############################################################
