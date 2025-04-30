@@ -395,11 +395,8 @@ class TestDatabase(unittest.TestCase):
 
         # I need to write the tuples in the working dir
         # because load_json_in_table() looks for files having the given table name in that directory
-        # filepath = get_json_resource_file(current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, dataset_id=1)
-        # with jsonlines.open(filepath, 'w') as f:
-        #     json.dump(my_tuples, f)
-        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, is_feature=False, dataset_id=1, to_json=False)
-        database.load_json_in_table_for_tests(unique_variables=["name", "age"], dataset_id=1)
+        write_in_file(resource_list=my_tuples, current_working_dir=self.execution.working_dir_current, table_name=TableNames.TEST, is_feature=False, dataset_id=97, to_json=False)
+        database.load_json_in_table_for_tests(unique_variables=["name", "age"], dataset_id=97)
 
         docs = [doc for doc in database.db[TableNames.TEST].find({}).sort({"name": 1, "age": 1})]
         expected_docs = [my_original_tuples[2], my_original_tuples[0], my_original_tuples[3], my_original_tuples[4]]

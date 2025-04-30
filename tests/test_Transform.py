@@ -30,7 +30,7 @@ from enums.Visibility import Visibility
 from etl.Transform import Transform
 from statistics.QualityStatistics import QualityStatistics
 from utils.cast_utils import cast_str_to_datetime
-from utils.file_utils import get_json_resource_file, from_json_line_to_json_str
+from utils.file_utils import get_json_resource_file, from_json_line_to_json_str, clear_file
 from utils.file_utils import read_tabular_file_as_string
 from utils.setup_logger import log
 from utils.test_utils import set_env_variables_from_dict, get_feature_by_text, \
@@ -399,10 +399,19 @@ class TestTransform(unittest.TestCase):
                              extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
                              extracted_column_type_path=TheTestFiles.EXTR_PHENOTYPIC_TYPE_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
+        # before creating the patients, we need to erase the content of the patient file
+        # that has been written by test_create_patients_without_pid
+        # otherwise, it would count 20 patients instead of 10 (2 times)
+        # we do not need to do this trick in the normal execution because each time a new working directory is created
+        # thus, there are no overlapping files
+        clear_file(current_working_dir=transform.execution.working_dir_current,
+                   dataset_id=get_dataset_id_from_profile(profile=Profile.PHENOTYPIC),
+                   table_name=TableNames.PATIENT)
+
         # this creates Patient resources (based on the data file) and insert them in a (JSON) temporary file
         transform.create_patients()
 
-        patients = get_transform_patients(dataset_id=1)
+        patients = get_transform_patients(dataset_id=get_dataset_id_from_profile(profile=Profile.PHENOTYPIC))
         assert len(patients) == 10
         # we cannot simply order by identifier value because they are strings, not int
         # thus will need a bit more of processing to sort by the integer represented within the string
@@ -424,11 +433,20 @@ class TestTransform(unittest.TestCase):
                              extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
                              extracted_column_type_path=TheTestFiles.EXTR_PHENOTYPIC_TYPE_PATH,
                              extracted_patient_ids_mapping_path=TheTestFiles.EXTR_FILLED_PIDS_PATH)
+        # before creating the patients, we need to erase the content of the patient file
+        # that has been written by test_create_patients_without_pid
+        # otherwise, it would count 20 patients instead of 10 (2 times)
+        # we do not need to do this trick in the normal execution because each time a new working directory is created
+        # thus, there are no overlapping files
+        clear_file(current_working_dir=transform.execution.working_dir_current,
+                   dataset_id=get_dataset_id_from_profile(profile=Profile.PHENOTYPIC),
+                   table_name=TableNames.PATIENT)
+
         # this creates Patient resources (based on the data file) and insert them in a (JSON) temporary file
         transform.load_patient_id_mapping()
         transform.create_patients()
 
-        patients = get_transform_patients(dataset_id=2)
+        patients = get_transform_patients(dataset_id=get_dataset_id_from_profile(profile=Profile.PHENOTYPIC))
         assert len(patients) == 10
         # we cannot simply order by identifier value because they are strings, not int
         # thus will need a bit more of processing to sort by the integer represented within the string

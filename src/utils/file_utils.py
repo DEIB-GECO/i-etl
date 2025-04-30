@@ -43,6 +43,14 @@ def get_json_resource_file(current_working_dir: str, dataset_id: int, table_name
     return os.path.join(current_working_dir, f"{str(dataset_id)}{table_name}.jsonl")
 
 
+def clear_file(current_working_dir: str, dataset_id: int, table_name: str) -> None:
+    existing_file = get_json_resource_file(current_working_dir=current_working_dir,
+                                           dataset_id=dataset_id,
+                                           table_name=table_name)
+    with open(existing_file, "w") as f:
+        f.write("")
+
+
 def read_tabular_file_as_string(filepath: str) -> pd.DataFrame:
     if filepath.endswith(".csv"):
         # leave empty cells as '' cells (they will be skipped during the Transform iteration on data values)
