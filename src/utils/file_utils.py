@@ -2,10 +2,8 @@ import os
 import re
 
 import pandas as pd
-import ujson
 import jsonlines
 
-from constants.structure import GROUND_DATA_FOLDER_FOR_GENERATION, GROUND_METADATA_FOLDER_FOR_GENERATION
 from enums.TableNames import TableNames
 from utils.setup_logger import log
 
@@ -82,11 +80,3 @@ def from_json_str_to_json_line(json_str) -> str:
     # however, if there are nested elements, such pattern can appear in an element while not being the end of the record
     # therefore the regex needs to be tightened
     return json_str[1:-1].replace("},{", "}\n{")  # remove the brackets from the list and move each record on a line
-
-
-def get_ground_data(filename: str) -> str:
-    return os.path.join(GROUND_DATA_FOLDER_FOR_GENERATION, filename)
-
-
-def get_ground_metadata(filename: str) -> str:
-    return os.path.join(GROUND_METADATA_FOLDER_FOR_GENERATION, filename)
