@@ -27,7 +27,6 @@ services:
       # this is mandatory to access data in the host machine (otherwise Docker won't see any file outside those copied in the image)
       # each folder after the : represents a "view" over the folder in ${X}
       # While executing, the code will refer to /home/i-etl-deployed/...
-      - ${SERVER_FOLDER_DATA_GENERATION}:/home/i-etl-deployed/synthetic-data
       - ${SERVER_FOLDER_METADATA}:/home/i-etl-deployed/metadata
       - ${SERVER_FOLDER_DATA}:/home/i-etl-deployed/real-data
       - ${SERVER_FOLDER_PIDS}:/home/i-etl-deployed/pids
