@@ -379,10 +379,14 @@ class Transform(Task):
             self.process_batch_of_records()
         # and save the total counts for each column (to compute the percentage of missing values in the profiles)
         all_counts = []  # a list of <"identifier": identifier, "all_counts": all_counts> instead of <identifier: all_counts>
+        # log.info(self.mapping_column_all_count)
         for k in self.mapping_column_all_count:
             all_counts.append({Resource.IDENTIFIER_: k, "count_all_values": self.mapping_column_all_count[k], Resource.DATASET_: self.dataset_instance.global_identifier})
-        # log.info(all_counts)
-        self.database.insert_many_tuples(table_name=TableNames.COUNTS_FEATURES, tuples=all_counts)
+        if len(all_counts) > 0:
+            self.database.insert_many_tuples(table_name=TableNames.COUNTS_FEATURES, tuples=all_counts)
+        else:
+            log.info(all_counts)
+            log.error(f"No record counts")
 
     ##############################################################
     # OTHER ENTITIES
@@ -398,7 +402,8 @@ class Transform(Task):
             self.data[self.execution.patient_id_column_name] = pids
 
         columns = self.data.columns
-        log.info(f"creating patients using column {self.execution.patient_id_column_name}")
+        log.info(columns)
+        log.info(f"creating patients using column {self.execution.patient_id_column_name}, with index {columns.get_loc(self.execution.patient_id_column_name)}")
         for row in self.data.itertuples(index=False):
             row_patient_id = row[columns.get_loc(self.execution.patient_id_column_name)]
             if row_patient_id == "":

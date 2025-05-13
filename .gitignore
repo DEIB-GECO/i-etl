@@ -12,5 +12,5 @@ datasets/data
 # The whole working directory
 working-dir
 
-.env
+.env.*
 

@@ -44,7 +44,7 @@ class Database:
         # 1. connect to the Mongo client
         try:
             # mongodb://localhost:27018/ -> goes through the host machine (open port - no need to have Mongo on the machine)
-            # mongodb://mongo:27017/ -> goes through Docker network (no need to have Mongo on the machine)
+            # mongodb://mongo:27017/ -> mongo=Docker service name. goes through Docker network (no need to have Mongo on the machine)
             # Starting with version 3.0 the MongoClient constructor no longer blocks while connecting to the server or servers,
             # and it no longer raises pymongo (ConnectionFailure, ConfigurationError) errors.
             # Instead, the constructor returns immediately and launches the connection process on background threads.
