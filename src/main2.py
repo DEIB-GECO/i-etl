@@ -3,6 +3,7 @@ import pandas as pd
 import pymongo
 from pymongo.mongo_client import MongoClient
 
+from enums.DataTypes import DataTypes
 from enums.MetadataColumns import MetadataColumns
 
 
@@ -43,5 +44,36 @@ def main_na_pandas():
             print(f"      '{value}' (type={type(value)}, None={value is None}, Null={pd.isnull(value)}, empty={value == ""})")
 
 
+def main_build_mongodb_types():
+    # key is the Mongodb type, value is the ETL type
+    reverse_mapping = {
+        "int": DataTypes.INTEGER,
+        "double": DataTypes.FLOAT,
+        "string": DataTypes.STRING,
+        "date": DataTypes.DATE,
+        "timestamp": DataTypes.DATETIME,
+        "bool": DataTypes.BOOLEAN,
+        "object": DataTypes.CATEGORY,
+        # "string": Datatypes.IMAGE,
+        # "string": Datatypes.REGEX,
+        # "string": Datatypes.API,
+        # "string": Datatypes.LIST,
+    }
+    type_switch = {
+        "$switch": {
+            "branches": [
+                {
+                    "case": {"$eq": ["$_id.featureType", bson_type]},
+                    "then": user_alias
+                }
+                for bson_type, user_alias in reverse_mapping.items()
+            ],
+            "default": "unknown"
+        }
+    }
+    print(type_switch)
+
+
 if __name__ == '__main__':
+    main_build_mongodb_types()
     print("Done.")

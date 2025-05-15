@@ -8,7 +8,7 @@ THE_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 class Operators(EnumAsClass):
     @classmethod
-    def match(cls, field: str, value: Any, is_regex: bool) -> dict:
+    def match(cls, field: str | None, value: Any, is_regex: bool) -> dict:
         if is_regex:
             # this is a match with a regex (in value)
             return {
@@ -33,7 +33,7 @@ class Operators(EnumAsClass):
                     "$match": {
                         field: value
                     }
-            }
+                }
 
     @classmethod
     def or_operator(cls, list_of_conditions: list[dict]) -> dict:
@@ -81,6 +81,11 @@ class Operators(EnumAsClass):
                 return {
                     "$project": fields
                 }
+            elif isinstance(field, dict):
+                # we want to compute a novel value while not keeping the old ones
+                return {
+                    "$project": field
+                }
             else:
                 # we want to keep a single field
                 return {
@@ -91,27 +96,29 @@ class Operators(EnumAsClass):
                 }
 
     @classmethod
-    def lookup(cls, join_table_name: str, foreign_field: str, local_field: str, lookup_field_name: str) -> dict:
+    def lookup(cls, join_table_name: str, foreign_field: str|None, local_field: str|None, lookup_field_name: str, let: dict|None,
+               pipeline: list|None) -> dict:
         # this is a SQL join between two tables
-        return {
+        # from is the "second" table of the join
+        # localField is the field of the "second" table to join
+        # foreignField is the field of the "first" table to join
+        # as is the name of the (new array) field added containing either the joined resource (of the second table) or an empty array if no join could be made for the tuple
+        the_lookup = {
             "$lookup": {
-                "from": join_table_name,  # the "second" table of the join
-                "localField": local_field,  # the field of the "second" table to join
-                "foreignField": foreign_field,  # the field of the "first" table to join
-                "as": lookup_field_name,  # the name of the (new array) field added containing either the joined resource (of the second table) or an empty array if no join could be made for the tuple
+                "from": join_table_name,
+                "as": lookup_field_name,
             }
         }
 
-    @classmethod
-    def lookup_with_condition(cls, join_table_name: str, let_variables: dict, pipeline: list, lookup_field_name: str) -> dict:
-        return {
-            "$lookup": {
-                "from": join_table_name,
-                "let": let_variables,
-                "pipeline": pipeline,
-                "as": lookup_field_name
-            }
-        }
+        if local_field is not None:
+            the_lookup["$lookup"]["localField"] = local_field
+        if foreign_field is not None:
+            the_lookup["$lookup"]["foreignField"] = foreign_field
+        if let is not None:
+            the_lookup["$lookup"]["let"] = let
+        if pipeline is not None:
+            the_lookup["$lookup"]["pipeline"] = pipeline
+        return the_lookup
 
     @classmethod
     def cartesian_product(cls, join_table_name: str, lookup_field_name: str, filter_dict: dict) -> dict:
@@ -194,7 +201,7 @@ class Operators(EnumAsClass):
         }
 
     @classmethod
-    def if_condition(cls, cond: dict, if_part: dict|str, else_part: dict|str) -> dict:
+    def if_condition(cls, cond: dict, if_part: dict | str, else_part: dict | str) -> dict:
         res = {
             "$cond": {
                 "if": cond,
@@ -211,7 +218,7 @@ class Operators(EnumAsClass):
         }
 
     @classmethod
-    def add_fields(cls, key: str, value: str|dict) -> dict:
+    def add_fields(cls, key: str, value: str | dict) -> dict:
         return {
             "$addFields": {
                 key: value
@@ -237,7 +244,7 @@ class Operators(EnumAsClass):
         return {"$date": current_datetime.strftime(THE_DATETIME_FORMAT)}
 
     @classmethod
-    def merge(cls, table_name: str, on_attribute: str|list, when_matched: str, when_not_matched: str) -> dict:
+    def merge(cls, table_name: str, on_attribute: str | list, when_matched: str, when_not_matched: str) -> dict:
         # append new tuples, e.g., from an aggregation pipeline, to an existing collection
         # when matched: replace|keepExisting|merge|fail|pipeline
         # when not matched: insert|discard|fail
