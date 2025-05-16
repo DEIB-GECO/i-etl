@@ -1,6 +1,6 @@
 import os
 
-from constants.structure import DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS, DOCKER_FOLDER_TEST, DOCKER_FOLDER_METADATA, \
+from constants.structure import DOCKER_FOLDER_TEST, DOCKER_FOLDER_METADATA, \
     DOCKER_FOLDER_DATA
 from enums.EnumAsClass import EnumAsClass
 from enums.ParameterKeys import ParameterKeys
@@ -21,17 +21,6 @@ class Profile(EnumAsClass):
         return file_type.lower().strip()
 
     @classmethod
-    def get_execution_key(cls, filetype) -> str | None:
-        if filetype in [Profile.PHENOTYPIC, Profile.CLINICAL, Profile.GENOMIC, Profile.IMAGING, Profile.MEDICINE, Profile.DIAGNOSIS]:
-            return ParameterKeys.DATA_FILES
-        elif filetype == Profile.PATIENT_IDS:
-            return ParameterKeys.ANONYMIZED_PATIENT_IDS
-        elif filetype == Profile.METADATA:
-            return ParameterKeys.METADATA_PATH
-        else:
-            return None
-
-    @classmethod
     def get_prefix_for_path(cls, filetype: str) -> str | None:
         if os.getenv("CONTEXT_MODE") == "TEST":
             return DOCKER_FOLDER_TEST
@@ -40,8 +29,8 @@ class Profile(EnumAsClass):
                 return DOCKER_FOLDER_DATA
             elif filetype.lower() in [Profile.METADATA]:
                 return DOCKER_FOLDER_METADATA
-            elif filetype.lower() == Profile.PATIENT_IDS:
-                return DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS
+            # elif filetype.lower() == Profile.PATIENT_IDS:
+            #     return DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS
             else:
                 return None
 

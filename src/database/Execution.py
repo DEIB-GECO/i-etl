@@ -13,8 +13,7 @@ from constants.methods import factory
 from enums.MetadataColumns import MetadataColumns
 from enums.Profile import Profile
 
-from constants.structure import WORKING_DIR, DB_CONNECTION, DOCKER_FOLDER_METADATA, \
-    DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS, DOCKER_FOLDER_TEST, DEFAULT_DB_NAME
+from constants.structure import WORKING_DIR, DB_CONNECTION, DOCKER_FOLDER_METADATA, DOCKER_FOLDER_TEST, DEFAULT_DB_NAME
 from enums.HospitalNames import HospitalNames
 from enums.ParameterKeys import ParameterKeys
 from utils import setup_logger
@@ -78,14 +77,14 @@ class Execution:
     def file_set_up(self, setup_files: bool) -> None:
         log.info("in file_set_up()")
 
-        # D. set up the anonymized patient id data file
-        # this should NOT be merged with the setup of data files as this as to be set even though no data is provided
-        # (this happens in tests: data is given by hand, i.e., without set_up, but the anonymized patient IDs file still has to exist
-        self.anonymized_patient_ids_filepath = self.check_parameter(key=ParameterKeys.ANONYMIZED_PATIENT_IDS, accepted_values=None, default_value=self.anonymized_patient_ids_filepath)
-        log.debug(self.anonymized_patient_ids_filepath)
-        if self.anonymized_patient_ids_filepath is not None:
-            # it may be None when we are computing the catalogue data (because we don't need it)
-            self.setup_mapping_to_anonymized_patient_ids()
+        # # D. set up the anonymized patient id data file
+        # # this should NOT be merged with the setup of data files as this as to be set even though no data is provided
+        # # (this happens in tests: data is given by hand, i.e., without set_up, but the anonymized patient IDs file still has to exist
+        # self.anonymized_patient_ids_filepath = self.check_parameter(key=ParameterKeys.ANONYMIZED_PATIENT_IDS, accepted_values=None, default_value=self.anonymized_patient_ids_filepath)
+        # log.debug(self.anonymized_patient_ids_filepath)
+        # if self.anonymized_patient_ids_filepath is not None:
+        #     # it may be None when we are computing the catalogue data (because we don't need it)
+        self.setup_mapping_to_anonymized_patient_ids()
 
         # E. set up the data and metadata files
         if setup_files:
@@ -166,21 +165,27 @@ class Execution:
         setup_logger.log.addHandler(filehandler)  # add the filehandler located in the working dir
 
     def setup_mapping_to_anonymized_patient_ids(self):
-        if os.sep in self.anonymized_patient_ids_filepath:
-            raise ValueError(f"The anonymized patient ids ({self.anonymized_patient_ids_filepath}) file should be a filename, but it looks like a filepath.")
+        # pid file should be located at in the DB folder, not the DB+date folder. this allows to:
+        # - reuse the same PID file for a database that is consolidated (data is appended) several times
+        # - while being sure to reuse the previous PIDs when consolidating the db
+        # - we can also easily reset that PID file when db_drop==true (otherwise, we reuse the pid file)
+        pid_filename = "anonymized_patient_ids.json"
+        if os.getenv("CONTEXT_MODE") == "TEST":
+            self.anonymized_patient_ids_filepath = os.path.join(DOCKER_FOLDER_TEST, pid_filename)
         else:
-            self.anonymized_patient_ids_filepath = os.path.join(DOCKER_FOLDER_TEST if os.getenv("CONTEXT_MODE") == "TEST" else DOCKER_FOLDER_ANONYMIZED_PATIENT_IDS, self.anonymized_patient_ids_filepath)
-            log.debug(self.anonymized_patient_ids_filepath)
-            if not os.path.exists(self.anonymized_patient_ids_filepath) or os.stat(self.anonymized_patient_ids_filepath).st_size == 0:
-                log.info("write {} in patient ids mapping")
-                # the file is empty, we simply add the empty mapping
-                # otherwise the file cannot be read as a JSON file
-                with open(self.anonymized_patient_ids_filepath, "w") as file:
-                    file.write("{}")
-            else:
-                log.info("patient ids mapping already contains data")
-                # there are some mappings there, nothing more to do
-                pass
+            self.anonymized_patient_ids_filepath = os.path.join(self.working_dir_current, "..", pid_filename)
+
+        log.debug(self.anonymized_patient_ids_filepath)
+        if not os.path.exists(self.anonymized_patient_ids_filepath) or os.stat(self.anonymized_patient_ids_filepath).st_size == 0 or self.db_drop is True:
+            log.info("write {} in patient ids mapping")
+            # the file is empty, we simply add the empty mapping
+            # otherwise the file cannot be read as a JSON file
+            with open(self.anonymized_patient_ids_filepath, "w") as file:
+                file.write("{}")
+        else:
+            log.info("patient ids mapping already contains data")
+            # there are some mappings there, nothing more to do
+            pass
 
     def to_json(self):
         return {"my_exec": "exec"}

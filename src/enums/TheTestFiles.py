@@ -12,8 +12,8 @@ class TheTestFiles(EnumAsClass):
     ORIG_DIAGNOSIS_PATH = "orig-data-diag.csv"
     ORIG_DYNAMIC_PATH = "orig-data-dyn.csv"
     ORIG_GENOMICS_PATH = "orig-data-gen.csv"
-    ORIG_EMPTY_PIDS_PATH = "orig-empty-pids.json"
-    ORIG_FILLED_PIDS_PATH = "orig-filled-pids.json"
+    # ORIG_EMPTY_PIDS_PATH = "orig-empty-pids.json"
+    # ORIG_FILLED_PIDS_PATH = "orig-filled-pids.json"
 
     # files obtained after the Extract step
     # ued for the Transform step
@@ -35,5 +35,6 @@ class TheTestFiles(EnumAsClass):
     EXTR_CLINICAL_UNITS_PATH = "extr-data-clin-column-to-unit.json"
     EXTR_PHENOTYPIC_DOMAIN_PATH = "extr-data-phen-column-to-domain.json"
     EXTR_CLINICAL_DOMAIN_PATH = "extr-data-clin-column-to-domain.json"
-    EXTR_EMPTY_PIDS_PATH = "extr-empty-pids.json"
-    EXTR_FILLED_PIDS_PATH = "extr-filled-pids.json"
+
+    PIDS_PATH = "anonymized_patient_ids.json"
+    # EXTR_FILLED_PIDS_PATH = "extr-filled-pids.json"

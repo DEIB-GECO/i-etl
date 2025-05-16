@@ -43,12 +43,11 @@ def my_setup(hospital_name: str, profile: str, extracted_metadata_path: str, ext
              extracted_column_type_path: str,
              extracted_column_unit_path: str,
              extracted_domain_path: str,
-             extracted_patient_ids_mapping_path: str) -> Transform:
+             db_drop: str = "True") -> Transform:
     args = {
         ParameterKeys.DB_NAME: TEST_DB_NAME,
-        ParameterKeys.DB_DROP: "True",
-        ParameterKeys.HOSPITAL_NAME: hospital_name,
-        ParameterKeys.ANONYMIZED_PATIENT_IDS: extracted_patient_ids_mapping_path
+        ParameterKeys.DB_DROP: db_drop,
+        ParameterKeys.HOSPITAL_NAME: hospital_name
         # no need to set the metadata and data filepaths as we get already the loaded data and metadata as arguments
     }
     set_env_variables_from_dict(env_vars=args)
@@ -114,30 +113,35 @@ def run_before_and_after_tests(tmpdir):
     yield  # this is where the testing happens
 
     # Teardown : fill with any logic you want
-    get_back_to_original_pid_files()
+    write_empty_pid_files()
 
 
-def get_back_to_original_pid_files():
-    with open(os.path.join(DOCKER_FOLDER_TEST, TheTestFiles.ORIG_EMPTY_PIDS_PATH), "w") as f:
+def delete_pid_file():
+    pid_path = os.path.join(DOCKER_FOLDER_TEST, TheTestFiles.PIDS_PATH)
+    if os.path.exists(pid_path):
+        os.remove(pid_path)
+
+
+def create_pid_file():
+    with open(os.path.join(DOCKER_FOLDER_TEST, TheTestFiles.PIDS_PATH), "w") as f:
+        the_pids = json.dumps({
+            "999999999": 999,
+            "999999998": 998,
+            "999999997": 997,
+            "999999996": 996,
+            "999999995": 995,
+            "999999994": 994,
+            "999999993": 993,
+            "999999992": 992,
+            "999999991": 991,
+            "999999990": 990
+        })
+        f.write(the_pids)
+
+
+def write_empty_pid_files():
+    with open(os.path.join(DOCKER_FOLDER_TEST, TheTestFiles.PIDS_PATH), "w") as f:
         f.write(json.dumps({}))
-    with open(os.path.join(DOCKER_FOLDER_TEST, TheTestFiles.EXTR_EMPTY_PIDS_PATH), "w") as f:
-        f.write(json.dumps({}))
-    original_filled_pids = json.dumps({
-                            "999999999": 999,
-                            "999999998": 998,
-                            "999999997": 997,
-                            "999999996": 996,
-                            "999999995": 995,
-                            "999999994": 994,
-                            "999999993": 993,
-                            "999999992": 992,
-                            "999999991": 991,
-                            "999999990": 990
-                            })
-    with open(os.path.join(DOCKER_FOLDER_TEST, TheTestFiles.ORIG_FILLED_PIDS_PATH), "w") as f:
-        f.write(original_filled_pids)
-    with open(os.path.join(DOCKER_FOLDER_TEST, TheTestFiles.EXTR_FILLED_PIDS_PATH), "w") as f:
-        f.write(original_filled_pids)
 
 
 def get_transform_features(profile):
@@ -169,8 +173,7 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
-                             extracted_column_type_path=TheTestFiles.EXTR_PHENOTYPIC_TYPE_PATH,
-                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
+                             extracted_column_type_path=TheTestFiles.EXTR_PHENOTYPIC_TYPE_PATH)
         counter = Counter()
         counter.set_with_database(database=transform.database)
 
@@ -201,8 +204,7 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
-                             extracted_column_type_path=TheTestFiles.EXTR_PHENOTYPIC_TYPE_PATH,
-                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
+                             extracted_column_type_path=TheTestFiles.EXTR_PHENOTYPIC_TYPE_PATH)
         transform.create_patients()
         transform.counter.set_with_database(database=transform.database)
         transform.create_features()
@@ -296,8 +298,7 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
-                             extracted_column_type_path=TheTestFiles.EXTR_CLINICAL_TYPE_PATH,
-                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_FILLED_PIDS_PATH)
+                             extracted_column_type_path=TheTestFiles.EXTR_CLINICAL_TYPE_PATH)
         transform.load_patient_id_mapping()
         transform.create_patients()
         transform.counter.set_with_database(database=transform.database)
@@ -309,6 +310,7 @@ class TestTransform(unittest.TestCase):
         # we cannot use transform.features, because the array is cleared after all features are saved
         # we need to read from the JSON file written during the Transform step
         features = get_transform_features(profile=Profile.CLINICAL)
+        log.info(features)
         assert len(features) == 6 - 2  # sid and id do not count as SamFeatures
         # assert the third and fourth SamFeature instances:
         # lab_feature_a has one associated code
@@ -357,18 +359,20 @@ class TestTransform(unittest.TestCase):
 
         # CHECK RECORDS
         records = get_transform_records(profile=Profile.CLINICAL)
+        log.info(records)
         assert len(records) == 23  # in total, 16 ClinicalRecord instances are created, between 2 and 5 per Patient
 
         # assert that ClinicalRecord instances have been correctly created for a given data row
         # we take the seventh row
         patient_id = transform.patient_ids_mapping["999999994"]
-        assert patient_id == 994
+        log.info(transform.patient_ids_mapping)
+        assert patient_id == 6
         records_patient = get_records_for_patient(records=records, patient_id=patient_id)
         assert len(records_patient) == 2
         assert records_patient[0][Record.VALUE_] == -0.003  # the value as been converted to a float
         assert records_patient[0][Record.SUBJECT_] == patient_id
         assert records_patient[0][Record.REG_BY_] == 1  # Hospital:1
-        assert records_patient[0][Record.INSTANTIATES_] == 1001  # LabRecord 1001 is about molecule_a (there are Hospital 1 and Dataset 2, and patients with large anonymized pids)
+        assert records_patient[0][Record.INSTANTIATES_] == 12  # LabRecord 12 is about molecule_a (there are Hospital 1 and Dataset 2, and patients with normal anonymized pids)
         assert records_patient[0][Feature.ENTITY_TYPE_] == f"{Profile.CLINICAL}{TableNames.RECORD}"  #
         pattern_date = re.compile("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2,3}Z")
         assert pattern_date.match(records_patient[0][Resource.TIMESTAMP_]["$date"])  # check the date is in datetime (CEST) form
@@ -397,8 +401,7 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
-                             extracted_column_type_path=TheTestFiles.EXTR_PHENOTYPIC_TYPE_PATH,
-                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
+                             extracted_column_type_path=TheTestFiles.EXTR_PHENOTYPIC_TYPE_PATH)
         # before creating the patients, we need to erase the content of the patient file
         # that has been written by test_create_patients_without_pid
         # otherwise, it would count 20 patients instead of 10 (2 times)
@@ -431,8 +434,7 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
-                             extracted_column_type_path=TheTestFiles.EXTR_PHENOTYPIC_TYPE_PATH,
-                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_FILLED_PIDS_PATH)
+                             extracted_column_type_path=TheTestFiles.EXTR_PHENOTYPIC_TYPE_PATH)
         # before creating the patients, we need to erase the content of the patient file
         # that has been written by test_create_patients_without_pid
         # otherwise, it would count 20 patients instead of 10 (2 times)
@@ -452,9 +454,11 @@ class TestTransform(unittest.TestCase):
         # thus will need a bit more of processing to sort by the integer represented within the string
         sorted_patients = sorted(patients, key=lambda d: d[Resource.IDENTIFIER_])
         # sorted_patients = sorted(transform.patients)
+        log.info(patients)
+        log.info(sorted_patients)
         for i in range(0, len(sorted_patients)):
             # patients have their own anonymized ids
-            assert sorted_patients[i][Resource.IDENTIFIER_] == 990 + i
+            assert sorted_patients[i][Resource.IDENTIFIER_] == i + 1
 
     def test_create_ontology_resource_from_row(self):
         transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,
@@ -463,8 +467,7 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
-                             extracted_column_type_path=TheTestFiles.EXTR_CLINICAL_TYPE_PATH,
-                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
+                             extracted_column_type_path=TheTestFiles.EXTR_CLINICAL_TYPE_PATH)
         # no associated ontology code
         onto_resource = transform.create_ontology_resource_from_row(column_name="molecule_b")
         assert onto_resource is None
@@ -480,8 +483,7 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
                              extracted_column_type_path=TheTestFiles.EXTR_CLINICAL_TYPE_PATH,
-                             extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
-                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
+                             extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH)
         # no associated ontology code (patient id line)
         first_row = transform.metadata.iloc[0]
         onto_resource = OntologyResource(system=Ontologies.get_enum_from_name(first_row[MetadataColumns.ONTO_NAME]),
@@ -509,8 +511,7 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_PHENOTYPIC_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_PHENOTYPIC_UNITS_PATH,
                              extracted_column_type_path=TheTestFiles.EXTR_PHENOTYPIC_TYPE_PATH,
-                             extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH,
-                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
+                             extracted_domain_path=TheTestFiles.EXTR_PHENOTYPIC_DOMAIN_PATH)
 
         assert transform.fairify_value(column_name="id", value=transform.data.iloc[0][0]) == "999999999"
         onto_resource = OntologyResource(system=Ontologies.SNOMEDCT, code="248152002", label=None, quality_stats=None)
@@ -527,8 +528,7 @@ class TestTransform(unittest.TestCase):
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_type_path=TheTestFiles.EXTR_CLINICAL_TYPE_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
-                             extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
-                             extracted_patient_ids_mapping_path=TheTestFiles.EXTR_EMPTY_PIDS_PATH)
+                             extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH)
 
         assert transform.fairify_value(column_name="sid", value=transform.data.iloc[0][0]) == "s1"
         assert transform.fairify_value(column_name="id", value=transform.data.iloc[0][1]) == "999999999"
@@ -539,26 +539,25 @@ class TestTransform(unittest.TestCase):
         assert pd.isnull(transform.fairify_value(column_name="molecule_g", value=transform.data.iloc[6][4]))
         assert pd.isnull(transform.fairify_value(column_name="molecule_g", value=transform.data.iloc[7][4]))
 
-    def test_load_empty_patient_id_mapping(self):
+    def test_patient_id_mapping(self):
+        # test with no patient ID mapping
+        # the mapping filename HAS TO BE "anonymized_patient_ids.json"
+        delete_pid_file()
         extract = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_CLINICAL_DATA_PATH,
                              extracted_column_to_categorical_path=TheTestFiles.EXTR_CLINICAL_COL_CAT_PATH,
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
                            extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
-                           extracted_column_type_path=TheTestFiles.EXTR_CLINICAL_TYPE_PATH,
-                             extracted_patient_ids_mapping_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH)
+                           extracted_column_type_path=TheTestFiles.EXTR_CLINICAL_TYPE_PATH)
         extract.load_patient_id_mapping()
 
         # when the file is empty, the Execution should write an empty list into it
         assert os.stat(extract.execution.anonymized_patient_ids_filepath).st_size > 0
         assert extract.patient_ids_mapping == {}
 
-        # get back to the original empty file
-        with open(os.path.join(DOCKER_FOLDER_TEST, TheTestFiles.ORIG_EMPTY_PIDS_PATH), "w") as file:
-            file.write("")
-
-    def test_load_filled_patient_id_mapping(self):
+        # test with non-empty patient ID mapping
+        create_pid_file()
         transform = my_setup(hospital_name=HospitalNames.TEST_H1, profile=Profile.CLINICAL,
                              extracted_metadata_path=TheTestFiles.EXTR_METADATA_CLINICAL_PATH,
                              extracted_data_paths=TheTestFiles.EXTR_CLINICAL_DATA_PATH,
@@ -566,11 +565,12 @@ class TestTransform(unittest.TestCase):
                              extracted_column_unit_path=TheTestFiles.EXTR_CLINICAL_UNITS_PATH,
                              extracted_domain_path=TheTestFiles.EXTR_CLINICAL_DOMAIN_PATH,
                              extracted_column_type_path=TheTestFiles.EXTR_CLINICAL_TYPE_PATH,
-                             extracted_patient_ids_mapping_path=TheTestFiles.ORIG_FILLED_PIDS_PATH)
+                             db_drop="False")
         transform.load_patient_id_mapping()
 
         # when the file is not empty, all mappings should be loaded in Extract
         assert os.stat(transform.execution.anonymized_patient_ids_filepath).st_size > 0
-        with open(os.path.join(DOCKER_FOLDER_TEST, TheTestFiles.EXTR_FILLED_PIDS_PATH), "r") as f:
+        with open(os.path.join(DOCKER_FOLDER_TEST, TheTestFiles.PIDS_PATH), "r") as f:
             expected_dict = json.load(f)
         assert expected_dict == transform.patient_ids_mapping
+        delete_pid_file()  # get back to the original setting where no PID is provided
