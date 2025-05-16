@@ -252,7 +252,7 @@ class Database:
 
     def inverse_inner_join(self, name_table_1: str, name_table_2: str, foreign_field: str, local_field: str, lookup_name: str) -> CommandCursor:
         operations = [
-            Operators.lookup(join_table_name=name_table_2, foreign_field=foreign_field, local_field=local_field, lookup_field_name=lookup_name),
+            Operators.lookup(join_table_name=name_table_2, foreign_field=foreign_field, local_field=local_field, lookup_field_name=lookup_name, let=None, pipeline=None),
             Operators.match(field=lookup_name, value={"$eq": []}, is_regex=False),
             Operators.set_variables([{"name": "_id", "operation": 0}])
         ]

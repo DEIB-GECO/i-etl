@@ -56,7 +56,7 @@ class TestExtract(unittest.TestCase):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_CLINICAL_PATH,
                            data_type=Profile.CLINICAL,
-                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
+                           pids_path=TheTestFiles.PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
 
         # a. general size checks
@@ -84,7 +84,7 @@ class TestExtract(unittest.TestCase):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_PHENOTYPIC_PATH,
                            data_type=Profile.PHENOTYPIC,
-                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
+                           pids_path=TheTestFiles.PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
 
         # a. general size checks
@@ -136,7 +136,7 @@ class TestExtract(unittest.TestCase):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_DIAGNOSIS_PATH,
                            data_type=Profile.DIAGNOSIS,
-                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
+                           pids_path=TheTestFiles.PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
 
         # a. general size checks
@@ -179,7 +179,7 @@ class TestExtract(unittest.TestCase):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_GENOMICS_PATH,
                            data_type=Profile.GENOMIC,
-                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
+                           pids_path=TheTestFiles.PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H3)
 
         # a. general size checks
@@ -218,7 +218,7 @@ class TestExtract(unittest.TestCase):
         extract = my_setup(metadata_path=TheTestFiles.EXTR_METADATA_CLINICAL_PATH,
                            data_paths=TheTestFiles.ORIG_CLINICAL_PATH,
                            data_type=Profile.CLINICAL,
-                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
+                           pids_path=TheTestFiles.PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         # a. general size checks
         assert extract.data is not None, "Data is None, while it should not."
@@ -241,7 +241,7 @@ class TestExtract(unittest.TestCase):
         extract = my_setup(metadata_path=TheTestFiles.EXTR_METADATA_PHENOTYPIC_PATH,
                            data_paths=TheTestFiles.ORIG_PHENOTYPIC_PATH,
                            data_type=Profile.PHENOTYPIC,
-                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
+                           pids_path=TheTestFiles.PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
 
         # a. general size checks
@@ -263,7 +263,7 @@ class TestExtract(unittest.TestCase):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_GENOMICS_PATH,
                            data_type=Profile.GENOMIC,
-                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
+                           pids_path=TheTestFiles.PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H3)
 
         # a. general size checks
@@ -298,7 +298,7 @@ class TestExtract(unittest.TestCase):
         extract = my_setup(metadata_path=TheTestFiles.EXTR_METADATA_CLINICAL_PATH,
                            data_paths=TheTestFiles.EXTR_CLINICAL_DATA_PATH,
                            data_type=Profile.CLINICAL,
-                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
+                           pids_path=TheTestFiles.PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.compute_mapping_categorical_value_to_onto_resource()
 
@@ -341,7 +341,7 @@ class TestExtract(unittest.TestCase):
         extract = my_setup(metadata_path=TheTestFiles.EXTR_METADATA_PHENOTYPIC_PATH,
                            data_paths=TheTestFiles.EXTR_PHENOTYPIC_DATA_PATH,
                            data_type=Profile.PHENOTYPIC,
-                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
+                           pids_path=TheTestFiles.PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.compute_mapping_categorical_value_to_onto_resource()
 
@@ -373,7 +373,7 @@ class TestExtract(unittest.TestCase):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_CLINICAL_PATH,
                            data_type=Profile.CLINICAL,
-                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
+                           pids_path=TheTestFiles.PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
 
         # we assert that we get rid of the 'molecule_z' column (because it was not described in the metadata)
@@ -396,7 +396,7 @@ class TestExtract(unittest.TestCase):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_CLINICAL_PATH,
                            data_type=Profile.CLINICAL,
-                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
+                           pids_path=TheTestFiles.PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.compute_column_to_unit()
 
@@ -417,7 +417,7 @@ class TestExtract(unittest.TestCase):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_PHENOTYPIC_PATH,
                            data_type=Profile.PHENOTYPIC,
-                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
+                           pids_path=TheTestFiles.PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.compute_column_to_unit()
 
@@ -436,7 +436,7 @@ class TestExtract(unittest.TestCase):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_PHENOTYPIC_PATH,
                            data_type=Profile.PHENOTYPIC,
-                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
+                           pids_path=TheTestFiles.PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.compute_column_to_domain()
 
@@ -455,7 +455,7 @@ class TestExtract(unittest.TestCase):
         extract = my_setup(metadata_path=TheTestFiles.ORIG_METADATA_PATH,
                            data_paths=TheTestFiles.ORIG_CLINICAL_PATH,
                            data_type=Profile.CLINICAL,
-                           pids_path=TheTestFiles.ORIG_EMPTY_PIDS_PATH,
+                           pids_path=TheTestFiles.PIDS_PATH,
                            hospital_name=HospitalNames.TEST_H1)
         extract.compute_column_to_domain()
 

@@ -27,4 +27,4 @@ NO_ID = -1
 NAN_VALUES = ["no information", "-", "nan", "na", "none", "n/a", "null", "np.nan", np.nan, "/"]
 DEFAULT_NAN_VALUE = np.nan
 
-PRINT_QUERIES = False
+PRINT_QUERIES = True
