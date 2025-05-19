@@ -5,7 +5,7 @@ from enums.MetadataColumns import MetadataColumns
 # cannot use HospitalNames.X in the enum, so I converted it to a dict in
 # order to access the vcf columns based on the hospital names
 vcf_columns = {
-    HospitalNames.RS_IMGGE: MetadataColumns.normalize_name("loc_vcf"),
+    HospitalNames.RS_IMGGE: MetadataColumns.normalize_name("path_vcf"),
     HospitalNames.ES_HSJD: MetadataColumns.normalize_name("VCF_Path"),
     HospitalNames.IT_BUZZI_UC1: None,
     HospitalNames.IT_BUZZI_UC3: None,
