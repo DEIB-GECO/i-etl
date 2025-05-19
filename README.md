@@ -6,6 +6,11 @@ The ETL algorithm creates interoperable databases for the BETTER project. It rel
 
 - Docker Desktop is installed on the host machine.
 - **All input files are in the same folder on your machine, and they have the exact same name as specified in the metadata.**
+  - Specifically for VCF data: 
+    - You can group them in a sub-folder (or not).
+    - If you grouped them in a folder, e.g., named `vcf-folder`, please provide `vcf-folder/*.vcf` for the data files in the `.env` file.
+    - If you did not group them, please provide `*.vcf` for the data files in the `.env` file.
+    - The VCF files should be named with the patient ID (exactly and only the patient ID used the other data).
 - **In your data files: variables are columns, patients are rows** and patient have identifiers (which will be further anonymized by I-ETL).
 - **The column name for the patient ID, respectively the sample ID, is the same for all the files used to build the database.**
 
@@ -55,7 +60,7 @@ The provided `.env` file is a _template_: you have to fill each parameter with y
 | `SERVER_FOLDER_METADATA` | The absolute path to the folder containing the metadata file. | A folder path | `/home/better/data`                               |
 | `METADATA`               | The metadata filename.                                        | A filename    | `ES-HSJD-variables.xlsx`                          |
 | `SERVER_FOLDER_DATA`     | The absolute path to the folder containing the datasets.      | A folder path | `/home/better/data`                               |
-| `DATA_FILES`             | The list of comma-separated filenames.                        | Filename(s)   | `Baseline_Clinical_Table.xlsx,Genomic_Table.xlsx` |
+| `DATA_FILES`             | The list of comma-separated filenames.                        | Filename(s)   | `Baseline_Clinical_Table.xlsx,Genomic_Table.xlsx,vcf-folder/*.vcf` |
 
 ### About the database 
 
