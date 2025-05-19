@@ -1,5 +1,3 @@
-from typing import Any
-
 import inflection
 
 from enums.EnumAsClass import EnumAsClass
@@ -23,15 +21,6 @@ class HospitalNames(EnumAsClass):
     EXPES_EDA = "eda"
     EXPES_COVID = "covid"
     EXPES_KIDNEY = "kidney"
-
-    @classmethod
-    def short(cls, hospital_name) -> str:
-        if "_" in hospital_name:
-            return hospital_name.split("_")[1]  # the second part corresponds to the hospital name (only)
-        else:
-            # this is a simple hospital name, such as covid, eda, etc.
-            # we can return it directly
-            return hospital_name
 
     @classmethod
     def normalize(cls, hospital_name: str) -> "":

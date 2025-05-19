@@ -14,12 +14,11 @@ from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from enums.Profile import Profile
 from enums.TableNames import TableNames
-from enums.TimerKeys import TimerKeys
+from enums.VcfColumns import vcf_columns
 from enums.Visibility import Visibility
 from etl.Task import Task
 from preprocessing.PreprocessingTask import PreprocessingTask
 from statistics.QualityStatistics import QualityStatistics
-from statistics.TimeStatistics import TimeStatistics
 from utils.file_utils import read_tabular_file_as_string
 from utils.setup_logger import log
 
@@ -160,9 +159,11 @@ class Extract(Task):
     def normalize_data_file(self):
         # Normalize the data values
         # they will be cast to the right type (int, float, datetime) in the Transform step
-        # issue 113: we do not normalize identifiers assigned by hospitals to avoid discrepancies
+        # issue 113: we do not normalize identifiers assigned by hospitals to avoid discrepancies (not the VCF filenames)
         columns_no_normalization = []
         columns_no_normalization.append(self.execution.patient_id_column_name)
+        if self.execution.hospital_name in vcf_columns:
+            columns_no_normalization.append(vcf_columns[self.execution.hospital_name])
         if self.execution.sample_id_column_name != "":
             columns_no_normalization.append(self.execution.sample_id_column_name)
 

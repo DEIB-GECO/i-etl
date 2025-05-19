@@ -22,7 +22,7 @@ class PreprocessKidneyCovid(Preprocess):
     def __init__(self, execution: Execution, data: DataFrame, profile: str):
         super().__init__(execution=execution, data=data, profile=profile)
 
-    def run(self):
+    def preprocess(self):
         if self.profile == Profile.CLINICAL or self.profile == Profile.GENOMIC:
             df_barcode_to_patient = read_tabular_file_as_string(os.path.join(DOCKER_FOLDER_DATA, "mapping_patient_sample.csv"))
             df_barcode_to_patient = df_barcode_to_patient[["sample_id", "individual_id"]]

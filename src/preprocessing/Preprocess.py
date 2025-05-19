@@ -1,9 +1,14 @@
+import os
+
 import pandas as pd
 from pandas import DataFrame
 
+from constants.structure import DOCKER_FOLDER_DATA
 from database.Execution import Execution
 from enums.MetadataColumns import MetadataColumns
 from enums.Profile import Profile
+from enums.VcfColumns import vcf_columns
+from utils.setup_logger import log
 
 
 class Preprocess:
@@ -13,7 +18,33 @@ class Preprocess:
         self.profile = profile
 
     def run(self):
-        raise NotImplementedError("This method should be implemented in every Preprocessing child class.")
+        self.preprocess()
+        self.add_vcf_files_in_data()
+
+    def preprocess(self):
+        pass
+
+    def add_vcf_files_in_data(self) -> None:
+        if self.profile == Profile.GENOMIC:
+            mapping_pid_vcf = []
+            pid_column_name = os.getenv("PATIENT_ID")  # nope: the data is not normalized yet, so we keep the non)normalized column name self.execution.patient_id_column_name
+            filepath_column_name = vcf_columns[self.execution.hospital_name]
+            if filepath_column_name is not None:
+                for entry in os.getenv("DATA_FILES").split(","):
+                    if "/*.vcf" in entry:
+                        # this is the directory which contains all the VCF files
+                        the_entry = entry.replace("*.vcf", "")  # os.listdir requires the folder name (VCF-FILES/) without the specification
+                        for vcf_file in os.listdir(os.path.join(DOCKER_FOLDER_DATA, the_entry)):
+                            if ".vcf" in vcf_file:
+                                pid = vcf_file.replace(".vcf", "")
+                                mapping_pid_vcf.append({pid_column_name: pid, filepath_column_name: os.path.join(os.getenv("SERVER_FOLDER_DATA"), vcf_file)})
+                            else:
+                                log.info(f"skip non VCF file {vcf_file}")
+                    else:
+                        # log.info(f"Skip {entry}")
+                        pass
+                pid_vcf_df = DataFrame(mapping_pid_vcf)
+                self.data = self.data.merge(pid_vcf_df, on=pid_column_name, how="left")
 
     @classmethod
     def get_subset_of_columns_in_df(cls, df: DataFrame, file_type: Profile, metadata: DataFrame) -> DataFrame:
