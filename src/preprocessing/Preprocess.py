@@ -31,9 +31,12 @@ class Preprocess:
             filepath_column_name = vcf_columns[self.execution.hospital_name]
             if filepath_column_name is not None:
                 for entry in os.getenv("DATA_FILES").split(","):
-                    if "/*.vcf" in entry:
+                    if "*.vcf" in entry:
                         # this is the directory which contains all the VCF files
                         the_entry = entry.replace("*.vcf", "")  # os.listdir requires the folder name (VCF-FILES/) without the specification
+                        log.info(the_entry)
+                        if the_entry == "":
+                            the_entry = "."  # the VCF files are next to the data files
                         for vcf_file in os.listdir(os.path.join(DOCKER_FOLDER_DATA, the_entry)):
                             if ".vcf" in vcf_file:
                                 pid = vcf_file.replace(".vcf", "")

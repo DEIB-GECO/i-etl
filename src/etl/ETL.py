@@ -60,8 +60,8 @@ class ETL:
         all_metadata = read_tabular_file_as_string(self.execution.metadata_filepath)  # keep all metadata as str
         first = True
         for one_filename in all_filenames:
-            if "/" in one_filename:
-                # we probably have a folder of VCF files (given of the form my_folder/*.vcf)
+            if ".vcf" in one_filename:
+                # we probably have a regex for specifying the VCF location (*.vcf or my_folder/*.vcf)
                 # we will process them during the pre-processing of the data
                 pass
             elif one_filename != "":
