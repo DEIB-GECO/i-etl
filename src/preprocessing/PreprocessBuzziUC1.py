@@ -32,7 +32,7 @@ class PreprocessBuzziUC1(Preprocess):
         self.mapping_diagnoses_infos = {}
         self.mapping_barcode_pid = {}
 
-    def run(self):
+    def preprocess(self):
         log.info("pre-process BUZZI data")
         if self.profile == Profile.DIAGNOSIS:
             # 1. associate each disease to its information: gene, orphanet code, zigosity, etc

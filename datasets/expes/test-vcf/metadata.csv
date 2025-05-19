@@ -3,3 +3,4 @@ snomedct,422549004 |Patient-related Identification code|,PHENOTYPIC,test.csv,pid
 loinc,47562-4,PHENOTYPIC,test.csv,a,Molecule a,PUBLIC,int,,,
 loinc,1982-8,PHENOTYPIC,test.csv,b,Molecule b,PUBLIC,int,,,
 loinc,38481-8,PHENOTYPIC,test.csv,c,Molecule c,PUBLIC,int,,,
+snomed ct,12953007,GENOMIC,test.csv,path_vcf,VCF filepath,PUBLIC,str,,,

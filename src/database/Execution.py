@@ -37,16 +37,13 @@ class Execution:
     record_carrier_patients: bool = field(init=False, default=False)  # user input
 
     # parameters related to the database and the ETL
-    hospital_name: str = field(init=False, default=None)  # this will be given as input by users
+    hospital_name: str = field(init=False, default="")  # this will be given as input by users
     db_connection: str = field(init=False, default="mongodb://localhost:27018/")  # user input
     db_name: str = field(init=False, default=DEFAULT_DB_NAME)
     db_drop: bool = field(init=False, default=False)  # user input
     columns_to_remove: list = field(init=False, default_factory=list)  # user input
     patient_id_column_name: str = field(init=False, default="id")
     sample_id_column_name: str = field(init=False, default="")
-
-    # parameters related to data generation
-    nb_rows: int = field(init=False, default=0)
 
     # parameters related to the execution context (python, pymongo, etc.)
     python_version: str = platform.python_version()
@@ -61,11 +58,11 @@ class Execution:
         self.db_connection = DB_CONNECTION  # this is not a user parameter anymore because this is part of the Docker functioning, not something user should be able to change
         self.db_name = self.check_parameter(key=ParameterKeys.DB_NAME, accepted_values=None, default_value=self.db_name)
         log.debug(f"creating new DB with name {self.db_name}")
+        log.info(HospitalNames.values())
         self.hospital_name = self.check_parameter(key=ParameterKeys.HOSPITAL_NAME, accepted_values=HospitalNames.values(), default_value=self.hospital_name)
         self.use_locale = self.check_parameter(key=ParameterKeys.USE_LOCALE, accepted_values=None, default_value=self.use_locale)
         self.db_drop = self.check_parameter(key=ParameterKeys.DB_DROP, accepted_values=["True", "False", True, False], default_value=self.db_drop)
         self.columns_to_remove = self.check_parameter(key=ParameterKeys.COLUMNS_TO_REMOVE_KEY, accepted_values=None, default_value=self.columns_to_remove)
-        self.nb_rows = self.check_parameter(key=ParameterKeys.DATA_GEN_NB_ROWS, accepted_values=None, default_value=self.nb_rows)
         self.record_carrier_patients = self.check_parameter(key=ParameterKeys.RECORD_CARRIER_PATIENT, accepted_values=["True", "False", True, False], default_value=self.record_carrier_patients)
         self.patient_id_column_name = MetadataColumns.normalize_name(self.check_parameter(key=ParameterKeys.PATIENT_ID_COLUMN, accepted_values=None, default_value=self.patient_id_column_name))
         self.sample_id_column_name = MetadataColumns.normalize_name(self.check_parameter(key=ParameterKeys.SAMPLE_ID_COLUMN, accepted_values=None, default_value=self.patient_id_column_name))

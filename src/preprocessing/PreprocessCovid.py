@@ -10,7 +10,7 @@ class PreprocessCovid(Preprocess):
     def __init__(self, execution: Execution, data: DataFrame, profile: str):
         super().__init__(execution=execution, data=data, profile=profile)
 
-    def run(self):
+    def preprocess(self):
         if self.profile == Profile.CLINICAL:
             # process samples data to transpose them
             self.data.drop(["hospital", "interpolated", "time_start", "time_end"], axis=1, inplace=True)

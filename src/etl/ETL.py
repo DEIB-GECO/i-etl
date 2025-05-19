@@ -60,7 +60,11 @@ class ETL:
         all_metadata = read_tabular_file_as_string(self.execution.metadata_filepath)  # keep all metadata as str
         first = True
         for one_filename in all_filenames:
-            if one_filename != "":
+            if "/" in one_filename:
+                # we probably have a folder of VCF files (given of the form my_folder/*.vcf)
+                # we will process them during the pre-processing of the data
+                pass
+            elif one_filename != "":
                 log.info(one_filename)
 
                 # set the current filepath
@@ -165,6 +169,7 @@ class ETL:
             hospital_exists = True
         if not hospital_exists:
             # the hospital does not exist because we have reset the database, we create a new one
+            log.info(self.execution.hospital_name)
             new_hospital = Hospital(identifier=NO_ID, name=self.execution.hospital_name, counter=counter)
             log.info(new_hospital)
             hospitals = [new_hospital.to_json()]

@@ -14,7 +14,7 @@ class PreprocessHsjd(Preprocess):
         self.metadata = metadata
         self.mapping_full_name_to_var_name = {}
 
-    def run(self):
+    def preprocess(self):
         log.info("pre-process HSJD data")
         log.info(self.data)
         log.info(self.data.columns)

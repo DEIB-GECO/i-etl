@@ -173,6 +173,8 @@ class Database:
             projected_key = result
             for one_key in key_fields.split("."):
                 # this covers the case when the key of the mapping is a nested field, e.g., identifier.value
+                log.info(projected_key)
+                log.info(one_key)
                 projected_key = projected_key[one_key]
             projected_value = result
             for one_value in value_fields.split("."):
