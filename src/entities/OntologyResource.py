@@ -34,9 +34,9 @@ class OntologyResource:
             # no ontology code has been provided for that variable name, let's skip it
             # the only case when we don't want to skip it is when a label is provided as input
             if self.label is not None and self.label != "":
-                log.error(f"Creating an OntologyResource with a label only (label={self.label}).")
+                log.warning(f"Creating an OntologyResource with a label only (label={self.label}).")
             else:
-                log.error("Could not create an OntologyResource with no ontology system and/or code.")
+                log.warning("Could not create an OntologyResource with no ontology system and/or code.")
         else:
             # this corresponds to the first (and only) ontology system;
             # if there are many, we record only the first but make API calls with all

@@ -48,6 +48,7 @@ class Preprocess:
                         pass
                 pid_vcf_df = DataFrame(mapping_pid_vcf)
                 self.data = self.data.merge(pid_vcf_df, on=pid_column_name, how="outer")
+                log.info(self.data.columns)
 
     @classmethod
     def get_subset_of_columns_in_df(cls, df: DataFrame, file_type: Profile, metadata: DataFrame) -> DataFrame:
