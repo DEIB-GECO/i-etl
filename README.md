@@ -101,8 +101,10 @@ A main example is available in the `query.py` file (https://git.rwth-aachen.de/p
 More specifically, this file fetches data from two databases built from synthetic data (IMGGE and HSJD).
 
 Lines 9 and 10, respectively 17 and 18, contain the user input:
-- The variable `FEATURE_CODES` is a dictionary (map) to asociate a variable name to the ontology term that 
+- The variable `FEATURE_CODES` is a dictionary (map) to asociate a variable name to the ontology term that has been associated to it in the metadata (https://drive.google.com/drive/u/1/folders/1J-3C2g06WbC1gUE_3KaDp3_v1uKHXxFV)
 - The variable `FEATURES_VALUE_PROCESS` is a dictionary (map) to associate each variable to a MongoDB operator to process/flatten the fetched values. It should be used for the variables leadning to non-atomic values (especially dictionaries). If no process is neede (because the value is atomic) or you do not know which MongoDB operator to choose, use `None`.
+
+
 
 The next lines create a new `DataRetriever` with the information for the MongoDB connection and your user variables. The method `run()` generates the MongoDB query to fetch the data from the speified database. 
 Then it loads the fetched data into a DataFrame. This DataFrame is accessible in the variable `the_dataframe` (see `dataRetriever.the_dataframe`).
