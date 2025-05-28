@@ -81,7 +81,33 @@ The provided `.env` file is a _template_: you have to fill each parameter with y
 | `PATIENT_ID`              | The name of the column in the data containing patient IDs                                                          | Any column name                                                  | `Patient ID`                         |
 | `SAMPLE_ID`               | The name of the column in the data containing sample IDs                                                           | ` ` (empty) if you do not have sample data, else a column name   | `sample_id`                          |
 
-## 4. For developers
+
+## 4. Querying the ETL database within a train
+
+### Steps 
+Given a user input (explained below), the class `DataRetriever` takes care of:
+1. Generating the MongoDB query to fetch the data in the database
+2. Loading the retrieved data in a Pandas DataFrame
+
+The user input is:
+- the information to connect to the database (MongoDB URL and database name)
+- the features (also called "variables") the user is interested in when collecting data
+- the post-process methods to "flatten"/"normalize" the data values if needed
+
+### Example 
+
+A main example is available in the `query.py` file (https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/blob/main/src/query.py)
+
+More specifically, this file fetches data from two databases built from synthetic data (IMGGE and HSJD).
+
+Lines 9 and 10, respectively 17 and 18, contain the user input:
+- The variable `FEATURE_CODES` is a dictionary (map) to asociate a variable name to the ontology term that 
+- The variable `FEATURES_VALUE_PROCESS` is a dictionary (map) to associate each variable to a MongoDB operator to process/flatten the fetched values. It should be used for the variables leadning to non-atomic values (especially dictionaries). If no process is neede (because the value is atomic) or you do not know which MongoDB operator to choose, use `None`.
+
+The next lines create a new `DataRetriever` with the information for the MongoDB connection and your user variables. The method `run()` generates the MongoDB query to fetch the data from the speified database. 
+Then it loads the fetched data into a DataFrame. This DataFrame is accessible in the variable `the_dataframe` (see `dataRetriever.the_dataframe`).
+
+## 5. For developers
 
 ### Build the Docker image
 
