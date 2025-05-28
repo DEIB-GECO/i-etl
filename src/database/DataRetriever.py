@@ -6,6 +6,8 @@ from pandas import DataFrame
 from pymongo import MongoClient
 
 from database.Operators import Operators
+from entities.OntologyResource import OntologyResource
+from enums.Ontologies import Ontologies
 from enums.TableNames import TableNames
 
 
@@ -27,6 +29,11 @@ class DataRetriever:
         self.db = self.client[self.db_name]
         self.identifiers = {}
         self.the_query = ""
+
+        # normalize ontology resource codes
+        # we have to set the system to no ontology, otherwise no ontology resource will be created
+        # we have to set the label to the non-empty string, otherwise a label wil be computed
+        self.feature_codes = {key: OntologyResource(system=Ontologies.NONE, code=code, label=" ", quality_stats=None).code for key, code in self.feature_codes.items()}
 
     def run(self):
         feature_codes_inv = {v: k for k, v in self.feature_codes.items()}
