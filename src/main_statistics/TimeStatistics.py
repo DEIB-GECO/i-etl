@@ -1,12 +1,12 @@
 import dataclasses
 import time
 
-from statistics.Statistics import Statistics
+from main_statistics.MainStatistics import MainStatistics
 from utils.setup_logger import log
 
 
 @dataclasses.dataclass(kw_only=True)
-class TimeStatistics(Statistics):
+class TimeStatistics(MainStatistics):
     stats: dict = dataclasses.field(default_factory=dict)
 
     def start(self, dataset: str | None, key: str):

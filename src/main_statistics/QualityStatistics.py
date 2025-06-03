@@ -1,10 +1,10 @@
 import dataclasses
 
-from statistics.Statistics import Statistics
+from main_statistics.MainStatistics import MainStatistics
 
 
 @dataclasses.dataclass(kw_only=True)
-class QualityStatistics(Statistics):
+class QualityStatistics(MainStatistics):
     columns_no_ontology: list = dataclasses.field(default_factory=list)  # list of column names for which no ontology resource is provided
     columns_no_etl_type: list = dataclasses.field(default_factory=list)  # list of column names for which no etl type is provided
     columns_unmatched_typeof_etl_types: dict = dataclasses.field(default_factory=dict)  # { column_name: { "typeof_type": ttype, "etl_type": etype }, ... }

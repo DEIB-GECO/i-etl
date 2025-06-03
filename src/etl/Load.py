@@ -7,8 +7,8 @@ from enums.Profile import Profile
 from enums.TableNames import TableNames
 from enums.TimerKeys import TimerKeys
 from etl.Task import Task
-from statistics.QualityStatistics import QualityStatistics
-from statistics.TimeStatistics import TimeStatistics
+from main_statistics.QualityStatistics import QualityStatistics
+from main_statistics.TimeStatistics import TimeStatistics
 from utils.setup_logger import log
 
 

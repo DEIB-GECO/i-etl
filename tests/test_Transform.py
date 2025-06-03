@@ -28,7 +28,7 @@ from enums.TableNames import TableNames
 from enums.TheTestFiles import TheTestFiles
 from enums.Visibility import Visibility
 from etl.Transform import Transform
-from statistics.QualityStatistics import QualityStatistics
+from main_statistics.QualityStatistics import QualityStatistics
 from utils.cast_utils import cast_str_to_datetime
 from utils.file_utils import get_json_resource_file, from_json_line_to_json_str, clear_file
 from utils.file_utils import read_tabular_file_as_string

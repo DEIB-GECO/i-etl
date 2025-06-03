@@ -16,7 +16,7 @@ from enums.ParameterKeys import ParameterKeys
 from enums.Profile import Profile
 from enums.TheTestFiles import TheTestFiles
 from etl.Extract import Extract
-from statistics.QualityStatistics import QualityStatistics
+from main_statistics.QualityStatistics import QualityStatistics
 from utils.file_utils import read_tabular_file_as_string
 from utils.test_utils import set_env_variables_from_dict
 

@@ -19,9 +19,9 @@ from etl.Extract import Extract
 from etl.Load import Load
 from etl.Reporting import Reporting
 from etl.Transform import Transform
-from statistics.DatabaseStatistics import DatabaseStatistics
-from statistics.QualityStatistics import QualityStatistics
-from statistics.TimeStatistics import TimeStatistics
+from main_statistics.DatabaseStatistics import DatabaseStatistics
+from main_statistics.QualityStatistics import QualityStatistics
+from main_statistics.TimeStatistics import TimeStatistics
 from utils.file_utils import read_tabular_file_as_string, write_in_file
 from utils.setup_logger import log
 

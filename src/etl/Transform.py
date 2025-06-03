@@ -40,8 +40,8 @@ from enums.TimerKeys import TimerKeys
 from enums.Visibility import Visibility
 from etl.Task import Task
 from src.constants.defaults import DEFAULT_NAN_VALUE
-from statistics.QualityStatistics import QualityStatistics
-from statistics.TimeStatistics import TimeStatistics
+from main_statistics.QualityStatistics import QualityStatistics
+from main_statistics.TimeStatistics import TimeStatistics
 from utils.cast_utils import cast_str_to_boolean, cast_str_to_datetime, cast_str_to_float, cast_str_to_int
 from utils.file_utils import write_in_file
 from utils.setup_logger import log
