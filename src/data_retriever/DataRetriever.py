@@ -8,7 +8,10 @@ from pymongo import MongoClient
 from database.Operators import Operators
 from entities.OntologyResource import OntologyResource
 from enums.Ontologies import Ontologies
+# from entities.OntologyResource import OntologyResource
+# from enums.Ontologies import Ontologies
 from enums.TableNames import TableNames
+from utils.setup_logger import log
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -26,38 +29,45 @@ class DataRetriever:
 
     def __post_init__(self):
         self.client = MongoClient(host=self.mongodb_url, serverSelectionTimeoutMS=30, w=0, directConnection=True)
+        log.info(self.client)
         self.db = self.client[self.db_name]
+        log.info(self.db)
         self.identifiers = {}
         self.the_query = ""
 
         # normalize ontology resource codes
         # we have to set the system to no ontology, otherwise no ontology resource will be created
         # we have to set the label to the non-empty string, otherwise a label wil be computed
+        # OntologyResource(system=Ontologies.NONE, code=code, label=" ", quality_stats=None).code
         self.feature_codes = {key: OntologyResource(system=Ontologies.NONE, code=code, label=" ", quality_stats=None).code for key, code in self.feature_codes.items()}
 
     def run(self):
         feature_codes_inv = {v: k for k, v in self.feature_codes.items()}
-        print(f"FEATURE_CODES: {self.feature_codes}")
-        print(f"FEATURE_CODES_INV: {feature_codes_inv}")
+        log.info(f"FEATURE_CODES: {self.feature_codes}")
+        log.info(f"FEATURE_CODES_INV: {feature_codes_inv}")
         i = 1
         for res in self.db[TableNames.FEATURE].find({"ontology_resource.code": {"$in": list(self.feature_codes.values())}}):
-            print(res)
+            log.info(res)
             feature_user_name = feature_codes_inv[res["ontology_resource"]["code"]]
             self.identifiers[i] = (res["ontology_resource"]["code"], res["identifier"], feature_user_name, self.feature_value_process[feature_user_name])
             i = i + 1
-        print(f"identifiers: {self.identifiers}")
+        log.info(f"identifiers: {self.identifiers}")
 
         if len(self.identifiers) != len(self.feature_codes):
-            print("Not all given features have been found in the database. Abort.")
+            log.info("Not all given features have been found in the database. Abort.")
             exit()
 
-        print("***************")
-
+        log.info("***************")
+        log.info("Creating indexes")
         self.db[TableNames.RECORD].create_index("instantiates")
         self.db[TableNames.FEATURE].create_index("ontology_resource.code")
 
+        log.info("Generating the query")
         self.generate_query()
+        log.info(self.the_query)
+        log.info("Creating the dataframe")
         self.the_dataframe = pd.DataFrame(self.db[TableNames.RECORD].aggregate(json.loads(self.the_query))).set_index("has_subject")
+        log.info("Done.")
 
     def generate_query(self):
         self.rec_internal(position=1)

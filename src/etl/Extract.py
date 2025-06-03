@@ -18,7 +18,7 @@ from enums.VcfColumns import vcf_columns
 from enums.Visibility import Visibility
 from etl.Task import Task
 from preprocessing.PreprocessingTask import PreprocessingTask
-from statistics.QualityStatistics import QualityStatistics
+from main_statistics.QualityStatistics import QualityStatistics
 from utils.file_utils import read_tabular_file_as_string
 from utils.setup_logger import log
 

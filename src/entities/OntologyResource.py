@@ -6,7 +6,7 @@ from constants.defaults import SNOMED_OPERATORS_LIST, DEFAULT_ONTOLOGY_RESOURCE_
 from constants.methods import factory
 from enums.AccessTypes import AccessTypes
 from enums.Ontologies import Ontologies
-from statistics.QualityStatistics import QualityStatistics
+from main_statistics.QualityStatistics import QualityStatistics
 from utils.api_utils import send_query_to_api, parse_xml_response, parse_json_response, parse_html_response
 from utils.setup_logger import log
 from utils.str_utils import remove_specific_tokens, process_spaces, remove_operators_in_strings

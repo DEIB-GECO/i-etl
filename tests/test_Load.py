@@ -17,7 +17,7 @@ from enums.ParameterKeys import ParameterKeys
 from enums.Profile import Profile
 from enums.TableNames import TableNames
 from etl.Load import Load
-from statistics.QualityStatistics import QualityStatistics
+from main_statistics.QualityStatistics import QualityStatistics
 from utils.file_utils import write_in_file
 from utils.setup_logger import log
 from utils.test_utils import set_env_variables_from_dict

@@ -6,7 +6,7 @@ from constants.methods import factory
 
 
 @dataclasses.dataclass(kw_only=True)
-class Statistics:
+class MainStatistics:
     record_stats: bool
     timestamp: datetime = dataclasses.field(init=False)
 

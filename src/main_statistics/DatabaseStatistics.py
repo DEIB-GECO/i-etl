@@ -4,11 +4,11 @@ from database.Database import Database
 from entities.Record import Record
 from entities.Resource import Resource
 from enums.TableNames import TableNames
-from statistics.Statistics import Statistics
+from main_statistics.MainStatistics import MainStatistics
 
 
 @dataclasses.dataclass(kw_only=True)
-class DatabaseStatistics(Statistics):
+class DatabaseStatistics(MainStatistics):
     counts_instances: dict = dataclasses.field(default_factory=dict)
     records_with_no_value: dict = dataclasses.field(default_factory=dict)
     records_with_no_value_per_instantiate: dict = dataclasses.field(default_factory=dict)

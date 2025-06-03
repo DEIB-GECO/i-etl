@@ -1,7 +1,7 @@
 from database.Database import Database
 from database.Execution import Execution
-from statistics.QualityStatistics import QualityStatistics
-from statistics.TimeStatistics import TimeStatistics
+from main_statistics.QualityStatistics import QualityStatistics
+from main_statistics.TimeStatistics import TimeStatistics
 
 
 class Task:

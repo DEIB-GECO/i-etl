@@ -4,9 +4,9 @@ from database.Database import Database
 from database.Execution import Execution
 from enums.TableNames import TableNames
 from etl.Task import Task
-from statistics.DatabaseStatistics import DatabaseStatistics
-from statistics.QualityStatistics import QualityStatistics
-from statistics.TimeStatistics import TimeStatistics
+from main_statistics.DatabaseStatistics import DatabaseStatistics
+from main_statistics.QualityStatistics import QualityStatistics
+from main_statistics.TimeStatistics import TimeStatistics
 from utils.setup_logger import log
 
 
