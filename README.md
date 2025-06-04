@@ -96,6 +96,8 @@ The user input is:
 
 ### Example 
 
+The package is available in `pip` meaning that it should be added to the requirements of the train (as in `pip install data-retriever`). Current version is 1.4.
+
 A main example is available in the `query.py` file (https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/blob/main/src/query.py)
 
 More specifically, this file fetches data from two databases built from synthetic data (IMGGE and HSJD).
