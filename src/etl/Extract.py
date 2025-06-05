@@ -211,7 +211,11 @@ class Extract(Task):
 
         # for now, we only dropped columns that were not expected (because not described in the metadata)
         # now, we still need to filter the data based on the profile
-        columns_to_keep = self.metadata[MetadataColumns.COLUMN_NAME].to_list()  # the metadata has already been filtered and has also been pre-processed (e.g., to add new metadata for the current profile)
+        log.info(self.data.columns)
+        # the metadata has already been filtered and has also been pre-processed (e.g., to add new metadata for the current profile)
+        # be careful: the metadata may contain columns that are not present in the data - filtering with self.metadata[MetadataColumns.COLUMN_NAME].to_list() will produce an "unknown column" exception
+        columns_to_keep = list(set(self.metadata[MetadataColumns.COLUMN_NAME].to_list()) & set(self.data.columns))
+        log.info(columns_to_keep)
         self.data = self.data[columns_to_keep]
 
     def compute_mapping_categorical_value_to_onto_resource(self) -> None:
