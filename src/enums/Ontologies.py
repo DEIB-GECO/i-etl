@@ -21,7 +21,8 @@ class Ontologies(EnumAsClass):
     GENE_ONTOLOGY = {"name": "geneontology", "url": "https://amigo.geneontology.org/amigo"}
     OMIM = {"name": "omim", "url": "https://omim.org"}
     HGNC = {"name": "hgnc", "url": "https://rest.ensembl.org/"}
-    NONE = { "name": "none", "url": "none"}
+    NONE = {"name": "none", "url": "none"}
+    HPO = {"name": "hp", "url": "https://clinicaltables.nlm.nih.gov/api/hpo/"}
 
     @classmethod
     def get_enum_from_name(cls, ontology_name: str) -> dict:

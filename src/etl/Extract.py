@@ -2,6 +2,7 @@ import itertools
 import json
 import os
 
+import pandas as pd
 from pandas import DataFrame
 
 from database.Database import Database
@@ -44,7 +45,6 @@ class Extract(Task):
         # normalize: the header and the values
         self.filter_metadata_file()
         self.normalize_metadata_file()
-        self.export_metadata_to_csv_for_generative_ai()
 
         # filter and normalize data
         # filter: remove data columns that are not described in the metadata
@@ -60,11 +60,14 @@ class Extract(Task):
             self.compute_mapping_categorical_value_to_onto_resource()
             self.compute_column_to_unit()
             self.compute_column_to_domain()
+
+            # finally, export both metadata and data
+            # we need to wait because metadata can still be updated by the data pre-processing task
+            self.export_metadata_to_csv_for_generative_ai()
             self.export_data_to_csv_for_generative_ai()
 
     def export_metadata_to_csv_for_generative_ai(self):
         exported_filepath = os.path.join(self.execution.working_dir_current, "exported_metadata.csv")
-        log.info(self.metadata)
         if os.path.exists(exported_filepath) and os.path.getsize(exported_filepath) > 0:
             # existing metadata, we happen
             self.metadata.to_csv(exported_filepath, mode="a", header=False, index=False)
@@ -72,16 +75,17 @@ class Extract(Task):
             self.metadata.to_csv(exported_filepath, index=False)
 
     def export_data_to_csv_for_generative_ai(self):
-        log.info(self.execution.current_filepath)
         filename = os.path.basename(self.execution.current_filepath)  # it contains the .csv
         filename = filename[0:filename.index(".")]
-        log.info(filename)
         exported_filepath = os.path.join(self.execution.working_dir_current, f"exported_{filename}.csv")
-        log.info(self.data)
         if os.path.exists(exported_filepath) and os.path.getsize(exported_filepath) > 0:
-            # existing metadata, we happen
-            self.data.to_csv(exported_filepath, mode="a", header=False, index=False)
+            # existing data, we happen the new columns (thus we need to read data as a df because "a" only appends rows)
+            existing_data = pd.read_csv(exported_filepath, index_col=False)
+            self.data.columns = self.data.columns.map(str)
+            existing_data = existing_data.merge(self.data, on=self.execution.patient_id_column_name, how="outer")  # append current data as columns next to existing data
+            existing_data.to_csv(exported_filepath, index=False)
         else:
+            self.data.columns = self.data.columns.map(str)  # keep column names as strings (to avoid convert HPO terms as integers, which removes leading 000)
             self.data.to_csv(exported_filepath, index=False)
 
     def filter_metadata_file(self) -> None:
@@ -90,8 +94,8 @@ class Extract(Task):
         self.metadata.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x), inplace=True)
 
         # normalize the profiles before filtering
+        self.columns_dataset_all_profiles = self.metadata[MetadataColumns.COLUMN_NAME]  # this contains all feature of the dataset (no matter the profile)
         self.metadata.loc[:, MetadataColumns.PROFILE] = self.metadata[MetadataColumns.PROFILE].apply(lambda x: Profile.normalize(file_type=x))
-        self.columns_dataset_all_profiles = self.metadata[MetadataColumns.COLUMN_NAME]
         self.metadata = self.metadata[self.metadata[MetadataColumns.PROFILE].values == self.profile]
 
         # if the filtered metadata (by dataset and profile) is not empty, we check whether we need to further filter
@@ -177,9 +181,11 @@ class Extract(Task):
         # preprocess data files, i.e., change the data DataFrame to fit the metadata
         # we do not write the pre-processed data to any new ile, we simply run the ETL with it
         # this avoids to (a) overwrite given data files and (b) to have filenames which differ from the metadata
-        preprocessing_task = PreprocessingTask(execution=self.execution, data=self.data, metadata=self.metadata, profile=self.profile)
+        preprocessing_task = PreprocessingTask(execution=self.execution, data=self.data, metadata=self.metadata, profile=self.profile, all_columns_dataset=self.columns_dataset_all_profiles)
         preprocessing_task.run()
         self.data = preprocessing_task.data
+        self.metadata = preprocessing_task.metadata
+        self.columns_dataset_all_profiles = preprocessing_task.all_columns_dataset  # update the list of features if some have been added during the data pre-processing
 
         # normalize column names
         self.data = self.data.rename(columns=lambda x: MetadataColumns.normalize_name(column_name=x))
@@ -191,18 +197,26 @@ class Extract(Task):
         # removes the data columns that are NOT described in the metadata or that are explicitly marked as not to be loaded (except if this is an ID column)
         # if a column is described in the metadata but is not present in the data or this column is empty we keep it
         # because people took the time to describe it.
+        # we record this column in the stats only if it is not described at all in the current file metadata
+        # this is because we iteratively look at the metadata of each pair <dataset, profile>
+        # and we do not want to record a column as "not described" if it is later described in another profile
         data_columns = list(set(self.data.columns))  # get the distinct list of columns
-        columns_described_in_metadata = list(self.columns_dataset_all_profiles.apply(lambda x: MetadataColumns.normalize_name(x)))  # https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/issues/282
-        columns_to_drop = [data_column for data_column in data_columns if data_column not in columns_described_in_metadata or (data_column in self.execution.columns_to_remove and data_column not in [self.execution.patient_id_column_name, self.execution.sample_id_column_name])]
+        expected_columns_dataset = list(self.columns_dataset_all_profiles.apply(lambda x: MetadataColumns.normalize_name(x)))  # https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/issues/282
+        columns_to_drop = [data_column for data_column in data_columns if data_column not in expected_columns_dataset or (data_column in self.execution.columns_to_remove and data_column not in [self.execution.patient_id_column_name, self.execution.sample_id_column_name])]
+        log.info(f"for profile {self.profile}, columns to drop are: {columns_to_drop}")
         self.data = self.data.drop(columns_to_drop, axis=1)  # axis=1 -> columns
-        for data_column in data_columns:
-            # we record this column in the stats only if it is not described at all in the current file metadata
-            # this is because we iteratively look at the metadata of each pair <dataset, profile>
-            # and we do not want to record a column as "not described" if it is later described in another profile
-            # if data_column not in self.described_columns_current_file:
-            if data_column in columns_to_drop:
-                log.info(f"Add data column {data_column} as not described.")
-                self.quality_stats.add_column_not_described_in_metadata(data_column_name=data_column)
+        for column in columns_to_drop:
+            log.info(f"Data column {column} is not described in the metadata, skipping it.")
+            self.quality_stats.add_column_not_described_in_metadata(data_column_name=column)
+
+        # for now, we only dropped columns that were not expected (because not described in the metadata)
+        # now, we still need to filter the data based on the profile
+        log.info(self.data.columns)
+        # the metadata has already been filtered and has also been pre-processed (e.g., to add new metadata for the current profile)
+        # be careful: the metadata may contain columns that are not present in the data - filtering with self.metadata[MetadataColumns.COLUMN_NAME].to_list() will produce an "unknown column" exception
+        columns_to_keep = list(set(self.metadata[MetadataColumns.COLUMN_NAME].to_list()) & set(self.data.columns))
+        log.info(columns_to_keep)
+        self.data = self.data[columns_to_keep]
 
     def compute_mapping_categorical_value_to_onto_resource(self) -> None:
         # Apr 15, 2025: I cannot use the mapping category/OR

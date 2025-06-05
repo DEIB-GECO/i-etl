@@ -12,9 +12,10 @@ from utils.setup_logger import log
 
 
 class Preprocess:
-    def __init__(self, execution: Execution, data: DataFrame, profile: str):
+    def __init__(self, execution: Execution, data: DataFrame, metadata: DataFrame, profile: str):
         self.execution = execution
         self.data = data
+        self.metadata = metadata
         self.profile = profile
 
     def run(self):
@@ -27,7 +28,7 @@ class Preprocess:
     def add_vcf_files_in_data(self) -> None:
         if self.profile == Profile.GENOMIC:
             mapping_pid_vcf = []
-            pid_column_name = os.getenv("PATIENT_ID")  # nope: the data is not normalized yet, so we keep the non)normalized column name self.execution.patient_id_column_name
+            pid_column_name = os.getenv("PATIENT_ID")  # the data is not normalized yet, so we keep the non-normalized column name (not self.execution.patient_id_column_name)
             filepath_column_name = vcf_columns[self.execution.hospital_name]
             if filepath_column_name is not None:
                 for entry in os.getenv("DATA_FILES").split(","):
@@ -48,7 +49,6 @@ class Preprocess:
                         pass
                 pid_vcf_df = DataFrame(mapping_pid_vcf)
                 self.data = self.data.merge(pid_vcf_df, on=pid_column_name, how="outer")
-                log.info(self.data.columns)
 
     @classmethod
     def get_subset_of_columns_in_df(cls, df: DataFrame, file_type: Profile, metadata: DataFrame) -> DataFrame:

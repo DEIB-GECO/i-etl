@@ -16,8 +16,8 @@ from utils.setup_logger import log
 
 
 class PreprocessBuzziUC1(Preprocess):
-    def __init__(self, execution: Execution, data: DataFrame, profile: str):
-        super().__init__(execution=execution, data=data, profile=profile)
+    def __init__(self, execution: Execution, data: DataFrame, metadata: DataFrame, profile: str):
+        super().__init__(execution=execution, data=data, metadata=metadata, profile=profile)
 
         self.ids = []
         self.diagnosis_acronyms = []

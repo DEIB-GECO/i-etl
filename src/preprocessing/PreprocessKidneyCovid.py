@@ -19,8 +19,8 @@ def get_sample_number(x):
 
 
 class PreprocessKidneyCovid(Preprocess):
-    def __init__(self, execution: Execution, data: DataFrame, profile: str):
-        super().__init__(execution=execution, data=data, profile=profile)
+    def __init__(self, execution: Execution, data: DataFrame, metadata: DataFrame, profile: str):
+        super().__init__(execution=execution, data=data, metadata=metadata, profile=profile)
 
     def preprocess(self):
         if self.profile == Profile.CLINICAL or self.profile == Profile.GENOMIC:
