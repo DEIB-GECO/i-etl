@@ -38,10 +38,10 @@ class Preprocess:
                         log.info(the_entry)
                         if the_entry == "":
                             the_entry = "."  # the VCF files are next to the data files
-                        for vcf_file in os.listdir(os.path.join(VCF_MOUNTED_DOCKER, the_entry)):
+                        for vcf_file in os.listdir(os.path.join(DOCKER_FOLDER_DATA, the_entry)):
                             if ".vcf" in vcf_file:
                                 pid = vcf_file.replace(".vcf", "")
-                                mapping_pid_vcf.append({pid_column_name: pid, filepath_column_name: os.path.join(os.getenv("SERVER_FOLDER_DATA"), vcf_file)})
+                                mapping_pid_vcf.append({pid_column_name: pid, filepath_column_name: os.path.join(VCF_MOUNTED_DOCKER, vcf_file)})
                             else:
                                 log.info(f"skip non VCF file {vcf_file}")
                     else:
