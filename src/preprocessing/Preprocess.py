@@ -3,7 +3,7 @@ import os
 import pandas as pd
 from pandas import DataFrame
 
-from constants.structure import DOCKER_FOLDER_DATA
+from constants.structure import DOCKER_FOLDER_DATA, VCF_MOUNTED_DOCKER
 from database.Execution import Execution
 from enums.MetadataColumns import MetadataColumns
 from enums.Profile import Profile
@@ -37,7 +37,7 @@ class Preprocess:
                         log.info(the_entry)
                         if the_entry == "":
                             the_entry = "."  # the VCF files are next to the data files
-                        for vcf_file in os.listdir(os.path.join(DOCKER_FOLDER_DATA, the_entry)):
+                        for vcf_file in os.listdir(os.path.join(VCF_MOUNTED_DOCKER, the_entry)):
                             if ".vcf" in vcf_file:
                                 pid = vcf_file.replace(".vcf", "")
                                 mapping_pid_vcf.append({pid_column_name: pid, filepath_column_name: os.path.join(os.getenv("SERVER_FOLDER_DATA"), vcf_file)})
