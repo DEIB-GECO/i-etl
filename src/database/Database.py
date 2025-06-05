@@ -155,7 +155,7 @@ class Database:
         :param the_batch:
         :return: The `filter_dict` to know exactly which fields have been used for the upsert (some of the given fields in unique_variables may not exist in some instances)
         """
-        log.info(unique_variables)
+        log.info(f"Upsert one batch of {len(the_batch)} tuples with unique variables being {unique_variables}")
         operations = [pymongo.UpdateOne(
             filter={unique_variable: one_tuple[unique_variable] for unique_variable in unique_variables if unique_variable in one_tuple},
             update=self.create_update_stmt(the_tuple=one_tuple), upsert=True)
@@ -173,8 +173,6 @@ class Database:
             projected_key = result
             for one_key in key_fields.split("."):
                 # this covers the case when the key of the mapping is a nested field, e.g., identifier.value
-                log.info(projected_key)
-                log.info(one_key)
                 projected_key = projected_key[one_key]
             projected_value = result
             for one_value in value_fields.split("."):

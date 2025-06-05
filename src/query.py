@@ -14,16 +14,8 @@ if __name__ == '__main__':
     print(dataRetriever.the_dataframe)
 
     # IMGGE
-    FEATURE_CODES = {"hypotonia": "8116006:  278201002= (\"HPO\", 288467006)", "vcf_path": "12953007"}
-    FEATURES_VALUE_PROCESS = {"hypotonia": {"$addFields": {
-                                "hypotonia": {
-                                  "$in": [
-                                    "hp:0001252",
-                                    "$hypotonia"
-                                  ]
-                                }
-                            }},
-                            "vcf_path": None}
-    dataRetriever = DataRetriever(mongodb_url="mongodb://localhost:27018/", db_name="better_imgge", feature_codes=FEATURE_CODES, feature_value_process=FEATURES_VALUE_PROCESS)
+    FEATURE_CODES = {"hypotonia": "0001252", "vcf_path": "12953007"}
+    FEATURES_VALUE_PROCESS = {"hypotonia": None, "vcf_path": None}
+    dataRetriever = DataRetriever(mongodb_url="mongodb://localhost:27018/", db_name="better_imgge_test", feature_codes=FEATURE_CODES, feature_value_process=FEATURES_VALUE_PROCESS)
     dataRetriever.run()
     print(dataRetriever.the_dataframe)

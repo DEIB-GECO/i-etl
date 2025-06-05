@@ -18,6 +18,7 @@ class OntologyResource:
     code: str
     label: str | None
     quality_stats: QualityStatistics | None = dataclasses.field(repr=False)
+    show_warning: bool = dataclasses.field(repr=False, default=True)
 
     # keys to be used when writing JSON or queries
     # those names have to exactly match the variables names declared in entity classes
@@ -34,9 +35,13 @@ class OntologyResource:
             # no ontology code has been provided for that variable name, let's skip it
             # the only case when we don't want to skip it is when a label is provided as input
             if self.label is not None and self.label != "":
-                log.warning(f"Creating an OntologyResource with a label only (label={self.label}).")
+                if self.show_warning:
+                    # self.show_warning -> False if we are building OR from the database, True otherwise (we are building OR in the code)
+                    log.warning(f"Creating an OntologyResource with a label only (label={self.label}).")
             else:
-                log.warning("Could not create an OntologyResource with no ontology system and/or code.")
+                if self.show_warning:
+                    # self.show_warning -> False if we are building OR from the database, True otherwise (we are building OR in the code)
+                    log.warning("Could not create an OntologyResource with no ontology system and/or code.")
         else:
             # this corresponds to the first (and only) ontology system;
             # if there are many, we record only the first but make API calls with all
@@ -279,6 +284,23 @@ class OntologyResource:
                         error = f"Failed connection to HGNC API."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
+                elif system == Ontologies.HPO["url"]:
+                    url = f"https://clinicaltables.nlm.nih.gov/api/hpo/v3/search?terms=HP:{single_code}&sf=id,name"
+                    response = send_query_to_api(url=url, secret=None, access_type=AccessTypes.USER_AGENT)
+                    if response is None:
+                        error = f"Failed connection to HPO API."
+                    elif response.status_code == 200:
+                        data = parse_json_response(response)
+                        if len(data) >= 4:
+                            for one_response in data[3]:
+                                if one_response[0] == f"HP:{single_code}":  # we further check which term corresponds exactly to the code we asked
+                                    return one_response[1]
+                        else:
+                            error = f"No text field for resource {single_code}."
+                    else:
+                        error = f"Failed connection to HPO API."
+                    quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
+                    return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 else:
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=f"Unknown ontology {system}")
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
@@ -298,8 +320,7 @@ class OntologyResource:
         the_system = Ontologies.get_enum_from_url(json_or["system"]) if "system" in json_or else ""
         the_code = json_or["code"] if "code" in json_or else ""
         the_label = json_or["label"] if "label" in json_or else None
-        the_or = OntologyResource(system=the_system, code=the_code, label=the_label, quality_stats=quality_stats)
-        return the_or
+        return OntologyResource(system=the_system, code=the_code, label=the_label, quality_stats=quality_stats, show_warning=False)
 
     def __eq__(self, other):
         if not isinstance(other, OntologyResource):
