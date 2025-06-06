@@ -606,7 +606,8 @@ class Transform(Task):
                                                                               etl_type=etl_type)
 
             # we use type(..).__name__ to get the class name, e.g., "str" or "bool", instead of "<class 'float'>"
-            # log.info(f"Column '{column_name}': fairify {type(value).__name__} value '{value}' (unit: {expected_unit}) into {type(return_value).__name__}: {return_value}")
+            if column_name == "cone_r_eamp":
+                log.info(f"Column '{column_name}': fairify {type(value).__name__} value '{value}' (unit: {expected_unit}) into {type(return_value).__name__}: {return_value}")
             return return_value
 
     def anonymize_value(self, column_name: str, fairified_value: Any) -> tuple:

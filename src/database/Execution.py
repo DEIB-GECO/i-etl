@@ -65,7 +65,7 @@ class Execution:
         self.columns_to_remove = self.check_parameter(key=ParameterKeys.COLUMNS_TO_REMOVE_KEY, accepted_values=None, default_value=self.columns_to_remove)
         self.record_carrier_patients = self.check_parameter(key=ParameterKeys.RECORD_CARRIER_PATIENT, accepted_values=["True", "False", True, False], default_value=self.record_carrier_patients)
         self.patient_id_column_name = MetadataColumns.normalize_name(self.check_parameter(key=ParameterKeys.PATIENT_ID_COLUMN, accepted_values=None, default_value=self.patient_id_column_name))
-        self.sample_id_column_name = MetadataColumns.normalize_name(self.check_parameter(key=ParameterKeys.SAMPLE_ID_COLUMN, accepted_values=None, default_value=self.patient_id_column_name))
+        self.sample_id_column_name = MetadataColumns.normalize_name(self.check_parameter(key=ParameterKeys.SAMPLE_ID_COLUMN, accepted_values=None, default_value=self.sample_id_column_name))
 
         # create working files for the ETL
         self.create_current_working_dir()

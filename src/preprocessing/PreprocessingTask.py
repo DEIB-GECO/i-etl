@@ -9,6 +9,7 @@ from preprocessing.PreprocessCovid import PreprocessCovid
 from preprocessing.PreprocessHsjd import PreprocessHsjd
 from preprocessing.PreprocessImgge import PreprocessImgge
 from preprocessing.PreprocessKidneyCovid import PreprocessKidneyCovid
+from preprocessing.PreprocessLafe import PreprocessLafe
 from utils.setup_logger import log
 
 
@@ -35,6 +36,9 @@ class PreprocessingTask:
             pp.run()
         elif self.execution.hospital_name == HospitalNames.ES_HSJD:
             pp = PreprocessHsjd(execution=self.execution, data=self.data, metadata=self.metadata, profile=self.profile)
+            pp.run()
+        elif self.execution.hospital_name == HospitalNames.ES_LAFE:
+            pp = PreprocessLafe(execution=self.execution, data=self.data, metadata=self.metadata, profile=self.profile, all_columns_dataset=self.all_columns_dataset)
             pp.run()
         else:
             pp = Preprocess(execution=self.execution, data=self.data, metadata=self.metadata, profile=self.profile)
