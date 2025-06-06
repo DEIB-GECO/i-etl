@@ -96,20 +96,23 @@ The user input is:
 
 ### Example 
 
-The package is available in `pip` meaning that it should be added to the requirements of the train (as in `pip install data-retriever`). Current version is 1.4.
-
-A main example is available in the `query.py` file (https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/blob/main/src/query.py)
-
-More specifically, this file fetches data from two databases built from synthetic data (IMGGE and HSJD).
-
-Lines 9 and 10, respectively 17 and 18, contain the user input:
+A main example is available in the `query.py` file (https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/blob/main/src/query.py).  
+Lines 9 and 10, respectively 18 and 19, contain the user input:
 - The variable `FEATURE_CODES` is a dictionary (map) to asociate a variable name to the ontology term that has been associated to it in the metadata (https://drive.google.com/drive/u/1/folders/1J-3C2g06WbC1gUE_3KaDp3_v1uKHXxFV)
 - The variable `FEATURES_VALUE_PROCESS` is a dictionary (map) to associate each variable to a MongoDB operator to process/flatten the fetched values. It should be used for the variables leadning to non-atomic values (especially dictionaries). If no process is neede (because the value is atomic) or you do not know which MongoDB operator to choose, use `None`.
 
+The next lines create a new `DataRetriever` with the information for the MongoDB connection and your user variables. The method `run()` generates the MongoDB query to fetch the data from the specified database. 
+Then, it loads the fetched data into a DataFrame. This DataFrame is accessible in the variable `the_dataframe` (see `dataRetriever.the_dataframe`). Finally, the dataframe is exported as a CSV file.
 
+The package is available in `pip` meaning that it should be added to the requirements of the train (as in `pip install data-retriever`). Current version is 1.4. To be sure that you have all the required package:
+1. Download the `requirements.txt` file in this repository
+2. Create a virtual Python environement (using Python venv or Anaconda)
+3. Activate that environement
+4. Install all the reauied packages with `pip install -r requirements.txt`
+5. Install the `data-retriever` package with `pip install data-retriever`
+6. Then, you should adapt the main file `query.py` with your own settings (database name, etc)
+7. Finally, you can run the `query.py` file with `python3 query.py`
 
-The next lines create a new `DataRetriever` with the information for the MongoDB connection and your user variables. The method `run()` generates the MongoDB query to fetch the data from the speified database. 
-Then it loads the fetched data into a DataFrame. This DataFrame is accessible in the variable `the_dataframe` (see `dataRetriever.the_dataframe`).
 
 ## 5. For developers
 
