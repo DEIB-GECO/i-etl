@@ -11,7 +11,7 @@ vcf_columns = {
     HospitalNames.IT_BUZZI_UC3: None,
     HospitalNames.ES_TERRASSA: None,
     HospitalNames.DE_UKK: None,
-    HospitalNames.ES_LAFE: None,
+    HospitalNames.ES_LAFE: MetadataColumns.normalize_name("path_vcf"),
     HospitalNames.IL_HMC: None,
     HospitalNames.EXPES_EDA: None,
     HospitalNames.EXPES_COVID: None,
