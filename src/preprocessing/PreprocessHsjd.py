@@ -9,7 +9,7 @@ from utils.setup_logger import log
 
 class PreprocessHsjd(Preprocess):
     def __init__(self, execution: Execution, data: DataFrame, metadata: DataFrame, profile: str):
-        super().__init__(execution=execution, data=data, profile=profile)
+        super().__init__(execution=execution, data=data, metadata=metadata, profile=profile)
 
         self.metadata = metadata
         self.mapping_full_name_to_var_name = {}

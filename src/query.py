@@ -12,10 +12,12 @@ if __name__ == '__main__':
                                   feature_codes=FEATURE_CODES, feature_value_process=FEATURES_VALUE_PROCESS)
     dataRetriever.run()
     print(dataRetriever.the_dataframe)
+    dataRetriever.the_dataframe.to_csv("/home/barret/ietl-folder/sjd/table_sjd.csv", index=False)
 
     # IMGGE
     FEATURE_CODES = {"hypotonia": "0001252", "vcf_path": "12953007"}
     FEATURES_VALUE_PROCESS = {"hypotonia": None, "vcf_path": None}
-    dataRetriever = DataRetriever(mongodb_url="mongodb://localhost:27018/", db_name="better_imgge_test", feature_codes=FEATURE_CODES, feature_value_process=FEATURES_VALUE_PROCESS)
+    dataRetriever = DataRetriever(mongodb_url="mongodb://localhost:27018/", db_name="better_imgge", feature_codes=FEATURE_CODES, feature_value_process=FEATURES_VALUE_PROCESS)
     dataRetriever.run()
     print(dataRetriever.the_dataframe)
+    dataRetriever.the_dataframe.to_csv("/home/barret/ietl-folder/imgge/table_imgge.csv", index=False)

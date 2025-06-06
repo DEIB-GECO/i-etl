@@ -78,6 +78,7 @@ class Extract(Task):
         filename = os.path.basename(self.execution.current_filepath)  # it contains the .csv
         filename = filename[0:filename.index(".")]
         exported_filepath = os.path.join(self.execution.working_dir_current, f"exported_{filename}.csv")
+        log.info(exported_filepath)
         if os.path.exists(exported_filepath) and os.path.getsize(exported_filepath) > 0:
             # existing data, we happen the new columns (thus we need to read data as a df because "a" only appends rows)
             existing_data = pd.read_csv(exported_filepath, index_col=False)
