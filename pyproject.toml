@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "data_retriever"
-version = "1.6"
+version = "1.7"
 authors = [
   { name="Nelly Barret", email="nelly.barret@polimi.it" },
 ]
