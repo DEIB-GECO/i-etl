@@ -8,6 +8,7 @@ from pymongo import MongoClient
 from database.Operators import Operators
 from entities.OntologyResource import OntologyResource
 from enums.Ontologies import Ontologies
+from enums.QueryTypes import QueryTypes
 from enums.TableNames import TableNames
 from utils.setup_logger import log
 
@@ -17,13 +18,17 @@ class DataRetriever:
     # db connection
     mongodb_url: str  # "mongodb://localhost:27018/"
     db_name: str
+    query_type: QueryTypes  # METADATA or DATA
 
-    # user input to build the query
+    # user input to build the query to retrieve feature data (metadata)
+    feature_list: list = dataclasses.field(default_factory=list)  # user input of the form ["8116006:278201002=(\"HPO\",288467006)", "12953007", ...]
+
+    # user input to build the query to retrieve record data
     # FEATURE_CODES = {"hypotonia": "8116006:278201002=(\"HPO\",288467006)", "vcf_path": "12953007"}
-    feature_selected: dict  # user input of the form {"user variable name": "ontology code"
+    feature_selected: dict = dataclasses.field(default_factory=list)  # user input of the form {"user variable name": "ontology code"
     # FEATURES_VALUE_PROCESS = {"hypotonia": {"$addFields": { "hypotonia": { "$in": ["hp:0001252", "$hypotonia"] }}}, "vcf_path": None}
-    feature_value_process: dict  # user input of the form {"user variable name": { the mongodb operation or None } }
-    feature_filters: dict  # user input of the form {"user variable name": {"code": "ontology code", "filter": { the mongodb operator }}}
+    feature_value_process: dict = dataclasses.field(default_factory=list)  # user input of the form {"user variable name": { the mongodb operation or None } }
+    feature_filters: dict = dataclasses.field(default_factory=list)  # user input of the form {"user variable name": {"code": "ontology code", "filter": { the mongodb operator }}}
     features_info: dict = dataclasses.field(init=False)  # generated from the 3 user input (select, preprocess, and filters)
     the_dataframe: DataFrame = dataclasses.field(init=False)
 
@@ -34,42 +39,82 @@ class DataRetriever:
         log.info(self.db)
         self.the_query = ""
 
-        # normalize ontology resource codes
-        # we have to set the system to no ontology, otherwise no ontology resource will be created
-        # we have to set the label to the non-empty string, otherwise a label wil be computed
-        # OntologyResource(system=Ontologies.NONE, code=code, label=" ", quality_stats=None).code
-        self.features_info = {}
-        i = 1
-        for key, code in self.feature_selected.items():
-            self.features_info[key] = {
-                "code": OntologyResource(system=Ontologies.NONE, code=code, label=" ", quality_stats=None).code,
-                "filter": None,
-                "process": None,
-                "show": True,
-                "i": i
-            }
-            i = i + 1
-        log.info(self.features_info)
-        # for each feature specified in the filter, add it to the infos
-        for feature_name, feature in self.feature_filters.items():
-            if feature_name not in self.features_info:
-                self.features_info[feature_name] = {}
-                self.features_info[feature_name]["code"] = self.feature_filters[feature_name]["code"]
-                self.features_info[feature_name]["i"] = i
-                i = i + 1
-            self.features_info[feature_name]["filter"] = self.feature_filters[feature_name]["filter"]
-            self.features_info[feature_name]["process"] = None
-            self.features_info[feature_name]["show"] = False
-        # for each feature specified in the post-process, add it to the info
-        for feature_name, process in self.feature_value_process.items():
-            if feature_name not in self.features_info:
-                # we do not have a code for this feature
-                pass
+        # check that the query type match the given parameters
+        if self.query_type == QueryTypes.METADATA:
+            if self.feature_list is None or len(self.feature_list) == 0:
+                raise Exception("You specified that you want to retrieve metadata from the database but did not specify which features to retrieve.")
             else:
-                self.features_info[feature_name]["process"] = process
-        log.info(self.features_info)
+                self.feature_list = [OntologyResource(system=Ontologies.NONE, code=code, label=" ", quality_stats=None).code for code in self.feature_list]
+        elif self.query_type == QueryTypes.DATA:
+            log.info(self.feature_selected)
+            log.info(len(self.feature_selected))
+            if self.feature_selected is None or len(self.feature_selected) == 0:
+                raise Exception("You specified that you want to retrieve data from the database but did not specify which features to retrieve.")
+            else:
+                # normalize ontology resource codes
+                # we have to set the system to no ontology, otherwise no ontology resource will be created
+                # we have to set the label to the non-empty string, otherwise a label wil be computed
+                # OntologyResource(system=Ontologies.NONE, code=code, label=" ", quality_stats=None).code
+                self.features_info = {}
+                i = 1
+                for key, code in self.feature_selected.items():
+                    self.features_info[key] = {
+                        "code": OntologyResource(system=Ontologies.NONE, code=code, label=" ", quality_stats=None).code,
+                        "filter": None,
+                        "process": None,
+                        "show": True,
+                        "i": i
+                    }
+                    i = i + 1
+                log.info(self.features_info)
+                # for each feature specified in the filter, add it to the infos
+                for feature_name, feature in self.feature_filters.items():
+                    if feature_name not in self.features_info:
+                        self.features_info[feature_name] = {}
+                        self.features_info[feature_name]["code"] = self.feature_filters[feature_name]["code"]
+                        self.features_info[feature_name]["i"] = i
+                        i = i + 1
+                    self.features_info[feature_name]["filter"] = self.feature_filters[feature_name]["filter"]
+                    self.features_info[feature_name]["process"] = None
+                    self.features_info[feature_name]["show"] = False
+                # for each feature specified in the post-process, add it to the info
+                for feature_name, process in self.feature_value_process.items():
+                    if feature_name not in self.features_info:
+                        # we do not have a code for this feature
+                        pass
+                    else:
+                        self.features_info[feature_name]["process"] = process
+                log.info(self.features_info)
 
     def run(self):
+        if self.query_type == QueryTypes.DATA:
+            self.retrieve_records()
+        elif self.query_type == QueryTypes.METADATA:
+            self.retrieve_features()
+
+    def retrieve_features(self):
+        log.info("***************")
+        log.info("Creating indexes")
+        self.db[TableNames.FEATURE].create_index("ontology_resource.code")
+
+        log.info("Generating the query")
+        self.generate_metadata_query()
+        log.info(self.the_query)
+        log.info("Creating the dataframe")
+        self.the_dataframe = pd.DataFrame(self.db[TableNames.FEATURE].aggregate(json.loads(self.the_query))).set_index("identifier")
+        log.info("Done.")
+
+    def generate_metadata_query(self):
+        self.the_query += "["
+        self.the_query += json.dumps(Operators.match(field="ontology_resource.code", value={"$in": self.feature_list}, is_regex=False))
+        self.the_query += ","
+        self.the_query += json.dumps(Operators.set_variables([{"name": "onto_system", "operation": "$ontology_resource.system"}, {"name": "onto_code", "operation": "$ontology_resource.code"}]))
+        self.the_query += ","
+        self.the_query += json.dumps(Operators.unset_variables(["_id"]))
+        self.the_query += "]"
+        log.info(self.the_query)
+
+    def retrieve_records(self):
         feature_codes_inv = {v["code"]: k for k, v in self.features_info.items()}
         log.info(f"features_info: {self.features_info}")
         log.info(f"feature_codes_inv: {feature_codes_inv}")
@@ -88,13 +133,14 @@ class DataRetriever:
         self.db[TableNames.FEATURE].create_index("ontology_resource.code")
 
         log.info("Generating the query")
-        self.generate_query()
+        self.generate_data_query()
         log.info(self.the_query)
         log.info("Creating the dataframe")
-        self.the_dataframe = pd.DataFrame(self.db[TableNames.RECORD].aggregate(json.loads(self.the_query))).set_index("has_subject")
+        self.the_dataframe = pd.DataFrame(self.db[TableNames.RECORD].aggregate(json.loads(self.the_query))).set_index(
+            "has_subject")
         log.info("Done.")
 
-    def generate_query(self):
+    def generate_data_query(self):
         # 0. compute the lookups
         self.rec_internal(position=1)
         # we now need to add the latest stages to set final variables from the lookups
