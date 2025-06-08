@@ -80,6 +80,7 @@ class DataRetriever:
             feature_user_name = feature_codes_inv[res["ontology_resource"]["code"]]
             self.features_info[feature_user_name]["identifier"] = res["identifier"]
             i = i + 1
+        log.info(self.features_info)
 
         log.info("***************")
         log.info("Creating indexes")
