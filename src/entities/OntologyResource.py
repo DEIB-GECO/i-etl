@@ -314,6 +314,9 @@ class OntologyResource:
     def to_json(self):
         return dataclasses.asdict(self, dict_factory=factory)
 
+    def to_string(self):
+        return f"{self.system}:{self.code}"
+
     @classmethod
     def from_json(cls, json_or: dict, quality_stats: QualityStatistics):  # returns an OntologyResource
         # fill a new OntologyResource instance with a JSON-encoded OntologyResource
