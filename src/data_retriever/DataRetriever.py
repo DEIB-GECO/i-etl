@@ -44,10 +44,13 @@ class DataRetriever:
             if self.feature_list is None or len(self.feature_list) == 0:
                 raise Exception("You specified that you want to retrieve metadata from the database but did not specify which features to retrieve.")
             else:
-                self.feature_list = [OntologyResource(system=Ontologies.NONE, code=code, label=" ", quality_stats=None).code for code in self.feature_list]
+                new_feature_list = []
+                for code in self.feature_list:
+                    code_split = code.split(":", 1)  # split on the first :
+                    system, code = Ontologies.get_enum_from_name(Ontologies.normalize_name(code_split[0])), Ontologies.normalize_code(code_split[1])
+                    new_feature_list.append(OntologyResource(system=system, code=code, label=" ", quality_stats=None))
+                self.feature_list = new_feature_list
         elif self.query_type == QueryTypes.DATA:
-            log.info(self.feature_selected)
-            log.info(len(self.feature_selected))
             if self.feature_selected is None or len(self.feature_selected) == 0:
                 raise Exception("You specified that you want to retrieve data from the database but did not specify which features to retrieve.")
             else:
@@ -58,8 +61,10 @@ class DataRetriever:
                 self.features_info = {}
                 i = 1
                 for key, code in self.feature_selected.items():
+                    code_split = code.split(":", 1)  # split on the first :
+                    system, code = Ontologies.get_enum_from_name(Ontologies.normalize_name(code_split[0])), Ontologies.normalize_code(code_split[1])
                     self.features_info[key] = {
-                        "code": OntologyResource(system=Ontologies.NONE, code=code, label=" ", quality_stats=None).code,
+                        "the_or": OntologyResource(system=system, code=code, label=" ", quality_stats=None),
                         "filter": None,
                         "process": None,
                         "show": True,
@@ -71,7 +76,9 @@ class DataRetriever:
                 for feature_name, feature in self.feature_filters.items():
                     if feature_name not in self.features_info:
                         self.features_info[feature_name] = {}
-                        self.features_info[feature_name]["code"] = self.feature_filters[feature_name]["code"]
+                        code_split = self.feature_filters[feature_name]["code"].split(":", 1)  # split on the first :
+                        system, code = Ontologies.get_enum_from_name(Ontologies.normalize_name(code_split[0])), Ontologies.normalize_code(code_split[1])
+                        self.features_info[feature_name]["the_or"] = OntologyResource(system=system, code=code, label=" ", quality_stats=None)
                         self.features_info[feature_name]["i"] = i
                         i = i + 1
                     self.features_info[feature_name]["filter"] = self.feature_filters[feature_name]["filter"]
@@ -95,6 +102,7 @@ class DataRetriever:
     def retrieve_features(self):
         log.info("***************")
         log.info("Creating indexes")
+        self.db[TableNames.FEATURE].create_index("ontology_resource.system")
         self.db[TableNames.FEATURE].create_index("ontology_resource.code")
 
         log.info("Generating the query")
@@ -105,24 +113,32 @@ class DataRetriever:
         log.info("Done.")
 
     def generate_metadata_query(self):
+        # {"$or": [{"$and": [{"system": "a"}, {"code": 1}]}, {"$and": [{"system": "b", "code": 2}]}]}
+        match_feature_codes = Operators.or_operator(list_of_conditions=[
+            Operators.and_operator(list_of_conditions=[{"ontology_resource.system": ontology_resource.system, "ontology_resource.code": ontology_resource.code}]) for ontology_resource in self.feature_list
+        ])
+
         self.the_query += "["
-        self.the_query += json.dumps(Operators.match(field="ontology_resource.code", value={"$in": self.feature_list}, is_regex=False))
+        self.the_query += json.dumps(Operators.match(field=None, value=match_feature_codes, is_regex=False))
         self.the_query += ","
         self.the_query += json.dumps(Operators.set_variables([{"name": "onto_system", "operation": "$ontology_resource.system"}, {"name": "onto_code", "operation": "$ontology_resource.code"}]))
         self.the_query += ","
         self.the_query += json.dumps(Operators.unset_variables(["_id"]))
         self.the_query += "]"
-        log.info(self.the_query)
 
     def retrieve_records(self):
-        feature_codes_inv = {v["code"]: k for k, v in self.features_info.items()}
-        log.info(f"features_info: {self.features_info}")
-        log.info(f"feature_codes_inv: {feature_codes_inv}")
+        feature_codes_inv = {v["the_or"].to_string(): k for k, v in self.features_info.items()}
         i = 1
         # get features for features asked in the SELECT
-        for res in self.db[TableNames.FEATURE].find({"ontology_resource.code": {"$in": list(feature_codes_inv.keys())}}):
+        match_feature_codes = Operators.or_operator(list_of_conditions=[
+            Operators.and_operator(list_of_conditions=[{"ontology_resource.system": feature["the_or"].system,
+                                                        "ontology_resource.code": feature["the_or"].code}]) for
+            feature_name, feature in self.features_info.items() #if feature["show"] is True
+        ])
+
+        for res in self.db[TableNames.FEATURE].find(match_feature_codes):
             log.info(res)
-            feature_user_name = feature_codes_inv[res["ontology_resource"]["code"]]
+            feature_user_name = feature_codes_inv[f"{res["ontology_resource"]["system"]}:{res["ontology_resource"]["code"]}"]
             self.features_info[feature_user_name]["identifier"] = res["identifier"]
             i = i + 1
         log.info(self.features_info)

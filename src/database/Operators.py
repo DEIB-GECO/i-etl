@@ -45,6 +45,15 @@ class Operators(EnumAsClass):
         }
 
     @classmethod
+    def and_operator(cls, list_of_conditions: list[dict]) -> dict:
+        # list_of_conditions is a list where each element is a dict-like condition,
+        # containing the field and the condition to apply
+        # e.g., [{"value": 3}, {"value": {"$type": "bool"}}]
+        return {
+            "$and": list_of_conditions
+        }
+
+    @classmethod
     def project(cls, field: str | list | dict | None, projected_value: str | dict | None) -> dict:
         # this is the SQL SELECT operator
         # where each field that is wanted in the result has value 1 and unwanted fields have value 0
