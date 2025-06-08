@@ -8,8 +8,6 @@ from pymongo import MongoClient
 from database.Operators import Operators
 from entities.OntologyResource import OntologyResource
 from enums.Ontologies import Ontologies
-# from entities.OntologyResource import OntologyResource
-# from enums.Ontologies import Ontologies
 from enums.TableNames import TableNames
 from utils.setup_logger import log
 
@@ -22,9 +20,11 @@ class DataRetriever:
 
     # user input to build the query
     # FEATURE_CODES = {"hypotonia": "8116006:278201002=(\"HPO\",288467006)", "vcf_path": "12953007"}
-    feature_codes: dict  # user input of the form {"user variable name": "ontology code"
+    feature_selected: dict  # user input of the form {"user variable name": "ontology code"
     # FEATURES_VALUE_PROCESS = {"hypotonia": {"$addFields": { "hypotonia": { "$in": ["hp:0001252", "$hypotonia"] }}}, "vcf_path": None}
-    feature_value_process: dict  # user input of the form {"user variable name": { the mongo db operation or None } }
+    feature_value_process: dict  # user input of the form {"user variable name": { the mongodb operation or None } }
+    feature_filters: dict  # user input of the form {"user variable name": {"code": "ontology code", "filter": { the mongodb operator }}}
+    features_info: dict = dataclasses.field(init=False)  # generated from the 3 user input (select, preprocess, and filters)
     the_dataframe: DataFrame = dataclasses.field(init=False)
 
     def __post_init__(self):
@@ -32,30 +32,55 @@ class DataRetriever:
         log.info(self.client)
         self.db = self.client[self.db_name]
         log.info(self.db)
-        self.identifiers = {}
         self.the_query = ""
 
         # normalize ontology resource codes
         # we have to set the system to no ontology, otherwise no ontology resource will be created
         # we have to set the label to the non-empty string, otherwise a label wil be computed
         # OntologyResource(system=Ontologies.NONE, code=code, label=" ", quality_stats=None).code
-        self.feature_codes = {key: OntologyResource(system=Ontologies.NONE, code=code, label=" ", quality_stats=None).code for key, code in self.feature_codes.items()}
+        self.features_info = {}
+        i = 1
+        for key, code in self.feature_selected.items():
+            self.features_info[key] = {
+                "code": OntologyResource(system=Ontologies.NONE, code=code, label=" ", quality_stats=None).code,
+                "filter": None,
+                "process": None,
+                "show": True,
+                "i": i
+            }
+            i = i + 1
+        log.info(self.features_info)
+        # for each feature specified in the filter, add it to the infos
+        for feature_name, feature in self.feature_filters.items():
+            if feature_name not in self.features_info:
+                self.features_info[feature_name] = {}
+                self.features_info[feature_name]["code"] = self.feature_filters[feature_name]["code"]
+                self.features_info[feature_name]["i"] = i
+                i = i + 1
+            self.features_info[feature_name]["filter"] = self.feature_filters[feature_name]["filter"]
+            self.features_info[feature_name]["process"] = None
+            self.features_info[feature_name]["show"] = False
+        # for each feature specified in the post-process, add it to the info
+        for feature_name, process in self.feature_value_process.items():
+            if feature_name not in self.features_info:
+                # we do not have a code for this feature
+                pass
+            else:
+                self.features_info[feature_name]["process"] = process
+        log.info(self.features_info)
 
     def run(self):
-        feature_codes_inv = {v: k for k, v in self.feature_codes.items()}
-        log.info(f"FEATURE_CODES: {self.feature_codes}")
-        log.info(f"FEATURE_CODES_INV: {feature_codes_inv}")
+        feature_codes_inv = {v["code"]: k for k, v in self.features_info.items()}
+        log.info(f"features_info: {self.features_info}")
+        log.info(f"feature_codes_inv: {feature_codes_inv}")
         i = 1
-        for res in self.db[TableNames.FEATURE].find({"ontology_resource.code": {"$in": list(self.feature_codes.values())}}):
+        # get features for features asked in the SELECT
+        for res in self.db[TableNames.FEATURE].find({"ontology_resource.code": {"$in": list(feature_codes_inv.keys())}}):
             log.info(res)
             feature_user_name = feature_codes_inv[res["ontology_resource"]["code"]]
-            self.identifiers[i] = (res["ontology_resource"]["code"], res["identifier"], feature_user_name, self.feature_value_process[feature_user_name])
+            self.features_info[feature_user_name]["identifier"] = res["identifier"]
             i = i + 1
-        log.info(f"identifiers: {self.identifiers}")
-
-        if len(self.identifiers) != len(self.feature_codes):
-            log.info("Not all given features have been found in the database. Abort.")
-            exit()
+        log.info(self.features_info)
 
         log.info("***************")
         log.info("Creating indexes")
@@ -70,77 +95,96 @@ class DataRetriever:
         log.info("Done.")
 
     def generate_query(self):
+        # 0. compute the lookups
         self.rec_internal(position=1)
         # we now need to add the latest stages to set final variables from the lookups
         # this cannot be done during the recursion, so we do it now
         self.the_query = self.the_query[0:len(self.the_query) - 1]  # remove the last ] before adding final stages
-        # print(self.the_query)
+        # log.info(self.the_query)
         self.the_query += ","
+
+        # 1. set variables of the unwind to place them on the first level of the computed record
         set_variables = []
-        for i in self.identifiers.keys():
+        for feature_name, feature in self.features_info.items():
             lookup_names = "$"
-            for j in range(1, i):
+            for j in range(1, feature["i"]):
                 lookup_names += f"lookup_{j}."
             lookup_names += "value"
-            set_variables.append({"name": self.identifiers[i][2], "operation": lookup_names})
+            set_variables.append({"name": feature_name, "operation": lookup_names})
         self.the_query += json.dumps(Operators.set_variables(variables=set_variables))
-        projected_values = {f_name: 1 for f_name in self.feature_codes}
+        self.the_query += ","
+
+        # 2. filter the obtained records
+        for feature in self.features_info.values():
+            if "filter" in feature and feature["filter"] is not None:
+                for select_key, select_operator in feature["filter"].items():
+                    self.the_query += json.dumps(Operators.match(field=select_key, value=select_operator, is_regex=False)) + ","
+
+        # 3. set the value to keep + those to flatten
+        for feature_name, feature in self.features_info.items():
+            if "process" in feature and feature["process"] is not None:
+                if feature["process"] == "get_label":
+                    # we are in a category, we get its label
+                    self.the_query += json.dumps(Operators.set_variables(variables=[{"name": feature_name, "operation": f"${feature_name}.label"}]))
+                    self.the_query += ","
+                else:
+                    # the user gave a personalized post-process, we apply it as is
+                    self.the_query += json.dumps(feature["process"])
+                    self.the_query += ","
+            log.info(self.the_query)
+
+        # 4. project only variables specified in the SELECT (not those only in the WHERE)
+        projected_values = {feature_name: 1 for feature_name, feature in self.features_info.items() if feature["show"] is True}
         projected_values["_id"] = 0
         projected_values["has_subject"] = 1
-        self.the_query += ","
-        for i in self.identifiers.keys():
-            if self.identifiers[i][3] is not None:
-                self.the_query += json.dumps(self.identifiers[i][3])
-                self.the_query += ","
         self.the_query += json.dumps(Operators.project(field=None, projected_value=projected_values))
         self.the_query += "]"
-        print(self.the_query)
+        log.info(self.the_query)
 
     def rec_internal(self, position):
-        # print(f"rec {position}/{max_position} with {identifiers}")
-
-        if position == len(self.identifiers):
+        log.info(f"rec {position} with {self.features_info}")
+        feature_id = [feature["identifier"] for feature_name, feature in self.features_info.items() if feature["i"] == position][0]
+        if position == len(self.features_info):
             self.the_query += "["
-            # print(self.the_query)
-            self.the_query += json.dumps(
-                Operators.match(field="instantiates", value=self.identifiers[position][1], is_regex=False))
-            # print(self.the_query)
+            # log.info(self.the_query)
+            self.the_query += json.dumps(Operators.match(field="instantiates", value=feature_id, is_regex=False))
+            # log.info(self.the_query)
             self.the_query += ","
-            # print(self.the_query)
+            # log.info(self.the_query)
             # if position > 1 and position < max_position:
             self.the_query += json.dumps(
                 Operators.match(field=None, value={"$expr": {"$eq": [f"$$id_{position - 1}", "$has_subject"]}},
                                 is_regex=False))
-            # print(self.the_query)
+            # log.info(self.the_query)
             self.the_query += "]"
-            # print(self.the_query)
+            # log.info(self.the_query)
         else:
             self.the_query += "["
-            # print(self.the_query)
-            self.the_query += json.dumps(Operators.match(field="instantiates", value=self.identifiers[position][1], is_regex=False))
-            # print(self.the_query)
+            # log.info(self.the_query)
+            self.the_query += json.dumps(Operators.match(field="instantiates", value=feature_id, is_regex=False))
+            # log.info(self.the_query)
             self.the_query += ","
-            # print(self.the_query)
+            # log.info(self.the_query)
             if position > 1:
                 self.the_query += json.dumps(
                     Operators.match(field=None, value={"$expr": {"$eq": [f"$$id_{position - 1}", "$has_subject"]}},
                                     is_regex=False))
-                # print(self.the_query)
+                # log.info(self.the_query)
                 self.the_query += ","
-                # print(self.the_query)
+                # log.info(self.the_query)
 
             # the lookup needs to be only partially written in order to compute its internal pipeline
             # this is why we need to write manually the string in order to compute the internal pipeline in-between
             self.the_query += "{\"$lookup\": {\"from\": \"" + TableNames.RECORD + "\", \"let\": {\"id_" + str(
                 position) + "\": \"$has_subject\"}, \"as\": \"lookup_" + str(position) + "\", \"pipeline\": "
-            # print(self.the_query)
+            # log.info(self.the_query)
             self.rec_internal(position + 1)
-            # print(self.the_query)
+            # log.info(self.the_query)
             self.the_query += "}}"
-            # print(self.the_query)
+            # log.info(self.the_query)
             self.the_query += ","
-            # print(self.the_query)
+            # log.info(self.the_query)
             self.the_query += json.dumps(Operators.unwind(field=f"lookup_{position}"))
-            # print(self.the_query)
+            # log.info(self.the_query)
             self.the_query += "]"
-            # print(self.the_query)
+            # log.info(self.the_query)
