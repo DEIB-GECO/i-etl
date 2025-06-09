@@ -86,23 +86,13 @@ The provided `.env` file is a _template_: you have to fill each parameter with y
 
 ### Steps 
 Given a user input (explained below), the class `DataRetriever` takes care of:
-1. Generating the MongoDB query to fetch the data in the database
-2. Loading the retrieved data in a Pandas DataFrame
+1. Generating the MongoDB query to fetch the data or metadata in the database
+2. Loading the retrieved data, respectively metadata, in a Pandas DataFrame
 
 The user input is:
 - the information to connect to the database (MongoDB URL and database name)
 - the features (also called "variables") the user is interested in when collecting data
 - the post-process methods to "flatten"/"normalize" the data values if needed
-
-### Example 
-
-A main example is available in the `query.py` file (https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/blob/main/src/query.py).  
-Lines 9 and 10, respectively 18 and 19, contain the user input:
-- The variable `FEATURE_CODES` is a dictionary (map) to asociate a variable name to the ontology term that has been associated to it in the metadata (https://drive.google.com/drive/u/1/folders/1J-3C2g06WbC1gUE_3KaDp3_v1uKHXxFV)
-- The variable `FEATURES_VALUE_PROCESS` is a dictionary (map) to associate each variable to a MongoDB operator to process/flatten the fetched values. It should be used for the variables leadning to non-atomic values (especially dictionaries). If no process is neede (because the value is atomic) or you do not know which MongoDB operator to choose, use `None`.
-
-The next lines create a new `DataRetriever` with the information for the MongoDB connection and your user variables. The method `run()` generates the MongoDB query to fetch the data from the specified database. 
-Then, it loads the fetched data into a DataFrame. This DataFrame is accessible in the variable `the_dataframe` (see `dataRetriever.the_dataframe`). Finally, the dataframe is exported as a CSV file.
 
 The package is available in `pip` meaning that it should be added to the requirements of the train (as in `pip install data-retriever`). Current version is 1.4. To be sure that you have all the required package:
 1. Download the `requirements.txt` file in this repository
@@ -113,6 +103,30 @@ The package is available in `pip` meaning that it should be added to the require
 6. Then, you should adapt the main file `query.py` with your own settings (database name, etc)
 7. Finally, you can run the `query.py` file with `python3 query.py`
 
+### Example to retrieve data
+
+A main example is available in the `query.py` file (https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/blob/main/src/query.py).  
+
+Lines 9 to 11, respectively 21 to 23, contain the user input:
+- The variable `FEATURE_CODES` is a dictionary (map) to associate a variable name to the ontology term that has been associated to it in the metadata (https://drive.google.com/drive/u/1/folders/1J-3C2g06WbC1gUE_3KaDp3_v1uKHXxFV)
+- The variable `FEATURE_FILTERS` is a dictionary (map) to associate a variable name to (a) its code under the key `code`, and (b) the filter to apply under the key `filter`. The value of the `filter` should be a MongoDB `match`. Note that the variables mentionned in the filters may differ from the ones selected. 
+- The variable `FEATURES_VALUE_PROCESS` is a dictionary (map) to associate a variable to a MongoDB operator to process/flatten the fetched values. The values in this dicationary can be either `get_label` to get the human-readable name of a category, or any other MongoDB operator. It should be used for the variables leading to non-atomic values (especially dictionaries). If no process is needed (because the value is atomic) or you do not know which MongoDB operator to choose, use `None`.
+
+The next lines create a new `DataRetriever` with the information for the MongoDB connection, user variables, and the query type which is `data`. The method `run()` generates the MongoDB query to fetch the data from the specified database. 
+Then, it loads the fetched data into a DataFrame. This DataFrame is accessible in the variable `the_dataframe` (see `dataRetriever.the_dataframe`). Finally, the dataframe is exported to a CSV file.
+
+For instance, in the `query.py` file, the first query fetches, for all female patients, their associated VCF filepath and wether they have hypotonia. The second query retrieves the same information for the IMGGE hospital. 
+## Example to retrieve metadata
+
+A main example is available in the `query.py` file (https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/blob/main/src/query.py).  
+
+Line 33 contains the user input:
+- The variable `FEATURE_CODES` is an array (list) of the variable codes we want to collect metadata for (to find the variable codes, look at the metadata: https://drive.google.com/drive/u/1/folders/1J-3C2g06WbC1gUE_3KaDp3_v1uKHXxFV)
+
+The next lines create a new `DataRetriever` with the information for the MongoDB connection, user variables, and the query type which is `metadata`. The method `run()` generates the MongoDB query to fetch the metadata from the specified database. 
+Then, it loads the fetched metadata into a DataFrame. This DataFrame is accessible in the variable `the_dataframe` (see `dataRetriever.the_dataframe`). Finally, the dataframe is exported to a CSV file.
+
+For instance, in the `query.py` file, the last query fetches all metadata information about variables `hypotonia`, `vcf_path` and `gene`. The retrieved information concerns the variable name, code, data type, categories, visbility, etc. (all information specified in the metadata: to find the variable codes, look at the metadata: https://drive.google.com/drive/u/1/folders/1J-3C2g06WbC1gUE_3KaDp3_v1uKHXxFV)
 
 ## 5. For developers
 
