@@ -81,9 +81,15 @@ class DataRetriever:
                         self.features_info[feature_name]["the_or"] = OntologyResource(system=system, code=code, label=" ", quality_stats=None)
                         self.features_info[feature_name]["i"] = i
                         i = i + 1
-                    self.features_info[feature_name]["filter"] = self.feature_filters[feature_name]["filter"]
+                        self.features_info[feature_name]["show"] = False
+                    if feature_name not in self.feature_filters:
+                        pass
+                    else:
+                        if self.feature_filters[feature_name] is not None and "filter" in self.feature_filters[feature_name]:
+                            self.features_info[feature_name]["filter"] = self.feature_filters[feature_name]["filter"]
+                        else:
+                            self.features_info[feature_name]["filter"] = None
                     self.features_info[feature_name]["process"] = None
-                    self.features_info[feature_name]["show"] = False
                 # for each feature specified in the post-process, add it to the info
                 for feature_name, process in self.feature_value_process.items():
                     if feature_name not in self.features_info:
