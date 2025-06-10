@@ -20,7 +20,9 @@ class Preprocess:
 
     def run(self):
         self.preprocess()
-        self.add_vcf_files_in_data()
+        if ".vcf" in os.getenv("DATA_FILES"):
+            # do not add VCF if not VCF data has been given as input (even if there may be VCF data later)
+            self.add_vcf_files_in_data()
 
     def preprocess(self):
         pass
