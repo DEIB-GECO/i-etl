@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import re
 
@@ -77,7 +79,7 @@ class PreprocessBuzziUC1(Preprocess):
 
             # 2. associate each sample barcode to the patient id
             prefix = Profile.get_prefix_for_path(filetype=Profile.PHENOTYPIC)
-            df = read_tabular_file_as_string(filepath=f"{os.path.join(prefix, "screening.csv")}")  # cannot replace this by self.execution.current_filepath because it contains the diagnosis file data
+            df = read_tabular_file_as_string(filepath=f'{os.path.join(prefix, "screening.csv")}')  # cannot replace this by self.execution.current_filepath because it contains the diagnosis file data
             self.mapping_barcode_pid = {row[df.columns.get_loc("SampleBarcode")]: row[df.columns.get_loc("id")] for row in df.itertuples(index=False)}
 
             # 3. for each patient, collect the acronym and whether he is affected or a carrier

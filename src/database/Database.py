@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import dataclasses
 import json
 import os
@@ -21,7 +23,7 @@ from utils.file_utils import get_json_resource_file
 from utils.setup_logger import log
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass()
 class Database:
     """
     The class Database represents the underlying MongoDB database: the connection, the database itself and

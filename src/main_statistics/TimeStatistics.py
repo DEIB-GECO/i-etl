@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import dataclasses
 import time
 
@@ -5,7 +7,7 @@ from main_statistics.MainStatistics import MainStatistics
 from utils.setup_logger import log
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass()
 class TimeStatistics(MainStatistics):
     stats: dict = dataclasses.field(default_factory=dict)
 

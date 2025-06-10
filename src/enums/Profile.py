@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 from constants.structure import DOCKER_FOLDER_TEST, DOCKER_FOLDER_METADATA, \

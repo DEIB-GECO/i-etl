@@ -5,7 +5,7 @@ from entities.Resource import Resource
 from enums.Visibility import Visibility
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass()
 class Feature(Resource):
     name: str
     ontology_resource: OntologyResource

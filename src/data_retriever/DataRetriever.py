@@ -13,7 +13,7 @@ from enums.TableNames import TableNames
 from utils.setup_logger import log
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass()
 class DataRetriever:
     # db connection
     mongodb_url: str  # "mongodb://localhost:27018/"
@@ -141,10 +141,16 @@ class DataRetriever:
                                                         "ontology_resource.code": feature["the_or"].code}]) for
             feature_name, feature in self.features_info.items() #if feature["show"] is True
         ])
+        log.info(match_feature_codes)
 
         for res in self.db[TableNames.FEATURE].find(match_feature_codes):
             log.info(res)
-            feature_user_name = feature_codes_inv[f"{res["ontology_resource"]["system"]}:{res["ontology_resource"]["code"]}"]
+            log.info(res['ontology_resource']['system'])
+            log.info(res['ontology_resource']['code'])
+            onto_system = res["ontology_resource"]["system"]
+            onto_code = res["ontology_resource"]["code"]
+            total = str(onto_system) + ":" + str(onto_code)
+            feature_user_name = feature_codes_inv[total]
             self.features_info[feature_user_name]["identifier"] = res["identifier"]
             i = i + 1
         log.info(self.features_info)

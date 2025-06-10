@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import dataclasses
 import getpass
 import json
@@ -21,7 +23,7 @@ from utils.cast_utils import cast_str_to_int
 from utils.setup_logger import log
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass()
 class Execution:
     execution_date: datetime = datetime.now()
     working_dir: str = field(init=False, default=os.path.join(os.getcwd(), WORKING_DIR))  # default in the code

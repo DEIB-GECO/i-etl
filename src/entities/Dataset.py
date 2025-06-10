@@ -11,7 +11,7 @@ from enums.TableNames import TableNames
 from utils.setup_logger import log
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass()
 class Dataset(Resource):
     database: Database = dataclasses.field(repr=False)
     docker_path: str

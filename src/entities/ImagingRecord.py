@@ -5,7 +5,7 @@ from enums.Profile import Profile
 from enums.TableNames import TableNames
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass()
 class ImagingRecord(Record):
     scan: str
     entity_type: str = f"{Profile.IMAGING}{TableNames.RECORD}"

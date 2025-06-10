@@ -7,7 +7,7 @@ from enums.TableNames import TableNames
 from main_statistics.MainStatistics import MainStatistics
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass()
 class DatabaseStatistics(MainStatistics):
     counts_instances: dict = dataclasses.field(default_factory=dict)
     records_with_no_value: dict = dataclasses.field(default_factory=dict)

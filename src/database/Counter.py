@@ -6,7 +6,7 @@ from database.Database import Database
 from utils.setup_logger import log
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass()
 class Counter:
     resource_id: int = dataclasses.field(init=False, default=0)
 

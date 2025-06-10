@@ -13,7 +13,7 @@ if __name__ == '__main__':
     FEATURE_CODES = {"label": "snomedct:398152000", "filename": "snomedct:12953007"}  # "face_hpo": '8116006:398302004=(278201002="HPO")', "gene": "82256003:734841007"}
     FEATURES_FILTERS = {"label": None, "filename": None}
     FEATURES_VALUE_PROCESS = {"label": None, "filename": None}
-    dataRetriever = DataRetriever(mongodb_url="mongodb://localhost:27018/", db_name="better_sjd",
+    dataRetriever = DataRetriever(mongodb_url="mongodb://131.175.120.88:27018/", db_name="better_sjd",
                                   query_type="data",
                                   feature_selected=FEATURE_CODES, feature_value_process=FEATURES_VALUE_PROCESS,
                                   feature_filters=FEATURES_FILTERS)

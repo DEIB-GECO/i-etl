@@ -5,7 +5,7 @@ from datetime import datetime
 from constants.methods import factory
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass()
 class MainStatistics:
     record_stats: bool
     timestamp: datetime = dataclasses.field(init=False)

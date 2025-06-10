@@ -7,10 +7,10 @@ beautifulsoup4~=4.12.3
 requests~=2.32.3
 python-dateutil~=2.9.0.post0
 jsonlines~=4.0.0
-headfake~=1.1.1
 urllib3~=2.2.2
 pymongo~=4.8.0
 filesplit~=4.1.0
 python-dotenv~=1.0.1
 pytest~=8.2.2
+data_retriever~=1.10
 openpyxl

@@ -1,6 +1,5 @@
 import logging
 
-import headfake.fieldset
 import urllib3
 
 logging.basicConfig(

@@ -17,7 +17,7 @@ from enums.TableNames import TableNames
 from utils.setup_logger import log
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass()
 class FeatureProfileComputation:
     database: Database
 

@@ -1,4 +1,4 @@
-FROM python:3.12
+FROM python:3.9
 
 # 1. install Python requirements
 # do it first to avoid doing it every time the image is built with newer code

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import dataclasses
 import re
 from urllib.parse import quote
@@ -12,7 +14,7 @@ from utils.setup_logger import log
 from utils.str_utils import remove_specific_tokens, process_spaces, remove_operators_in_strings
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass()
 class OntologyResource:
     system: dict
     code: str
