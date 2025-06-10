@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import base64
 import xml.dom.minidom
 
@@ -43,7 +45,7 @@ def send_query_to_api(url, secret: str | None, access_type: AccessTypes) -> Resp
         username = secret.split(" ")[0]
         password = secret.split(" ")[1]
         base64string = base64.b64encode(bytes('%s:%s' % (username, password), "ascii"))
-        headers["Authorization"] = f"Basic {base64string.decode("utf-8")}"  # Make sure to prepend 'Bearer ' before your API key
+        headers["Authorization"] = f'Basic {base64string.decode("utf-8")}'  # Make sure to prepend 'Bearer ' before your API key
         return send_query(url=url, headers=headers)
 
     elif access_type == AccessTypes.API_KEY_IN_HEADER:

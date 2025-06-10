@@ -4,7 +4,7 @@ from typing import Any
 from entities.Resource import Resource
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass()
 class Record(Resource):
     has_subject: int
     registered_by: int

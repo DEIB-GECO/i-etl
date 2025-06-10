@@ -5,6 +5,6 @@ from enums.Profile import Profile
 from enums.TableNames import TableNames
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass()
 class MedicineFeature(Feature):
     entity_type: str = f"{Profile.MEDICINE}{TableNames.FEATURE}"

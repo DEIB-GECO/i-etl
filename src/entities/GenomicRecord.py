@@ -5,7 +5,7 @@ from enums.Profile import Profile
 from enums.TableNames import TableNames
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass()
 class GenomicRecord(Record):
     vcf: str
     entity_type: str = f"{Profile.GENOMIC}{TableNames.RECORD}"

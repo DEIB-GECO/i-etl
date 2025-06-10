@@ -3,7 +3,7 @@ import dataclasses
 from main_statistics.MainStatistics import MainStatistics
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass()
 class QualityStatistics(MainStatistics):
     columns_no_ontology: list = dataclasses.field(default_factory=list)  # list of column names for which no ontology resource is provided
     columns_no_etl_type: list = dataclasses.field(default_factory=list)  # list of column names for which no etl type is provided

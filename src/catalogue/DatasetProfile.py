@@ -4,7 +4,7 @@ import json
 from constants.methods import factory
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass()
 class DatasetProfile:
     description: str
     theme: str

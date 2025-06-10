@@ -8,7 +8,7 @@ from database.Counter import Counter
 from database.Operators import Operators
 
 
-@dataclasses.dataclass(kw_only=True)
+@dataclasses.dataclass()
 class Resource:
     identifier: int
     counter: Counter
