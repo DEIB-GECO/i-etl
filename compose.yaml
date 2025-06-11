@@ -46,3 +46,4 @@ networks:
     name: network-i-etl
     driver: bridge
   pht-net:  # created if it does not exist, otherwise reused
+    external: true
