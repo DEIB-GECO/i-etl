@@ -52,7 +52,7 @@ class Database:
             # Instead, the constructor returns immediately and launches the connection process on background threads.
             # You can check if the server is available with a ping.
             # w=0 disable acknowledgments from MongoDB (they are not necessary because we don't check them) to speedup write operations
-            self.client = MongoClient(host=self.execution.db_connection, serverSelectionTimeoutMS=Database.SERVER_TIMEOUT, w=0)  # timeout after 5 sec instead of 20 (the default)
+            self.client = MongoClient(host=self.execution.db_connection, serverSelectionTimeoutMS=Database.SERVER_TIMEOUT, w=0, directConnection=True)  # timeout after 5 sec instead of 20 (the default)
             log.info(type(self.client))
         except Exception:
             raise ConnectionError(f"Could not connect to the MongoDB client located at {self.execution.db_connection} and with a timeout of {Database.SERVER_TIMEOUT} ms.")
