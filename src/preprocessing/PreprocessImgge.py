@@ -74,12 +74,14 @@ class PreprocessImgge(Preprocess):
             current_filename = os.path.basename(self.execution.current_filepath)
             hpo_metadata = DataFrame(data={
                 MetadataColumns.ONTO_NAME: [Ontologies.HPO["name"] for _ in range(len(hpo_dfs))],
-                MetadataColumns.ONTO_CODE: all_hpo_terms,
+                MetadataColumns.ONTO_CODE: [Ontologies.normalize_code(ontology_code=hpo_term.replace("hp:", "").replace("HP:", "")) for hpo_term in all_hpo_terms],
                 MetadataColumns.DATASET_NAME: [current_filename for _ in range(len(hpo_dfs))],
-                MetadataColumns.COLUMN_NAME: all_hpo_terms,
+                MetadataColumns.COLUMN_NAME: [MetadataColumns.normalize_name(column_name=hpo_term) for hpo_term in all_hpo_terms],
                 MetadataColumns.PROFILE: [Profile.PHENOTYPIC for _ in range(len(hpo_dfs))],
                 MetadataColumns.VISIBILITY: [Visibility.PUBLIC for _ in range(len(hpo_dfs))],
-                MetadataColumns.ETL_TYPE: [DataTypes.BOOLEAN for _ in range(len(hpo_dfs))]
+                MetadataColumns.ETL_TYPE: [DataTypes.BOOLEAN for _ in range(len(hpo_dfs))],
+                MetadataColumns.VAR_UNIT: [None for _ in range(len(hpo_dfs))],
+                MetadataColumns.SIGNIFICATION_EN: [None for _ in range(len(hpo_dfs))]
             })
 
             self.metadata = pd.concat([self.metadata, hpo_metadata], axis=0)
