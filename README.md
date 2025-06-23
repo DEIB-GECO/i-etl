@@ -35,6 +35,13 @@ The ETL algorithm creates interoperable databases for the BETTER project. It rel
   - The `.env` file template
   - The `compose.yaml` file
   - The metadata file
+5. Edit the `compose.yaml` file to specify the Docker network associated to your station:
+  - Open the `compose.yaml` file with any text editor
+  - Replace the two occurences of `pht-net` (Lines 16 and 48) with the name of the Docker newtork used by your station
+  - To find the Docker network name, you can list the Docker networks with `docker network ls` and find the right one (usually, it contais `pht-net` in its name): this name should be used in the `compose.yaml` file instead of the two occurences of `pht-net`.
+  - **If you already run the ETL with the default Docker network, i.e., `pht-net`, you should manually attach it to YOUR Docker network to make it accessible to the trains**. For this, you should:
+    - Unconnect the current Docker MongoDB container from the `pht-net` network using: `docker network disconnect <currently-used-docker-network> <container-id-of-your-mongo-db>`
+    - Connect your Mongo container to your Docker network using `docker network connect <your-Docker-network-name> <container-id-of-your-mongo-db>`
 5. In that folder, load the TAR image within the Docker: `docker load < the-ietl-image.tar`
 6. In that folder, fill the `.env` file with your own settings (see Section 3)
 7. In that folder, launch I-ETL by running the following commands:
