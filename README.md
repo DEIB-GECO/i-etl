@@ -35,13 +35,6 @@ The ETL algorithm creates interoperable databases for the BETTER project. It rel
   - The `.env` file template
   - The `compose.yaml` file
   - The metadata file
-5. Edit the `compose.yaml` file to specify the Docker network associated to your station:
-  - Open the `compose.yaml` file with any text editor
-  - Replace the two occurences of `pht-net` (Lines 16 and 48) with the name of the Docker newtork used by your station
-  - To find the Docker network name, you can list the Docker networks with `docker network ls` and find the right one (usually, it contais `pht-net` in its name): this name should be used in the `compose.yaml` file instead of the two occurences of `pht-net`.
-  - **If you already run the ETL with the default Docker network, i.e., `pht-net`, you should manually attach it to YOUR Docker network to make it accessible to the trains**. For this, you should:
-    - Unconnect the current Docker MongoDB container from the `pht-net` network using: `docker network disconnect <currently-used-docker-network> <container-id-of-your-mongo-db>`
-    - Connect your Mongo container to your Docker network using `docker network connect <your-Docker-network-name> <container-id-of-your-mongo-db>`
 5. In that folder, load the TAR image within the Docker: `docker load < the-ietl-image.tar`
 6. In that folder, fill the `.env` file with your own settings (see Section 3)
 7. In that folder, launch I-ETL by running the following commands:
@@ -49,8 +42,8 @@ The ETL algorithm creates interoperable databases for the BETTER project. It rel
   - `export ETL_ENV_FILE_NAME=.env`
   - `export ABSOLUTE_PATH_ENV_FILE=X` where `X` is the absolute path to your `.env` file
   - `docker compose --env-file ${ABSOLUTE_PATH_ENV_FILE} up -d` (`-d` stands for `--daemon`, meaning that I-ETL will run as a background process).
-7. To check whether I-ETL has finished, you can run `docker ps`: if `the-etl` does not show in the list, this means that it is done.
-8. To check the logs of the ETL, you have two options: 
+8. To check whether I-ETL has finished, you can run `docker ps`: if `the-etl` does not show in the list, this means that it is done.
+9. To check the logs of the ETL, you have two options: 
   - If you have specified the parameter `SERVER_FOLDER_LOG_ETL` in your `.env`, you can look at the log files produced in the folder you specified in that parameter;
   - Otherwise, use `docker logs the-etl`.
 
@@ -71,13 +64,21 @@ The provided `.env` file is a _template_: you have to fill each parameter with y
 
 ### About the database 
 
-| Parameter name          | Description                                                                                                                             | Values                                                                                                                                                               | Example               |
-|-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------|
-| `HOSPITAL_NAME`         | The hospital name.                                                                                                                      | `it_buzzi_uc1`, `rs_imgge`, `es_hsjd`, `it_buzzi_uc3`, `es_terrassa`, `de_ukk`, `es_lafe`, `il_hmc`                                                                  | any value in the list |
-| `DB_NAME`               | The database name.                                                                                                                      | `better_database` or any string without special character except `_` (underscore). **Please use `better_database` for any database created for the Better project.** | `better_database`     |
-| `DB_DROP`               | Whether to drop the database. **WARNING: if True, this deletes the database before creating a new one: this action is NOT reversible!** | `False`, `True`                                                                                                                                                      |                       |
-| `SERVER_FOLDER_MONGODB` | The absolute path to the folder in which MongoDB will store its databases.                                                              | A folder path                                                                                                                                                        | `/home/mongodb-data`  |
+| Parameter name              | Description                                                                                                                             | Values                                                                                                                                                               | Example                         |
+|-----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------|
+| `HOSPITAL_NAME`             | The hospital name.                                                                                                                      | `it_buzzi_uc1`, `rs_imgge`, `es_hsjd`, `it_buzzi_uc3`, `es_terrassa`, `de_ukk`, `es_lafe`, `il_hmc`                                                                  | any value in the list           |
+| `DB_NAME`                   | The database name.                                                                                                                      | `better_database` or any string without special character except `_` (underscore). **Please use `better_database` for any database created for the Better project.** | `better_database`               |
+| `DB_DROP`                   | Whether to drop the database. **WARNING: if True, this deletes the database before creating a new one: this action is NOT reversible!** | `False`, `True`                                                                                                                                                      |                                 |
+| `SERVER_FOLDER_MONGODB`     | The absolute path to the folder in which MongoDB will store its databases.                                                              | A folder path                                                                                                                                                        | `/home/mongodb-data`            |
+| `DOCKER_NETWORK_OF_STATION` | The name of the Docker network used by the PADME trains in the station.                                                                 | Any Docker network name                                                                                                                                              | `PADME_STATION_POLIMI86pht-net` |
 
+**If you already run the ETL without specifying the Docker network name of your station, you should proceed as follows**:
+  - Find the container ID of your currently running MongoDB container: `docker-ps|grep the-mongo` should list one entry with the container ID of the ETL MongoDB container.
+  - Find the Docker network name on which the Mongo DB is: list the Docker networks with `docker network ls` and find the right one (usually, it contains `pht-net` in its name).
+  - Disconnect the current Docker MongoDB container from the currently used Docker network using: `docker network disconnect <currently-used-docker-network> <container-id-of-your-mongo-db>`
+  - Find the Docker network name used by your PADME trains/station: list the Docker networks with `docker network ls` and find the right one (usually, it contains `padme` or `station` in its name).
+  - Connect your MongoDB container to your Docker network using `docker network connect <your-Docker-network-name> <container-id-of-your-mongo-db>`
+ 
 ### About the ETL
 | Parameter name            | Description                                                                                                        | Values                                                           | Example                              |
 |:--------------------------|--------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------|--------------------------------------|
