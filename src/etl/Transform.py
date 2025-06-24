@@ -34,6 +34,7 @@ from entities.Resource import Resource
 from enums.DataTypes import DataTypes
 from enums.DiagnosisColumns import DiagnosisColumns
 from enums.Domain import Domain
+from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from enums.Profile import Profile
@@ -122,17 +123,19 @@ class Transform(Task):
         log.info(f"Creating {self.profile}Feature instances in memory")
         columns = self.metadata.columns
         for row in self.metadata.itertuples(index=False):
+            log.info(row)
             column_name = row[columns.get_loc(MetadataColumns.COLUMN_NAME)]
             # columns to remove have already been removed in the Extract part from the metadata
             # here, we need to ensure that we create Features that have a name, which are not IDs (patient or sample) nor for Diagnosis counter (clinical base_id)
             if column_name not in ["", self.execution.patient_id_column_name, self.execution.sample_id_column_name, DiagnosisColumns.DISEASE_COUNTER]:
                 if column_name not in db_existing_features:
                     # we create a new Feature from scratch
+                    log.info(self.mapping_column_to_type)
                     onto_resource = self.create_ontology_resource_from_row(column_name=column_name)
                     data_type = row[columns.get_loc(MetadataColumns.ETL_TYPE)]  # this has been normalized while loading + we take ETL_type to get the narrowest type (in which we cast values)
-                    if data_type == DataTypes.API:  # because the catalogue does not know about the API datatype; each API call leads to an ontology resource, thus a category
-                        data_type = DataTypes.CATEGORY
+                    log.info(self.mapping_column_to_type)
                     self.mapping_column_to_type[column_name] = data_type
+                    log.info(self.mapping_column_to_type)
                     visibility = row[columns.get_loc(MetadataColumns.VISIBILITY)]  # this has been normalized while loading
                     self.mapping_column_to_visibility[column_name] = visibility
                     unit = self.mapping_column_to_unit[column_name] if column_name in self.mapping_column_to_unit else None  # else covers: there is no dataType for this column; there is no datatype in that type of entity
@@ -153,6 +156,10 @@ class Transform(Task):
                                 domain[Domain.MIN] = self.mapping_column_to_domain[column_name][Domain.MIN]
                             if Domain.MAX in self.mapping_column_to_domain[column_name]:
                                 domain[Domain.MAX] = self.mapping_column_to_domain[column_name][Domain.MAX]
+                    if self.mapping_column_to_type[column_name] == DataTypes.API:
+                        # because the catalogue does not know about the API datatype -> we need to change it exactly here and only for the inserted tuple, not in the mapping
+                        # each API call leads to an ontology resource, thus a category
+                        data_type = DataTypes.CATEGORY
                     if self.profile == Profile.PHENOTYPIC:
                         new_feature = PhenotypicFeature(identifier=NO_ID, name=column_name,
                                                         ontology_resource=onto_resource,
@@ -534,18 +541,27 @@ class Transform(Task):
                     self.quality_stats.add_unknown_categorical_value(column_name=column_name, categorical_value=value)
                     return_value = value
             elif etl_type == DataTypes.API:
-                # there is no pre-defined list of the possible values, instead we create a CC based on the cell value,
-                # which is an ontology resource
-                split_value = value.split(":")  # we consider the ontology resource is of the form <ontology name>:<code>
-                ontology_name = Ontologies.normalize_name(ontology_name=split_value[0])
-                ontology_code = split_value[1]  # the code will be later normalized during the CC construction
-                if value not in self.mapping_apivalue_to_onto_resource:
-                    onto_resource = OntologyResource(
-                        system=Ontologies.get_enum_from_name(ontology_name=ontology_name), code=ontology_code, label=None,
-                        quality_stats=self.quality_stats)
-                    self.mapping_apivalue_to_onto_resource[value] = onto_resource
-                    return_value = onto_resource
-                else:
+                if self.execution.hospital_name == HospitalNames.IT_BUZZI_UC1:
+                    # there is no pre-defined list of the possible values for the diagnosis orphanet code
+                    # instead we create a CC based on the cell value, which is an ontology resource
+                    split_value = value.split(":")  # we consider the ontology resource is of the form <ontology name>:<code>
+                    ontology_name = Ontologies.normalize_name(ontology_name=split_value[0])
+                    ontology_code = split_value[1]  # the code will be later normalized during the CC construction
+                    if value not in self.mapping_apivalue_to_onto_resource:
+                        onto_resource = OntologyResource(
+                            system=Ontologies.get_enum_from_name(ontology_name=ontology_name), code=ontology_code,
+                            label=None, quality_stats=self.quality_stats)
+                        self.mapping_apivalue_to_onto_resource[value] = onto_resource
+                    return_value = self.mapping_apivalue_to_onto_resource[value]
+                elif self.execution.hospital_name in [HospitalNames.ES_LAFE, HospitalNames.IL_HMC]:
+                    # the cell value is a gene name, we want to get the associated ontology resource using the right ontology
+                    # the ontology to use is specified in the domain column (NLM Gene or NLM ClinVar)
+                    ontology_name = self.mapping_column_to_domain[column_name]
+                    if value not in self.mapping_apivalue_to_onto_resource:
+                        onto_resource = OntologyResource(
+                            system=Ontologies.get_enum_from_name(ontology_name=Ontologies.normalize_name(ontology_name)), code=value, label=None,
+                            quality_stats=self.quality_stats)
+                        self.mapping_apivalue_to_onto_resource[value] = onto_resource
                     return_value = self.mapping_apivalue_to_onto_resource[value]
             elif etl_type == DataTypes.DATETIME or etl_type == DataTypes.DATE:
                 return_value = cast_str_to_datetime(str_value=value)
@@ -608,7 +624,7 @@ class Transform(Task):
                                                                               etl_type=etl_type)
 
             # we use type(..).__name__ to get the class name, e.g., "str" or "bool", instead of "<class 'float'>"
-            # log.info(f"Column '{column_name}': fairify {type(value).__name__} value '{value}' (unit: {expected_unit}) into {type(return_value).__name__}: {return_value}")
+            # log.info(f"Column '{column_name}' of type {etl_type}: fairify {type(value).__name__} value '{value}' (unit: {expected_unit}) into {type(return_value).__name__}: {return_value}")
             return return_value
 
     def anonymize_value(self, column_name: str, fairified_value: Any) -> tuple:
