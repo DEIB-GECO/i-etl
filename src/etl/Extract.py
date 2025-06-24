@@ -34,7 +34,6 @@ class Extract(Task):
         self.columns_dataset_all_profiles = None
         # self.mapping_categorical_value_to_onto_resource = {}  # <categorical value label ("JSON_values" column), OntologyResource>
         self.mapping_column_to_categorical_value = {}  # <column name, list of normalized accepted values>
-        self.mapping_column_to_vartype = {}  # <column name, var type ("vartype" column)>
         self.mapping_column_to_unit = {}  # <column name, unit provided in the metadata>
         self.mapping_column_to_domain = {}  # <column name, <min: x, max: y> or <accepted_values: [...]>>
 
@@ -330,9 +329,15 @@ class Extract(Task):
 
         for row in self.metadata.itertuples(index=False):
             domain = row[self.metadata.columns.get_loc(MetadataColumns.DOMAIN)]
+            data_type = row[self.metadata.columns.get_loc(MetadataColumns.ETL_TYPE)]
             try:
                 domain = json.loads(domain)
-                self.mapping_column_to_domain[row[self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)]] = domain
+                if data_type == DataTypes.API:
+                    # get the API name
+                    self.mapping_column_to_domain[row[self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)]] = domain["name"]
+                else:
+                    # simply add the JSON domain (it usually contains keys such as "min" and "max")
+                    self.mapping_column_to_domain[row[self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)]] = domain
             except:
                 self.mapping_column_to_domain[row[self.metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)]] = None
-        log.debug(self.mapping_column_to_domain)
+            log.info(self.mapping_column_to_domain)

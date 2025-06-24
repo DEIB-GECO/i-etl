@@ -141,6 +141,7 @@ class OntologyResource:
                     else:
                         error = f"Unexpected SNOMEDCT response for {single_code}."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
+                    log.info(error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.LOINC["url"]:
                     url = f"https://loinc.regenstrief.org/searchapi/loincs?query={single_code}"
@@ -161,6 +162,7 @@ class OntologyResource:
                     else:
                         error = f"Unexpected LOINC response for {single_code}."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
+                    log.info(error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.PUBCHEM["url"]:
                     url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{single_code}/description/JSON"
@@ -181,9 +183,11 @@ class OntologyResource:
                     else:
                         error = f"Unexpected PUBCHEM response for {single_code}."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
+                    log.info(error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.CLIR["url"]:
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error="No API access for the CLIR ontology.")
+                    log.info("No API access for the CLIR ontology.")
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.GSSO["url"]:
                     iri = f"http://purl.obolibrary.org/obo/{single_code.upper()}"  # we need to upper case the GSSO_, otherwise the API returns None
@@ -218,6 +222,7 @@ class OntologyResource:
                     else:
                         error = f"Unexpected GSSOresponse for {single_code}."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
+                    log.info(error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.ORPHANET["url"]:
                     url = f"https://api.orphacode.org/EN/ClinicalEntity/orphacode/{single_code}/Name"
@@ -235,6 +240,7 @@ class OntologyResource:
                     else:
                         error = f"Unexpected ORPHANET response for {single_code}."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
+                    log.info(error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.GENE_ONTOLOGY["url"]:
                     # as of 03/09/2024, this ontology is queried by accessing the webpage describing the resource
@@ -256,6 +262,7 @@ class OntologyResource:
                     else:
                         error = f"Failed connection to GO API."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
+                    log.info(error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.OMIM["url"]:
                     # TODO NELLY: get OMIM API key (default one on OMIM website nfNEOscLNWWXdSmUoMLPPA is unauthorized)
@@ -274,6 +281,7 @@ class OntologyResource:
                     else:
                         error = f"Unexpected OMIM response for {single_code}."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
+                    log.info(error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.HGNC["url"]:
                     url = f"https://rest.ensembl.org/xrefs/id/{single_code}?external_db=HGNC;content-type=application/json;all_levels=1"
@@ -291,6 +299,7 @@ class OntologyResource:
                     else:
                         error = f"Unexpected HGNC response for {single_code}."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
+                    log.info(error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.HPO["url"]:
                     url = f"https://clinicaltables.nlm.nih.gov/api/hpo/v3/search?terms=HP:{single_code}&sf=id,name"
@@ -312,6 +321,7 @@ class OntologyResource:
                     else:
                         error = f"Failed connection to HPO API."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
+                    log.info(error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.NLM_GENE["url"]:
                     url = f"https://clinicaltables.nlm.nih.gov/api/ncbi_genes/v3/search?terms={single_code}"
@@ -333,6 +343,7 @@ class OntologyResource:
                     else:
                         error = f"Unexpected response for {single_code}."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
+                    log.info(error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.NLM_CLINVAR["url"]:
                     # The general approach is to use esearch to find the list of unique identifiers that return records of interest,
@@ -357,8 +368,7 @@ class OntologyResource:
                                 elif response.status_code == 200:
                                     data = parse_json_response(response)
                                     if "result" in data:
-                                        if matched_identifier in data["result"] and "title" in data["result"][
-                                            matched_identifier]:
+                                        if matched_identifier in data["result"] and "title" in data["result"][matched_identifier]:
                                             # exactly one match has been found
                                             # we now need go get the information associated to the matched identifier
                                             return data["result"][matched_identifier]["title"]
@@ -379,13 +389,16 @@ class OntologyResource:
                     else:
                         error = f"Unexpected response for {single_code}."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
+                    log.info(error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 else:
-                    quality_stats.add_failed_api_call(system=system, code=single_code, api_error=f"Unknown ontology {system}")
+                    quality_stats.add_failed_api_call(system=system, code=single_code, api_error=f"Unknown ontology {system}.")
+                    log.info(f"Unknown ontology {system}.")
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
             except Exception as e:
                 # the API could not be queried, returning empty string
                 quality_stats.add_failed_api_call(system=system, code=single_code, api_error=e.args[0])
+                log.info(e.args[0])
                 return DEFAULT_ONTOLOGY_RESOURCE_LABEL
         else:
             return DEFAULT_ONTOLOGY_RESOURCE_LABEL
