@@ -34,6 +34,7 @@ from entities.Resource import Resource
 from enums.DataTypes import DataTypes
 from enums.DiagnosisColumns import DiagnosisColumns
 from enums.Domain import Domain
+from enums.HospitalNames import HospitalNames
 from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from enums.Profile import Profile
@@ -534,18 +535,28 @@ class Transform(Task):
                     self.quality_stats.add_unknown_categorical_value(column_name=column_name, categorical_value=value)
                     return_value = value
             elif etl_type == DataTypes.API:
-                # there is no pre-defined list of the possible values, instead we create a CC based on the cell value,
-                # which is an ontology resource
-                split_value = value.split(":")  # we consider the ontology resource is of the form <ontology name>:<code>
-                ontology_name = Ontologies.normalize_name(ontology_name=split_value[0])
-                ontology_code = split_value[1]  # the code will be later normalized during the CC construction
-                if value not in self.mapping_apivalue_to_onto_resource:
-                    onto_resource = OntologyResource(
-                        system=Ontologies.get_enum_from_name(ontology_name=ontology_name), code=ontology_code, label=None,
-                        quality_stats=self.quality_stats)
-                    self.mapping_apivalue_to_onto_resource[value] = onto_resource
-                    return_value = onto_resource
-                else:
+                if self.execution.hospital_name == HospitalNames.IT_BUZZI_UC1:
+                    # there is no pre-defined list of the possible values for the diagnosis orphanet code
+                    # instead we create a CC based on the cell value, which is an ontology resource
+                    split_value = value.split(
+                        ":")  # we consider the ontology resource is of the form <ontology name>:<code>
+                    ontology_name = Ontologies.normalize_name(ontology_name=split_value[0])
+                    ontology_code = split_value[1]  # the code will be later normalized during the CC construction
+                    if value not in self.mapping_apivalue_to_onto_resource:
+                        onto_resource = OntologyResource(
+                            system=Ontologies.get_enum_from_name(ontology_name=ontology_name), code=ontology_code,
+                            label=None, quality_stats=self.quality_stats)
+                        self.mapping_apivalue_to_onto_resource[value] = onto_resource
+                    return_value = self.mapping_apivalue_to_onto_resource[value]
+                elif self.execution.hospital_name in [HospitalNames.ES_LAFE, HospitalNames.IL_HMC]:
+                    # the cell value is a gene name, we want to get the associated ontology resource using the right ontology
+                    # the ontology to use is specified in the domain column (NLM Gene or NLM ClinVar)
+                    ontology_name = self.mapping_column_to_domain[column_name]
+                    if value not in self.mapping_apivalue_to_onto_resource:
+                        onto_resource = OntologyResource(
+                            system=Ontologies.get_enum_from_name(ontology_name=ontology_name), code=value, label=None,
+                            quality_stats=self.quality_stats)
+                        self.mapping_apivalue_to_onto_resource[value] = onto_resource
                     return_value = self.mapping_apivalue_to_onto_resource[value]
             elif etl_type == DataTypes.DATETIME or etl_type == DataTypes.DATE:
                 return_value = cast_str_to_datetime(str_value=value)

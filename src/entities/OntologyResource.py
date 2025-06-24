@@ -139,7 +139,7 @@ class OntologyResource:
                     elif response.status_code == 404 or response.status_code == 400:
                         error = f"Resource {single_code} not found."
                     else:
-                        error = f"Failed connection to SNOMED-CT API."
+                        error = f"Unexpected SNOMEDCT response for {single_code}."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.LOINC["url"]:
@@ -148,16 +148,18 @@ class OntologyResource:
                     data = parse_json_response(response)
                     if response is None:
                         error = f"Failed connection to LOINC API."
-                    elif "Results" in data:
-                        if len(data["Results"]) > 0:
+                    elif response.status_code == 200:
+                        if "Results" in data and len(data["Results"]) > 0:
                             if "COMPONENT" in data["Results"][0]:
                                 return data["Results"][0]["COMPONENT"]
                             else:
                                 error = f"No field label for resource {single_code}"
                         else:
                             error = f"Resource {single_code} not found."
+                    elif response.status_code == 404 or response.status_code == 400:
+                        error = f"Resource {single_code} not found."
                     else:
-                        error = f"Failed connection to LOINC API."
+                        error = f"Unexpected LOINC response for {single_code}."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.PUBCHEM["url"]:
@@ -165,8 +167,6 @@ class OntologyResource:
                     response = send_query_to_api(url, secret=None, access_type=AccessTypes.USER_AGENT)
                     if response is None:
                         error = f"Failed connection to PUBCHEM API."
-                    elif response.status_code == 404 or response.status_code == 400:
-                        error = f"Resource {single_code} not found."
                     elif response.status_code == 200:
                         data = parse_json_response(response)
                         if "InformationList" in data and "Information" in data["InformationList"] and len(data["InformationList"]["Information"]) > 0:
@@ -176,8 +176,10 @@ class OntologyResource:
                                 error = f"No label field for resource {single_code}."
                         else:
                             error = f"Resource {single_code} not found."
+                    elif response.status_code == 404 or response.status_code == 400:
+                        error = f"Resource {single_code} not found."
                     else:
-                        error = f"Failed connection to PUBCHEM API."
+                        error = f"Unexpected PUBCHEM response for {single_code}."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.CLIR["url"]:
@@ -214,7 +216,7 @@ class OntologyResource:
                     elif response.status_code == 404 or response.status_code == 400:
                         error = f"Resource {single_code} not found."
                     else:
-                        error = f"Failed connection to GSSO API."
+                        error = f"Unexpected GSSOresponse for {single_code}."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.ORPHANET["url"]:
@@ -222,16 +224,16 @@ class OntologyResource:
                     response = send_query_to_api(url=url, secret="nbarret", access_type=AccessTypes.API_KEY_IN_HEADER)
                     if response is None:
                         error = f"Failed connection to ORPHANET API."
-                    elif response.status_code == 404 or response.status_code == 400:
-                        error = f"Resource {single_code} not found."
                     elif response.status_code == 200:
                         data = parse_json_response(response)
                         if "Preferred term" in data:
                             return data["Preferred term"]
                         else:
                             error = f"No label field for resource {single_code}."
+                    elif response.status_code == 404 or response.status_code == 400:
+                        error = f"Resource {single_code} not found."
                     else:
-                        error = f"Failed connection to ORPHANET API."
+                        error = f"Unexpected ORPHANET response for {single_code}."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.GENE_ONTOLOGY["url"]:
@@ -267,8 +269,10 @@ class OntologyResource:
                             return data["text"]
                         else:
                             error = f"No text field for resource {single_code}."
+                    elif response.status_code == 404 or response.status_code == 400:
+                        error = f"Resource {single_code} not found."
                     else:
-                        error = f"Failed connection to OMIM API."
+                        error = f"Unexpected OMIM response for {single_code}."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.HGNC["url"]:
@@ -282,8 +286,10 @@ class OntologyResource:
                             return data[0]["description"]
                         else:
                             error = f"No text field for resource {single_code}."
+                    elif response.status_code == 404 or response.status_code == 400:
+                        error = f"Resource {single_code} not found."
                     else:
-                        error = f"Failed connection to HGNC API."
+                        error = f"Unexpected HGNC response for {single_code}."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.HPO["url"]:
@@ -297,10 +303,81 @@ class OntologyResource:
                             for one_response in data[3]:
                                 if one_response[0] == f"HP:{single_code}":  # we further check which term corresponds exactly to the code we asked
                                     return one_response[1]
+                                else:
+                                    error = f"Resource {single_code} not found."
                         else:
                             error = f"No text field for resource {single_code}."
+                    elif response.status_code == 404 or response.status_code == 400:
+                        error = f"Resource {single_code} not found."
                     else:
                         error = f"Failed connection to HPO API."
+                    quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
+                    return DEFAULT_ONTOLOGY_RESOURCE_LABEL
+                elif system == Ontologies.NLM_GENE["url"]:
+                    url = f"https://clinicaltables.nlm.nih.gov/api/ncbi_genes/v3/search?terms={single_code}"
+                    response = send_query_to_api(url=url, secret=None, access_type=AccessTypes.USER_AGENT)
+                    if response is None:
+                        error = f"Failed connection to NLM GENE API."
+                    elif response.status_code == 200:
+                        data = parse_json_response(response)
+                        if len(data) > 0:
+                            if data[0] == 1:
+                                # exactly one match has been found
+                                return data[1][0]
+                            else:
+                                error = f"Several results for resource {single_code}."
+                        else:
+                            error = f"No result for resource {single_code}."
+                    elif response.status_code == 404 or response.status_code == 400:
+                        error = f"Resource {single_code} not found."
+                    else:
+                        error = f"Unexpected response for {single_code}."
+                    quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
+                    return DEFAULT_ONTOLOGY_RESOURCE_LABEL
+                elif system == Ontologies.NLM_CLINVAR["url"]:
+                    # The general approach is to use esearch to find the list of unique identifiers that return records of interest,
+                    # and then use esummary (to retrieve an overview of each of those records) based on the identifiers returned by esearch.
+                    first_part_code = single_code.split(";")[0]
+                    url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=clinvar&term={first_part_code}&retmax=1"
+                    response = send_query_to_api(url=url, secret=None, access_type=AccessTypes.USER_AGENT)
+                    if response is None:
+                        error = f"Failed connection to NLM CLIN_VAR API."
+                    elif response.status_code == 200:
+                        data = parse_xml_response(response)
+                        matched_identifiers = data.getElementsByTagName("Id")
+                        if len(matched_identifiers) > 0:
+                            if len(matched_identifiers) == 1:
+                                # exactly one match has been found
+                                # we now need go get the information associated to the matched identifier
+                                matched_identifier = matched_identifiers[0].firstChild.nodeValue
+                                url2 = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=clinvar&id={matched_identifier}&retmode=json"
+                                response = send_query_to_api(url=url2, secret=None, access_type=AccessTypes.USER_AGENT)
+                                if response is None:
+                                    error = f"Failed connection to NLM CLIN_VAR API."
+                                elif response.status_code == 200:
+                                    data = parse_json_response(response)
+                                    if "result" in data:
+                                        if matched_identifier in data["result"] and "title" in data["result"][
+                                            matched_identifier]:
+                                            # exactly one match has been found
+                                            # we now need go get the information associated to the matched identifier
+                                            return data["result"][matched_identifier]["title"]
+                                        else:
+                                            error = f"No result for resource {single_code}."
+                                    else:
+                                        error = f"No result for resource {single_code}."
+                                elif response.status_code == 404 or response.status_code == 400:
+                                    error = f"Resource {single_code} not found."
+                                else:
+                                    error = f"Unexpected response for {single_code}."
+                            else:
+                                error = f"Several results for resource {single_code}."
+                        else:
+                            error = f"No result for resource {single_code}."
+                    elif response.status_code == 404 or response.status_code == 400:
+                        error = f"Resource {single_code} not found."
+                    else:
+                        error = f"Unexpected response for {single_code}."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 else:
