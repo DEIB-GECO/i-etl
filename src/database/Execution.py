@@ -61,7 +61,7 @@ class Execution:
         self.db_name = self.check_parameter(key=ParameterKeys.DB_NAME, accepted_values=None, default_value=self.db_name)
         log.debug(f"creating new DB with name {self.db_name}")
         log.info(HospitalNames.values())
-        self.hospital_name = self.check_parameter(key=ParameterKeys.HOSPITAL_NAME, accepted_values=HospitalNames.values(), default_value=self.hospital_name)
+        self.hospital_name = self.check_parameter(key=ParameterKeys.HOSPITAL_NAME, accepted_values=HospitalNames.values(), default_value="ERROR")
         self.use_locale = self.check_parameter(key=ParameterKeys.USE_LOCALE, accepted_values=None, default_value=self.use_locale)
         self.db_drop = self.check_parameter(key=ParameterKeys.DB_DROP, accepted_values=["True", "False", True, False], default_value=self.db_drop)
         self.columns_to_remove = self.check_parameter(key=ParameterKeys.COLUMNS_TO_REMOVE_KEY, accepted_values=None, default_value=self.columns_to_remove)
@@ -103,10 +103,8 @@ class Execution:
             the_parameter = os.getenv(key)
             if the_parameter is None:
                 log.error(f"The parameter {key} does not exist as an environment variable. Using default value: {default_value}.")
-                return default_value
             elif the_parameter == "":
                 log.error(f"The parameter {key} value is empty. Using default value: {default_value}.")
-                return default_value
             elif accepted_values is not None:
                 if True in accepted_values and False in accepted_values:
                     if the_parameter.lower() == "true":
@@ -115,11 +113,9 @@ class Execution:
                         return False
                     else:
                         log.error(f"The value '{the_parameter.lower()}' for parameter {key} is not accepted. Using default value: {default_value}.")
-                        return default_value
                 else:
                     if the_parameter not in accepted_values:
                         log.error(f"The value '{the_parameter.lower()}' for parameter {key} is not accepted. Using default value: {default_value}.")
-                        return default_value
                     else:
                         return the_parameter
             else:
@@ -135,6 +131,13 @@ class Execution:
                         return the_parameter
         except:
             log.error(f"The parameter {key} does not exist as an environment variable. Using default value: {default_value}.")
+            return default_value
+
+        if default_value == "ERROR":
+            # we want to stop the execution because proceeding with an unexpected value would break the ETL
+            # so far, this is the case of the HOSPITAL_NAME parameter
+            raise ValueError(f"Unexpected value {os.getenv(key)} for parameter {key}.")
+        else:
             return default_value
 
     def create_current_working_dir(self):
