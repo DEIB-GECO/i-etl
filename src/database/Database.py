@@ -47,10 +47,6 @@ class Database:
         try:
             # mongodb://localhost:27018/ -> goes through the host machine (open port - no need to have Mongo on the machine)
             # mongodb://mongo:27017/ -> mongo=Docker service name. goes through Docker network (no need to have Mongo on the machine)
-            # Starting with version 3.0 the MongoClient constructor no longer blocks while connecting to the server or servers,
-            # and it no longer raises pymongo (ConnectionFailure, ConfigurationError) errors.
-            # Instead, the constructor returns immediately and launches the connection process on background threads.
-            # You can check if the server is available with a ping.
             # w=0 disable acknowledgments from MongoDB (they are not necessary because we don't check them) to speedup write operations
             self.client = MongoClient(host=self.execution.db_connection, serverSelectionTimeoutMS=Database.SERVER_TIMEOUT, w=0, directConnection=True)  # timeout after 5 sec instead of 20 (the default)
             log.info(type(self.client))

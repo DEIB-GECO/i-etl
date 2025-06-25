@@ -2,25 +2,24 @@ services:
   mongo:
     container_name: the-mongo
     image: mongo
-    ports:
-      - 27018:27017  # left: port on host machine (for external usage, e.g., terminal); right: port in the Docker (for internal usage, i.e., to be used by the ETL)
+    # https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/issues/315
+    #    ports:
+    #      - 27018:27017  # left: port on host machine (for external usage, e.g., terminal); right: port in the Docker (for internal usage, i.e., to be used by the ETL)
     command: mongod --port 27017 --quiet --logpath /dev/null
     logging:
       driver: none
-    volumes:  # docker run -v /path/on/host:/path/inside/container <image_name>
+    volumes:
       - ${SERVER_FOLDER_MONGODB}:/data/db
-    # networks:
-    #  - pht-net
     networks:
       - network-i-etl
-      - pht-net  # PHT only needs Mongo (not the ETL), so it is better to put it only here
+      - pht-net  # The PHT needs to access the Mongodb DB, thus the train and mongo have to be on the same network
   ietl:
     container_name: the-etl
     image: ietl
     depends_on:
       - mongo
     env_file:
-      - ${ABSOLUTE_PATH_ENV_FILE}  # this specifies that when one runs a "docker compose", a .env file should be next to it
+      - ${ABSOLUTE_PATH_ENV_FILE}  
     working_dir: /home/i-etl-deployed
     volumes:
       # we need to provide Docker the access to the folders where the data and the metadata files are
@@ -35,11 +34,7 @@ services:
     environment:
       - CONTEXT_MODE=${CONTEXT_MODE:-DEV}
       - ETL_ENV_FILE_NAME=${ETL_ENV_FILE_NAME:-.env}
-    # nope, this is a security leak because all people accessing the ETL can also access the PHT and vice versa
-    # this is better to go through the host machine and stay on the ietl network
-    # networks:
-    #  - pht-net
-    networks:
+    networks:  # the PHT does not need to access the PHT and vice-versa, so only the ETL network is required here
       - network-i-etl
 networks:
   network-i-etl:
