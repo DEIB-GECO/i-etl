@@ -246,17 +246,25 @@ class OntologyResource:
                     # as of 03/09/2024, this ontology is queried by accessing the webpage describing the resource
                     # it seems that there is an RDF query tool, but it is not sure that this can be queried as an API
                     # and there is no documentation on existing properties to query some codes
-                    url = f"https://amigo.geneontology.org/amigo/term/GO:{single_code}"
+                    # url = f"https://amigo.geneontology.org/amigo/term/GO:{single_code}" # getting the HTML page of the GO resource is now blocked by the Javascript
+                    url = f"https://api.geneontology.org/api/ontology/term/GO:{single_code}"  # the official API
                     response = send_query_to_api(url=url, secret=None, access_type=AccessTypes.USER_AGENT)
                     if response is None:
                         error = f"Failed connection to GO API."
                     elif response.status_code == 200:
-                        data = parse_html_response(response)
-                        header = data.select_one("div.page-header > h1").text
-                        if header != "":
-                            return header
+                        data = parse_json_response(response)
+                        if isinstance(data, dict) and "label" in data:  # we have exactly one result
+                            return data["label"]
                         else:
                             error = f"No label field for resource {single_code}."
+
+                        # data = parse_html_response(response)  # the HTML access is now blocked by the Javascript -> need to use the API
+                        # header = data.select_one("div.page-header > h1").text
+                        # log.info(data.select_one("div.page-header > h1"))
+                        # if header != "":
+                        #     return header
+                        # else:
+                        #     error = f"No label field for resource {single_code}."
                     elif response.status_code == 404 or response.status_code == 400:
                         error = f"Resource {single_code} not found."
                     else:
