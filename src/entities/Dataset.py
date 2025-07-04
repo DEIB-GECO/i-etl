@@ -42,6 +42,7 @@ class Dataset(Resource):
                 self.global_identifier = result["global_identifier"]
                 log.info(f"existing dataset identifier: {self.global_identifier}")
                 self.version = str(int(result["version"]) + 1)  # increment the existing dataset version
+                self.release_date = result["release_date"] if "release_date" in result else None
                 self.last_update = datetime.now()  # the release should be only computed the first time the dataset is inserted
                 self.version_notes = result["version_notes"] if "version_notes" in result else None
                 self.license = result["license"] if "license" in result else None
@@ -53,6 +54,8 @@ class Dataset(Resource):
             self.version = "1"  # computed by incrementing the previous version (obtained from the db) - starts at 1
             self.release_date = datetime.now()
             self.last_update = datetime.now()
+            self.version_notes = ""
+            self.license = ""
         log.info(self.global_identifier)
         # we get the size in Mb and round it to 6 digits
         size = round(os.path.getsize(self.docker_path)/(1000*1000), 6)

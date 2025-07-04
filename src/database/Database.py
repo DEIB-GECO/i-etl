@@ -60,7 +60,7 @@ class Database:
 
         # 3. access the database
         log.info(f"drop db is: {self.execution.db_drop}")
-        if self.execution.db_drop:
+        if self.execution.db_drop and not self.execution.catalogue_only:
             self.drop_db()
             self.db = self.client[self.execution.db_name]
             log.info(type(self.db))

@@ -3,6 +3,7 @@ import sys
 
 from dotenv import load_dotenv
 
+from catalogue.IndividualCatalogueComputation import IndividualCatalogueComputation
 from database.Database import Database
 from database.Execution import Execution
 
@@ -31,10 +32,15 @@ if __name__ == "__main__":
         # create the database instance (incl. connection)
         database = Database(execution=execution)
 
-        # if database.client is not None and database.db is not None and execution.has_no_none_attributes():
-        etl = ETL(execution=execution, database=database)
-        etl.run()
-        log.info(f"ETL has finished. Writing logs in files before exiting.")
+        log.info(execution.catalogue_only)
+        if not execution.catalogue_only:
+            etl = ETL(execution=execution, database=database)
+            etl.run()
+            log.info(f"ETL has finished. Writing logs in files.")
+
+        # in any case, compute the catalogue and send it
+        individual_catalogue = IndividualCatalogueComputation(database=database, execution=execution)
+        individual_catalogue.run()
         database.close()
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
