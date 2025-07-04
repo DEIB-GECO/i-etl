@@ -89,6 +89,15 @@ The provided `.env` file is a _template_: you have to fill each parameter with y
 | `PATIENT_ID`              | The name of the column in the data containing patient IDs                                                          | Any column name                                                  | `Patient ID`                         |
 | `SAMPLE_ID`               | The name of the column in the data containing sample IDs                                                           | ` ` (empty) if you do not have sample data, else a column name   | `sample_id`                          |
 
+### About the catalogue
+| Parameter name   | Description                                                                         | Values                         | Example        |
+|:-----------------|-------------------------------------------------------------------------------------|--------------------------------|----------------|
+| `CATALOGUE_ONLY` | Whether to only compute the metadata and aggregates and send them to the catalogue. | `True`, `False`                |                |
+| `TOKEN`          | The user token to push catalogue data to the web application.                       | A very long string             | 12fgjo5-gjjos3 |
+| `USECASE`        | The use-case to which the database belong.                                          | `paediatric`, `retinal`, `asd` | `paediatric`   |
+
+The token is mandatory to submit the catalogue data to the API that will ingest it and present it on the Web interface. 
+Instructions for generating a token are available in Deliverable 4.5.
 
 ## 4. Querying the ETL database within a train
 
