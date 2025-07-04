@@ -16,8 +16,6 @@ class DataTypes(EnumAsClass):
     API = "api"
     LIST = "list"
 
-    METADATA_NB_UNRECOGNIZED_ETL_TYPE = 0
-
     @classmethod
     def normalize(cls, data_type: str) -> str:
         if data_type == "":
@@ -50,7 +48,6 @@ class DataTypes(EnumAsClass):
                 return DataTypes.LIST
             else:
                 log.error(f"{data_type} is not a recognized data type; we will use string type by default.")
-                DataTypes.METADATA_NB_UNRECOGNIZED_ETL_TYPE += 1
                 return DataTypes.STRING
 
     @classmethod

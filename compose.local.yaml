@@ -2,8 +2,8 @@ services:
   mongo:
     container_name: the-mongo
     image: mongo
-#    ports:
-#      - 27018:27017  # left: port on host machine (for external usage, e.g., terminal); right: port in the Docker (for internal usage, i.e., to be used by the ETL)
+    ports:
+      - 27018:27017  # left: port on host machine (for external usage, e.g., terminal); right: port in the Docker (for internal usage, i.e., to be used by the ETL)
     command: mongod --port 27017 --quiet --logpath /dev/null
     logging:
       driver: none

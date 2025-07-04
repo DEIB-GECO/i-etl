@@ -44,8 +44,13 @@ class Execution:
     db_name: str = field(init=False, default=DEFAULT_DB_NAME)
     db_drop: bool = field(init=False, default=False)  # user input
     columns_to_remove: list = field(init=False, default_factory=list)  # user input
-    patient_id_column_name: str = field(init=False, default="id")
-    sample_id_column_name: str = field(init=False, default="")
+    patient_id_column_name: str = field(init=False, default="id")  # user input
+    sample_id_column_name: str = field(init=False, default="")  # user input
+
+    # parameters for computing and sending data to the catalogue
+    catalogue_only: bool = field(init=False, default=False)  # user input
+    token: str = field(init=False, default="")  # user input
+    usecase: str = field(init=False, default="")  # user input
 
     # parameters related to the execution context (python, pymongo, etc.)
     python_version: str = platform.python_version()
@@ -68,7 +73,13 @@ class Execution:
         self.record_carrier_patients = self.check_parameter(key=ParameterKeys.RECORD_CARRIER_PATIENT, accepted_values=["True", "False", True, False], default_value=self.record_carrier_patients)
         self.patient_id_column_name = MetadataColumns.normalize_name(self.check_parameter(key=ParameterKeys.PATIENT_ID_COLUMN, accepted_values=None, default_value=self.patient_id_column_name))
         self.sample_id_column_name = MetadataColumns.normalize_name(self.check_parameter(key=ParameterKeys.SAMPLE_ID_COLUMN, accepted_values=None, default_value=self.sample_id_column_name))
-
+        self.catalogue_only = self.check_parameter(key=ParameterKeys.CATALOGUE_ONLY, accepted_values=["True", "False", True, False], default_value=self.catalogue_only)
+        self.token = self.check_parameter(key=ParameterKeys.CATALOGUE_TOKEN, accepted_values=None, default_value=self.token)
+        self.usecase = self.check_parameter(key=ParameterKeys.CATALOGUE_USECASE, accepted_values=["paediatric", "retinal", "asd"], default_value=self.usecase)
+        # if we are running only for the catalogue, we make sure that the database is not reset by forcing it
+        if self.catalogue_only:
+            self.db_drop = False
+            os.environ[ParameterKeys.DB_DROP] = "False"
         # create working files for the ETL
         self.create_current_working_dir()
         self.setup_logging_files()
