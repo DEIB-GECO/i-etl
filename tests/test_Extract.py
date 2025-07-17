@@ -326,9 +326,9 @@ class TestExtract(unittest.TestCase):
         assert cc_1["label"] == "Yes"  # display computed with the API
         assert cc_1["system"] == Ontologies.SNOMEDCT["url"]  # normalized (ontology) key
         assert cc_1["code"] == "373066001"  # normalized ontology code
-        # checking "na" mapping
-        assert np.nan in extract.mapping_column_to_categorical_value["molecule_g"]  # normalized categorical value; np.nan is the key name
-        cc_na = extract.mapping_column_to_categorical_value["molecule_g"][np.nan]
+        # checking that "na" mapping is still "na" and not a NaN (see issue 319 for more details)
+        assert "na" in extract.mapping_column_to_categorical_value["molecule_g"]  # normalized categorical value; np.nan is the key name
+        cc_na = extract.mapping_column_to_categorical_value["molecule_g"]["na"]
         assert len(cc_na) == 3  # system, code, and label keys
         assert "system" in cc_na
         assert "code" in cc_na

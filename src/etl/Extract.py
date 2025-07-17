@@ -260,7 +260,7 @@ class Extract(Task):
                 #   ...
                 # }, ...}
                 for json_categorical_value in json_categorical_values:
-                    normalized_categorical_value = MetadataColumns.normalize_value(json_categorical_value["value"])
+                    normalized_categorical_value = MetadataColumns.normalize_value_2(json_categorical_value["value"], normalize_nan=False)
                     if normalized_categorical_value not in categories_for_column:
                         # the categorical value does not exist yet in the mapping, thus:
                         # - it may be retrieved from the db and be added to the mapping
