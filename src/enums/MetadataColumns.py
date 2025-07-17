@@ -29,13 +29,19 @@ class MetadataColumns(EnumAsClass):
 
     @classmethod
     def normalize_value(cls, column_value: str) -> Any:
+        return cls.normalize_value_2(column_value, True)
+
+    @classmethod
+    def normalize_value_2(cls, column_value: str, normalize_nan: bool) -> Any:
         if column_value == "":
             # the cell was empty and kept as is during the data reading
             return ""
         else:
             normalized_value = process_spaces(input_string=str(column_value)).lower()
-            if normalized_value in NAN_VALUES:
+            if normalized_value in NAN_VALUES and normalize_nan:
                 # explicit NaN cell value
+                # normalize_nan is false (thus the normalized value is returned instead of the NaN) when computing the
+                # map between features and categorical values (otherwise the key is NaN and not understood in JSON)
                 return DEFAULT_NAN_VALUE
             else:
                 # default case
