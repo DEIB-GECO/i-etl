@@ -6,7 +6,7 @@ from utils.cast_utils import cast_str_to_boolean
 
 from enums.MetadataColumns import MetadataColumns
 
-from utils.file_utils import read_tabular_file_as_string
+from utils.file_utils import read_tabular_file_as_string, read_tabular_file_as_string_2
 
 from database.Database import Database
 from database.Execution import Execution
@@ -34,8 +34,11 @@ class IndividualCatalogueComputation:
         self.send_to_webapp()
 
     def obtain_whitelist(self):
-        whitelist_metadata = read_tabular_file_as_string(self.execution.metadata_filepath)
+        log.info("obtain whitelist")
+        whitelist_metadata = read_tabular_file_as_string_2(filepath=self.execution.metadata_filepath, sheet_name="whitelist")
+        log.info(whitelist_metadata)
         for row in whitelist_metadata.itertuples(index=False):
+            log.info(row)
             feature_name = MetadataColumns.normalize_name(column_name=row[whitelist_metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)])
             self.whitelist[feature_name] = []
             for column in whitelist_metadata.columns:

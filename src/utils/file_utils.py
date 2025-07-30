@@ -50,6 +50,10 @@ def clear_file(current_working_dir: str, dataset_id: int, table_name: str) -> No
 
 
 def read_tabular_file_as_string(filepath: str) -> pd.DataFrame:
+    return read_tabular_file_as_string_2(filepath=filepath, sheet_name=None)
+
+
+def read_tabular_file_as_string_2(filepath: str, sheet_name: str) -> pd.DataFrame:
     if filepath.endswith(".csv"):
         # leave empty cells as '' cells (they will be skipped during the Transform iteration on data values)
         # keep cells with explicit NaN values as they are (they will be converted into NaN during the Transform iteration on data values)
@@ -60,8 +64,14 @@ def read_tabular_file_as_string(filepath: str) -> pd.DataFrame:
         all_sheets = pd.read_excel(filepath, sheet_name=None, index_col=False, dtype=str, na_values=[], keep_default_na=False)
         all_sub_df = []
         for key, value in all_sheets.items():
-            if key != "Legend":  # skip the sheet describing the columns
-                all_sub_df.append(value)
+            if sheet_name is None:
+                # when sheet_name is None, we keep all sheet, except the Legend one
+                if key != "Legend":  # skip the sheet describing the columns
+                    all_sub_df.append(value)
+            else:
+                # otherwise, we only keep the specific one
+                if key.lower() == sheet_name.lower():
+                    all_sub_df.append(value)
         return pd.concat(all_sub_df, ignore_index=True, axis="rows")  # append lines, not vertically as new columns
     else:
         raise ValueError(f"The extension of the tabular file {filepath} is not recognised. Accepted extensions are .csv, .xls, and .xlsx.")
