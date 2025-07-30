@@ -22,7 +22,7 @@ from etl.Transform import Transform
 from main_statistics.DatabaseStatistics import DatabaseStatistics
 from main_statistics.QualityStatistics import QualityStatistics
 from main_statistics.TimeStatistics import TimeStatistics
-from utils.file_utils import read_tabular_file_as_string, write_in_file
+from utils.file_utils import read_tabular_file_as_string, write_in_file, read_tabular_file_as_string_2
 from utils.setup_logger import log
 
 
@@ -57,7 +57,7 @@ class ETL:
         counter = Counter()
         counter.set_with_database(database=self.database)
 
-        all_metadata = read_tabular_file_as_string(self.execution.metadata_filepath)  # keep all metadata as str
+        all_metadata = read_tabular_file_as_string_2(filepath=self.execution.metadata_filepath, sheet_name="metadata")  # keep all metadata as str
         first = True
         for one_filename in all_filenames:
             if ".vcf" in one_filename:
