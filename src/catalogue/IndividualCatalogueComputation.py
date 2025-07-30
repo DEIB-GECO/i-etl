@@ -1,14 +1,19 @@
 import json
 import os
-import requests
-from database.Execution import Execution
 
-from constants.structure import DOCKER_FOLDER_CATALOGUE
+import requests
+from utils.cast_utils import cast_str_to_boolean
+
+from enums.MetadataColumns import MetadataColumns
+
+from utils.file_utils import read_tabular_file_as_string
+
 from database.Database import Database
+from database.Execution import Execution
 from database.Operators import Operators
 from enums.AggregationTypes import AggregationTypes
 from enums.CatalogueEntries import CatalogueEntries
-from enums.DataTypes import DataTypes
+from enums.CatalogueProfileEntries import CatalogueProfileEntries
 from enums.TableNames import TableNames
 from utils.setup_logger import log
 
@@ -18,13 +23,31 @@ class IndividualCatalogueComputation:
         self.database = database
         self.execution = execution
         self.catalogue_data = []
+        self.whitelist = {}  # <feature name: [list of allowed statistics]>
         self.catalogue_filepath = os.path.join(self.execution.working_dir_current, f"catalogue_{self.database.execution.db_name}.json")
         self.token = self.database.execution.token
         self.usecase = self.database.execution.usecase
 
     def run(self) -> None:
+        self.obtain_whitelist()
         self.retrieve_data_for_catalogue()
         self.send_to_webapp()
+
+    def obtain_whitelist(self):
+        whitelist_metadata = read_tabular_file_as_string(self.execution.metadata_filepath)
+        for row in whitelist_metadata.itertuples(index=False):
+            feature_name = MetadataColumns.normalize_name(column_name=row[whitelist_metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)])
+            self.whitelist[feature_name] = []
+            for column in whitelist_metadata.columns:
+                try:
+                    boolean_value = cast_str_to_boolean(row[whitelist_metadata.columns.get_loc(column)])
+                    if boolean_value:
+                        self.whitelist[feature_name].append(column)
+                except:
+                    # this an X or NaN value, we are not allowed to show that statistic for the feature
+                    # therefore, we do not add the statistic to the list
+                    pass
+        log.info(self.whitelist)
 
     def send_to_webapp(self):
         # endpoint = f"https://web-api.better-health-project.eu/{self.usecase}/data-ingestion"  # Noosware PRODUCTION environment
@@ -137,6 +160,11 @@ class IndividualCatalogueComputation:
                 feature_domain[key] = feature["domain"][key] if "domain" in feature and key in feature["domain"] else None
             features_infos[feature_id]["domain"] = feature_domain
 
+        # associate each feature name to its feature id
+        # this is necessary because the whitelist is based on feature names while the profiles are based on feature ids
+        cursor = self.database.find_operation(table_name=TableNames.FEATURE, filter_dict={}, projection={"name": 1, "identifier": 1})
+        map_feature_id_name = {feature["identifier"]: feature["name"] for feature in cursor}
+
         # for each feature, set its profile using the table FEATURE_PROFILE
         cursor = self.database.find_operation(table_name=TableNames.FEATURE_PROFILE, filter_dict={"dataset": dataset_gid}, projection={})
         for feature in cursor:
@@ -145,54 +173,58 @@ class IndividualCatalogueComputation:
                 features_infos[feature_id] = {}
 
             # compute the feature aggregation type, based on the feature datatype
-            datatype = features_data_types[feature_id] if feature_id in features_data_types else None
-            agg_type = AggregationTypes.get_agg_type(data_type=datatype)
+            # datatype = features_data_types[feature_id] if feature_id in features_data_types else None
+            # agg_type = AggregationTypes.get_agg_type(data_type=datatype)
             # log.info(f"Feature {feature_id} has datatype '{datatype}'" )
 
-            # compute the feature profile
+            # compute the feature profile ONLY FOR WHAT CAN BE SHOWN IN THE CATALOGUE (c.f. "whitelist" sheet in the metadata)
             feature_profile = {}
             keys = [
-                CatalogueEntries.F_PROFILE_ENTROPY, CatalogueEntries.F_PROFILE_DENSITY,
-                CatalogueEntries.F_PROFILE_MAP_VALUE_COUNTS, CatalogueEntries.F_PROFILE_MISSING_PERC,
-                CatalogueEntries.F_PROFILE_DT_VALIDITY, CatalogueEntries.F_PROFILE_UNIQUENESS,
-                CatalogueEntries.F_PROFILE_ACCURACY_SCORE
+                CatalogueProfileEntries.F_PROFILE_ENTROPY, CatalogueProfileEntries.F_PROFILE_DENSITY,
+                CatalogueProfileEntries.F_PROFILE_MAP_VALUE_COUNTS, CatalogueProfileEntries.F_PROFILE_MISSING_PERC,
+                CatalogueProfileEntries.F_PROFILE_DT_VALIDITY, CatalogueProfileEntries.F_PROFILE_UNIQUENESS,
+                CatalogueProfileEntries.F_PROFILE_ACCURACY_SCORE
             ]
 
-            if agg_type == AggregationTypes.CONTINUOUS:
-                keys.extend([
-                    CatalogueEntries.F_NUM_PROFILE_MIN, CatalogueEntries.F_NUM_PROFILE_MAX,
-                    CatalogueEntries.F_NUM_PROFILE_MEAN, CatalogueEntries.F_NUM_PROFILE_MEDIAN,
-                    CatalogueEntries.F_NUM_PROFILE_STD_DEV, CatalogueEntries.F_NUM_PROFILE_SKEWNESS,
-                    CatalogueEntries.F_NUM_PROFILE_KURTOSIS, CatalogueEntries.F_NUM_PROFILE_MED_ABS_DEV,
-                    CatalogueEntries.F_NUM_PROFILE_INTER_QU_RANGE, CatalogueEntries.F_NUM_PROFILE_CORRELATION
-                ])
-            elif agg_type == AggregationTypes.DATE:
-                keys.extend([
-                    CatalogueEntries.F_NUM_PROFILE_MIN, CatalogueEntries.F_NUM_PROFILE_MAX,
-                    CatalogueEntries.F_NUM_PROFILE_MEDIAN, CatalogueEntries.F_NUM_PROFILE_INTER_QU_RANGE
-                ])
-            elif agg_type == AggregationTypes.CATEGORICAL:
-                keys.extend([
-                    CatalogueEntries.F_CAT_PROFILE_IMBALANCE, CatalogueEntries.F_CAT_PROFILE_CONSTANCY,
-                    CatalogueEntries.F_CAT_PROFILE_MODE
-                ])
-            else:
-                log.error(f"Unrecognized data type '{datatype}' for feature {feature_id}")
-                keys.extend([])
+            # we automatically extend the keys with the whitelist
+            # the names of the statistics used in the whitelist are the same as the ones in CatalogueProfileEntries
+            log.info(f"{map_feature_id_name[feature_id]}: {self.whitelist[map_feature_id_name[feature_id]]}")
+            keys.extend(self.whitelist[map_feature_id_name[feature_id]])
+            # if agg_type == AggregationTypes.CONTINUOUS:
+            #     keys.extend([
+            #         CatalogueProfileEntries.F_NUM_PROFILE_MIN, CatalogueProfileEntries.F_NUM_PROFILE_MAX,
+            #         CatalogueProfileEntries.F_NUM_PROFILE_MEAN, CatalogueProfileEntries.F_NUM_PROFILE_MEDIAN,
+            #         CatalogueProfileEntries.F_NUM_PROFILE_STD_DEV, CatalogueProfileEntries.F_NUM_PROFILE_SKEWNESS,
+            #         CatalogueProfileEntries.F_NUM_PROFILE_KURTOSIS, CatalogueProfileEntries.F_NUM_PROFILE_MED_ABS_DEV,
+            #         CatalogueProfileEntries.F_NUM_PROFILE_INTER_QU_RANGE, CatalogueProfileEntries.F_NUM_PROFILE_CORRELATION
+            #     ])
+            # elif agg_type == AggregationTypes.DATE:
+            #     keys.extend([
+            #         CatalogueProfileEntries.F_NUM_PROFILE_MIN, CatalogueProfileEntries.F_NUM_PROFILE_MAX,
+            #         CatalogueProfileEntries.F_NUM_PROFILE_MEDIAN, CatalogueProfileEntries.F_NUM_PROFILE_INTER_QU_RANGE
+            #     ])
+            # elif agg_type == AggregationTypes.CATEGORICAL:
+            #     keys.extend([
+            #         CatalogueProfileEntries.F_CAT_PROFILE_IMBALANCE, CatalogueProfileEntries.F_CAT_PROFILE_CONSTANCY,
+            #         CatalogueProfileEntries.F_CAT_PROFILE_MODE
+            #     ])
+            # else:
+            #     log.error(f"Unrecognized data type '{datatype}' for feature {feature_id}")
+            #     keys.extend([])
             for key in keys:
                 if key in feature:
                     feature_profile[key] = feature[key]
                 else:
                     # the key used in the FeatureProfile table (does not match exactly the catalogue keys)
                     new_keys = {
-                        CatalogueEntries.F_NUM_PROFILE_MIN: "min_value",
-                        CatalogueEntries.F_NUM_PROFILE_MAX: "max_value",
-                        CatalogueEntries.F_NUM_PROFILE_MEAN: "mean_value",
-                        CatalogueEntries.F_NUM_PROFILE_MEDIAN: "median_value",
-                        CatalogueEntries.F_NUM_PROFILE_STD_DEV: "std_value",
-                        CatalogueEntries.F_NUM_PROFILE_MED_ABS_DEV: "ema",
-                        CatalogueEntries.F_NUM_PROFILE_INTER_QU_RANGE: "iqr",
-                        CatalogueEntries.F_NUM_PROFILE_CORRELATION: "pearson",
+                        CatalogueProfileEntries.F_NUM_PROFILE_MIN: "min_value",
+                        CatalogueProfileEntries.F_NUM_PROFILE_MAX: "max_value",
+                        CatalogueProfileEntries.F_NUM_PROFILE_MEAN: "mean_value",
+                        CatalogueProfileEntries.F_NUM_PROFILE_MEDIAN: "median_value",
+                        CatalogueProfileEntries.F_NUM_PROFILE_STD_DEV: "std_value",
+                        CatalogueProfileEntries.F_NUM_PROFILE_MED_ABS_DEV: "ema",
+                        CatalogueProfileEntries.F_NUM_PROFILE_INTER_QU_RANGE: "iqr",
+                        CatalogueProfileEntries.F_NUM_PROFILE_CORRELATION: "pearson",
                     }
                     if key in new_keys and new_keys[key] in feature:
                         feature_profile[key] = feature[new_keys[key]]
