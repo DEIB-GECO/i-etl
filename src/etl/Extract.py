@@ -62,8 +62,8 @@ class Extract(Task):
 
             # finally, export both metadata and data
             # we need to wait because metadata can still be updated by the data pre-processing task
-            self.export_metadata_to_csv_for_generative_ai()
-            self.export_data_to_csv_for_generative_ai()
+            # self.export_metadata_to_csv_for_generative_ai()
+            # self.export_data_to_csv_for_generative_ai()
 
     def export_metadata_to_csv_for_generative_ai(self):
         exported_filepath = os.path.join(self.execution.working_dir_current, "exported_metadata.csv")
@@ -78,7 +78,9 @@ class Extract(Task):
         filename = filename[0:filename.index(".")]
         exported_filepath = os.path.join(self.execution.working_dir_current, f"exported_{filename}.csv")
         log.info(exported_filepath)
+        log.info(os.path.exists(exported_filepath))
         if os.path.exists(exported_filepath) and os.path.getsize(exported_filepath) > 0:
+            log.info(os.path.getsize(exported_filepath))
             # existing data, we happen the new columns (thus we need to read data as a df because "a" only appends rows)
             existing_data = pd.read_csv(exported_filepath, index_col=False)
             self.data.columns = self.data.columns.map(str)
