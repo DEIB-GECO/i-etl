@@ -36,9 +36,7 @@ class IndividualCatalogueComputation:
     def obtain_whitelist(self):
         log.info("obtain whitelist")
         whitelist_metadata = read_tabular_file_as_string_2(filepath=self.execution.metadata_filepath, sheet_name="whitelist")
-        log.info(whitelist_metadata)
         for row in whitelist_metadata.itertuples(index=False):
-            log.info(row)
             feature_name = MetadataColumns.normalize_name(column_name=row[whitelist_metadata.columns.get_loc(MetadataColumns.COLUMN_NAME)])
             self.whitelist[feature_name] = []
             for column in whitelist_metadata.columns:
@@ -182,17 +180,11 @@ class IndividualCatalogueComputation:
 
             # compute the feature profile ONLY FOR WHAT CAN BE SHOWN IN THE CATALOGUE (c.f. "whitelist" sheet in the metadata)
             feature_profile = {}
-            keys = [
-                CatalogueProfileEntries.F_PROFILE_ENTROPY, CatalogueProfileEntries.F_PROFILE_DENSITY,
-                CatalogueProfileEntries.F_PROFILE_MAP_VALUE_COUNTS, CatalogueProfileEntries.F_PROFILE_MISSING_PERC,
-                CatalogueProfileEntries.F_PROFILE_DT_VALIDITY, CatalogueProfileEntries.F_PROFILE_UNIQUENESS,
-                CatalogueProfileEntries.F_PROFILE_ACCURACY_SCORE
-            ]
 
-            # we automatically extend the keys with the whitelist
+            # we automatically create the set of keys to get from the whitelist
             # the names of the statistics used in the whitelist are the same as the ones in CatalogueProfileEntries
             log.info(f"{map_feature_id_name[feature_id]}: {self.whitelist[map_feature_id_name[feature_id]]}")
-            keys.extend(self.whitelist[map_feature_id_name[feature_id]])
+            keys = self.whitelist[map_feature_id_name[feature_id]]
             # if agg_type == AggregationTypes.CONTINUOUS:
             #     keys.extend([
             #         CatalogueProfileEntries.F_NUM_PROFILE_MIN, CatalogueProfileEntries.F_NUM_PROFILE_MAX,
