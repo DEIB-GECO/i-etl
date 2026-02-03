@@ -1,5 +1,5 @@
 # I-ETL
-The ETL algorithm creates interoperable databases for the BETTER project. It relies on MongoDB to store the data and reads a .env file for the configuration. The code is written in Python and encapsulated in a Docker.
+The ETL algorithm creates interoperable databases for the BETTER project. It relies on MongoDB to store the data and reads a `.env` file for the configuration. The code is written in Python and encapsulated in a Docker container.
 
 
 ## 1. Requirements
@@ -22,8 +22,8 @@ The ETL algorithm creates interoperable databases for the BETTER project. It rel
     - Click on the "folder" icon of the latest valid build (the most recent one with a green &#9745;)
     - Download the **TAR archive** named `the-ietl-image.tar` (be sure to download a `.tar`, not a `.zip`)
   - Or build it from the repository (not recommended, see section "For developers")
-2. Download the `comose.yaml` file, available in the repository (https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/blob/main/compose.yaml?ref_type=heads)
-3. Download the settings file `.env` file, available in the repository (https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/blob/main/.env?ref_type=heads)
+2. Download the `compose.yaml` file, available in the repository (https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/blob/main/compose.yaml?ref_type=heads)
+3. Download the settings file `.env.example` file, available in the repository (https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/blob/main/.env.example?ref_type=heads) and rename it to `.env`
 4. Download your metadata file in the Better Drive: https://drive.google.com/drive/u/1/folders/1J-3C2g06WbC1gUE_3KaDp3_v1uKHXxFV
   - `ES-HSJD-variables.xlsx` for SJD hospital
   - `IT-BUZZI-variables.xlsx` for BUZZI hospital in use-case 1

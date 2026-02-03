@@ -53,18 +53,27 @@ class IndividualCatalogueComputation:
     def send_to_webapp(self):
         # endpoint = f"https://web-api.better-health-project.eu/{self.usecase}/data-ingestion"  # Noosware PRODUCTION environment
         endpoint = f"https://web-api-demo.better-health-project.eu/{self.usecase}/data-ingestion"  # Noosware TEST environment
-        log.info(endpoint)
 
         with open(self.catalogue_filepath, "r") as f:
             the_catalogue_data = json.load(f)
-            # log.info(the_catalogue_data)
             headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {self.token}'}
-            log.info(f"Sending data to the catalogue web interface...")
-            log.info(headers)
+            payload_size = len(json.dumps(the_catalogue_data))
+            log.info("Sending catalogue (%d bytes) to endpoint %s", payload_size, endpoint)
+            if not self.token:
+                log.warning("Bearer token is missing or empty; request is likely to fail")
             response = requests.post(endpoint, headers=headers, json=the_catalogue_data)
-            log.info(f"The response is: {response}")
-            log.info(f"The response is: {response.reason}")
-            log.info(f"The response is: {response.text}")
+            if response.ok:
+                log.info(
+                    "Sending catalogue: SUCCESS | status=%s reason=%s",
+                    response.status_code,
+                    response.reason,
+                )
+            else:
+                log.error(
+                    "Sending catalogue: FAILURE | status=%s reason=%s",
+                    response.status_code,
+                    response.reason
+                )
 
     def retrieve_data_for_catalogue(self) -> None:
         # 2. for each dataset, get its info, profile and features

@@ -11,7 +11,7 @@ class CatalogueProfileEntries(EnumAsClass):
     F_PROFILE_MISSING_PERC = "missing_percentage"
     F_PROFILE_DT_VALIDITY = "data_type_validity"
     F_PROFILE_UNIQUENESS = "uniqueness"
-    F_PROFILE_ACCURACY_SCORE = "accuracy_score"
+    F_PROFILE_ACCURACY_SCORE = "accuracy_score" # TODO remove?
 
     # Numeric Profile entity
     F_NUM_PROFILE_MIN = "min"
