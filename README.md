@@ -90,14 +90,30 @@ The provided `.env` file is a _template_: you have to fill each parameter with y
 | `SAMPLE_ID`               | The name of the column in the data containing sample IDs                                                           | ` ` (empty) if you do not have sample data, else a column name   | `sample_id`                          |
 
 ### About the catalogue
+
+**Access Requirements**: Both the data ingestion service and the UI dashboard require an account.
+To request an account for accessing the dashboard, please contact the partner responsible for the Web Catalogue (**NOOSWARE**) at better@noosware.com and provide the email address you would like to use for this account.
+If your account will be responsible for **submitting data**, please also mention **which hospital** you would like your account to be associated with.
+
 | Parameter name   | Description                                                                         | Values                         | Example        |
 |:-----------------|-------------------------------------------------------------------------------------|--------------------------------|----------------|
 | `CATALOGUE_ONLY` | Whether to only compute the metadata and aggregates and send them to the catalogue. | `True`, `False`                |                |
 | `TOKEN`          | The user token to push catalogue data to the web application.                       | A very long string             | 12fgjo5-gjjos3 |
 | `USECASE`        | The use-case to which the database belong.                                          | `paediatric`, `retinal`, `asd` | `paediatric`   |
 
-The token is mandatory to submit the catalogue data to the API that will ingest it and present it on the Web interface. 
-Instructions for generating a token are available in Deliverable 4.5.
+The `TOKEN` is mandatory to submit the catalogue data to the API that will ingest it and present it on the Web interface. 
+Instructions for generating a `TOKEN` are available in Deliverable 4.5:
+https://drive.google.com/file/d/1iRsygeTaSOIetSjWBirTvY0Q_uA5hMHu/view
+
+In brief, you can obtain a `TOKEN` using the provided Postman collection in `catalogue.postman_collection.json` which includes:
+
+- A login request that returns a `TOKEN`.
+- A `/data-ingestion` request configured for **UC1** (`paediatric`) with **dummy data** which can be used to verify the submission process.
+
+#### Notes
+- Please set your **email** and **password** in the **collection variables** (these are used by the login request).
+- After calling the login endpoint, you can paste the returned access token as the `TOKEN` parameter in the ETL configuration.
+- For testing the `/data-ingestion` request, paste the returned access token into the **retrievedToken** collection variable.
 
 ## 4. Querying the ETL database within a train
 
