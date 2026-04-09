@@ -32,7 +32,7 @@ if __name__ == "__main__":
         # create the database instance (incl. connection)
         database = Database(execution=execution)
 
-        log.info(execution.catalogue_only)
+        log.info(f"Catalogue_only: {execution.catalogue_only}")
         if not execution.catalogue_only:
             etl = ETL(execution=execution, database=database)
             etl.run()
@@ -41,6 +41,8 @@ if __name__ == "__main__":
         # in any case, compute the catalogue and send it
         individual_catalogue = IndividualCatalogueComputation(database=database, execution=execution)
         individual_catalogue.run()
+        log.info(f"Catalogue computation ended.")
+
         database.close()
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()

@@ -9,6 +9,7 @@ from requests import Response
 from constants.defaults import API_SESSION
 from enums.AccessTypes import AccessTypes
 from utils.setup_logger import log
+import time
 
 
 def send_query(url: str, headers: dict | None) -> Response | None:
@@ -30,7 +31,12 @@ def send_query(url: str, headers: dict | None) -> Response | None:
 
 
 # API ACCESS
+
 def send_query_to_api(url, secret: str | None, access_type: AccessTypes) -> Response | None:
+    # Legacy query
+    return send_query_to_api_time(url, secret, access_type, None)
+
+def send_query_to_api_time(url, secret: str | None, access_type: AccessTypes, sleep: float | None) -> Response | None:
     # secret may contain an api key or (joint) username and password
     headers = {
         "User-Agent": "python-requests/2.31.0",
@@ -38,6 +44,10 @@ def send_query_to_api(url, secret: str | None, access_type: AccessTypes) -> Resp
         "Accept": "*/*",
         "Connection": "keep-alive",
     }
+
+    if sleep and sleep > 0:
+        time.sleep(sleep)
+
     if access_type == AccessTypes.USER_AGENT:
         return send_query(url=url, headers=headers)
 

@@ -9,9 +9,10 @@ from constants.methods import factory
 from enums.AccessTypes import AccessTypes
 from enums.Ontologies import Ontologies
 from main_statistics.QualityStatistics import QualityStatistics
-from utils.api_utils import send_query_to_api, parse_xml_response, parse_json_response, parse_html_response
+from utils.api_utils import send_query_to_api, send_query_to_api_time, parse_xml_response, parse_json_response, parse_html_response
 from utils.setup_logger import log
 from utils.str_utils import remove_specific_tokens, process_spaces, remove_operators_in_strings
+from enums.APIs import APIWait
 
 
 @dataclasses.dataclass()
@@ -124,6 +125,7 @@ class OntologyResource:
         compute_from_api = True
         if compute_from_api:
             try:
+                # print("### COMPUTE_FROM_API ", single_code, system)
                 if system == Ontologies.SNOMEDCT["url"]:
                     url_resource = quote(f"http://purl.bioontology.org/ontology/SNOMEDCT/{single_code}", safe="")
                     url = f"http://data.bioontology.org/ontologies/SNOMEDCT/classes/{url_resource}"
@@ -333,7 +335,7 @@ class OntologyResource:
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.NLM_GENE["url"]:
                     url = f"https://clinicaltables.nlm.nih.gov/api/ncbi_genes/v3/search?terms={single_code}"
-                    response = send_query_to_api(url=url, secret=None, access_type=AccessTypes.USER_AGENT)
+                    response = send_query_to_api_time(url=url, secret=None, access_type=AccessTypes.USER_AGENT, sleep=APIWait.WAIT_NLM_GENE)
                     if response is None:
                         error = f"Failed connection to NLM GENE API."
                     elif response.status_code == 200:
@@ -358,7 +360,7 @@ class OntologyResource:
                     # and then use esummary (to retrieve an overview of each of those records) based on the identifiers returned by esearch.
                     first_part_code = single_code.split(";")[0]
                     url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=clinvar&term={first_part_code}&retmax=1"
-                    response = send_query_to_api(url=url, secret=None, access_type=AccessTypes.USER_AGENT)
+                    response = send_query_to_api_time(url=url, secret=None, access_type=AccessTypes.USER_AGENT, sleep=APIWait.WAIT_NLM_CLINVAR)
                     if response is None:
                         error = f"Failed connection to NLM CLIN_VAR API."
                     elif response.status_code == 200:
@@ -370,7 +372,7 @@ class OntologyResource:
                                 # we now need go get the information associated to the matched identifier
                                 matched_identifier = matched_identifiers[0].firstChild.nodeValue
                                 url2 = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=clinvar&id={matched_identifier}&retmode=json"
-                                response = send_query_to_api(url=url2, secret=None, access_type=AccessTypes.USER_AGENT)
+                                response = send_query_to_api_time(url=url2, secret=None, access_type=AccessTypes.USER_AGENT, sleep=APIWait.WAIT_NLM_CLINVAR)
                                 if response is None:
                                     error = f"Failed connection to NLM CLIN_VAR API."
                                 elif response.status_code == 200:
@@ -379,6 +381,7 @@ class OntologyResource:
                                         if matched_identifier in data["result"] and "title" in data["result"][matched_identifier]:
                                             # exactly one match has been found
                                             # we now need go get the information associated to the matched identifier
+                                            # print("###", response.status_code, response.text, data["result"][matched_identifier]["title"])
                                             return data["result"][matched_identifier]["title"]
                                         else:
                                             error = f"No result for resource {single_code}."
@@ -395,7 +398,7 @@ class OntologyResource:
                     elif response.status_code == 404 or response.status_code == 400:
                         error = f"Resource {single_code} not found."
                     else:
-                        error = f"Unexpected response for {single_code}."
+                        error = f"Unexpected response code for {single_code}: {response.text}."
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     log.info(error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
