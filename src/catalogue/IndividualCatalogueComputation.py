@@ -192,6 +192,12 @@ class IndividualCatalogueComputation:
 
             # we automatically create the set of keys to get from the whitelist
             # the names of the statistics used in the whitelist are the same as the ones in CatalogueProfileEntries
+            feature_name = map_feature_id_name[feature_id]
+
+            # skip if pseudo-features added during the process are not in whitelist (whitelist is king)
+            if feature_name not in self.whitelist:
+                continue
+
             log.info(f"{map_feature_id_name[feature_id]}: {self.whitelist[map_feature_id_name[feature_id]]}")
             keys = self.whitelist[map_feature_id_name[feature_id]]
             # if agg_type == AggregationTypes.CONTINUOUS:

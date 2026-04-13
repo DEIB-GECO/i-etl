@@ -137,11 +137,11 @@ class OntologyResource:
                         if "prefLabel" in data:
                             return data["prefLabel"]
                         else:
-                            error = f"No label field for resource {single_code}."
+                            error = f"No label field for resource {single_code}"
                     elif response.status_code == 404 or response.status_code == 400:
                         error = f"Resource {single_code} not found."
                     else:
-                        error = f"Unexpected SNOMEDCT response for {single_code}."
+                        error = f"Unexpected SNOMEDCT response for {single_code}"
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     log.info(error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
@@ -162,7 +162,7 @@ class OntologyResource:
                     elif response.status_code == 404 or response.status_code == 400:
                         error = f"Resource {single_code} not found."
                     else:
-                        error = f"Unexpected LOINC response for {single_code}."
+                        error = f"Unexpected LOINC response for {single_code}"
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     log.info(error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
@@ -177,13 +177,13 @@ class OntologyResource:
                             if "Title" in data["InformationList"]["Information"][0]:
                                 return data["InformationList"]["Information"][0]["Title"]
                             else:
-                                error = f"No label field for resource {single_code}."
+                                error = f"No label field for resource {single_code}"
                         else:
                             error = f"Resource {single_code} not found."
                     elif response.status_code == 404 or response.status_code == 400:
                         error = f"Resource {single_code} not found."
                     else:
-                        error = f"Unexpected PUBCHEM response for {single_code}."
+                        error = f"Unexpected PUBCHEM response for {single_code}"
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     log.info(error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
@@ -222,7 +222,7 @@ class OntologyResource:
                     elif response.status_code == 404 or response.status_code == 400:
                         error = f"Resource {single_code} not found."
                     else:
-                        error = f"Unexpected GSSOresponse for {single_code}."
+                        error = f"Unexpected GSSOresponse for {single_code}"
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     log.info(error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
@@ -236,11 +236,11 @@ class OntologyResource:
                         if "Preferred term" in data:
                             return data["Preferred term"]
                         else:
-                            error = f"No label field for resource {single_code}."
+                            error = f"No label field for resource {single_code}"
                     elif response.status_code == 404 or response.status_code == 400:
                         error = f"Resource {single_code} not found."
                     else:
-                        error = f"Unexpected ORPHANET response for {single_code}."
+                        error = f"Unexpected ORPHANET response for {single_code}"
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     log.info(error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
@@ -258,7 +258,7 @@ class OntologyResource:
                         if isinstance(data, dict) and "label" in data:  # we have exactly one result
                             return data["label"]
                         else:
-                            error = f"No label field for resource {single_code}."
+                            error = f"No label field for resource {single_code}"
 
                         # data = parse_html_response(response)  # the HTML access is now blocked by the Javascript -> need to use the API
                         # header = data.select_one("div.page-header > h1").text
@@ -266,7 +266,7 @@ class OntologyResource:
                         # if header != "":
                         #     return header
                         # else:
-                        #     error = f"No label field for resource {single_code}."
+                        #     error = f"No label field for resource {single_code}"
                     elif response.status_code == 404 or response.status_code == 400:
                         error = f"Resource {single_code} not found."
                     else:
@@ -285,11 +285,11 @@ class OntologyResource:
                         if "text" in data:
                             return data["text"]
                         else:
-                            error = f"No text field for resource {single_code}."
+                            error = f"No text field for resource {single_code}"
                     elif response.status_code == 404 or response.status_code == 400:
                         error = f"Resource {single_code} not found."
                     else:
-                        error = f"Unexpected OMIM response for {single_code}."
+                        error = f"Unexpected OMIM response for {single_code}"
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     log.info(error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
@@ -303,11 +303,11 @@ class OntologyResource:
                         if len(data) > 0 and "description" in data[0]:
                             return data[0]["description"]
                         else:
-                            error = f"No text field for resource {single_code}."
+                            error = f"No text field for resource {single_code}"
                     elif response.status_code == 404 or response.status_code == 400:
                         error = f"Resource {single_code} not found."
                     else:
-                        error = f"Unexpected HGNC response for {single_code}."
+                        error = f"Unexpected HGNC response for {single_code}"
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     log.info(error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
@@ -325,7 +325,7 @@ class OntologyResource:
                                 else:
                                     error = f"Resource {single_code} not found."
                         else:
-                            error = f"No text field for resource {single_code}."
+                            error = f"No text field for resource {single_code}"
                     elif response.status_code == 404 or response.status_code == 400:
                         error = f"Resource {single_code} not found."
                     else:
@@ -345,13 +345,13 @@ class OntologyResource:
                                 # exactly one match has been found
                                 return data[1][0]
                             else:
-                                error = f"Several results for resource {single_code}."
+                                error = f"Several results for resource {single_code}"
                         else:
-                            error = f"No result for resource {single_code}."
+                            error = f"No result for resource {single_code}"
                     elif response.status_code == 404 or response.status_code == 400:
                         error = f"Resource {single_code} not found."
                     else:
-                        error = f"Unexpected response for {single_code}."
+                        error = f"Unexpected response for {single_code}"
                     quality_stats.add_failed_api_call(system=system, code=single_code, api_error=error)
                     log.info(error)
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
@@ -384,17 +384,17 @@ class OntologyResource:
                                             # print("###", response.status_code, response.text, data["result"][matched_identifier]["title"])
                                             return data["result"][matched_identifier]["title"]
                                         else:
-                                            error = f"No result for resource {single_code}."
+                                            error = f"No result for resource {single_code}"
                                     else:
-                                        error = f"No result for resource {single_code}."
+                                        error = f"No result for resource {single_code}"
                                 elif response.status_code == 404 or response.status_code == 400:
                                     error = f"Resource {single_code} not found."
                                 else:
-                                    error = f"Unexpected response for {single_code}."
+                                    error = f"Unexpected response for {single_code}"
                             else:
-                                error = f"Several results for resource {single_code}."
+                                error = f"Several results for resource {single_code}"
                         else:
-                            error = f"No result for resource {single_code}."
+                            error = f"No result for resource {single_code}"
                     elif response.status_code == 404 or response.status_code == 400:
                         error = f"Resource {single_code} not found."
                     else:

@@ -48,4 +48,5 @@ if __name__ == "__main__":
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         log.error(f"{type(e).__name__} exception: {e}")
+        log.error("Exception details:", exc_info=True)
         raise
