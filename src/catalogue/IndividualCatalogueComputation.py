@@ -54,6 +54,7 @@ class IndividualCatalogueComputation:
         # endpoint = f"https://web-api.better-health-project.eu/{self.usecase}/data-ingestion"  # Noosware PRODUCTION environment
         endpoint = f"https://web-api-demo.better-health-project.eu/{self.usecase}/data-ingestion"  # Noosware TEST environment
 
+        log.info("Loading catalogue from filepath: %s", self.catalogue_filepath)
         with open(self.catalogue_filepath, "r") as f:
             the_catalogue_data = json.load(f)
             headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {self.token}'}
@@ -78,7 +79,8 @@ class IndividualCatalogueComputation:
     def retrieve_data_for_catalogue(self) -> None:
         # 2. for each dataset, get its info, profile and features
         datasets = self.get_datasets()
-        # log.info(datasets)
+        log.info("retrieve_data_for_catalogue")
+
         for dataset_global_identifier in datasets:
             log.info(dataset_global_identifier)
             dataset_entry = {"identifier": dataset_global_identifier}
@@ -86,8 +88,12 @@ class IndividualCatalogueComputation:
             dataset_entry = self.set_dataset_features(dataset_entry=dataset_entry, dataset_gid=dataset_global_identifier)
             self.catalogue_data.append(dataset_entry)
         # log.info(json.dumps(self.catalogue_data, default=str))  # default=str for converting datetime objects to strings
+
+        mypayload = json.dumps(self.catalogue_data, default=str)
+        log.info("Writing %s bytes of catalogue to filepath: %s", len(mypayload), self.catalogue_filepath)
+
         with open(self.catalogue_filepath, "w") as f:
-            f.write(json.dumps(self.catalogue_data, default=str))
+            f.write(mypayload)
 
     def get_datasets(self) -> dict:
         cursor = self.database.find_operation(table_name=TableNames.DATASET, filter_dict={}, projection={"global_identifier": 1, "docker_path": 1})
