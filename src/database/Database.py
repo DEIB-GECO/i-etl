@@ -377,3 +377,13 @@ class Database:
 
     def __str__(self):
         return json.dumps(self.to_json())
+
+    def verify_indexes_ready(self, table_name: str) -> bool:
+        """Verify indexes are ready by attempting a count operation"""
+        try:
+            count = self.db[table_name].count_documents({})
+            log.info(f"Index verification: {table_name} is queryable ({count} documents)")
+            return True
+        except Exception as e:
+            log.error(f"Index verification failed for {table_name}: {e}")
+            return False

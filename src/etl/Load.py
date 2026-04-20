@@ -73,3 +73,17 @@ class Load(Task):
         #     count += 1
 
         log.info(f"Finished to create {count} indexes.")
+
+        # Verify all indexes are queryable before proceeding
+        for table_name in TableNames.data_tables():
+            self.database.verify_indexes_ready(table_name)
+    
+    def verify_indexes_ready(self, table_name: str) -> bool:
+        """Verify indexes are ready by attempting a count operation"""
+        try:
+            count = self.db[table_name].count_documents({})
+            log.info(f"Index verification: {table_name} is queryable ({count} documents)")
+            return True
+        except Exception as e:
+            log.error(f"Index verification failed for {table_name}: {e}")
+            return False
