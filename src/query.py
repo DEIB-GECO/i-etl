@@ -1,4 +1,4 @@
-from data_retriever.DataRetriever import DataRetriever
+from data_retriever.DataRetriever import DataRetrieverLegacy as DataRetriever
 
 if __name__ == '__main__':
     # ssh -L 27018:131.175.120.86:27018 barret@131.175.120.86

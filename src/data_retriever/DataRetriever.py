@@ -14,7 +14,7 @@ from utils.setup_logger import log
 
 
 @dataclasses.dataclass()
-class DataRetriever(object):
+class DataRetrieverLegacy(object):
     """Legacy DataRetriever for DATA and METADATA query types"""
     # db connection
     mongodb_url: str  # "mongodb://localhost:27018/"
@@ -266,21 +266,36 @@ class DataRetriever(object):
 
 
 @dataclasses.dataclass()
-class DataRetrieverNew(object):
-    """WIP DataRetriever for METADATA_NEW and DATA_NEW query types"""
-    # db connection
-    mongodb_url: str  # "mongodb://localhost:27018/"
-    db_name: str
-    query_type: QueryTypes  # METADATA_NEW or DATA_NEW
+class DataRetriever(object):
+    """Retrieves feature metadata or patient records from the I-ETL MongoDB database.
 
-    # user input to build the query to retrieve all metadata fields
-    feature_list: list = dataclasses.field(default_factory=list)  # not used in DataRetrieverNew, kept for compatibility
-    # user input to build the query to retrieve record data (DATA_NEW mode)
-    ontology_list: list = dataclasses.field(default_factory=list)  # user input of the form ["snomedct:77477000", "loinc:1234"]
-    feature_value_process: dict = dataclasses.field(default_factory=dict)  # not used in DataRetrieverNew, kept for compatibility
-    feature_filters: dict = dataclasses.field(default_factory=dict)  # not used in DataRetrieverNew, kept for compatibility
-    feature_selected: dict = dataclasses.field(default_factory=dict)  # not used in DataRetrieverNew, kept for compatibility
-    features_info: dict = dataclasses.field(init=False)  # generated from feature inputs
+    Use QueryTypes.METADATA to retrieve all feature metadata (ontology codes, data types,
+    units, categories, etc.) as a DataFrame indexed by feature identifier.
+
+    Use QueryTypes.DATA to retrieve patient records for a specific set of features,
+    expressed as a query_list — a list of dicts with up to three optional keys:
+
+        "label"             : arbitrary output column name; if absent/None, the database
+                              feature name is used instead
+        "ontology_resource" : ontology code in "system:code" format, e.g. "snomedct:734000001"
+        "feature_name"      : the feature name as stored in the database (Feature.name)
+
+    Each item must supply at least one of "ontology_resource" or "feature_name".
+    The four supported query patterns are:
+
+        <label, ontology, *>      one label per ontology; if multiple features share the
+                                  ontology, columns are named "label_featurename"
+        <label, ontology, name>   exact match on both; column named "label"
+        <label, *, name>          select by name only; column named "label"
+        <*, ontology|name, ...>   any of the above without a label; column = feature name
+    """
+    mongodb_url: str  # e.g. "mongodb://localhost:27018/"
+    db_name: str
+    query_type: QueryTypes  # METADATA or DATA
+
+    # DATA mode: list of dicts with optional keys "label", "ontology_resource", "feature_name"
+    query_list: list = dataclasses.field(default_factory=list)
+    features_info: dict = dataclasses.field(init=False)
     the_dataframe: DataFrame = dataclasses.field(init=False)
 
     def __post_init__(self):
@@ -290,39 +305,30 @@ class DataRetrieverNew(object):
         log.info(self.db)
         self.the_query = ""
 
-        # check that the query type match the given parameters
-        if self.query_type == QueryTypes.METADATA_NEW:
-            # no validation needed, retrieves all fields
+        if self.query_type == QueryTypes.METADATA:
             pass
-        elif self.query_type == QueryTypes.DATA_NEW:
-            if self.ontology_list is None or len(self.ontology_list) == 0:
-                raise Exception("You specified that you want to retrieve data from the database but did not specify which ontology codes to retrieve.")
-            else:
-                # normalize ontology resource codes
-                self.features_info = {}
-                for code in self.ontology_list:
-                    code_split = code.split(":", 1)  # split on the first :
-                    system, code_normalized = Ontologies.get_enum_from_name(Ontologies.normalize_name(code_split[0])), Ontologies.normalize_code(code_split[1])
-                    self.features_info[code] = {
-                        "the_or": OntologyResource(system=system, code=code_normalized, label=" ", quality_stats=None),
-                        "matched_features": []  # will be populated during retrieve_records_new
-                    }
-                log.info(self.features_info)
+        elif self.query_type == QueryTypes.DATA:
+            if not self.query_list:
+                raise Exception("query_list must be non-empty for DATA mode.")
+            for item in self.query_list:
+                if item.get("ontology_resource") is None and item.get("feature_name") is None:
+                    raise Exception(f"Each query_list item needs 'ontology_resource' or 'feature_name'. Got: {item}")
+            self.features_info = {}
 
     def run(self):
-        if self.query_type == QueryTypes.METADATA_NEW:
-            self.retrieve_all_fields()
-        elif self.query_type == QueryTypes.DATA_NEW:
-            self.retrieve_records_new()
+        if self.query_type == QueryTypes.METADATA:
+            self.retrieve_metadata()
+        elif self.query_type == QueryTypes.DATA:
+            self.retrieve_records()
 
-    def retrieve_all_fields(self):
+    def retrieve_metadata(self):
         log.info("***************")
         log.info("Creating indexes")
         self.db[TableNames.FEATURE].create_index("ontology_resource.system")
         self.db[TableNames.FEATURE].create_index("ontology_resource.code")
 
         log.info("Generating the query to retrieve all fields")
-        self.generate_all_fields_query()
+        self.generate_metadata_query()
         log.info(self.the_query)
         log.info("Creating the dataframe")
         self.the_dataframe = pd.DataFrame(self.db[TableNames.FEATURE].aggregate(json.loads(self.the_query))).set_index("identifier")
@@ -335,7 +341,7 @@ class DataRetrieverNew(object):
         )
         log.info("Done.")
 
-    def generate_all_fields_query(self):
+    def generate_metadata_query(self):
         # retrieves all fields without filtering by specific codes
         self.the_query += "["
         self.the_query += json.dumps(Operators.set_variables([{"name": "onto_system", "operation": "$ontology_resource.system"}, {"name": "onto_code", "operation": "$ontology_resource.code"}]))
@@ -343,63 +349,84 @@ class DataRetrieverNew(object):
         self.the_query += json.dumps(Operators.unset_variables(["_id"]))
         self.the_query += "]"
 
-    def retrieve_records_new(self):
-        """Retrieve records for DATA_NEW mode: finds all features matching ontology codes and uses their database names"""
+    def retrieve_records(self):
+        """Retrieve records for DATA mode."""
         log.info("***************")
         log.info("Creating indexes")
         self.db[TableNames.RECORD].create_index("instantiates")
         self.db[TableNames.FEATURE].create_index("ontology_resource.system")
         self.db[TableNames.FEATURE].create_index("ontology_resource.code")
+        self.db[TableNames.FEATURE].create_index("name")
 
-        # Find all features matching the specified ontology codes
-        log.info("Finding all features matching the ontology codes")
-        for ontology_code, info in self.features_info.items():
-            match_condition = {
-                "ontology_resource.system": info["the_or"].system,
-                "ontology_resource.code": info["the_or"].code
-            }
-            matching_features = self.db[TableNames.FEATURE].find(match_condition)
-            
-            for feature in matching_features:
-                feature_name = feature["name"]
-                feature_id = feature["identifier"]
-                log.info(f"Found feature: {feature_name} (id: {feature_id}) for ontology code {ontology_code}")
-                info["matched_features"].append({
-                    "name": feature_name,
-                    "identifier": feature_id
-                })
-        
-        log.info(f"Matched features: {self.features_info}")
-        
-        # Build features_info in the format expected by generate_data_query
+        log.info("Resolving features from query_list")
+        self._resolve_features()
+
+        log.info("Generating the query")
+        self.the_query = ""
+        self.generate_data_query()
+        log.info(self.the_query)
+        log.info("Creating the dataframe")
+        self.the_dataframe = pd.DataFrame(
+            self.db[TableNames.RECORD].aggregate(json.loads(self.the_query))
+        ).set_index("has_subject")
+        log.info("Done.")
+
+    def _resolve_features(self) -> None:
+        """Translates query_list into features_info, including ontology normalization and DB lookup."""
         feature_index = 1
-        temp_features_info = {}
-        
-        for ontology_code, info in self.features_info.items():
-            for matched_feature in info["matched_features"]:
-                feature_name = matched_feature["name"]
-                feature_id = matched_feature["identifier"]
-                temp_features_info[feature_name] = {
-                    "identifier": feature_id,
-                    "the_or": info["the_or"],
+        new_features_info = {}
+
+        for item in self.query_list:
+            label        = item.get("label")
+            onto_str     = item.get("ontology_resource")
+            feature_name = item.get("feature_name")
+
+            # build MongoDB filter, normalizing ontology codes where provided
+            mongo_filter = {}
+            if onto_str is not None:
+                code_split = onto_str.split(":", 1)
+                if len(code_split) != 2 or code_split[1] == "":
+                    raise ValueError(f"'ontology_resource' must be in 'system:code' format. Got: {onto_str!r} in item: {item}")
+                system = Ontologies.get_enum_from_name(Ontologies.normalize_name(code_split[0]))
+                if not system:
+                    raise ValueError(f"Unknown ontology '{code_split[0]}' in query_list item: {item}. Known names: {Ontologies.get_names()}")
+                code = Ontologies.normalize_code(code_split[1])
+                onto_resource = OntologyResource(system=system, code=code, label=" ", quality_stats=None)
+                mongo_filter["ontology_resource.system"] = onto_resource.system
+                mongo_filter["ontology_resource.code"]   = onto_resource.code
+            if feature_name is not None:
+                mongo_filter["name"] = feature_name
+
+            matches = list(self.db[TableNames.FEATURE].find(mongo_filter))
+            log.info(f"query_list item {item} → {len(matches)} match(es)")
+            if not matches:
+                raise ValueError(f"No Feature found for query_list item: {item}. Filter used: {mongo_filter}")
+
+            for feature_doc in matches:
+                db_name = feature_doc["name"]
+                db_id   = feature_doc["identifier"]
+
+                if label is None:                                      # Case 4: no label → use DB name
+                    output_col = db_name
+                elif len(matches) > 1 and feature_name is None:        # Case 1, multiple matches
+                    output_col = f"{label}_{db_name}"
+                else:                                                  # Cases 1 (single), 2, 3
+                    output_col = label
+
+                if output_col in new_features_info:
+                    raise ValueError(f"Output column name collision: '{output_col}' from item: {item}")
+
+                new_features_info[output_col] = {
+                    "identifier": db_id,
                     "filter": None,
                     "process": None,
                     "show": True,
                     "i": feature_index
                 }
                 feature_index += 1
-        
-        # Replace features_info with the expanded mapping
-        self.features_info = temp_features_info
-        log.info(f"Expanded features_info: {self.features_info}")
 
-        log.info("Generating the query")
-        self.generate_data_query()
-        log.info(self.the_query)
-        log.info("Creating the dataframe")
-        self.the_dataframe = pd.DataFrame(self.db[TableNames.RECORD].aggregate(json.loads(self.the_query))).set_index(
-            "has_subject")
-        log.info("Done.")
+        self.features_info = new_features_info
+        log.info(f"_resolve_features produced: {self.features_info}")
 
     def generate_data_query(self):
         # 0. compute the lookups
@@ -454,12 +481,10 @@ class DataRetrieverNew(object):
         
         # Get the ontology name from the system URL
         ontology_enum = Ontologies.get_enum_from_url(onto_system)
-        if ontology_enum and "name" in ontology_enum:
-            ontology_name = ontology_enum["name"]
-            return f"{ontology_name}:{onto_code}"
-        else:
-            # Fallback: return just the code if we can't determine the ontology
-            return str(onto_code)
+        if isinstance(ontology_enum, dict) and "name" in ontology_enum:
+            return f"{ontology_enum['name']}:{onto_code}"
+        # Fallback: return just the code if we can't determine the ontology
+        return str(onto_code)
 
     def rec_internal(self, position):
         log.info(f"rec {position} with {self.features_info}")

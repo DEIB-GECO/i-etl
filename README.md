@@ -117,8 +117,82 @@ In brief, you can obtain a `TOKEN` using the provided Postman collection in `cat
 
 ## 4. Querying the ETL database within a train
 
-### Steps 
-Given a user input (explained below), the class `DataRetriever` takes care of:
+### `DataRetriever` — structured query mode
+
+The class `DataRetriever` retrieves feature metadata or patient records from the I-ETL MongoDB database and loads them into a Pandas DataFrame accessible as `the_dataframe`.
+
+It supports two query types:
+- `QueryTypes.METADATA` — retrieves all feature metadata (ontology codes, data types, units, categories, visibility, etc.) as a DataFrame indexed by feature identifier
+- `QueryTypes.DATA` — retrieves patient records for a specified set of features, returned as a DataFrame indexed by patient identifier
+
+#### Retrieving metadata
+
+```python
+from data_retriever.DataRetriever import DataRetriever
+from enums.QueryTypes import QueryTypes
+
+dr = DataRetriever(
+    mongodb_url="mongodb://localhost:27018/",
+    db_name="better_database",
+    query_type=QueryTypes.METADATA
+)
+dr.run()
+print(dr.the_dataframe)
+dr.the_dataframe.to_csv("metadata.csv")
+```
+
+The resulting DataFrame contains one row per feature with columns for ontology system, ontology code, data type, unit, description, categories, and visibility.
+
+#### Retrieving data
+
+For `QueryTypes.DATA`, you supply a `query_list`: a list of dicts, each specifying which feature(s) to retrieve and how to name the output column. Each dict has up to three optional keys:
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `"label"` | `str` or absent/`None` | Output column name. If absent or `None`, the database feature name is used. |
+| `"ontology_resource"` | `str` or absent/`None` | Ontology code in `"system:code"` format, e.g. `"snomedct:734000001"`. |
+| `"feature_name"` | `str` or absent/`None` | The feature name as stored in the database (`Feature.name`). |
+
+Each item must include at least one of `"ontology_resource"` or `"feature_name"`.
+
+**Supported query patterns:**
+
+| Pattern | Output column(s) |
+|---------|-----------------|
+| `{"label": "sex", "ontology_resource": "snomedct:734000001"}` | `"sex"` (or `"sex_<db_name>"` per feature if the ontology matches more than one) |
+| `{"label": "mri", "ontology_resource": "snomedct:77477000", "feature_name": "mri_brain"}` | `"mri"` (exact match on both ontology and name) |
+| `{"label": "vcf", "feature_name": "vcf_path"}` | `"vcf"` (match by name only, no ontology needed) |
+| `{"ontology_resource": "snomedct:398152000"}` | database feature name (no custom label) |
+| `{"feature_name": "weight"}` | `"weight"` |
+
+```python
+from data_retriever.DataRetriever import DataRetriever
+from enums.QueryTypes import QueryTypes
+
+dr = DataRetriever(
+    mongodb_url="mongodb://localhost:27018/",
+    db_name="better_database",
+    query_type=QueryTypes.DATA,
+    query_list=[
+        {"label": "sex",      "ontology_resource": "snomedct:734000001"},
+        {"label": "vcf_path", "feature_name": "vcf_path"},
+        {"label": "hypotonia", "ontology_resource": "hp:0001252",
+                               "feature_name": "hypotonia"},
+        {"ontology_resource": "snomedct:398152000"},  # column name taken from DB
+    ]
+)
+dr.run()
+print(dr.the_dataframe)
+dr.the_dataframe.to_csv("data.csv")
+```
+
+---
+
+### `DataRetrieverLegacy` — original query mode (deprecated)
+
+> **Note:** `DataRetrieverLegacy` is the original implementation. It is kept for backward compatibility. New code should use `DataRetriever` instead.
+
+Given a user input (explained below), the class `DataRetrieverLegacy` takes care of:
 1. Generating the MongoDB query to fetch the data or metadata in the database
 2. Loading the retrieved data, respectively metadata, in a Pandas DataFrame
 
@@ -127,7 +201,7 @@ The user input is:
 - the features (also called "variables") the user is interested in when collecting data
 - the post-process methods to "flatten"/"normalize" the data values if needed
 
-The package is available in `pip` meaning that it should be added to the requirements of the train (as in `pip install data-retriever`). To be sure that you have all the required package:
+The package is available in `pip` meaning that it should be added to the requirements of the train (as in `pip install data-retriever`). To be sure that you have all the required packages:
 1. Download the `requirements.txt` file in this repository
 2. Create a virtual Python environment (using Python venv or Anaconda)
 3. Activate that environment
@@ -136,28 +210,26 @@ The package is available in `pip` meaning that it should be added to the require
 6. Then, you should adapt the main file `query.py` with your own settings (database name, etc.)
 7. Finally, you can run the `query.py` file with `python3 query.py`
 
-### Example to retrieve data
+#### Example to retrieve data (legacy)
 
-A main example is available in the `query.py` file (https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/blob/main/src/query.py).  
+A main example is available in the `query.py` file (https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/blob/main/src/query.py).
 
 Lines 9 to 11, respectively 21 to 23, contain the user input:
 - The variable `FEATURE_CODES` is a dictionary (map) to associate a variable name to the ontology term that has been associated to it in the metadata (https://drive.google.com/drive/u/1/folders/1J-3C2g06WbC1gUE_3KaDp3_v1uKHXxFV)
-- The variable `FEATURE_FILTERS` is a dictionary (map) to associate a variable name to (a) its code under the key `code`, and (b) the filter to apply under the key `filter`. The value of the `filter` should be a MongoDB `match`. Note that the variables mentioned in the filters may differ from the ones selected. 
+- The variable `FEATURE_FILTERS` is a dictionary (map) to associate a variable name to (a) its code under the key `code`, and (b) the filter to apply under the key `filter`. The value of the `filter` should be a MongoDB `match`. Note that the variables mentioned in the filters may differ from the ones selected.
 - The variable `FEATURES_VALUE_PROCESS` is a dictionary (map) to associate a variable to a MongoDB operator to process/flatten the fetched values. The values in this dictionary can be either `get_label` to get the human-readable name of a category, or any other MongoDB operator. It should be used for the variables leading to non-atomic values (especially dictionaries). If no process is needed (because the value is atomic) or you do not know which MongoDB operator to choose, use `None`.
 
-The next lines create a new `DataRetriever` with the information for the MongoDB connection, user variables, and the query type which is `data`. The method `run()` generates the MongoDB query to fetch the data from the specified database. 
+The next lines create a new `DataRetrieverLegacy` with the information for the MongoDB connection, user variables, and the query type which is `data`. The method `run()` generates the MongoDB query to fetch the data from the specified database.
 Then, it loads the fetched data into a DataFrame. This DataFrame is accessible in the variable `the_dataframe` (see `dataRetriever.the_dataframe`). Finally, the dataframe is exported to a CSV file.
 
-For instance, in the `query.py` file, the first query fetches, for all female patients, their associated VCF filepath and whether they have hypotonia. The second query retrieves the same information for the IMGGE hospital. 
+For instance, in the `query.py` file, the first query fetches, for all female patients, their associated VCF filepath and whether they have hypotonia. The second query retrieves the same information for the IMGGE hospital.
 
-## Example to retrieve metadata
-
-A main example is available in the `query.py` file (https://git.rwth-aachen.de/padme-development/external/better/data-cataloging/etl/-/blob/main/src/query.py).  
+#### Example to retrieve metadata (legacy)
 
 Line 33 contains the user input:
 - The variable `FEATURE_CODES` is an array (list) of the variable codes we want to collect metadata for (to find the variable codes, look at the metadata: https://drive.google.com/drive/u/1/folders/1J-3C2g06WbC1gUE_3KaDp3_v1uKHXxFV)
 
-The next lines create a new `DataRetriever` with the information for the MongoDB connection, user variables, and the query type which is `metadata`. The method `run()` generates the MongoDB query to fetch the metadata from the specified database. 
+The next lines create a new `DataRetrieverLegacy` with the information for the MongoDB connection, user variables, and the query type which is `metadata`. The method `run()` generates the MongoDB query to fetch the metadata from the specified database.
 Then, it loads the fetched metadata into a DataFrame. This DataFrame is accessible in the variable `the_dataframe` (see `dataRetriever.the_dataframe`). Finally, the dataframe is exported to a CSV file.
 
 For instance, in the `query.py` file, the last query fetches all metadata information about variables `hypotonia`, `vcf_path` and `gene`. The retrieved information concerns the variable name, code, data type, categories, visibility, etc. (all information specified in the metadata: to find the variable codes, look at the metadata: https://drive.google.com/drive/u/1/folders/1J-3C2g06WbC1gUE_3KaDp3_v1uKHXxFV)
