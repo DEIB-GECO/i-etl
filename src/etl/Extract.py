@@ -15,7 +15,7 @@ from enums.MetadataColumns import MetadataColumns
 from enums.Ontologies import Ontologies
 from enums.Profile import Profile
 from enums.TableNames import TableNames
-from enums.VcfColumns import vcf_columns
+from enums.VcfColumns import get_vcf_column
 from enums.Visibility import Visibility
 from etl.Task import Task
 from preprocessing.PreprocessingTask import PreprocessingTask
@@ -168,8 +168,7 @@ class Extract(Task):
         # issue 113: we do not normalize identifiers assigned by hospitals to avoid discrepancies (not the VCF filenames)
         columns_no_normalization = []
         columns_no_normalization.append(self.execution.patient_id_column_name)
-        if self.execution.hospital_name in vcf_columns:
-            columns_no_normalization.append(vcf_columns[self.execution.hospital_name])
+        columns_no_normalization.append(get_vcf_column(self.execution.hospital_name))
         if self.execution.sample_id_column_name != "":
             columns_no_normalization.append(self.execution.sample_id_column_name)
 

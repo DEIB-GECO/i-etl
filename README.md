@@ -62,6 +62,16 @@ The provided `.env` file is a _template_: you have to fill each parameter with y
 | `SERVER_FOLDER_DATA`     | The absolute path to the folder containing the datasets.      | A folder path | `/home/better/data`                               |
 | `DATA_FILES`             | The list of comma-separated filenames.                        | Filename(s)   | `Baseline_Clinical_Table.xlsx,Genomic_Table.xlsx,vcf-folder/*.vcf` |
 
+### About VCF files
+
+If your dataset includes VCF files, you can attach them in this way:
+
+1. Add a glob to `DATA_FILES` pointing at the folder, e.g. `vcf-folder/*.vcf` (or `vcf-folder/*.vcf.gz`). If no `*.vcf` glob is listed in `DATA_FILES`, no VCF field will be added to the data.
+2. Name each file `<patient_id>.vcf` (or `<patient_id>.vcf.gz`), where `<patient_id>` matches the patient ID value in the genomic data file. Matching between Patient IDs and VCF files happens by filename only. VCF files whose `<patient_id>` doesn't appear in the data are skipped. Patient IDs without a matching VCF will receive an empty path.
+3. Declare a row in the metadata file with profile `GENOMIC` and column_name `path_vcf` (or any specific name that has been agreed with your hospital). 
+
+
+
 ### About the database 
 
 | Parameter name              | Description                                                                                                                             | Values                                                                                                                                                               | Example                         |

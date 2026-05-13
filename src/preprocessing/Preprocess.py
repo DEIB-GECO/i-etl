@@ -7,7 +7,7 @@ from constants.structure import DOCKER_FOLDER_DATA, VCF_MOUNTED_DOCKER
 from database.Execution import Execution
 from enums.MetadataColumns import MetadataColumns
 from enums.Profile import Profile
-from enums.VcfColumns import vcf_columns
+from enums.VcfColumns import get_vcf_column
 from utils.setup_logger import log
 
 
@@ -31,28 +31,28 @@ class Preprocess:
         if self.profile == Profile.GENOMIC:
             mapping_pid_vcf = []
             pid_column_name = os.getenv("PATIENT_ID")  # the data is not normalized yet, so we keep the non-normalized column name (not self.execution.patient_id_column_name)
-            filepath_column_name = vcf_columns[self.execution.hospital_name]
-            if filepath_column_name is not None:
-                for entry in os.getenv("DATA_FILES").split(","):
-                    if "*.vcf" in entry:
-                        # this is the directory which contains all the VCF files
-                        the_entry = entry.replace("*.vcf", "")  # os.listdir requires the folder name (VCF-FILES/) without the specification
-                        log.info(the_entry)
-                        if the_entry == "":
-                            the_entry = "."  # the VCF files are next to the data files
-                        for vcf_file in os.listdir(os.path.join(DOCKER_FOLDER_DATA, the_entry)):
-                            if ".vcf" in vcf_file:
-                                pid = vcf_file.replace(".vcf", "")
-                                mapping_pid_vcf.append({pid_column_name: pid, filepath_column_name: os.path.join(VCF_MOUNTED_DOCKER, vcf_file)})
-                            else:
-                                log.info(f"skip non VCF file {vcf_file}")
+            filepath_column_name = get_vcf_column(self.execution.hospital_name)
+            for entry in os.getenv("DATA_FILES").split(","):
+                if "*.vcf" not in entry:
+                    continue
+                # this is the directory which contains all the VCF files
+                the_entry = os.path.dirname(entry)  # works for both "VCF-FILES/*.vcf" and "VCF-FILES/*.vcf.gz"
+                log.info(the_entry)
+                if the_entry == "":
+                    the_entry = "."  # the VCF files are next to the data files
+                for vcf_file in os.listdir(os.path.join(DOCKER_FOLDER_DATA, the_entry)):
+                    if vcf_file.endswith(".vcf.gz"):
+                        pid = vcf_file[:-len(".vcf.gz")]
+                    elif vcf_file.endswith(".vcf"):
+                        pid = vcf_file[:-len(".vcf")]
                     else:
-                        # log.info(f"Skip {entry}")
-                        pass
+                        log.info(f"skip non VCF file {vcf_file}")
+                        continue
+                    mapping_pid_vcf.append({pid_column_name: pid, filepath_column_name: os.path.join(VCF_MOUNTED_DOCKER, vcf_file)})
+            if mapping_pid_vcf:
                 pid_vcf_df = DataFrame(mapping_pid_vcf)
-                self.data = self.data.merge(pid_vcf_df, on=pid_column_name, how="outer")
-            else:
-                log.info("No name provided for the VCF file column. Skipping it.")
+                # left-merge: keep every patient row; drop VCFs whose filename PID has no matching patient
+                self.data = self.data.merge(pid_vcf_df, on=pid_column_name, how="left")
 
     @classmethod
     def get_subset_of_columns_in_df(cls, df: DataFrame, file_type: Profile, metadata: DataFrame) -> DataFrame:
