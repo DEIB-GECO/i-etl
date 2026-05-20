@@ -199,7 +199,11 @@ class Operators(EnumAsClass):
         return query
 
     @classmethod
-    def unwind(cls, field: str) -> dict:
+    def unwind(cls, field: str, preserve_null_and_empty: bool = False) -> dict:
+        if preserve_null_and_empty:
+            return {
+                "$unwind": {"path": f"${field}", "preserveNullAndEmptyArrays": True}
+            }
         return {
             "$unwind": f"${field}"
         }

@@ -288,6 +288,14 @@ class DataRetriever(object):
         <label, ontology, name>   exact match on both; column named "label"
         <label, *, name>          select by name only; column named "label"
         <*, ontology|name, ...>   any of the above without a label; column = feature name
+
+    Join semantics (DATA mode): results are joined on `has_subject`. With
+    join_mode="left" (default), the query is anchored on the first feature in
+    query_list; subjects with a record for that feature appear in the result,
+    and missing values from subsequent features are returned as null. With
+    join_mode="inner", only subjects that have a record for every queried
+    feature are returned. If the aggregation yields no documents, an empty
+    DataFrame indexed by `has_subject` is returned (no exception raised).
     """
     mongodb_url: str  # e.g. "mongodb://localhost:27018/"
     db_name: str
@@ -295,6 +303,8 @@ class DataRetriever(object):
 
     # DATA mode: list of dicts with optional keys "label", "ontology_resource", "feature_name"
     query_list: list = dataclasses.field(default_factory=list)
+    # DATA mode: "left" (anchored on query_list[0], nulls for missing) or "inner" (all features required)
+    join_mode: str = "left"
     features_info: dict = dataclasses.field(init=False)
     the_dataframe: DataFrame = dataclasses.field(init=False)
 
@@ -310,6 +320,8 @@ class DataRetriever(object):
         elif self.query_type == QueryTypes.DATA:
             if not self.query_list:
                 raise Exception("query_list must be non-empty for DATA mode.")
+            if self.join_mode not in ("left", "inner"):
+                raise ValueError(f"join_mode must be 'left' or 'inner'. Got: {self.join_mode!r}")
             for item in self.query_list:
                 if item.get("ontology_resource") is None and item.get("feature_name") is None:
                     raise Exception(f"Each query_list item needs 'ontology_resource' or 'feature_name'. Got: {item}")
@@ -366,9 +378,12 @@ class DataRetriever(object):
         self.generate_data_query()
         log.info(self.the_query)
         log.info("Creating the dataframe")
-        self.the_dataframe = pd.DataFrame(
-            self.db[TableNames.RECORD].aggregate(json.loads(self.the_query))
-        ).set_index("has_subject")
+        docs = list(self.db[TableNames.RECORD].aggregate(json.loads(self.the_query)))
+        if docs:
+            self.the_dataframe = pd.DataFrame(docs).set_index("has_subject")
+        else:
+            cols = [name for name, feat in self.features_info.items() if feat["show"]]
+            self.the_dataframe = pd.DataFrame(columns=cols).rename_axis("has_subject")
         log.info("Done.")
 
     def _resolve_features(self) -> None:
@@ -514,5 +529,8 @@ class DataRetriever(object):
             self.rec_internal(position + 1)
             self.the_query += "}}"
             self.the_query += ","
-            self.the_query += json.dumps(Operators.unwind(field=f"lookup_{position}"))
+            self.the_query += json.dumps(Operators.unwind(
+                field=f"lookup_{position}",
+                preserve_null_and_empty=(self.join_mode == "left"),
+            ))
             self.the_query += "]"

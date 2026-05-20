@@ -196,6 +196,31 @@ print(dr.the_dataframe)
 dr.the_dataframe.to_csv("data.csv")
 ```
 
+**Join semantics**
+
+When more than one feature is requested in a query, records are joined on the patient identifier (`has_subject`). The `join_mode` parameter controls how missing values are handled.
+
+| Value | Behavior |
+|-------|----------|
+| `"left"` (default values) | Results are anchored on the first feature in `query_list`. Every subject that has a record for that first feature appears in the results. Missing values for other requested features are returned as null. Use this when you want all available data to be returned, even if some columns are sparse or empty. |
+| `"inner"` | Only subjects that have a record for **every** requested feature are returned. Use this when you strictly need complete cases (e.g., for ML training). With `"inner"`, querying a feature that is always null will produce an empty result set. |
+
+If the aggregation produces no documents, `the_dataframe` is set to an empty DataFrame indexed by `has_subject`.
+
+```python
+dr = DataRetriever(
+    mongodb_url="mongodb://localhost:27018/",
+    db_name="better_database",
+    query_type=QueryTypes.DATA,
+    query_list=[
+        {"feature_name": "weight"},
+        {"feature_name": "feature_with_missing_data"},  # may be sparse or fully empty
+    ],
+    join_mode="left",  # default; use "inner" for complete-cases-only
+)
+dr.run()
+```
+
 ---
 
 ### `DataRetrieverLegacy` — original query mode (deprecated)
