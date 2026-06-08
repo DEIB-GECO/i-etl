@@ -6,13 +6,13 @@ import xml.dom.minidom
 from bs4 import BeautifulSoup
 from requests import Response
 
-from constants.defaults import API_SESSION
+from constants.defaults import API_SESSION, API_RETRY_COUNT, API_RETRY_BACKOFF, API_RETRY_STATUS_CODES
 from enums.AccessTypes import AccessTypes
 from utils.setup_logger import log
 import time
 
 
-def send_query(url: str, headers: dict | None) -> Response | None:
+def _get(url: str, headers: dict | None) -> Response | None:
     try:
         if headers is None:
             return API_SESSION.get(url, verify=True)
@@ -28,6 +28,32 @@ def send_query(url: str, headers: dict | None) -> Response | None:
         except Exception as e:
             log.info(e)
             return None
+
+
+def send_query(url: str, headers: dict | None) -> Response | None:
+    # Retry transient failures (no response, rate limiting, 5xx) with exponential backoff.
+    backoff = API_RETRY_BACKOFF
+    response = None
+    for attempt in range(API_RETRY_COUNT + 1):
+        response = _get(url, headers)
+        if response is not None and response.status_code not in API_RETRY_STATUS_CODES:
+            return response
+        if attempt < API_RETRY_COUNT:
+            reason = "no response" if response is None else f"HTTP {response.status_code}"
+            log.warning(f"API call failed ({reason}) for {url} - retry {attempt + 1}/{API_RETRY_COUNT} in {backoff:.1f}s")
+            time.sleep(backoff)
+            backoff *= 2
+    return response
+
+
+def describe_response(response: Response | None) -> str:
+    # Compact description of a response for diagnostics: lets us tell a genuine API
+    # error/throttling apart from a proxy/firewall block page (e.g. HTML on a 200).
+    if response is None:
+        return "no response (connection failed or not sent)"
+    body = (response.text or "").strip().replace("\n", " ")
+    content_type = response.headers.get("Content-Type", "?")
+    return f"HTTP {response.status_code}, content-type={content_type}, body[:300]={body[:300]!r}"
 
 
 # API ACCESS

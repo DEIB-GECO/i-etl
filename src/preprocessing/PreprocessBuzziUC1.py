@@ -11,6 +11,7 @@ from enums.AccessTypes import AccessTypes
 from enums.DiagnosisColumns import DiagnosisColumns
 from enums.MetadataColumns import MetadataColumns
 from enums.Profile import Profile
+from constants.api_keys import ORPHANET_API_KEY
 from preprocessing.Preprocess import Preprocess
 from utils.api_utils import send_query_to_api, parse_json_response
 from utils.file_utils import read_tabular_file_as_string
@@ -169,7 +170,7 @@ class PreprocessBuzziUC1(Preprocess):
     @classmethod
     def get_inheritance(cls, diagnosis_code: str) -> str | None:
         url = f"https://api.orphadata.com/rd-natural_history/orphacodes/{diagnosis_code}"
-        response = send_query_to_api(url=url, secret="nbarret", access_type=AccessTypes.API_KEY_IN_HEADER)
+        response = send_query_to_api(url=url, secret=ORPHANET_API_KEY, access_type=AccessTypes.API_KEY_IN_HEADER)
         data = parse_json_response(response)
         if "data" in data and "results" in data["data"] and "TypeOfInheritance" in data["data"]["results"]:
             inheritances = data["data"]["results"]["TypeOfInheritance"]
@@ -180,7 +181,7 @@ class PreprocessBuzziUC1(Preprocess):
     @classmethod
     def get_chromosome(cls, diagnosis_code: str) -> str | None:
         url = f"https://api.orphadata.com/rd-associated-genes/orphacodes/{diagnosis_code}"
-        response = send_query_to_api(url=url, secret="nbarret", access_type=AccessTypes.API_KEY_IN_HEADER)
+        response = send_query_to_api(url=url, secret=ORPHANET_API_KEY, access_type=AccessTypes.API_KEY_IN_HEADER)
         data = parse_json_response(response)
         if "data" in data and "results" in data["data"] and "DisorderGeneAssociation" in data["data"]["results"]:
             associations = data["data"]["results"]["DisorderGeneAssociation"]

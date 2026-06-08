@@ -7,6 +7,13 @@ import requests
 
 API_SESSION = requests.Session()
 
+# Retry/backoff for transient API failures (rate limiting, 5xx, dropped connections).
+# Exponential backoff: wait API_RETRY_BACKOFF s, then double it on each retry,
+# for at most API_RETRY_COUNT retries (by default 1s, 2s, 4s -> ~7s worst case).
+API_RETRY_COUNT = 3
+API_RETRY_BACKOFF = 1.0  # seconds
+API_RETRY_STATUS_CODES = {429, 500, 502, 503, 504}
+
 # 1000 is the max supported by Mongodb.
 # If we set BATCH_SIZE > 1000, Mongodb will send batch of 1k instances,
 # but we will still have fewer files to write and read, thus increasing performance

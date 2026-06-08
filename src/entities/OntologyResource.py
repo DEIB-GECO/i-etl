@@ -5,11 +5,12 @@ import re
 from urllib.parse import quote
 
 from constants.defaults import SNOMED_OPERATORS_LIST, DEFAULT_ONTOLOGY_RESOURCE_LABEL, SNOMED_OPERATORS_STR
+from constants.api_keys import BIOPORTAL_API_KEY, LOINC_CREDENTIALS, ORPHANET_API_KEY, OMIM_API_KEY, NCBI_API_KEY
 from constants.methods import factory
 from enums.AccessTypes import AccessTypes
 from enums.Ontologies import Ontologies
 from main_statistics.QualityStatistics import QualityStatistics
-from utils.api_utils import send_query_to_api, send_query_to_api_time, parse_xml_response, parse_json_response, parse_html_response
+from utils.api_utils import send_query_to_api, send_query_to_api_time, parse_xml_response, parse_json_response, parse_html_response, describe_response
 from utils.setup_logger import log
 from utils.str_utils import remove_specific_tokens, process_spaces, remove_operators_in_strings
 from enums.APIs import APIWait
@@ -129,7 +130,7 @@ class OntologyResource:
                 if system == Ontologies.SNOMEDCT["url"]:
                     url_resource = quote(f"http://purl.bioontology.org/ontology/SNOMEDCT/{single_code}", safe="")
                     url = f"http://data.bioontology.org/ontologies/SNOMEDCT/classes/{url_resource}"
-                    response = send_query_to_api(url=url, secret="d6fb9c05-3309-4158-892f-65434a9133b9", access_type=AccessTypes.API_KEY_IN_URL)
+                    response = send_query_to_api(url=url, secret=BIOPORTAL_API_KEY, access_type=AccessTypes.API_KEY_IN_URL)
                     if response is None:
                         error = f"Failed connection to SNOMED-CT API."
                     elif response.status_code == 200:
@@ -147,7 +148,7 @@ class OntologyResource:
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.LOINC["url"]:
                     url = f"https://loinc.regenstrief.org/searchapi/loincs?query={single_code}"
-                    response = send_query_to_api(url=url, secret="nbarret d7=47@xiz$g=-Ns", access_type=AccessTypes.AUTHENTICATION)
+                    response = send_query_to_api(url=url, secret=LOINC_CREDENTIALS, access_type=AccessTypes.AUTHENTICATION)
                     data = parse_json_response(response)
                     if response is None:
                         error = f"Failed connection to LOINC API."
@@ -194,7 +195,7 @@ class OntologyResource:
                 elif system == Ontologies.GSSO["url"]:
                     iri = f"http://purl.obolibrary.org/obo/{single_code.upper()}"  # we need to upper case the GSSO_, otherwise the API returns None
                     url = f"https://ontobee.org/ontology/GSSO?iri={iri}"
-                    response = send_query_to_api(url=url, secret="d6fb9c05-3309-4158-892f-65434a9133b9", access_type=AccessTypes.API_KEY_IN_BEARER)
+                    response = send_query_to_api(url=url, secret=BIOPORTAL_API_KEY, access_type=AccessTypes.API_KEY_IN_BEARER)
                     if response is None:
                         error = f"Failed connection to GSSO API."
                     elif response.status_code == 200:
@@ -228,7 +229,7 @@ class OntologyResource:
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
                 elif system == Ontologies.ORPHANET["url"]:
                     url = f"https://api.orphacode.org/EN/ClinicalEntity/orphacode/{single_code}/Name"
-                    response = send_query_to_api(url=url, secret="nbarret", access_type=AccessTypes.API_KEY_IN_HEADER)
+                    response = send_query_to_api(url=url, secret=ORPHANET_API_KEY, access_type=AccessTypes.API_KEY_IN_HEADER)
                     if response is None:
                         error = f"Failed connection to ORPHANET API."
                     elif response.status_code == 200:
@@ -277,7 +278,7 @@ class OntologyResource:
                 elif system == Ontologies.OMIM["url"]:
                     # TODO NELLY: get OMIM API key (default one on OMIM website nfNEOscLNWWXdSmUoMLPPA is unauthorized)
                     url = f"https://api.omim.org/api/entry?mimNumber={single_code}&include=text&format=json"
-                    response = send_query_to_api(url=url, secret="nfNEOscLNWWXdSmUoMLPPA", access_type=AccessTypes.API_KEY_IN_HEADER)
+                    response = send_query_to_api(url=url, secret=OMIM_API_KEY, access_type=AccessTypes.API_KEY_IN_HEADER)
                     if response is None:
                         error = f"Failed connection to OMIM API."
                     elif response.status_code == 200:
@@ -359,7 +360,7 @@ class OntologyResource:
                     # The general approach is to use esearch to find the list of unique identifiers that return records of interest,
                     # and then use esummary (to retrieve an overview of each of those records) based on the identifiers returned by esearch.
                     first_part_code = single_code.split(";")[0]
-                    url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=clinvar&term={first_part_code}&retmax=1"
+                    url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=clinvar&term={first_part_code}&retmax=1&api_key={NCBI_API_KEY}"
                     response = send_query_to_api_time(url=url, secret=None, access_type=AccessTypes.USER_AGENT, sleep=APIWait.WAIT_NLM_CLINVAR)
                     if response is None:
                         error = f"Failed connection to NLM CLIN_VAR API."
@@ -371,7 +372,7 @@ class OntologyResource:
                                 # exactly one match has been found
                                 # we now need go get the information associated to the matched identifier
                                 matched_identifier = matched_identifiers[0].firstChild.nodeValue
-                                url2 = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=clinvar&id={matched_identifier}&retmode=json"
+                                url2 = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=clinvar&id={matched_identifier}&retmode=json&api_key={NCBI_API_KEY}"
                                 response = send_query_to_api_time(url=url2, secret=None, access_type=AccessTypes.USER_AGENT, sleep=APIWait.WAIT_NLM_CLINVAR)
                                 if response is None:
                                     error = f"Failed connection to NLM CLIN_VAR API."
@@ -407,9 +408,12 @@ class OntologyResource:
                     log.info(f"Unknown ontology {system}.")
                     return DEFAULT_ONTOLOGY_RESOURCE_LABEL
             except Exception as e:
-                # the API could not be queried, returning empty string
-                quality_stats.add_failed_api_call(system=system, code=single_code, api_error=e.args[0])
-                log.info(e.args[0])
+                # the API could not be queried or its response could not be parsed, returning empty string.
+                # We log the raw response (status, content-type, body snippet) so we can tell a genuine API
+                # error/throttling apart from a proxy/firewall block page (e.g. HTML returned on a 200).
+                response_desc = describe_response(locals().get("response"))
+                log.warning(f"API call/parse failed for {system}:{single_code} -> {e} | {response_desc}")
+                quality_stats.add_failed_api_call(system=system, code=single_code, api_error=e.args[0] if e.args else str(e))
                 return DEFAULT_ONTOLOGY_RESOURCE_LABEL
         else:
             return DEFAULT_ONTOLOGY_RESOURCE_LABEL
